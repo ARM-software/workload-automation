@@ -198,12 +198,15 @@ class CpuStateProc:
         self.trace = list()
         self.absentstate = 2  
         self.clusterstate = 2
+        self.realfirsttime = -1
+        self.droppedtraces = False
         self.initfreq = list()
         
 
-    def initialize(self, context, absentstate=2, clusterstate=2, initfreq=list(), tracefile='trace.txt'):  # pylint: disable=R0912
+    def initialize(self, context, logger, absentstate=2, clusterstate=2, initfreq=list(), tracefile='trace.txt'):  # pylint: disable=R0912
         self.device = context.device
         self.clusterlist = self.getclusterlist()
+        self.logger = logger
         # Things to be defined as parameters
 
         if len(initfreq)==0:
@@ -230,18 +233,6 @@ class CpuStateProc:
         # print self.clusterlist
         # print self.device.core_names
         # print self.device.core_clusters
-
-    def parseline(self,  _line):
-        mm = CpuState.rgx.match(_line)
-        if mm:
-          timestamp = int(mm.group(1))*1000000+int(mm.group(2))
-          self.lasttime = timestamp
-          if self.firsttime < 0 : self.firsttime = self.lasttime
-          for c in CpuState.classes:
-            m = c.rgx.match(mm.group(3))
-            if (m): 
-              return c(m,timestamp)
-        return None
 
 
     def plotcores(self,trace,plotcores,name):
@@ -430,7 +421,7 @@ class CpuStateProc:
         for c in range(maxcpu+1):
             tracesforc = sum([self.cpuset[c][t] for t in self.cpuset[c].keys()])
             if tracesforc==0: # no traces for c at all
-                print "WARNING: No traces observed for CPU:",c
+                self.logger.warning('No traces observed for CPU %d' % (c))
                 # if this is the case, add a trace begining and end of idle start and stop
                 trace.insert(0,IdleStartTrace(None,self.firsttime,c,absentstate))
                 trace.append(IdleEndTrace(None,self.lasttime,c))
@@ -606,6 +597,39 @@ class CpuStateProc:
         return ret
 
 
+    def parseline(self,  _line):
+        mm = CpuState.rgx.match(_line)
+        if mm:
+          timestamp = int(mm.group(1))*1000000+int(mm.group(2))
+          self.lasttime = timestamp
+          if self.firsttime < 0 : self.firsttime = self.lasttime
+          for c in CpuState.classes:
+            m = c.rgx.match(mm.group(3))
+            if (m): 
+              return c(m,timestamp)
+        return None
+
+
+    def trace_first_pass(self,fh):
+        ''' do a first pass and check for TRACE_MARKER and 
+           dropped traces '''
+        self.realfirsttime = -1
+        self.droppedtraces = False
+        lastgoodpos = fh.tell()
+        for line in fh:
+            mm = CpuState.rgx.match(line)
+            if mm:
+                timestamp = int(mm.group(1))*1000000+int(mm.group(2))
+                if self.realfirsttime < 0 : self.realfirsttime = timestamp
+            if 'EVENTS DROPPED'  in line:
+                self.logger.warning('There are dropped events we will skip traces')
+                self.droppedtraces = True
+                lastgoodpos = lastpos
+            if 'TRACE_MARKER_START'  in line:
+                lastgoodpos = lastpos
+            lastpos = fh.tell()
+        fh.seek(lastgoodpos)
+    
     def parse(self,context):
         """
         """
@@ -613,12 +637,13 @@ class CpuStateProc:
         self.outfilep = os.path.join(context.output_directory, 'parallel.csv')
         self.outfilecs = os.path.join(context.output_directory, 'corestates.csv')
 
-        file=open(self.infile,  'r')
+        fh=open(self.infile,  'r')
       
         trace = list()
         maxcpu = len(self.device.core_names)-1
         linenum=0
-        line = file.readline()
+        self.trace_first_pass(fh)
+        line = fh.readline()
         self.firsttime = -1
         self.initfreqs = [-1 for i in range(maxcpu+1)]
         self.trace = list()
@@ -637,7 +662,9 @@ class CpuStateProc:
         lastfreqchange = list()
         while line:
             linenum += 1
-            # must strip header lines out of file
+            if 'TRACE_MARKER_STOP' in line:
+                break;
+
             item = self.parseline(line)
             if (item): 
                 trace.append(item)
@@ -646,9 +673,9 @@ class CpuStateProc:
                 if isinstance(item,FreqTrace): ix=2
                 self.cpuset[item.cpu][ix]+=1
                 
-            line = file.readline()
+            line = fh.readline()
 
-        file.close()        
+        fh.close()        
         self.debugdmp(trace,"0_raw_trace")
         self.pass1_start_end_idle(maxcpu,trace)
         self.debugdmp(trace,"1_fixup_start_end_idles")
@@ -684,10 +711,16 @@ class CpuStateProc:
         for c in corelist: s+=str(c)+' '
         s+=','
         fh.write("%s\n" % (s))
-        fh.write("numcores,totaltime,%time,\n")
+        fh.write("numcores,totaltime,%time,%running time\n")
+        totalrunningtime = 0
         for n in range(len(corelist)+1):
             tt = sum([s[1] for s in ret[n]])
-            fh.write("%d,%d,%f\n" % (n,tt,float(tt)*100.0/totaltime))
+            if n==0:
+                totalrunningtime=totaltime-tt
+                fh.write("%d,%d,%f,%f\n" % (n,tt,float(tt)*100.0/totaltime,0.0))
+            else:
+                fh.write("%d,%d,%f,%f\n" % (n,tt,float(tt)*100.0/totaltime,
+                                            float(tt)*100.0/totalrunningtime))
 
             
     def cpu_state_report(self,c,fh):
@@ -720,13 +753,27 @@ class CpuStateProc:
         fh.write(ss+',%d,%d,\n'%(tt,totaltime))
         return
 
+    def addwarning(self,fh):
+        if self.droppedtraces:
+            missingtime = 'uknown'
+            if self.realfirsttime != -1:
+                realtotaltime = self.lasttime-self.realfirsttime
+                tracedtime = self.lasttime-self.firsttime
+                missingtime  = '%d us %f%% of total' % (realtotaltime - tracedtime,
+                                                          100.0*float(realtotaltime - tracedtime)/realtotaltime)
+            fh.write('warning: lost traces missing %s time\n' % (missingtime))                                                   
         
     def produce_report(self):
         fh=open(self.outfilep,  'w')
-        for ix in range(len(self.clusterlist)+1): # plus 1 gives extra cycles which dumps overall parallelism
-            self.parallel_report(ix,fh)
+        self.addwarning(fh)                                                  
+        nclusters = len(self.clusterlist)
+        if nclusters > 1:
+            for ix in range(nclusters): 
+                self.parallel_report(ix,fh)
+        self.parallel_report(nclusters,fh)  # calling with index set to max+1 generates report for all cores
         fh.close()    
         fh=open(self.outfilecs,  'w')
+        self.addwarning(fh)                                                  
         for c in range(len(self.device.core_names)):
             self.cpu_state_report(c,fh)
         fh.close()
@@ -763,13 +810,19 @@ class CpuState(ResultProcessor):
             raise ConfigError('"dvfs" works only if "trace_cmd" in enabled in instrumentation')
 
     def initialize(self, context):  # pylint: disable=R0912
-        self.cpustateproc.initialize(context,self.absentstate,self.clusterstate,self.initfreq)
+        self.cpustateproc.initialize(context,self.logger,self.absentstate,self.clusterstate,self.initfreq)
     
     def process_iteration_result(self, result, context):
         self.cpustateproc.parse(context)
         self.cpustateproc.produce_report()
     
 
+
+class simplelogger:
+    def warning(self,s):
+        sys.stderr.write('warning: %s\n' % (s))        
+    def debug(self,s):
+        sys.stdout.write('debug: %s\n' % (s))        
 
 class fakedevice:
     pass
@@ -807,8 +860,9 @@ def run():
         parser.print_help() 
         sys.exit(2)
 
+    sl = simplelogger()
     cpustateproc = CpuStateProc()
-    cpustateproc.initialize(fk,int(args.absentstate),int(args.clusterstate),initfreq,args.infile)
+    cpustateproc.initialize(fk,sl,int(args.absentstate),int(args.clusterstate),initfreq,args.infile)
     cpustateproc.parse(fk)
     cpustateproc.produce_report()
         
