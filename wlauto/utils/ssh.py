@@ -161,7 +161,7 @@ class SshShell(object):
         if as_root:
             command = "sh -c '{}'".format(escape_single_quotes(command))
             if self.username != "root":
-                 command = "sudo -- "+command
+                command = "sudo -- " + command
             if log:
                 logger.debug(command)
             self.conn.sendline(command)
