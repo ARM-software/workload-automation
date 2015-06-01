@@ -1018,7 +1018,8 @@ class LinuxDevice(BaseLinuxDevice):
 
         result = []
         for line in lines:
-            parts = line.split()
+            line_m = re.sub('\s+', ' ', line)
+            parts = line_m.split(' ', 8)
             if parts:
                 result.append(PsEntry(*(parts[0:1] + map(int, parts[1:5]) + parts[5:])))
 
