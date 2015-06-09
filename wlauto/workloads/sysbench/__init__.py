@@ -111,7 +111,7 @@ class Sysbench(Workload):
         with open(host_results_file) as fh:
             find_line_with('General statistics:', fh)
             extract_metric('total time', fh.next(), context.result)
-            extract_metric('total number of events', fh.next(), context.result, lower_is_better=False)
+            extract_metric('total number of events', fh.next(), context.result, lower_is_better=False, no_unit=True)
             find_line_with('response time:', fh)
             extract_metric('min', fh.next(), context.result, 'response time ')
             extract_metric('avg', fh.next(), context.result, 'response time ')
@@ -156,7 +156,7 @@ def find_line_with(text, fh):
     raise WorkloadError(message.format(fh.name, text))
 
 
-def extract_metric(metric, line, result, prefix='', lower_is_better=True):
+def extract_metric(metric, line, result, prefix='', lower_is_better=True, no_unit=False):
     try:
         name, value_part = [part.strip() for part in line.split(':')]
         if name != metric:
@@ -167,8 +167,12 @@ def extract_metric(metric, line, result, prefix='', lower_is_better=True):
             idx -= 1
         if not idx:
             raise WorkloadError('Could not parse value "{}"'.format(value_part))
-        value = numeric(value_part[:idx])
-        units = value_part[idx:]
+        if no_unit:
+            value = numeric(value_part)
+            units = None
+        else:
+            value = numeric(value_part[:idx])
+            units = value_part[idx:]
         result.add_metric(prefix + metric,
                           value, units, lower_is_better=lower_is_better)
     except Exception as e:
