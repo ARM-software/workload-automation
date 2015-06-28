@@ -88,7 +88,7 @@ class lmbench(Workload):
         self.commands = []
 
         setup_test = getattr(self, '_setup_{}'.format(self.test))
-        setup_test(self)
+        setup_test()
 
     def run(self, context):
         self.output = []
@@ -130,7 +130,7 @@ class lmbench(Workload):
         self.device.uninstall_executable(self.test)
 
     def validate(self):
-        if not self.tests.has_key(self.test):
+        if not self.test in self.test_names:
             raise WorkloadError("Unknown test '{}' specified. Choose from {}.".format(self.test,self.test_names))
 
     #
