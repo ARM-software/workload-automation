@@ -27,45 +27,21 @@ this_dir = os.path.dirname(__file__)
 
 class lmbench(Workload):
 
-    # Would like to find a nicer way to structure this -->
-    
-    # Don't love that the setup functions are class, not object members. (Or are they?)
-    # Hate most that I have to define them ahead of 'tests' ?
-    def _setup_lat_mem_rd(self):
-        command_stub = self._setup_common()
-        if self.thrash:
-            command_stub = command_stub + '-t '
-
-        for size in self.size:
-            command = command_stub + size + ' '
-            for stride in self.stride:
-                self.commands.append(command + str(stride))
-    
-    def _setup_bw_mem(self):
-        command_stub = self._setup_common()
-
-        for size in self.size:
-            command = command_stub + size + ' '
-            for what in self.mem_category:
-                self.commands.append(command + what)            
-
-
-    tests = { 'lat_mem_rd': _setup_lat_mem_rd, 
-              'bw_mem': _setup_bw_mem,
-            } 
-
-    # Like that I can do this though..
-    test_names = str(tests.keys())
-
-    ## <---
-    
     name = 'lmbench'
+
+    # Define supported tests. Each requires a _setup_{name} routine below
+    test_names = ['lat_mem_rd', 'bw_mem'] 
+
     description = """
                   Run an lmbench subtest. Supported tests are: %s
 
+                  lmbench is a suite of simple, portable ANSI/C microbenchmarks for UNIX/POSIX. In general,
+                  it measures two key features: latency and bandwidth. This workload supports a subset
+                  of lmbench tests.
+
                   Original source from:
                   http://sourceforge.net/projects/lmbench/. 
-                  Binaries based on version 3.0-a9
+                  See lmbench/bin/README for license details.
                   """ % test_names
 
     output_marker_regex = re.compile(r'Output for time #(?P<time>\d+).*bw_mem.* (?P<size>\w+) (?P<op>\w+): (?P<f1>.+) (?P<f2>.+)')
@@ -110,8 +86,9 @@ class lmbench(Workload):
         host_exe = context.resolver.get(Executable(self, abi, self.test))
         self.device_exe = self.device.install(host_exe)
         self.commands = []
-        
-        self.tests[self.test](self)
+
+        setup_test = getattr(self, '_setup_{}'.format(self.test))
+        setup_test(self)
 
     def run(self, context):
         self.output = []
@@ -155,7 +132,29 @@ class lmbench(Workload):
     def validate(self):
         if not self.tests.has_key(self.test):
             raise WorkloadError("Unknown test '{}' specified. Choose from {}.".format(self.test,self.test_names))
-            
+
+    #
+    # Test setup routines
+    #
+    
+    def _setup_lat_mem_rd(self):
+        command_stub = self._setup_common()
+        if self.thrash:
+            command_stub = command_stub + '-t '
+
+        for size in self.size:
+            command = command_stub + size + ' '
+            for stride in self.stride:
+                self.commands.append(command + str(stride))
+    
+    def _setup_bw_mem(self):
+        command_stub = self._setup_common()
+
+        for size in self.size:
+            command = command_stub + size + ' '
+            for what in self.mem_category:
+                self.commands.append(command + what)            
+
     def _setup_common(self):
         command = self.device_exe + " "
         if self.parallelism is not None:
