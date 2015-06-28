@@ -20,10 +20,7 @@ import re
 
 from wlauto import Workload, Parameter, Executable
 from wlauto.exceptions import ConfigError, WorkloadError
-from wlauto.utils.types import boolean, list_or_integer, list_or_string
-
-this_dir = os.path.dirname(__file__)
-
+from wlauto.utils.types import list_or_integer, list_or_string
 
 class lmbench(Workload):
 
@@ -33,7 +30,7 @@ class lmbench(Workload):
     test_names = ['lat_mem_rd', 'bw_mem'] 
 
     description = """
-                  Run an lmbench subtest. Supported tests are: %s
+                  Run an lmbench subtest. 
 
                   lmbench is a suite of simple, portable ANSI/C microbenchmarks for UNIX/POSIX. In general,
                   it measures two key features: latency and bandwidth. This workload supports a subset
@@ -42,15 +39,11 @@ class lmbench(Workload):
                   Original source from:
                   http://sourceforge.net/projects/lmbench/. 
                   See lmbench/bin/README for license details.
-                  """ % test_names
+                  """ 
 
-    output_marker_regex = re.compile(r'Output for time #(?P<time>\d+).*bw_mem.* (?P<size>\w+) (?P<op>\w+): (?P<f1>.+) (?P<f2>.+)')
-    #bm_regex = re.compile(r'This machine benchmarks at (?P<score>\d+)')
-    #time_regex = re.compile(r'Total dhrystone run time: (?P<time>[0-9.]+)')
-    
     parameters = [
-        Parameter('test', kind=str, default='lat_mem_rd',
-                  description="Specifies an lmbench test to run. Currently supported tests are: {}".format(test_names)),
+        Parameter('test', default='lat_mem_rd', allowed_values=test_names,
+                  description="Specifies an lmbench test to run."),
         Parameter('stride', kind=list_or_integer, default=[128],
                   description='Stride for lat_mem_rd test. Workload will iterate over one or more integer values.'),
         Parameter('thrash', kind=bool, default=True, description='Sets -t flag for lat_mem_rd_test'),
@@ -105,26 +98,6 @@ class lmbench(Workload):
         with open(outfile, 'w') as wfh:
             for output in self.output:
                 wfh.write(output)
-        # BAB - about to write a bit of a parser for lmbench output - following for reference only
-        # dmips_count = 0
-        # for line in self.output.split('\n'):
-        #     match = self.time_regex.search(line)
-        #     if match:
-        #         context.result.add_metric('time', float(match.group('time')), 'seconds', lower_is_better=True)
-        #     else:
-        #         match = self.bm_regex.search(line)
-        #         if match:
-        #             metric = 'thread {} score'.format(score_count)
-        #             value = int(match.group('score'))
-        #             context.result.add_metric(metric, value)
-        #             score_count += 1
-        #         else:
-        #             match = self.dmips_regex.search(line)
-        #             if match:
-        #                 metric = 'thread {} DMIPS'.format(dmips_count)
-        #                 value = int(match.group('score'))
-        #                 context.result.add_metric(metric, value)
-        #                 dmips_count += 1
 
     def teardown(self, context):
         self.device.uninstall_executable(self.test)
@@ -164,5 +137,3 @@ class lmbench(Workload):
         if self.repetitions is not None:
             command = command + '-N {} '.format(self.repetitions)
         return command
-    
-    
