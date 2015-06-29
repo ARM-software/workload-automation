@@ -16,10 +16,8 @@
 #pylint: disable=E1101,W0201
 
 import os
-import re
 
 from wlauto import Workload, Parameter, Executable
-from wlauto.exceptions import ConfigError, WorkloadError
 from wlauto.utils.types import list_or_integer, list_or_string
 
 
