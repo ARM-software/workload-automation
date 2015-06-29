@@ -31,13 +31,13 @@ class lmbench(Workload):
     test_names = ['lat_mem_rd', 'bw_mem']
 
     description = """
-                  Run an lmbench subtest.
+                  Run a subtest from lmbench, a suite of portable ANSI/C microbenchmarks for UNIX/POSIX.
 
-                  lmbench is a suite of simple, portable ANSI/C microbenchmarks for UNIX/POSIX. In general,
-                  it measures two key features: latency and bandwidth. This workload supports a subset
-                  of lmbench tests.
+                  In general, lmbench measures two key features: latency and bandwidth. This workload supports a subset
+                  of lmbench tests. lat_mem_rd can be used to measure latencies to memory (including caches). bw_mem
+                  can be used to measure bandwidth to/from memory over a range of operations.
 
-                  Original source from:
+                  Further details, and source code are available from:
                   http://sourceforge.net/projects/lmbench/.
                   See lmbench/bin/README for license details.
                   """
@@ -102,10 +102,6 @@ class lmbench(Workload):
 
     def teardown(self, context):
         self.device.uninstall_executable(self.test)
-
-    def validate(self):
-        if self.test not in self.test_names:
-            raise WorkloadError("Unknown test '{}' specified. Choose from {}.".format(self.test, self.test_names))
 
     #
     # Test setup routines
