@@ -15,6 +15,7 @@
 
 
 # pylint: disable=W0613,E1101,attribute-defined-outside-init
+from __future__ import division
 import os
 import subprocess
 import signal
@@ -30,12 +31,13 @@ from wlauto.exceptions import InstrumentError, ConfigError
 from wlauto.utils.types import list_of_strings
 from wlauto.utils.misc import check_output
 from wlauto.utils.cros_sdk import CrosSdkSession
+from wlauto.utils.misc import which
 
 
 class ServoPowerMonitor(Instrument):
 
     name = 'servo_power_monitor'
-    description = """Collects power traces using the Servo Board.
+    description = """Collects power traces using the Chromium OS Servo Board.
 
                      Servo is a debug board used for Chromium OS test and development. Among other uses, it allows
                      access to the built in power monitors (if present) of a Chrome OS device. More information on
@@ -72,7 +74,7 @@ class ServoPowerMonitor(Instrument):
 
     def initialize(self, context):
         # pylint: disable=access-member-before-definition
-        self.in_chroot = False if subprocess.call('which dut-control', stdout=subprocess.PIPE, shell=True) else True
+        self.in_chroot = False if which('dut-control') is None else True
         self.poller = None
         domains_string = '_mw '.join(self.power_domains + [''])
         password = ''
@@ -91,7 +93,7 @@ class ServoPowerMonitor(Instrument):
         while True:
             if checks >= self.servod_max_tries:
                 raise InstrumentError('Failed to start servod in cros_sdk environment')
-            server_lines = self.server_session.get_lines(timeout_in_ms=1000, from_stderr=True,
+            server_lines = self.server_session.get_lines(timeout=1, from_stderr=True,
                                                          timeout_only_for_first_line=False)
             if server_lines and 'Listening on' in server_lines[-1]:
                 break
@@ -134,7 +136,7 @@ class ServoPowerMonitor(Instrument):
             metric_name = '{}_energy'.format(self.labels[i])
             energy = sample_sum * (1.0 / self.sampling_rate)
             context.result.add_metric(metric_name, round(energy, 3), 'Joules')
-            with open(outfile, 'w+') as f:
+            with open(outfile, 'wb') as f:
                 c = csv.writer(f)
                 c.writerow(['{}_power'.format(self.labels[i])])
                 for val in self.power_data[i]:
@@ -168,10 +170,9 @@ class PowerPoller(threading.Thread):
             for i, line in enumerate(lines):
                 _, value = line.split(':')
                 self.power_data[i].append(value)
-        self.term_signal.set()
 
     def stop(self):
         self.term_signal.clear()
-        self.term_signal.wait()
+        self.join()
         return self.power_data
 

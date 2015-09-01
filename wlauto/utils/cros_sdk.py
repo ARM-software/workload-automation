@@ -50,7 +50,7 @@ class CrosSdkSession(object):
         self.in_chroot = True if which('dut-control') else False
         ON_POSIX = 'posix' in sys.builtin_module_names
         if self.in_chroot:
-            self.cros_sdk_session = Popen(['/bin/bash'], bufsize=1, stdin=PIPE, stdout=PIPE, stderr=PIPE,
+            self.cros_sdk_session = Popen(['/bin/sh'], bufsize=1, stdin=PIPE, stdout=PIPE, stderr=PIPE,
                                           cwd=cros_path, close_fds=ON_POSIX, shell=True)
         else:
             cros_sdk_bin_path = which('cros_sdk')
@@ -72,8 +72,8 @@ class CrosSdkSession(object):
     def kill_session(self):
         self.stdout_thread.set_stop()
         self.stderr_thread.set_stop()
-        self.send_command('echo foo >&1')  # send something into stdout to unblock it and close it properly
-        self.send_command('echo foo 1>&2')  # ditto for stderr
+        self.send_command('echo TERMINATE >&1')  # send something into stdout to unblock it and close it properly
+        self.send_command('echo TERMINATE 1>&2')  # ditto for stderr
         self.stdout_thread.join()
         self.stderr_thread.join()
         self.cros_sdk_session.kill()
@@ -85,33 +85,33 @@ class CrosSdkSession(object):
         if flush:
             self.cros_sdk_session.stdin.flush()
 
-    def read_line(self, timeout_in_ms=0):
-        return _read_line_from_queue(self.stdout_queue, timeout_in_ms=timeout_in_ms)
+    def read_line(self, timeout=0):
+        return _read_line_from_queue(self.stdout_queue, timeout=timeout)
 
-    def read_stderr_line(self, timeout_in_ms=0):
-        return _read_line_from_queue(self.stderr_queue, timeout_in_ms=timeout_in_ms)
+    def read_stderr_line(self, timeout=0):
+        return _read_line_from_queue(self.stderr_queue, timeout=timeout)
 
-    def get_lines(self, timeout_in_ms=0, timeout_only_for_first_line=True, from_stderr=False):
+    def get_lines(self, timeout=0, timeout_only_for_first_line=True, from_stderr=False):
         lines = []
         line = True
         while line is not None:
             if from_stderr:
-                line = self.read_stderr_line(timeout_in_ms)
+                line = self.read_stderr_line(timeout)
             else:
-                line = self.read_line(timeout_in_ms)
+                line = self.read_line(timeout)
             if line:
                 lines.append(line)
-                if timeout_in_ms and timeout_only_for_first_line:
-                    timeout_in_ms = 0  # after a line has been read, no further delay is required
+                if timeout and timeout_only_for_first_line:
+                    timeout = 0  # after a line has been read, no further delay is required
         return lines
 
-def _read_line_from_queue(queue, timeout_in_ms=0):
+def _read_line_from_queue(queue, timeout=0):
     try:
         line = queue.get_nowait()
     except Empty:
         line = None
-    if line is None and timeout_in_ms:
-        sleep_time = timeout_in_ms / 1000.0
+    if line is None and timeout:
+        sleep_time = timeout
         time.sleep(sleep_time)
         try:
             line = queue.get_nowait()
