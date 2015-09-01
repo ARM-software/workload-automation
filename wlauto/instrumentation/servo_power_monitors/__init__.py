@@ -63,24 +63,40 @@ class ServoPowerMonitor(Instrument):
                   description="""The name of the board under test."""),
     ]
 
+    # When trying to initialize servod, it may take some time until the server is up
+    # Therefore we need to poll to identify when the sever has successfully started
+    # servod_max_tries specifies the maximum number of times we will check to see if the server has started
+    # while servod_delay_between_tries is the sleep time between checks.
+    servod_max_tries = 100
+    servod_delay_between_tries = 0.1
+
     def initialize(self, context):
         # pylint: disable=access-member-before-definition
         self.in_chroot = False if subprocess.call('which dut-control', stdout=subprocess.PIPE, shell=True) else True
         self.poller = None
         domains_string = '_mw '.join(self.power_domains + [''])
+        password = ''
         if not self.in_chroot:
             self.logger.info('Instrument {} requires sudo acces on this machine'.format(self.name))
             self.logger.info('You need to be sudoer to use it.')
             password = getpass.getpass()
             check = subprocess.call('echo {} | sudo -S ls > /dev/null'.format(password), shell=True)
-            password = ''
             if check:
                 raise InstrumentError('Given password was either wrong or you are not a sudoer')
-        self.server_session = CrosSdkSession(self.chroot_path)
-        self.cros_session = CrosSdkSession(self.chroot_path)
+        self.server_session = CrosSdkSession(self.chroot_path, password=password)
+        self.cros_session = CrosSdkSession(self.chroot_path, password=password)
+        password = ''
         self.server_session.send_command('sudo servod -b {b} -c {b}.xml&'.format(b=self.board_name))
-        server_lines = self.server_session.get_lines(timeout_in_ms=1000, from_stderr=True,
-                                                     timeout_only_for_first_line=False)
+        checks = 0
+        while True:
+            if checks >= self.servod_max_tries:
+                raise InstrumentError('Failed to start servod in cros_sdk environment')
+            server_lines = self.server_session.get_lines(timeout_in_ms=1000, from_stderr=True,
+                                                         timeout_only_for_first_line=False)
+            if server_lines and 'Listening on' in server_lines[-1]:
+                break
+            time.sleep(self.servod_delay_between_tries)
+            checks += 1
         self.port = int(server_lines[-1].split()[-1])
         self.command = 'dut-control {} -p {}'.format(domains_string, self.port)
         if not self.labels:

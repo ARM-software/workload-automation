@@ -21,6 +21,8 @@ import time
 from Queue import Queue, Empty
 from threading import Thread
 from subprocess import Popen, PIPE
+from wlauto.utils.misc import which
+from wlauto.exceptions import HostError
 
 
 class OutputPollingThread(Thread):
@@ -44,15 +46,20 @@ class OutputPollingThread(Thread):
 
 class CrosSdkSession(object):
 
-    def __init__(self, cros_path):
-        self.in_chroot = False if subprocess.call('which dut-control', stdout=subprocess.PIPE, shell=True) else True
+    def __init__(self, cros_path, password=''):
+        self.in_chroot = True if which('dut-control') else False
         ON_POSIX = 'posix' in sys.builtin_module_names
         if self.in_chroot:
             self.cros_sdk_session = Popen(['/bin/bash'], bufsize=1, stdin=PIPE, stdout=PIPE, stderr=PIPE,
                                           cwd=cros_path, close_fds=ON_POSIX, shell=True)
         else:
-            self.cros_sdk_session = Popen(['cros_sdk'], bufsize=1, stdin=PIPE, stdout=PIPE, stderr=PIPE,
-                                          cwd=cros_path, close_fds=ON_POSIX, shell=True)
+            cros_sdk_bin_path = which('cros_sdk')
+            if not cros_sdk_bin_path:
+                raise HostError("Failed to locate 'cros_sdk' make sure it is in your PATH")
+            self.cros_sdk_session = Popen(['sudo -Sk {}'.format(cros_sdk_bin_path)], bufsize=1, stdin=PIPE,
+                                    stdout=PIPE, stderr=PIPE, cwd=cros_path, close_fds=ON_POSIX, shell=True)
+            self.cros_sdk_session.stdin.write(password)
+            self.cros_sdk_session.stdin.write('\n')
         self.stdout_queue = Queue()
         self.stdout_thread = OutputPollingThread(self.cros_sdk_session.stdout, self.stdout_queue, 'stdout')
         self.stdout_thread.daemon = True
