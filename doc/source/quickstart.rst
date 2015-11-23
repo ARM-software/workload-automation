@@ -25,7 +25,7 @@ In addition to the base Python 2.7 install, you will also need to have ``pip``
 Once you have the pre-requisites and a tarball with the workload automation package,
 you can install it with pip::
 
-        sudo pip install wlauto-2.2.0dev.tar.gz
+        sudo -H pip install wlauto
 
 This will install Workload Automation on your system, along with the Python
 packages it depends on.

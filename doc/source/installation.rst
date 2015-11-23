@@ -35,9 +35,9 @@ and add ``<path_to_android_sdk>/sdk/platform-tools`` and ``<path_to_android_sdk>
 to your ``PATH``.  To test that you've installed it properly run ``adb
 version``, the output should be similar to this::
 
-        $$ adb version
+        $ adb version
         Android Debug Bridge version 1.0.31
-        $$
+        $
 
 .. _here: https://developer.android.com/sdk/index.html
 
@@ -50,7 +50,7 @@ corresponding API levels, e.g. ``Android 4.3 (API 18)``. For WA, you will need
 at least API level 18 (i.e. Android 4.3), though installing the latest is
 usually the best bet.
 
-Optionally (but recommended), you should also set ``ANDROID_HOME`` to point to
+Once the SDK is installed, you should set ``ANDROID_HOME`` to point to
 the install location of the SDK (i.e. ``<path_to_android_sdk>/sdk``).
 
 
@@ -69,6 +69,11 @@ similar distributions, this may be done with APT::
 
         sudo apt-get install python-pip
 
+Versions in OS packages tend to be pretty old, so you should immediately update
+pip from PyPI::
+
+        sudo -H pip install --upgrade pip
+
 
 Python Packages
 ---------------
@@ -86,11 +91,11 @@ Workload Automation 2 depends on the following additional libraries:
 
 You can install these with pip::
 
-        sudo pip install pexpect
-        sudo pip install pyserial
-        sudo pip install pyyaml
-        sudo pip install docutils
-        sudo pip install python-dateutil
+        sudo -H pip install pexpect
+        sudo -H pip install pyserial
+        sudo -H pip install pyyaml
+        sudo -H pip install docutils
+        sudo -H pip install python-dateutil
 
 Some of these may also be available in your distro's repositories, e.g. ::
 
@@ -129,16 +134,39 @@ may not always have Internet access).
           headers to install. You can get those by installing ``python-dev``
           package in apt on Ubuntu (or the equivalent for your distribution).
 
+
 Installing
 ==========
 
-Download the tarball and run pip::
+Installing the latest released version from PyPI (Python Package Index)::
 
-        sudo pip install wlauto-$version.tar.gz
+       sudo -H pip install wlauto
 
-If the above succeeds, try ::
+This will install WA along with its mandatory dependencies. If you would like to 
+install all optional dependencies at the same time, do the following instead::
 
-        wa --version
+       sudo -H pip install wlauto[all]
+       
+Alternatively, you can also install the latest development version from GitHub
+(you will need git installed for this to work)::
 
-Hopefully, this should output something along the lines of "Workload Automation
-version $version".
+        git clone git@github.com:ARM-software/workload-automation.git workload-automation
+        sudo -H pip install ./workload-automation
+
+
+(Optional) Verify installation
+-------------------------------
+
+Once the tarball has been installed, try executing ::
+
+        wa -h
+
+You should see a help message outlining available subcommands.
+
+
+(Optional) APK files
+--------------------
+
+A large number of WA workloads are installed as APK files. These cannot be
+distributed with WA and so you will need to obtain those separately. 
+
