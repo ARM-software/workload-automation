@@ -118,7 +118,7 @@ class RtApp(Workload):
                   Use case configuration file to run with rt-app. This may be
                   either the name of one of the "standard" configuratons included
                   with the workload. or a path to a custom JSON file provided by
-                  the user. Either way, the ".json" extension is implied and will
+                  the user. Either way, the ".json" plugin is implied and will
                   be added automatically if not specified in the argument.
 
                   The following is th list of standard configuraionts currently

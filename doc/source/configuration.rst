@@ -28,10 +28,10 @@ and used to modify the behavior of Workload automation.
 Available Settings
 ==================
 
-.. note:: Extensions such as workloads, instrumentation or result processors
+.. note:: Plugins such as workloads, instrumentation or result processors
           may also pick up certain settings from this file, so the list below is
           not exhaustive. Please refer to the documentation for the specific
-          extensions to see what settings they accept.
+          plugins to see what settings they accept.
 
 .. confval:: device
 
@@ -214,7 +214,7 @@ various assets when it starts.
 
 .. confval:: WA_EXTENSION_PATHS
 
-   By default, WA will look for extensions in its own package and in
+   By default, WA will look for plugins in its own package and in
    subdirectories under ``WA_USER_DIRECTORY``. This environment variable can 
    be used specify a colon-separated list of additional locations WA should
-   use to look for extensions. 
+   use to look for plugins. 
