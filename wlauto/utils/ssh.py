@@ -172,9 +172,8 @@ class SshShell(object):
                         logger.warning('Could not get exit code for "{}",\ngot: "{}"'.format(command, exit_code_text))
                 return output
         except EOF:
-            logger.error('Dropped connection detected.')
             self.connection_lost = True
-            raise
+            raise DeviceError('Connection dropped.')
 
     def logout(self):
         logger.debug('Logging out {}@{}'.format(self.username, self.host))

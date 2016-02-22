@@ -632,7 +632,11 @@ class LinuxDevice(BaseLinuxDevice):
     # Power control
 
     def reset(self):
-        self.execute('reboot', as_root=True)
+        try:
+            self.execute('reboot', as_root=True)
+        except DeviceError as e:
+            if 'Connection dropped' not in e.message:
+                raise e
         self._is_ready = False
 
     def hard_reset(self):
@@ -644,8 +648,15 @@ class LinuxDevice(BaseLinuxDevice):
         else:
             self.reset()
         self.logger.debug('Waiting for device...')
+        # Wait a fixed delay before starting polling to give the device time to
+        # shut down, otherwise, might create the connection while it's still shutting
+        # down resulting in subsequenct connection failing.
+        initial_delay = 20
+        time.sleep(initial_delay)
+        boot_timeout = max(self.boot_timeout - initial_delay, 10)
+
         start_time = time.time()
-        while (time.time() - start_time) < self.boot_timeout:
+        while (time.time() - start_time) < boot_timeout:
             try:
                 s = socket.create_connection((self.host, self.port), timeout=5)
                 s.close()
