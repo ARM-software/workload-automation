@@ -25,7 +25,7 @@ from wlauto.core.resource import ResourceGetter, Resource, GetterPriority, NO_ON
 from wlauto.core.exttype import get_extension_type  # NOQA Note: MUST be imported after other core imports.
 
 from wlauto.common.resources import File, ExtensionAsset, Executable
-from wlauto.common.linux.device import LinuxDevice  # NOQA
+from wlauto.common.linux.device import LinuxDevice, LocalLinuxDevice  # NOQA
 from wlauto.common.android.device import AndroidDevice, BigLittleDevice   # NOQA
 from wlauto.common.android.resources import ApkFile, JarFile
 from wlauto.common.android.workload import (UiAutomatorWorkload, ApkWorkload, AndroidBenchmark,  # NOQA

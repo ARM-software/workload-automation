@@ -18,8 +18,9 @@ import os
 import re
 import time
 import socket
+import getpass
 from collections import namedtuple
-from subprocess import CalledProcessError
+from subprocess import CalledProcessError, Popen, PIPE
 
 from wlauto.core.extension import Parameter
 from wlauto.core.device import Device, RuntimeParameter, CoreParameter
@@ -29,6 +30,7 @@ from wlauto.common.resources import Executable
 from wlauto.utils.cpuinfo import Cpuinfo
 from wlauto.utils.misc import convert_new_lines, escape_double_quotes, ranges_to_list, ABI_MAP
 from wlauto.utils.misc import isiterable, list_to_mask
+from wlauto.utils.misc import strip_bash_colors, escape_single_quotes
 from wlauto.utils.ssh import SshShell
 from wlauto.utils.types import boolean, list_of_strings
 
@@ -884,3 +886,89 @@ class LinuxDevice(BaseLinuxDevice):
 
     def ensure_screen_is_on(self):
         pass  # TODO
+
+class LocalLinuxDevice(LinuxDevice):
+
+    platform = 'linux'
+    default_timeout = 30
+
+    parameters = [
+        Parameter('host', mandatory=False,  override=True, description='Host name or IP address for the device.'),
+        Parameter('username', mandatory=False, override=True, description='User name for the account on the device.'),
+    ]
+
+    def __init__(self, *args, **kwargs):
+        super(LocalLinuxDevice, self).__init__(*args, **kwargs)
+        if self.username is None:
+           self.username = getpass.getuser()
+
+    def connect(self):  # NOQA pylint: disable=R0912
+        pass
+
+    def disconnect(self):  # NOQA pylint: disable=R0912
+        pass
+
+    def execute(self, command, timeout=default_timeout, check_exit_code=True, background=False,
+                as_root=False, strip_colors=True, **kwargs):
+        try:
+            if background:
+                self.logger.debug(command)
+                if as_root and self.username != 'root':
+                    raise DeviceError('Cannot execute in background with as_root=True unless user is root.')
+                return Popen(command, stdout=PIPE, stderr=PIPE, shell=True)
+            else:
+                if as_root and self.username != 'root':
+                    if self.password is None:
+                        self.password = getpass.getpass('[sudo] password for user {}: '.format(self.username))
+                    command = "echo '{}' | sudo -S -- sh -c '{}'".format(self.password, escape_single_quotes(command))
+                self.logger.debug(command)
+                p = Popen(command, stdout=PIPE, stderr=PIPE, shell=True)
+                if timeout:
+                    timeout = time.time() + timeout
+                    while p.poll() is None:
+                        if time.time() > timeout:
+                            output = p.communicate()[1]
+                            p.kill()
+                            raise TimeoutError(command, output)
+                            break
+                        else:
+                            time.sleep(1)
+                    exit_code = p.poll()
+                else:
+                    exit_code  = p.wait()
+                if check_exit_code and exit_code:
+                    output = p.communicate()[1]
+                    message = 'Got exit code {}\nfrom: {}\nOUTPUT: {}'
+                    raise DeviceError(message.format(exit_code, command, output))
+                output = p.communicate()[0]
+                if strip_colors:
+                    output = strip_bash_colors(output)
+                return output
+        except CalledProcessError as e:
+            raise DeviceError(e)
+
+    def push_file(self, source, dest, as_root=False, timeout=default_timeout):  # pylint: disable=W0221
+        try:
+            if not as_root or self.username == 'root':
+                self.execute('cp -r {} {}'.format(source, dest), timeout=timeout)
+            else:
+                tempfile = self.path.join(self.working_directory, self.path.basename(dest))
+                self.execute('cp -r {} {}'.format(source, tempfile), timeout=timeout)
+                self.execute('cp -r {} {}'.format(tempfile, dest), timeout=timeout, as_root=True)
+        except CalledProcessError as e:
+            raise DeviceError(e)
+
+    def pull_file(self, source, dest, as_root=False, timeout=default_timeout):  # pylint: disable=W0221
+        try:
+            if not as_root or self.username == 'root':
+                self.execute('cp -r {} {}'.format(source, dest), timeout=timeout)
+            else:
+                tempfile = self.path.join(self.working_directory, self.path.basename(source))
+                self.execute('cp -r {} {}'.format(source, tempfile), timeout=timeout, as_root=True)
+                self.execute('chown -R {} {}'.format(self.username, tempfile), timeout=timeout, as_root=True)
+                self.execute('cp -r {} {}'.format(tempfile, dest), timeout=timeout)
+        except CalledProcessError as e:
+            raise DeviceError(e)
+
+    def ping(self):
+        pass
