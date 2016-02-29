@@ -20,6 +20,7 @@ import shutil
 
 import wlauto
 from wlauto import Command, settings
+from wlauto.exceptions import ConfigError
 from wlauto.core.agenda import Agenda
 from wlauto.core.execution import Executor
 from wlauto.utils.log import add_log_file
@@ -76,6 +77,8 @@ class RunCommand(Command):
             agenda = Agenda(args.agenda)
             settings.agenda = args.agenda
             shutil.copy(args.agenda, settings.meta_directory)
+        elif '.' in args.agenda or os.sep in args.agenda:
+            raise ConfigError('Agenda "{}" does not exist.'.format(args.agenda))
         else:
             self.logger.debug('{} is not a file; assuming workload name.'.format(args.agenda))
             agenda = Agenda()
