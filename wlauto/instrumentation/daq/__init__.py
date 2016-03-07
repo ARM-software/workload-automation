@@ -286,6 +286,10 @@ class Daq(Instrument):
         if self.labels:
             if len(self.labels) != len(self.resistor_values):
                 raise ConfigError('Number of DAQ port labels does not match the number of resistor values.')
+
+            duplicates = set([x for x in self.labels if self.labels.count(x) > 1])
+            if len(duplicates) > 0:
+                raise ConfigError('Duplicate labels: {}'.format(', '.join(duplicates)))
         else:
             self.labels = ['PORT_{}'.format(i) for i, _ in enumerate(self.resistor_values)]
         self.server_config = ServerConfiguration(host=self.server_host,
