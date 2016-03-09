@@ -18,7 +18,7 @@
 import os
 import re
 
-from wlauto import Workload, Parameter
+from wlauto import Workload, Parameter, Executable
 from wlauto.exceptions import ConfigError
 
 
@@ -67,7 +67,7 @@ class Dhrystone(Workload):
     ]
 
     def setup(self, context):
-        host_exe = os.path.join(this_dir, 'dhrystone')
+        host_exe = context.resolver.get(Executable(self, self.device.abi, 'dhrystone'))
         self.device_exe = self.device.install(host_exe)
         execution_mode = '-l {}'.format(self.mloops) if self.mloops else '-r {}'.format(self.duration)
         if self.taskset_mask:
@@ -127,4 +127,3 @@ class Dhrystone(Workload):
             raise ConfigError('mloops and duration cannot be both specified at the same time for dhrystone.')
         if not self.mloops and not self.duration:  # pylint: disable=E0203
             self.mloops = self.default_mloops
-
