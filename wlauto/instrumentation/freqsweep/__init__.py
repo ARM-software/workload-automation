@@ -33,6 +33,9 @@ class FreqSweep(Instrument):
         - Setting the runner to 'by_spec' increases the chance of successfully
           completing an agenda without encountering hotplug issues
         - If possible disable dynamic hotplug on the target device
+        - This instrument does not automatically pin workloads to the cores
+          being swept since it is not aware of what the workloads do.
+          To achieve this use the workload's taskset parameter (if it has one).
     """
 
     parameters = [
@@ -44,24 +47,23 @@ class FreqSweep(Instrument):
                   can do so by specifying this parameter.
 
                   Sweeps should be a lists of dictionaries that can contain:
-                    - Cluster (mandatory): The name of the cluster this sweep will be
-                                           performed on. E.g A7
-                    - Frequencies: A list of frequencies (in KHz) to use. If this is
-                                   not provided all frequencies available for this
-                                   cluster will be used.
-                                   E.g: [800000, 900000, 100000]
-                    - label: Workload specs will be named '{spec id}_{label}_{frequency}'.
-                             If a label is not provided it will be named 'sweep{sweep No.}'
+                   - Cluster (mandatory): The name of the cluster this sweep
+                     will be performed on. E.g `A7`
+                   - Frequencies: A list of frequencies (in KHz) to use. If
+                     this is not provided all frequencies available for this
+                     cluster will be used. E.g: `[800000, 900000, 100000]`
+                   - label: Workload specs will be named
+                     `{spec id}_{label}_{frequency}`. If a label is not
+                     provided it will be named `sweep{sweep No.}`
+                  Example sweep specification: ::
 
-                 Example sweep specification:
-
-                     freq_sweep:
-                         sweeps:
-                             - cluster: A53
-                               label: littles
-                               frequencies: [800000, 900000, 100000]
-                             - cluster: A57
-                               label: bigs
+                      freq_sweep:
+                          sweeps:
+                              - cluster: A53
+                                label: littles
+                                frequencies: [800000, 900000, 100000]
+                              - cluster: A57
+                                label: bigs
                   """),
     ]
 
