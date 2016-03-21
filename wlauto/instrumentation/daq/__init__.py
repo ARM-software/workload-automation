@@ -310,7 +310,10 @@ class Daq(Instrument):
         if isinstance(self.merge_channels, bool):
             if self.merge_channels:
                 # Create a dict of potential prefixes and a list of their suffixes
-                grouped_suffixes = {label[:-1]: label for label in sorted(self.labels) if len(label) > 1}
+                grouped_suffixes = defaultdict(list)
+                for label in sorted(self.labels):
+                    if len(label) > 1:
+                        grouped_suffixes[label[:-1]].append(label)
                 # Only merge channels if more than one channel has the same prefix and the prefixes
                 # are consecutive letters starting with 'a'.
                 self.label_map = {}
