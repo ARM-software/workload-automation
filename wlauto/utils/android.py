@@ -25,7 +25,7 @@ import subprocess
 import logging
 import re
 
-from wlauto.exceptions import DeviceError, ConfigError, HostError
+from wlauto.exceptions import DeviceError, ConfigError, HostError, WAError
 from wlauto.utils.misc import check_output, escape_single_quotes, escape_double_quotes, get_null
 
 
@@ -276,10 +276,17 @@ def adb_shell(device, command, timeout=None, check_exit_code=False, as_root=Fals
         actual_command = "adb {} shell '({}); echo; echo $?'".format(device_string, escape_single_quotes(command))
         raw_output, error = check_output(actual_command, timeout, shell=True)
         if raw_output:
+            if raw_output.endswith('\r\n'):
+                newline = '\r\n'
+            elif raw_output.endswith('\n'):
+                newline = '\n'
+            else:
+                raise WAError("Unknown new line separator in: {}".format(raw_output))
+
             try:
-                output, exit_code, _ = raw_output.rsplit('\r\n', 2)
+                output, exit_code, _ = raw_output.rsplit(newline, 2)
             except ValueError:
-                exit_code, _ = raw_output.rsplit('\r\n', 1)
+                exit_code, _ = raw_output.rsplit(newline, 1)
                 output = ''
         else:  # raw_output is empty
             exit_code = '969696'  # just because
