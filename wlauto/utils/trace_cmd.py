@@ -173,6 +173,24 @@ def regex_body_parser(regex, flags=0):
     return regex_parser_func
 
 
+def sched_switch_parser(event, text):
+    """
+    Sched switch output may be presented in a couple of different formats. One is handled
+    by a regex. The other format can *almost* be handled by the default parser, if it
+    weren't for the ``==>`` that appears in the middle.
+    """
+    if text.count('=') == 2:  # old format
+        regex = re.compile(
+            r'(?P<prev_comm>\S.*):(?P<prev_pid>\d+) \[(?P<prev_prio>\d+)\] (?P<status>\S+)'
+            r' ==> '
+            r'(?P<next_comm>\S.*):(?P<next_pid>\d+) \[(?P<next_prio>\d+)\]'
+        )
+        parser_func = regex_body_parser(regex)
+        return parser_func(event, text)
+    else:  # there are more than two "=" -- new format
+        return default_body_parser(event, text.replace('==>', ''))
+
+
 # Maps event onto the corresponding parser for its body text. A parser may be
 # a callable with signature
 #
@@ -182,11 +200,7 @@ def regex_body_parser(regex, flags=0):
 # regex). In case of a string/regex, its named groups will be used to populate
 # the event's attributes.
 EVENT_PARSER_MAP = {
-    'sched_switch': re.compile(
-        r'(?P<prev_comm>\S.*):(?P<prev_pid>\d+) \[(?P<prev_prio>\d+)\] (?P<status>\S+)'
-        r' ==> '
-        r'(?P<next_comm>\S.*):(?P<next_pid>\d+) \[(?P<next_prio>\d+)\]'
-    ),
+    'sched_switch': sched_switch_parser,
 }
 
 TRACE_EVENT_REGEX = re.compile(r'^\s+(?P<thread>\S+.*?\S+)\s+\[(?P<cpu_id>\d+)\]\s+(?P<ts>[\d.]+):\s+'
