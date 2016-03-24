@@ -233,6 +233,8 @@ class TraceCmdInstrument(Instrument):
         # Therefore timout for the pull command must also be adjusted
         # accordingly.
         self._pull_timeout = (self.stop_time - self.start_time)  # pylint: disable=attribute-defined-outside-init
+        if self._pull_timeout < 60:
+            self._pull_timeout = 60
         self.device.pull_file(self.output_file, context.output_directory, timeout=self._pull_timeout)
         context.add_iteration_artifact('bintrace', OUTPUT_TRACE_FILE, kind='data',
                                        description='trace-cmd generated ftrace dump.')

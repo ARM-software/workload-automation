@@ -177,7 +177,7 @@ def sched_switch_parser(event, text):
     """
     Sched switch output may be presented in a couple of different formats. One is handled
     by a regex. The other format can *almost* be handled by the default parser, if it
-    weren't for the ``==>`` that appers in the middle.
+    weren't for the ``==>`` that appears in the middle.
     """
     if text.count('=') == 2:  # old format
         regex = re.compile(
@@ -187,7 +187,7 @@ def sched_switch_parser(event, text):
         )
         parser_func = regex_body_parser(regex)
         return parser_func(event, text)
-    else:  # three are more than two "=" -- new format
+    else:  # there are more than two "=" -- new format
         return default_body_parser(event, text.replace('==>', ''))
 
 
