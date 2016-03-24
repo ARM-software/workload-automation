@@ -147,7 +147,7 @@ class Sysbench(Workload):
             param_strings.append('--file-test-mode={}'.format(self.file_test_mode))
         sysbench_command = '{} {} {} run'.format(self.on_device_binary, ' '.join(param_strings), self.cmd_params)
         if self.taskset_mask:
-            taskset_string = 'busybox taskset 0x{:x} '.format(self.taskset_mask)
+            taskset_string = '{} taskset 0x{:x} '.format(self.device.busybox, self.taskset_mask)
         else:
             taskset_string = ''
         return 'cd {} && {} {} > sysbench_result.txt'.format(self.device.working_directory, taskset_string, sysbench_command)
