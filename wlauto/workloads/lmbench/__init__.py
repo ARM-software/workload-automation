@@ -1,4 +1,4 @@
-#    Copyright 2015 ARM Limited
+#    Copyright 2015-2016 ARM Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -107,19 +107,15 @@ class lmbench(Workload):
     def run(self, context):
         self.output = []
 
-        for time in xrange(self.times):
+        for _ in xrange(self.times):
             for command in self.commands:
-                self.output.append("Output for time #{}, {}: ".format(time + 1, command))
-                self.output.append(self.device.execute(command, timeout=self.run_timeout, check_exit_code=False))
+                self.device.execute(command, timeout=self.run_timeout)
 
     def update_result(self, context):
-        for output in self.output:
-            self.logger.debug(output)
-        outfile = os.path.join(context.output_directory, 'lmbench.output')
-        with open(outfile, 'w') as wfh:
-            for output in self.output:
-                wfh.write(output)
-        context.add_artifact('lmbench', 'lmbench.output', 'data')
+        host_file = os.path.join(context.output_directory, 'lmbench.output')
+        device_file = self.device.path.join(self.device.working_directory, 'lmbench.output')
+        self.device.pull_file(device_file, host_file)
+        context.add_artifact('lmbench', host_file, 'data')
 
     def teardown(self, context):
         self.device.uninstall_executable(self.test)
@@ -128,22 +124,28 @@ class lmbench(Workload):
     # Test setup routines
     #
     def _setup_lat_mem_rd(self):
+        device_file = self.device.path.join(self.device.working_directory, 'lmbench.output')
+        self.device.execute('rm -f {}'.format(device_file))
+
         command_stub = self._setup_common()
         if self.thrash:
-            command_stub = command_stub + '-t '
+            command_stub = '{} -t'.format(command_stub)
 
         for size in self.size:
-            command = command_stub + size + ' '
+            command = '{} {}'.format(command_stub, size)
             for stride in self.stride:
-                self.commands.append(command + str(stride))
+                self.commands.append('{} {} >> {} 2>&1'.format(command, stride, device_file))
 
     def _setup_bw_mem(self):
+        device_file = self.device.path.join(self.device.working_directory, 'lmbench.output')
+        self.device.execute('rm -f {}'.format(device_file))
+
         command_stub = self._setup_common()
 
         for size in self.size:
-            command = command_stub + size + ' '
-            for what in self.mem_category:
-                self.commands.append(command + what)
+            command = '{} {}'.format(command_stub, size)
+            for category in self.mem_category:
+                self.commands.append('{} {} >> {} 2>&1'.format(command, category, device_file))
 
     def _setup_common(self):
         parts = []
