@@ -214,7 +214,10 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
                 outfile = os.path.join(context.host_working_directory, normname)
                 if self.is_file(propfile):
                     with open(outfile, 'w') as wfh:
-                        wfh.write(self.execute('cat {}'.format(propfile)))
+                        if propfile.endswith(".gz"):
+                            wfh.write(self.execute('{} zcat {}'.format(self.busybox, propfile)))
+                        else:
+                            wfh.write(self.execute('cat {}'.format(propfile)))
                 elif self.is_directory(propfile):
                     self.pull_file(propfile, outfile)
                 else:
