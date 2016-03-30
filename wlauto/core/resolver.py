@@ -69,7 +69,11 @@ class ResourceResolver(object):
                 self.logger.debug('\t{}'.format(result))
                 return result
         if strict:
-            raise ResourceError('{} could not be found'.format(resource))
+            if kwargs:
+                criteria = ', '.join(['{}:{}'.format(k, v) for k, v in kwargs.iteritems()])
+                raise ResourceError('{} ({}) could not be found'.format(resource, criteria))
+            else:
+                raise ResourceError('{} could not be found'.format(resource))
         self.logger.debug('Resource {} not found.'.format(resource))
         return None
 
