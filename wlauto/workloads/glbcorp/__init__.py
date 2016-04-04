@@ -29,6 +29,10 @@ from wlauto.exceptions import WorkloadError
 
 
 DELAY = 2
+OLD_RESULT_START_REGEX = re.compile(r'I/TfwActivity\s*\(\s*\d+\):\s+\S+\s+result: {')
+NEW_RESULT_START_REGEX = re.compile(r'[\d\s:.-]+I\sTfwActivity(\s*\(\s*\d+\))?:\s+\S+\s+result: {')
+OLD_PREAMBLE_REGEX = re.compile(r'I/TfwActivity\s*\(\s*\d+\):\s+')
+NEW_PREAMBLE_REGEX = re.compile(r'[\d\s:.-]+I\sTfwActivity(\s*\(\s*\d+\))?:')
 
 
 class GlbCorp(ApkWorkload):
@@ -44,8 +48,8 @@ class GlbCorp(ApkWorkload):
     package = 'net.kishonti.gfxbench'
     activity = 'net.kishonti.benchui.TestActivity'
 
-    result_start_regex = re.compile(r'I/TfwActivity\s*\(\s*\d+\):\s+\S+\s+result: {')
-    preamble_regex = re.compile(r'I/TfwActivity\s*\(\s*\d+\):\s+')
+    result_start_regex = None
+    preamble_regex = None
 
     valid_test_ids = [
         'gl_alu',
@@ -131,7 +135,14 @@ class GlbCorp(ApkWorkload):
                 line = fh.next()
                 result_lines = []
                 while True:
-                    if self.result_start_regex.search(line):
+                    if OLD_RESULT_START_REGEX.search(line):
+                        self.preamble_regex = OLD_PREAMBLE_REGEX
+                        self.result_start_regex = OLD_RESULT_START_REGEX
+                    elif NEW_RESULT_START_REGEX.search(line):
+                        self.preamble_regex = NEW_PREAMBLE_REGEX
+                        self.result_start_regex = NEW_RESULT_START_REGEX
+
+                    if self.result_start_regex and self.result_start_regex.search(line):
                         result_lines.append('{')
                         line = fh.next()
                         while self.preamble_regex.search(line):
@@ -212,4 +223,3 @@ class GlbRunMonitor(threading.Thread):
     def wait_for_run_end(self, timeout):
         self.run_ended.wait(timeout)
         self.run_ended.clear()
-
