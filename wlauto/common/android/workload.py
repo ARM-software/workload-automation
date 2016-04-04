@@ -122,7 +122,8 @@ class ApkWorkload(Workload):
     :package: The package name of the app. This is usually a Java-style name of the form
               ``com.companyname.appname``.
     :activity: This is the initial activity of the app. This will be used to launch the
-               app during the setup.
+               app during the setup.  Many applications do not specify a launch actvity so
+               this may be left blank if necessary.
     :view: The class of the main view pane of the app. This needs to be defined in order
            to collect SurfaceFlinger-derived statistics (such as FPS) for the app, but
            may otherwise be left as ``None``.
@@ -168,6 +169,7 @@ class ApkWorkload(Workload):
         self.apk_version = None
         self.logcat_log = None
 
+
     def init_resources(self, context):
         self.apk_file = context.resolver.get(wlauto.common.android.resources.ApkFile(self),
                                              version=getattr(self, 'version', None),
@@ -183,7 +185,7 @@ class ApkWorkload(Workload):
 
     def setup(self, context):
         self.initialize_package(context)
-        self.start_activity()
+        self.launch_package()
         self.device.execute('am kill-all')  # kill all *background* activities
         self.device.clear_logcat()
 
@@ -225,8 +227,11 @@ class ApkWorkload(Workload):
             self.reset(context)
         self.apk_version = host_version
 
-    def start_activity(self):
-        output = self.device.execute('am start -W -n {}/{}'.format(self.package, self.activity))
+    def launch_package(self):
+        if not self.activity:
+            output = self.device.execute('am start -W {}'.format(self.package))
+        else:
+            output = self.device.execute('am start -W -n {}/{}'.format(self.package, self.activity))
         if 'Error:' in output:
             self.device.execute('am force-stop {}'.format(self.package))  # this will dismiss any erro dialogs
             raise WorkloadError(output)
