@@ -26,7 +26,9 @@ import logging
 import re
 
 from wlauto.exceptions import DeviceError, ConfigError, HostError, WAError
-from wlauto.utils.misc import check_output, escape_single_quotes, escape_double_quotes, get_null
+from wlauto.utils.misc import (check_output, escape_single_quotes,
+                               escape_double_quotes, get_null,
+                               CalledProcessErrorWithStderr)
 
 
 MAX_TRIES = 5
@@ -266,7 +268,7 @@ am_start_error = re.compile(r"Error: Activity class {[\w|.|/]*} does not exist")
 
 
 def adb_shell(device, command, timeout=None, check_exit_code=False, as_root=False):  # NOQA
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches, too-many-locals, too-many-statements
     _check_env()
     if as_root:
         command = 'echo \'{}\' | su'.format(escape_single_quotes(command))
@@ -275,7 +277,15 @@ def adb_shell(device, command, timeout=None, check_exit_code=False, as_root=Fals
     logger.debug(full_command)
     if check_exit_code:
         actual_command = "adb {} shell '({}); echo; echo $?'".format(device_string, escape_single_quotes(command))
-        raw_output, error = check_output(actual_command, timeout, shell=True)
+        try:
+            raw_output, error = check_output(actual_command, timeout, shell=True)
+        except CalledProcessErrorWithStderr as e:
+            raw_output = e.output
+            error = e.error
+            exit_code = e.returncode
+            if exit_code == 1:
+                logger.debug("Exit code 1 could be either the return code of the command or mean ADB failed")
+
         if raw_output:
             if raw_output.endswith('\r\n'):
                 newline = '\r\n'
@@ -311,7 +321,14 @@ def adb_shell(device, command, timeout=None, check_exit_code=False, as_root=Fals
             else:
                 raise DeviceError('adb has returned early; did not get an exit code. Was kill-server invoked?')
     else:  # do not check exit code
-        output, _ = check_output(full_command, timeout, shell=True)
+        try:
+            output, _ = check_output(full_command, timeout, shell=True)
+        except CalledProcessErrorWithStderr as e:
+            output = e.output
+            error = e.error
+            exit_code = e.returncode
+            if e.returncode == 1:
+                logger.debug("Got Exit code 1, could be either the return code of the command or mean ADB failed")
     return output
 
 
