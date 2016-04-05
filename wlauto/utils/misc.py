@@ -27,12 +27,13 @@ import imp
 import string
 import threading
 import signal
-import subprocess
 import pkgutil
 import traceback
 import logging
 import random
 import hashlib
+import subprocess
+from subprocess import CalledProcessError
 from datetime import datetime, timedelta
 from operator import mul, itemgetter
 from StringIO import StringIO
@@ -81,6 +82,13 @@ class TimeoutError(Exception):
         return '\n'.join([self.message, 'OUTPUT:', self.output or ''])
 
 
+class CalledProcessErrorWithStderr(CalledProcessError):
+
+    def __init__(self, *args, **kwargs):
+        self.error = kwargs.pop("error")
+        super(CalledProcessErrorWithStderr, self).__init__(*args, **kwargs)
+
+
 def check_output(command, timeout=None, ignore=None, **kwargs):
     """This is a version of subprocess.check_output that adds a timeout parameter to kill
     the subprocess if it does not return within the specified time."""
@@ -120,7 +128,7 @@ def check_output(command, timeout=None, ignore=None, **kwargs):
         if retcode == -9:  # killed, assume due to timeout callback
             raise TimeoutError(command, output='\n'.join([output, error]))
         elif ignore != 'all' and retcode not in ignore:
-            raise subprocess.CalledProcessError(retcode, command, output='\n'.join([output, error]))
+            raise CalledProcessErrorWithStderr(retcode, command, output=output, error=error)
     return output, error
 
 
