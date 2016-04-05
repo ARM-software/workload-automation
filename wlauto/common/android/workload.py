@@ -169,7 +169,6 @@ class ApkWorkload(Workload):
         self.apk_version = None
         self.logcat_log = None
 
-
     def init_resources(self, context):
         self.apk_file = context.resolver.get(wlauto.common.android.resources.ApkFile(self),
                                              version=getattr(self, 'version', None),

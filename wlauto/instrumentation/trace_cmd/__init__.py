@@ -155,6 +155,7 @@ class TraceCmdInstrument(Instrument):
     def __init__(self, device, **kwargs):
         super(TraceCmdInstrument, self).__init__(device, **kwargs)
         self.trace_cmd = None
+        self._pull_timeout = None
         self.event_string = _build_trace_events(self.events)
         self.output_file = os.path.join(self.device.working_directory, OUTPUT_TRACE_FILE)
         self.temp_trace_file = self.device.path.join(self.device.working_directory, OUTPUT_TRACE_FILE)

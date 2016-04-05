@@ -266,6 +266,7 @@ am_start_error = re.compile(r"Error: Activity class {[\w|.|/]*} does not exist")
 
 
 def adb_shell(device, command, timeout=None, check_exit_code=False, as_root=False):  # NOQA
+    # pylint: disable=too-many-branches
     _check_env()
     if as_root:
         command = 'echo \'{}\' | su'.format(escape_single_quotes(command))
