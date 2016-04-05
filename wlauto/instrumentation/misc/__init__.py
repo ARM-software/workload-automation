@@ -151,16 +151,18 @@ class SysfsExtractor(Instrument):
     def update_result(self, context):
         if self.use_tmpfs:
             on_device_tarball = self.device.path.join(self.device.working_directory, self.tarname)
-            on_host_tarball = self.device.path.join(context.output_directory, self.tarname)
-            self.device.execute('{} tar czf {} -C {} .'.format(self.device.busybox,
-                                                               on_device_tarball,
-                                                               self.tmpfs_mount_point),
+            on_host_tarball = self.device.path.join(context.output_directory, self.tarname + ".gz")
+            self.device.execute('{} tar cf {} -C {} .'.format(self.device.busybox,
+                                                              on_device_tarball,
+                                                              self.tmpfs_mount_point),
                                 as_root=True)
             self.device.execute('chmod 0777 {}'.format(on_device_tarball), as_root=True)
-            self.device.pull_file(on_device_tarball, on_host_tarball)
+            self.device.execute('{} gzip {}'.format(self.device.busybox,
+                                                    on_device_tarball))
+            self.device.pull_file(on_device_tarball + ".gz", on_host_tarball)
             with tarfile.open(on_host_tarball, 'r:gz') as tf:
                 tf.extractall(context.output_directory)
-            self.device.delete_file(on_device_tarball)
+            self.device.delete_file(on_device_tarball + ".gz")
             os.remove(on_host_tarball)
 
         for paths in self.device_and_host_paths:
@@ -386,4 +388,3 @@ def _diff_sysfs_dirs(before, after, result):  # pylint: disable=R0914
                     else:
                         dchunks = [diff_tokens(b, a) for b, a in zip(bchunks, achunks)]
                     dfh.write(''.join(dchunks))
-
