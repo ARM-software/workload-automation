@@ -357,7 +357,7 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         self._check_ready()
         ext = os.path.splitext(filepath)[1].lower()
         if ext == '.apk':
-            return adb_command(self.adb_name, "install {}".format(filepath), timeout=timeout)
+            return adb_command(self.adb_name, "install '{}'".format(filepath), timeout=timeout)
         else:
             raise DeviceError('Can\'t install {}: unsupported format.'.format(filepath))
 
