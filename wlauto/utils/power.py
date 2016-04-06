@@ -515,6 +515,39 @@ class PowerStateStatsReport(object):
                                            for s in stats])
 
 
+class CpuUtilisationTimeline(object):
+
+    def __init__(self, filepath, core_names, max_freq_list):
+        self.filepath = filepath
+        self._wfh = open(filepath, 'w')
+        self.writer = csv.writer(self._wfh)
+        if core_names:
+            headers = ['ts'] + ['{} CPU{}'.format(c, i)
+                                for i, c in enumerate(core_names)]
+            self.writer.writerow(headers)
+        self._max_freq_list = max_freq_list
+
+    def update(self, timestamp, core_states):  # NOQA
+        row = [timestamp]
+        for core, [idle_state, frequency] in enumerate(core_states):
+            if idle_state == -1:
+                if frequency == UNKNOWN_FREQUENCY:
+                    frequency = 0
+            elif idle_state is None:
+                frequency = 0
+            else:
+                frequency = 0
+            if core < len(self._max_freq_list):
+                frequency /= float(self._max_freq_list[core])
+                row.append(frequency)
+            else:
+                logger.warning('Unable to detect max frequency for this core. Cannot log utilisation value')
+        self.writer.writerow(row)
+
+    def report(self):
+        self._wfh.close()
+
+
 def build_idle_domains(core_clusters,   # NOQA
                        num_states,
                        first_cluster_state=None,
@@ -577,7 +610,8 @@ def build_idle_domains(core_clusters,   # NOQA
 def report_power_stats(trace_file, idle_state_names, core_names, core_clusters,
                        num_idle_states, first_cluster_state=sys.maxint,
                        first_system_state=sys.maxint, use_ratios=False,
-                       timeline_csv_file=None, filter_trace=False):
+                       timeline_csv_file=None, filter_trace=False,
+                       cpu_utilisation=None, max_freq_list=None):
     # pylint: disable=too-many-locals
     trace = TraceCmdTrace(filter_markers=filter_trace)
     ps_processor = PowerStateProcessor(core_clusters,
@@ -592,6 +626,11 @@ def report_power_stats(trace_file, idle_state_names, core_names, core_clusters,
     if timeline_csv_file:
         reporters.append(PowerStateTimeline(timeline_csv_file,
                                             core_names, idle_state_names))
+    if cpu_utilisation:
+        if max_freq_list:
+            reporters.append(CpuUtilisationTimeline(cpu_utilisation, core_names, max_freq_list))
+        else:
+            logger.warning('Maximum frequencies not found. Cannot normalise. Skipping CPU Utilisation Timeline')
 
     event_stream = trace.parse(trace_file, names=['cpu_idle', 'cpu_frequency', 'print'])
     transition_stream = stream_cpu_power_transitions(event_stream)
@@ -624,6 +663,8 @@ def main():
         use_ratios=args.ratios,
         timeline_csv_file=args.timeline_file,
         filter_trace=(not args.no_trace_filter),
+        cpu_utilisation=args.cpu_utilisation,
+        max_freq_list=args.max_freq_list,
     )
     parallel_report.write(os.path.join(args.output_directory, 'parallel.csv'))
     powerstate_report.write(os.path.join(args.output_directory, 'cpustate.csv'))
@@ -697,6 +738,18 @@ def parse_arguments():  # NOQA
                         help='''
                         A timeline of core power states will be written to the specified file in
                         CSV format.
+                        ''')
+    parser.add_argument('-u', '--cpu-utilisation', metavar='FILE',
+                        help='''
+                        A timeline of cpu(s) utilisation will be written to the specified file in
+                        CSV format.
+                        ''')
+    parser.add_argument('-m', '--max-freq-list', action=SplitListAction, default=[],
+                        help='''
+                        Comma-separated list of core maximum frequencies for the device on which
+                        the trace was collected.
+                        Only required if --cpu-utilisation is set.
+                        This is used to normalise the frequencies to obtain percentage utilisation.
                         ''')
 
     args = parser.parse_args()

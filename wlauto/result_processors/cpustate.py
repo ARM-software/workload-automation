@@ -102,7 +102,13 @@ class CpuStatesProcessor(ResultProcessor):
                   Create a CSV with the timeline of core power states over the course of the run
                   as well as the usual stats reports.
                   """),
-
+        Parameter('create_utilization_timeline', kind=bool, default=False,
+                  description="""
+                  Create a CSV with the timeline of cpu(s) utilisation over the course of the run
+                  as well as the usual stats reports.
+                  The values generated are floating point numbers, normalised based on the maximum
+                  frequency of the cluster.
+                  """),
     ]
 
     def validate(self):
@@ -130,6 +136,7 @@ class CpuStatesProcessor(ResultProcessor):
         self.idle_state_names = [idle_states[i] for i in sorted(idle_states.keys())]
         self.num_idle_states = len(self.idle_state_names)
         self.iteration_reports = OrderedDict()
+        self.max_freq_list = []
         # priority -19: just higher than the slow_start of instrumentation
         signal.connect(self.set_initial_state, signal.BEFORE_WORKLOAD_EXECUTION, priority=-19)
 
@@ -139,12 +146,17 @@ class CpuStatesProcessor(ResultProcessor):
         # Write initial frequencies into the trace.
         # NOTE: this assumes per-cluster DVFS, that is valid for devices that
         # currently exist. This will need to be updated for per-CPU DFS.
+        # pylint: disable=attribute-defined-outside-init
         self.logger.debug('Writing initial frequencies into trace...')
         device = context.device
         cluster_freqs = {}
+        cluster_max_freqs = {}
+        self.max_freq_list = []
         for c in unique(device.core_clusters):
             cluster_freqs[c] = device.get_cluster_cur_frequency(c)
+            cluster_max_freqs[c] = device.get_cluster_max_frequency(c)
         for i, c in enumerate(device.core_clusters):
+            self.max_freq_list.append(cluster_max_freqs[c])
             entry = 'CPU {} FREQUENCY: {} kHZ'.format(i, cluster_freqs[c])
             device.set_sysfile_value('/sys/kernel/debug/tracing/trace_marker',
                                      entry, verify=False)
@@ -165,6 +177,10 @@ class CpuStatesProcessor(ResultProcessor):
             timeline_csv_file = os.path.join(context.output_directory, 'power_states.csv')
         else:
             timeline_csv_file = None
+        if self.create_utilization_timeline:
+            cpu_utilisation = os.path.join(context.output_directory, 'cpu_utilisation.csv')
+        else:
+            cpu_utilisation = None
         parallel_report, powerstate_report = report_power_stats(  # pylint: disable=unbalanced-tuple-unpacking
             trace_file=trace.path,
             idle_state_names=self.idle_state_names,
@@ -175,6 +191,8 @@ class CpuStatesProcessor(ResultProcessor):
             first_system_state=self.first_system_state,
             use_ratios=self.use_ratios,
             timeline_csv_file=timeline_csv_file,
+            cpu_utilisation=cpu_utilisation,
+            max_freq_list=self.max_freq_list,
         )
         if parallel_report is None:
             self.logger.warning('No power state reports generated; are power '
