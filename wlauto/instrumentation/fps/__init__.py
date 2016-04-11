@@ -166,7 +166,7 @@ class FpsInstrument(Instrument):
 
     def slow_update_result(self, context):
         result = context.result
-        if result.has_metric('execution_time'):
+        if self.crash_check and result.has_metric('execution_time'):
             self.logger.debug('Checking for crashed content.')
             exec_time = result['execution_time'].value
             fps = result['FPS'].value
