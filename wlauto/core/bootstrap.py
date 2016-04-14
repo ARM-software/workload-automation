@@ -114,8 +114,8 @@ class ConfigLoader(object):
                 new_config = load_struct_from_yaml(source)
             else:
                 raise ConfigError('Unknown config format: {}'.format(source))
-        except LoadSyntaxError as e:
-            raise ConfigError(e)
+        except (LoadSyntaxError, ValueError) as e:
+            raise ConfigError('Invalid config "{}":\n\t{}'.format(source, e))
 
         self._config = merge_dicts(self._config, new_config,
                                    list_duplicates='first',
