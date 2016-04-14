@@ -201,6 +201,7 @@ class ApkWorkload(Workload):
             self.logger.debug(message.format(installed_version))
             self.reset(context)
             self.apk_version = installed_version
+        context.add_classifiers(apk_version=self.apk_version)
 
     def initialize_with_host_apk(self, context, installed_version):
         host_version = ApkInfo(self.apk_file).version_name

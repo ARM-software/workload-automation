@@ -231,7 +231,13 @@ class ApkVersion(Instrument):
 
     name = 'apk_version'
     description = """
-    Extracts APK versions for workloads that have them.
+    (DEPRECATED) Extracts APK versions for workloads that have them.
+
+    This instrument is deprecated and should not be used. It will be removed in
+    future versions of Workload Automation.
+
+    Versions of Android packages are now automatically attached to the results as
+    "apk_version" classfiers.
 
     """
 
