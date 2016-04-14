@@ -230,11 +230,10 @@ class LatencyCollector(threading.Thread):
     #command_template = 'while (true); do dumpsys SurfaceFlinger --latency {}; sleep 2; done'
     command_template = 'dumpsys SurfaceFlinger --latency {}'
 
-    def __init__(self, outfile, device, activity, keep_raw, logger):
+    def __init__(self, outfile, device, activities, keep_raw, logger):
         super(LatencyCollector, self).__init__()
         self.outfile = outfile
         self.device = device
-        self.command = self.command_template.format(activity)
         self.keep_raw = keep_raw
         self.logger = logger
         self.stop_signal = threading.Event()
@@ -244,6 +243,9 @@ class LatencyCollector(threading.Thread):
         self.drop_threshold = self.refresh_period * 1000
         self.exc = None
         self.unresponsive_count = 0
+        if isinstance(activities, basestring):
+            activities = [activities]
+        self.activities = activities
 
     def run(self):
         try:
@@ -254,7 +256,10 @@ class LatencyCollector(threading.Thread):
             wfh = os.fdopen(fd, 'wb')
             try:
                 while not self.stop_signal.is_set():
-                    wfh.write(self.device.execute(self.command))
+                    view_list = self.device.execute('dumpsys SurfaceFlinger --list').split()
+                    for activity in self.activities:
+                        if activity in view_list:
+                            wfh.write(self.device.execute(self.command_template.format(activity)))
                     time.sleep(2)
             finally:
                 wfh.close()
