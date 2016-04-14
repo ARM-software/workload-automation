@@ -204,6 +204,9 @@ class ExecutionContext(object):
     def add_metric(self, *args, **kwargs):
         self.result.add_metric(*args, **kwargs)
 
+    def add_classifiers(self, **kwargs):
+        self.result.classifiers.update(kwargs)
+
     def add_artifact(self, name, path, kind, *args, **kwargs):
         if self.current_job is None:
             self.add_run_artifact(name, path, kind, *args, **kwargs)
