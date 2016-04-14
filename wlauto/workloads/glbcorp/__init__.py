@@ -108,7 +108,7 @@ class GlbCorp(ApkWorkload):
         self.monitor = GlbRunMonitor(self.device)
         self.monitor.start()
 
-    def start_activity(self):
+    def launch_package(self):
         # Unlike with most other APK workloads, we're invoking the use case
         # directly by starting the activity with appropriate parameters on the
         # command line during execution, so we dont' need to start activity
