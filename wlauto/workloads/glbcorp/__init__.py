@@ -108,7 +108,7 @@ class GlbCorp(ApkWorkload):
         self.monitor = GlbRunMonitor(self.device)
         self.monitor.start()
 
-    def start_activity(self):
+    def launch_package(self):
         # Unlike with most other APK workloads, we're invoking the use case
         # directly by starting the activity with appropriate parameters on the
         # command line during execution, so we dont' need to start activity
@@ -188,8 +188,8 @@ class GlbCorp(ApkWorkload):
 
 class GlbRunMonitor(threading.Thread):
 
-    regex = re.compile(r'I/Runner\s+\(\s*\d+\): finished:')
-
+    old_regex = re.compile(r'I/Runner\s+\(\s*\d+\): finished:')
+    new_regex = re.compile(r'I Runner\s*:\s*finished:')
     def __init__(self, device):
         super(GlbRunMonitor, self).__init__()
         self.device = device
@@ -213,7 +213,7 @@ class GlbRunMonitor(threading.Thread):
                 ready, _, _ = select.select([proc.stdout, proc.stderr], [], [], 2)
                 if ready:
                     line = ready[0].readline()
-                    if self.regex.search(line):
+                    if self.new_regex.search(line) or self.old_regex.search(line):
                         self.run_ended.set()
 
     def stop(self):
