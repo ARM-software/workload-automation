@@ -190,6 +190,7 @@ class GlbRunMonitor(threading.Thread):
 
     old_regex = re.compile(r'I/Runner\s+\(\s*\d+\): finished:')
     new_regex = re.compile(r'I Runner\s*:\s*finished:')
+
     def __init__(self, device):
         super(GlbRunMonitor, self).__init__()
         self.device = device
