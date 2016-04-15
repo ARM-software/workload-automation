@@ -15,8 +15,8 @@
 
 
 import sys
-import subprocess
 import time
+import logging
 
 from Queue import Queue, Empty
 from threading import Thread
@@ -47,6 +47,7 @@ class OutputPollingThread(Thread):
 class CrosSdkSession(object):
 
     def __init__(self, cros_path, password=''):
+        self.logger = logging.getLogger('cros-session')
         self.in_chroot = True if which('dut-control') else False
         ON_POSIX = 'posix' in sys.builtin_module_names
         if self.in_chroot:
@@ -57,7 +58,7 @@ class CrosSdkSession(object):
             if not cros_sdk_bin_path:
                 raise HostError("Failed to locate 'cros_sdk' make sure it is in your PATH")
             self.cros_sdk_session = Popen(['sudo -Sk {}'.format(cros_sdk_bin_path)], bufsize=1, stdin=PIPE,
-                                    stdout=PIPE, stderr=PIPE, cwd=cros_path, close_fds=ON_POSIX, shell=True)
+                                          stdout=PIPE, stderr=PIPE, cwd=cros_path, close_fds=ON_POSIX, shell=True)
             self.cros_sdk_session.stdin.write(password)
             self.cros_sdk_session.stdin.write('\n')
         self.stdout_queue = Queue()
@@ -81,6 +82,7 @@ class CrosSdkSession(object):
     def send_command(self, cmd, flush=True):
         if not cmd.endswith('\n'):
             cmd = cmd + '\n'
+        self.logger.debug(cmd.strip())
         self.cros_sdk_session.stdin.write(cmd)
         if flush:
             self.cros_sdk_session.stdin.flush()
@@ -104,6 +106,7 @@ class CrosSdkSession(object):
                 if timeout and timeout_only_for_first_line:
                     timeout = 0  # after a line has been read, no further delay is required
         return lines
+
 
 def _read_line_from_queue(queue, timeout=0):
     try:
