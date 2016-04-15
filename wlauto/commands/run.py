@@ -77,6 +77,9 @@ class RunCommand(Command):
             agenda = Agenda(args.agenda)
             settings.agenda = args.agenda
             shutil.copy(args.agenda, settings.meta_directory)
+
+            if len(agenda.workloads) == 0:
+                raise ConfigError("No workloads specified")
         elif '.' in args.agenda or os.sep in args.agenda:
             raise ConfigError('Agenda "{}" does not exist.'.format(args.agenda))
         else:
