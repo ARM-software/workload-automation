@@ -258,6 +258,7 @@ class ApkWorkload(Workload):
         if 'Failure' in output:
             if 'ALREADY_EXISTS' in output:
                 self.logger.warn('Using already installed APK (did not unistall properly?)')
+                self.reset(context)
             else:
                 raise WorkloadError(output)
         else:
