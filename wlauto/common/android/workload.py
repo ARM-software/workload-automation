@@ -222,10 +222,16 @@ class ApkWorkload(Workload):
         if self.force_install:
             if installed_version:
                 self.device.uninstall(self.package)
-            self.install_apk(context)
+            # It's possible that that the uninstall above fails, which will result in
+            # install failing and a warning, hower execution would the proceed, so need
+            # to make sure that the right apk_vesion is reported in the end.
+            if self.install_apk(context):
+                self.apk_version = host_version
+            else:
+                self.apk_version = installed_Version
         else:
+            self.apk_version = installed_version
             self.reset(context)
-        self.apk_version = host_version
 
     def launch_package(self):
         if not self.activity:
@@ -247,6 +253,7 @@ class ApkWorkload(Workload):
             self._grant_requested_permissions()
 
     def install_apk(self, context):
+        success = False
         output = self.device.install(self.apk_file, self.install_timeout)
         if 'Failure' in output:
             if 'ALREADY_EXISTS' in output:
@@ -255,7 +262,9 @@ class ApkWorkload(Workload):
                 raise WorkloadError(output)
         else:
             self.logger.debug(output)
+            success = True
         self.do_post_install(context)
+        return success
 
     def _grant_requested_permissions(self):
         dumpsys_output = self.device.execute(command="dumpsys package {}".format(self.package))
