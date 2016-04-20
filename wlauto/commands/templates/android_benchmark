@@ -14,7 +14,7 @@ class ${class_name}(AndroidBenchmark):
 
     parameters = [
         # Workload parameters go here e.g.
-        Parameter('Example parameter', kind=int, allowed_values=[1,2,3], default=1, override=True, mandatory=False,
+        Parameter('example_parameter', kind=int, allowed_values=[1,2,3], default=1, override=True, mandatory=False,
                   description='This is an example parameter')
     ]
 
