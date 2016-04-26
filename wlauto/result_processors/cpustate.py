@@ -153,8 +153,12 @@ class CpuStatesProcessor(ResultProcessor):
         cluster_max_freqs = {}
         self.max_freq_list = []
         for c in unique(device.core_clusters):
-            cluster_freqs[c] = device.get_cluster_cur_frequency(c)
-            cluster_max_freqs[c] = device.get_cluster_max_frequency(c)
+            try:
+                cluster_freqs[c] = device.get_cluster_cur_frequency(c)
+                cluster_max_freqs[c] = device.get_cluster_max_frequency(c)
+            except ValueError:
+                cluster_freqs[c] = None
+                cluster_max_freqs[c] = None
         for i, c in enumerate(device.core_clusters):
             self.max_freq_list.append(cluster_max_freqs[c])
             entry = 'CPU {} FREQUENCY: {} kHZ'.format(i, cluster_freqs[c])
