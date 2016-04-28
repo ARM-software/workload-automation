@@ -42,6 +42,20 @@ class Gmail(AndroidUiAutoBenchmark):
         super(Gmail, self).__init__(device, **kwargs)
         self.uiauto_params['recipient'] = self.recipient
 
+    def setup(self, context):
+        super(Gmail, self).setup(context)
+
+        self.camera_dir = self.device.path.join(self.device.external_storage_directory,
+                                                      'DCIM/Camera/')
+
+        for file in os.listdir(self.dependencies_directory):
+            if file.endswith(".jpg"):
+                self.device.push_file(os.path.join(self.dependencies_directory, file),
+                                      os.path.join(self.camera_dir, file), timeout=300)
+
+        # Force a re-index of the mediaserver cache to pick up new files
+        self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
+
     def validate(self):
         super(Gmail, self).validate()
         self.output_file = os.path.join(self.device.working_directory, self.instrumentation_log)
