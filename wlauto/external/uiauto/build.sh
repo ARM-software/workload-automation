@@ -18,4 +18,4 @@
 
 ant build
 
-cp bin/classes/com/arm/wlauto/uiauto/BaseUiAutomation.class ../../common/android
+cp bin/classes/com/arm/wlauto/uiauto/*.class ../../common/android
