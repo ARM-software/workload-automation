@@ -38,31 +38,31 @@ public class UiAutomation extends UxPerfUiAutomation {
     private Map<String, Timer> results = new HashMap<String, Timer>();
 
     public void runUiAutomation() throws Exception {
-            // Get Params
-            Bundle parameters = getParams();
-            String loginName = parameters.getString("my_id");
-            String loginPass = parameters.getString("my_pwd");
-            String contactSkypeid = parameters.getString("skypeid");
-            String contactName = parameters.getString("name").replace("_", " ");
-            int callDuration = Integer.parseInt(parameters.getString("duration"));
-            boolean isVideo = "video".equals(parameters.getString("action"));
-            String resultsFile = parameters.getString("results_file");
+        // Get Params
+        Bundle parameters = getParams();
+        String loginName = parameters.getString("my_id");
+        String loginPass = parameters.getString("my_pwd");
+        String contactSkypeid = parameters.getString("skypeid");
+        String contactName = parameters.getString("name").replace("_", " ");
+        int callDuration = Integer.parseInt(parameters.getString("duration"));
+        boolean isVideo = "video".equals(parameters.getString("action"));
+        String resultsFile = parameters.getString("results_file");
 
-            // Run tests
-            Timer overallTimer = new Timer();
-            Timer callTimer = new Timer();
-            overallTimer.start();
-            handleLoginScreen(loginName, loginPass);
-            selectContact(contactName, contactSkypeid);
-            callTimer.start();
-            makeCall(callDuration, isVideo);
-            callTimer.end();
-            overallTimer.end();
+        // Run tests
+        Timer overallTimer = new Timer();
+        Timer callTimer = new Timer();
+        overallTimer.start();
+        handleLoginScreen(loginName, loginPass);
+        selectContact(contactName, contactSkypeid);
+        callTimer.start();
+        makeCall(callDuration, isVideo);
+        callTimer.end();
+        overallTimer.end();
 
-            // Save results
-            results.put("call_test", callTimer);
-            results.put("overall_test", overallTimer);
-            saveResults(results, resultsFile);
+        // Save results
+        results.put("call_test", callTimer);
+        results.put("overall_test", overallTimer);
+        saveResults(results, resultsFile);
     }
 
     private void saveResults(Map<String, Timer> results, String file) throws Exception {
@@ -79,30 +79,30 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void selectContact(String name, String id) throws Exception {
-            // UiObject peopleTab = new UiObject(selector.text("People"));
-            UiObject peopleTab = getUiObjectByDescription("People", "android.widget.TextView");
-            peopleTab.click();
+        // UiObject peopleTab = new UiObject(selector.text("People"));
+        UiObject peopleTab = getUiObjectByDescription("People", "android.widget.TextView");
+        peopleTab.click();
 
-            // On first startup, the app may take a while to load the display name, so try twice
-            // before declaring failure
-            UiObject contactCard;
-            try {
-                contactCard = getUiObjectByText(name, "android.widget.TextView");
-            } catch (UiObjectNotFoundException e) {
-                contactCard = getUiObjectByText(name, "android.widget.TextView");
-                // contactCard = getUiObjectByText(id, "android.widget.TextView");
-            }
-            contactCard.clickAndWaitForNewWindow();
+        // On first startup, the app may take a while to load the display name, so try twice
+        // before declaring failure
+        UiObject contactCard;
+        try {
+            contactCard = getUiObjectByText(name, "android.widget.TextView");
+        } catch (UiObjectNotFoundException e) {
+            contactCard = getUiObjectByText(name, "android.widget.TextView");
+            // contactCard = getUiObjectByText(id, "android.widget.TextView");
+        }
+        contactCard.clickAndWaitForNewWindow();
     }
 
     public void makeCall(int duration, boolean video) throws Exception {
-            // String resource = video ? videoCallButtonResourceId : voiceCallButtonResourceId;
-            // UiObject callButton = new UiObject(new UiSelector().resourceId(resource));
-            String description = video ? "Video call" : "Call options";
-            UiObject callButton = new UiObject(new UiSelector().descriptionContains(description));
-            callButton.click();
-            sleep(duration);
-            // endCall();g
+        // String resource = video ? videoCallButtonResourceId : voiceCallButtonResourceId;
+        // UiObject callButton = new UiObject(new UiSelector().resourceId(resource));
+        String description = video ? "Video call" : "Call options";
+        UiObject callButton = new UiObject(new UiSelector().descriptionContains(description));
+        callButton.click();
+        sleep(duration);
+        // endCall();
     }
 
     /*
