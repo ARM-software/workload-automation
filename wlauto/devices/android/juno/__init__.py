@@ -81,9 +81,7 @@ class Juno(BigLittleDevice):
                       'fdt_support': True,
                   }
                   ),
-        Parameter('bootargs', default='console=ttyAMA0,115200 earlyprintk=pl011,0x7ff80000 '
-                                      'verbose debug init=/init root=/dev/sda1 rw ip=dhcp '
-                                      'rootwait video=DVI-D-1:1920x1080R@60',
+        Parameter('bootargs',
                   description='''Default boot arguments to use when boot_arguments were not.'''),
     ]
 
@@ -158,7 +156,7 @@ class Juno(BigLittleDevice):
                         target.sendline('ip addr list eth0')
                         time.sleep(1)
                         try:
-                            target.expect('inet ([1-9]\d*.\d+.\d+.\d+)', timeout=10)
+                            target.expect(r'inet ([1-9]\d*.\d+.\d+.\d+)', timeout=10)
                             self.adb_name = target.match.group(1) + ':5555'  # pylint: disable=W0201
                             break
                         except pexpect.TIMEOUT:
