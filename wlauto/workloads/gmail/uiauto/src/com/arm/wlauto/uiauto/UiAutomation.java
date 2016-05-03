@@ -31,20 +31,14 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void runUiAutomation() throws Exception {
         parameters = getParams();
 
-        Timer result = new Timer();
-        result.start();
-
         clearFirstRunDialogues();
 
         clickNewMail();
+        attachFiles();
         setToField();
         setSubjectField();
         setComposeField();
-        attachFiles();
         clickSendButton();
-
-        result.end();
-        timingResults.put("Total", result);
 
         writeResultsToFile(timingResults, parameters.getString("output_file"));
     }
@@ -53,9 +47,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Enter search text into the file searchBox.  This will automatically filter the list.
         UiObject gotItBox = getUiObjectByResourceId("com.google.android.gm:id/welcome_tour_got_it",
                                                      "android.widget.TextView");
-        gotItBox.clickAndWaitForNewWindow();
+        clickUiObject(gotItBox, timeout);
         UiObject takeMeToBox = getUiObjectByText("Take me to Gmail", "android.widget.TextView");
-        takeMeToBox.clickAndWaitForNewWindow();
+        clickUiObject(takeMeToBox, timeout);
         UiObject converationView = new UiObject(new UiSelector()
                                             .resourceId("com.google.android.gm:id/conversation_list_view")
                                             .className("android.widget.ListView"));
@@ -68,7 +62,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         Timer result = new Timer();
         UiObject newMailButton = getUiObjectByDescription("Compose", "android.widget.ImageButton");
         result.start();
-        newMailButton.clickAndWaitForNewWindow(timeout);
+        clickUiObject(newMailButton, timeout);
         result.end();
         timingResults.put("newMail", result);
     }
@@ -108,7 +102,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         Timer result = new Timer();
         UiObject sendButton = getUiObjectByDescription("Send", "android.widget.TextView");
         result.start();
-        sendButton.clickAndWaitForNewWindow(timeout);
+        clickUiObject(sendButton, timeout);
         result.end();
         timingResults.put("Send", result);
     }
@@ -120,28 +114,66 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         String [] imageFiles = {"1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg"};
 
-        result.start();
-
         for ( int i=0; i < imageFiles.length; i++) {
-            attachIcon.clickAndWaitForNewWindow(timeout);
-            UiObject attachFile = getUiObjectByText("Attach file", "android.widget.TextView");
-            attachFile.clickAndWaitForNewWindow(timeout);
-            UiObject imagesEntry = getUiObjectByText("Images", "android.widget.TextView");
-            imagesEntry.clickAndWaitForNewWindow(timeout);
-            UiObject listView = new UiObject(new UiSelector().textContains("List view")
-                                                             .className("android.webkit.WebView"));
-            if (listView.exists()) {
-                listView.clickAndWaitForNewWindow(timeout);
-            }
-            UiObject cameraEntry = getUiObjectByText("Camera", "android.widget.TextView");
-            cameraEntry.clickAndWaitForNewWindow(timeout);
-            UiObject oneJpg = getUiObjectByText(imageFiles[i], "android.widget.TextView");
-            oneJpg.clickAndWaitForNewWindow(timeout);
-        }
-        result.end();
-        timingResults.put("AttachFiles", result);
-    }
+            result.start();
 
+            clickUiObject(attachIcon, timeout);
+            UiObject attachFile = getUiObjectByText("Attach file", "android.widget.TextView");
+            clickUiObject(attachFile, timeout);
+
+            UiObject titleIsWaWorking = new UiObject(new UiSelector()
+                                                .className("android.widget.TextView")
+                                                .textContains("wa-working"));
+            UiObject titleIsImages = new UiObject(new UiSelector()
+                                                .className("android.widget.TextView")
+                                                .textContains("Images"));
+            UiObject frameLayout = new UiObject(new UiSelector()
+                                                .className("android.widget.FrameLayout")
+                                                .resourceId("android:id/action_bar_container"));
+            UiObject rootMenu = new UiObject(new UiSelector()
+                                                .className("android.widget.ImageButton")
+                                                .descriptionContains("Show roots"));
+            UiObject imagesEntry = new UiObject(new UiSelector()
+                                                .className("android.widget.TextView")
+                                                .textContains("Images"));
+            UiObject waFolder =  new UiObject(new UiSelector()
+                                                .className("android.widget.TextView")
+                                                .textContains("wa-working"));
+
+            // Some devices use a FrameLayout as oppoised to a view Group so treat them differently
+            if (frameLayout.exists()) {
+                imagesEntry.click();
+                waitObject(titleIsImages, 4);
+                waFolder.click();
+                waitObject(titleIsWaWorking, 4);
+            } else {
+                // Portrait devices will roll the menu up so click the root menu icon
+                if (!titleIsWaWorking.exists()) {
+                    if (rootMenu.exists()) {
+                       rootMenu.click();
+                    }
+                    imagesEntry.click();
+                    waitObject(titleIsImages, 4);
+                    waFolder.click();
+                    waitObject(titleIsWaWorking, 4);
+                }
+            }
+
+            UiObject imageFileButton = new UiObject(new UiSelector()
+                                                .resourceId("com.android.documentsui:id/grid")
+                                                .className("android.widget.GridView")
+                                                .childSelector(new UiSelector()
+                                                .index(i).className("android.widget.FrameLayout")));
+
+            clickUiObject(imageFileButton, timeout);
+
+            result.end();
+
+            // Replace whitespace and full stops within the filename
+            String file = imageFiles[i].replaceAll("\\.", "_").replaceAll("\\s+", "_");
+            timingResults.put(String.format("AttachFiles" + "_" + file), result);
+        }
+    }
 
     private void writeResultsToFile(LinkedHashMap timingResults, String file) throws Exception {
         // Write out the key/value pairs to the instrumentation log file
