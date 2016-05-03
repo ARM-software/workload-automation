@@ -16,7 +16,7 @@
 import re
 import time
 import logging
-
+from distutils.version import LooseVersion
 from wlauto.utils.serial_port import TIMEOUT
 
 
@@ -32,11 +32,14 @@ class UbootMenu(object):
     option_regex = re.compile(r'^\[(\d+)\]\s+([^\r]+)\r\n', re.M)
     prompt_regex = re.compile(r'^([^\r\n]+):\s*', re.M)
     invalid_regex = re.compile(r'Invalid input \(max (\d+)\)', re.M)
+    uboot_regex = re.compile(r"U-Boot\s(\d\S*)\s")
 
     load_delay = 1  # seconds
     default_timeout = 60  # seconds
+    fixed_uboot_version = '2016.03'  # The version on U-Boot that fixed newlines
 
-    def __init__(self, conn, start_prompt='Hit any key to stop autoboot'):
+    def __init__(self, conn,
+                 start_prompt='Hit any key to stop autoboot'):
         """
         :param conn: A serial connection as returned by ``pexect.spawn()``.
         :param prompt: U-Boot menu prompt
@@ -44,7 +47,7 @@ class UbootMenu(object):
 
         """
         self.conn = conn
-        self.conn.crlf = '\n\r'  # TODO: this has *got* to be a bug in U-Boot...
+        self.conn.crlf = None
         self.start_prompt = start_prompt
         self.options = {}
         self.prompt = None
@@ -56,6 +59,7 @@ class UbootMenu(object):
 
         """
         self.conn.expect(self.start_prompt, timeout)
+        self._set_line_separator()
         self.conn.sendline('')
         time.sleep(self.load_delay)
         self.conn.readline()  # garbage
@@ -114,3 +118,10 @@ class UbootMenu(object):
             pass
         self.conn.buffer = ''
 
+    def _set_line_separator(self):
+        uboot_text = self.conn.before
+        uboot_ver = self.uboot_regex.findall(uboot_text)
+        if uboot_ver and LooseVersion(uboot_ver[0]) < LooseVersion(self.fixed_uboot_version):
+            self.conn.crlf = "\n\r"
+        else:
+            self.conn.crlf = "\r\n"
