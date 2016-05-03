@@ -18,8 +18,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.BufferedWriter;
 import java.util.concurrent.TimeUnit;
-import java.util.LinkedHashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -72,7 +72,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         int i = 0;
         do {
             i += 10;
-            tapDisplay(webViewCoords.centerX(), webViewCoords.bottom - i);
+            tapDisplay(webViewCoords.centerX(), webViewCoords.centerY() + i);
         } while ( welcomeView.exists() || i < webViewCoords.top  );
     }
 
@@ -143,13 +143,16 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void openFile(String filename) throws Exception {
+
+        String TestTag = "openfile";
+
         // Replace whitespace and full stops within the filename
         String file = filename.replaceAll("\\.", "_").replaceAll("\\s+", "_");
 
-        timingResults.put(String.format("selectLocalFilesList" + "_" + file), selectLocalFilesList());
-        timingResults.put(String.format("selectSearchDuration" + "_" + file), selectSearchFileButton());
-        timingResults.put(String.format("searchFileList" + "_" + file), searchFileList(filename));
-        timingResults.put(String.format("openFileFromList" + "_" + file), openFileFromList(filename));
+        timingResults.put(String.format(TestTag + "_" + "selectLocalFilesList" + "_" + file), selectLocalFilesList());
+        timingResults.put(String.format(TestTag + "_" + "selectSearchDuration" + "_" + file), selectSearchFileButton());
+        timingResults.put(String.format(TestTag + "_" + "searchFileList" + "_" + file), searchFileList(filename));
+        timingResults.put(String.format(TestTag + "_" + "openFileFromList" + "_" + file), openFileFromList(filename));
 
         // Cludge to get rid of the first time run help dialogue boxes
         tapDisplayCentre();
