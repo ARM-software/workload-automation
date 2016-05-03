@@ -13,6 +13,8 @@
 # limitations under the License.
 #
 
+import os
+import re
 import time
 
 from wlauto import AndroidUiAutoBenchmark, Parameter
@@ -32,6 +34,8 @@ class SkypeEcho(AndroidUiAutoBenchmark):
     activity = ''
     # Skype has no default 'main' activity
     launch_main = False # overrides extended class
+
+    instrumentation_log = '{}_instrumentation.log'.format(name)
 
     parameters = [
         # Workload parameters go here e.g.
@@ -57,6 +61,8 @@ class SkypeEcho(AndroidUiAutoBenchmark):
 
     def __init__(self, device, **kwargs):
         super(SkypeEcho, self).__init__(device, **kwargs)
+        self.output_file = os.path.join(self.device.working_directory, self.instrumentation_log)
+        self.uiauto_params['results_file'] = self.output_file
         if self.use_gui:
             self.uiauto_params['my_id'] = self.login_name
             self.uiauto_params['my_pwd'] = self.login_pass
@@ -89,12 +95,33 @@ class SkypeEcho(AndroidUiAutoBenchmark):
             self.device.execute('am force-stop {}'.format(self.package))
 
     def update_result(self, context):
-        pass
-        # super(SkypeEcho, self).update_result(context)
+        self.logger.info('===== update_result() ======')
+        super(SkypeEcho, self).update_result(context)
+        # if not self.dumpsys_enabled:
+        #     return
+
+        self.device.pull_file(self.output_file, context.output_directory)
+        results_file = os.path.join(context.output_directory, self.instrumentation_log)
+
         # process results and add them using
         # context.result.add_metric
+        with open(results_file, 'r') as lines:
+            pattern = r'(?P<key>\w+)\s+(?P<value1>\d+)\s+(?P<value2>\d+)\s+(?P<value3>\d+)'
+            regex = re.compile(pattern)
+            for line in lines:
+                match = regex.search(line)
+                if match:
+                    context.result.add_metric((match.group('key') + "_start"), match.group('value1'))
+                    context.result.add_metric((match.group('key') + "_finish"), match.group('value2'))
+                    context.result.add_metric((match.group('key') + "_duration"), match.group('value3'))
 
     def teardown(self, context):
         self.logger.info('===== teardown() ======')
         super(SkypeEcho, self).teardown(context)
+        # Pull log files
+        for entry in self.device.listdir(self.device.working_directory):
+            if entry.startswith(self.name) and entry.endswith(".log"):
+                self.device.pull_file(os.path.join(self.device.working_directory, entry),
+                                      context.output_directory)
+                self.device.delete_file(os.path.join(self.device.working_directory, entry))
         # self.device.execute('am force-stop {}'.format(self.package))

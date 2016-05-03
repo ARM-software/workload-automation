@@ -1,6 +1,11 @@
 package com.arm.wlauto.uiauto.skypeecho;
 
-import java.lang.Runnable;
+import java.io.File;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -16,9 +21,9 @@ import com.android.uiautomator.core.UiScrollable;
 import com.android.uiautomator.core.UiSelector;
 import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
-import com.arm.wlauto.uiauto.BaseUiAutomation;
+import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
-public class UiAutomation extends BaseUiAutomation {
+public class UiAutomation extends UxPerfUiAutomation {
 
     public static String TAG = "uxperf_skypeecho";
 
@@ -30,7 +35,10 @@ public class UiAutomation extends BaseUiAutomation {
     public static String endCallButtonResourceId = "com.skype.raider:id/call_end_button";
     public static String noContactMessage = "Could not find contact \"%s\" in the contacts list.";
 
+    private Map<String, Timer> results = new HashMap<String, Timer>();
+
     public void runUiAutomation() throws Exception {
+            // Get Params
             Bundle parameters = getParams();
             String loginName = parameters.getString("my_id");
             String loginPass = parameters.getString("my_pwd");
@@ -38,10 +46,36 @@ public class UiAutomation extends BaseUiAutomation {
             String contactName = parameters.getString("name").replace("_", " ");
             int callDuration = Integer.parseInt(parameters.getString("duration"));
             boolean isVideo = "video".equals(parameters.getString("action"));
+            String resultsFile = parameters.getString("results_file");
 
+            // Run tests
+            Timer overallTimer = new Timer();
+            Timer callTimer = new Timer();
+            overallTimer.start();
             handleLoginScreen(loginName, loginPass);
             selectContact(contactName, contactSkypeid);
+            callTimer.start();
             makeCall(callDuration, isVideo);
+            callTimer.end();
+            overallTimer.end();
+
+            // Save results
+            results.put("call_test", callTimer);
+            results.put("overall_test", overallTimer);
+            saveResults(results, resultsFile);
+    }
+
+    private void saveResults(Map<String, Timer> results, String file) throws Exception {
+        BufferedWriter out = new BufferedWriter(new FileWriter(file));
+        long start, finish, duration;
+        for (Map.Entry<String, Timer> entry : results.entrySet()) {
+            Timer timer = entry.getValue();
+            start = timer.getStart();
+            finish = timer.getFinish();
+            duration = timer.getDuration();
+            out.write(entry.getKey() + " " + start + " " + finish + " " + duration + "\n");
+        }
+        out.close();
     }
 
     public void selectContact(String name, String id) throws Exception {
@@ -68,21 +102,25 @@ public class UiAutomation extends BaseUiAutomation {
             UiObject callButton = new UiObject(new UiSelector().descriptionContains(description));
             callButton.click();
             sleep(duration);
-            // TODO Needs to be run on UI thread after sleep
-            /*
-            final UiObject endButton = getUiObjectByResourceId(endCallButtonResourceId, "android.widget.ImageView");
-            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        endButton.click();
-                    } catch (UiObjectNotFoundException e) {
-                        // Do nothing
-                    }
-                }
-            }, 10000);
-            */
+            // endCall();g
     }
+
+    /*
+    // TODO Needs to be run on UI thread after sleep
+    public void endCall() {
+        final UiObject endButton = getUiObjectByResourceId(endCallButtonResourceId, "android.widget.ImageView");
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    endButton.click();
+                } catch (UiObjectNotFoundException e) {
+                    // Do nothing
+                }
+            }
+        }, 10000);
+    }
+    */
 
     public void handleLoginScreen(String username, String password) throws Exception {
         String useridResoureId = "com.skype.raider:id/sign_in_userid";
