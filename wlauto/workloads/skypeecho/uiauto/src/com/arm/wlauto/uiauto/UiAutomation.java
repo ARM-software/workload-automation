@@ -73,7 +73,8 @@ public class UiAutomation extends UxPerfUiAutomation {
             start = timer.getStart();
             finish = timer.getFinish();
             duration = timer.getDuration();
-            out.write(entry.getKey() + " " + start + " " + finish + " " + duration + "\n");
+            // Format used to parse out results in workload's update_result function
+            out.write(String.format("timer: %s %d %d %d\n", entry.getKey(), start, finish, duration));
         }
         out.close();
     }
@@ -109,6 +110,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     // TODO Needs to be run on UI thread after sleep
     public void endCall() {
         final UiObject endButton = getUiObjectByResourceId(endCallButtonResourceId, "android.widget.ImageView");
+        final UiObject endButton = getUiObjectByResourceId(endCallButtonResourceId, "com.skype.android.widget.SymbolView");
         new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
             @Override
             public void run() {

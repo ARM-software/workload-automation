@@ -14,7 +14,6 @@
 #
 
 import os
-import re
 import time
 
 from wlauto import AndroidUiAutoBenchmark, Parameter
@@ -106,14 +105,12 @@ class SkypeEcho(AndroidUiAutoBenchmark):
         # process results and add them using
         # context.result.add_metric
         with open(results_file, 'r') as lines:
-            pattern = r'(?P<key>\w+)\s+(?P<value1>\d+)\s+(?P<value2>\d+)\s+(?P<value3>\d+)'
-            regex = re.compile(pattern)
             for line in lines:
-                match = regex.search(line)
-                if match:
-                    context.result.add_metric((match.group('key') + "_start"), match.group('value1'))
-                    context.result.add_metric((match.group('key') + "_finish"), match.group('value2'))
-                    context.result.add_metric((match.group('key') + "_duration"), match.group('value3'))
+                if line.startswith('timer:'):
+                    res = line.split(' ')
+                    context.result.add_metric(res[1] + '_start', res[2])
+                    context.result.add_metric(res[1] + '_finish', res[3])
+                    context.result.add_metric(res[1] + '_duration', res[4])
 
     def teardown(self, context):
         self.logger.info('===== teardown() ======')
