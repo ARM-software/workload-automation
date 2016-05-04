@@ -39,8 +39,6 @@ class Googlephotos(AndroidUiAutoBenchmark):
     def __init__(self, device, **kwargs):
         super(Googlephotos, self).__init__(device, **kwargs)
         self.output_file = os.path.join(self.device.working_directory, self.instrumentation_log)
-        self.camera_dir = self.device.path.join(self.device.external_storage_directory,
-                                                'DCIM/Camera/')
 
     def validate(self):
         super(Googlephotos, self).validate()
@@ -56,7 +54,7 @@ class Googlephotos(AndroidUiAutoBenchmark):
             wa_file = ''.join([self.file_prefix, entry])
             if entry.endswith(".jpg"):
                 self.device.push_file(os.path.join(self.dependencies_directory, entry),
-                                      os.path.join(self.camera_dir, wa_file),
+                                      os.path.join(self.device.working_directory, wa_file),
                                       timeout=300)
 
         # Force a re-index of the mediaserver cache to pick up new files
@@ -91,9 +89,8 @@ class Googlephotos(AndroidUiAutoBenchmark):
                                       context.output_directory)
                 self.device.delete_file(os.path.join(self.device.working_directory, entry))
 
-        for entry in self.device.listdir(self.camera_dir):
             if entry.startswith(self.file_prefix) and entry.endswith(".jpg"):
-                self.device.delete_file(os.path.join(self.camera_dir, entry))
+                self.device.delete_file(os.path.join(self.device.working_directory, entry))
 
         # Force a re-index of the mediaserver cache to removed cached files
         self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')

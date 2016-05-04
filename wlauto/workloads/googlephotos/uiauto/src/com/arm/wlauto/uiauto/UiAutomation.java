@@ -1,8 +1,6 @@
 package com.arm.wlauto.uiauto.googlephotos;
 
 import android.os.Bundle;
-import android.graphics.Point;
-import android.graphics.Rect;
 
 // Import the uiautomator libraries
 import com.android.uiautomator.core.UiObject;
@@ -11,9 +9,6 @@ import com.android.uiautomator.core.UiSelector;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.BufferedWriter;
 import java.util.concurrent.TimeUnit;
 import java.util.LinkedHashMap;
 import java.util.Iterator;
@@ -25,20 +20,15 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static String TAG = "uxperf_googlephotos";
 
     public Bundle parameters;
-    private long viewTimeout =  TimeUnit.SECONDS.toMillis(20);
+    private long viewTimeout =  TimeUnit.SECONDS.toMillis(10);
     private LinkedHashMap<String, Timer> timingResults = new LinkedHashMap<String, Timer>();
 
     public void runUiAutomation() throws Exception {
-        Timer result = new Timer();
-        result.start();
         parameters = getParams();
 
         dismissWelcomeView();
         gesturesTest();
         editPhotoTest();
-
-        result.end();
-        timingResults.put("total", result);
 
         writeResultsToFile(timingResults, parameters.getString("output_file"));
     }
@@ -50,10 +40,10 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         sleep(3); // Pause while splash screen loads
 
-        UiObject getStarteddButton =
+        UiObject getStartedButton =
             getUiObjectByResourceId("com.google.android.apps.photos:id/get_started",
                                     "android.widget.Button");
-        getStarteddButton.clickAndWaitForNewWindow();
+        getStartedButton.clickAndWaitForNewWindow();
 
         UiObject welcomeButton =
             getUiObjectByResourceId("com.google.android.apps.photos:id/name",
@@ -79,7 +69,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         nextButton.clickAndWaitForNewWindow();
     }
 
-    private void gesturesTest () throws Exception {
+    private void gesturesTest() throws Exception {
         String testTag = "gestures";
 
         // Perform a range of swipe tests while browsing photo gallery
@@ -112,10 +102,10 @@ public class UiAutomation extends UxPerfUiAutomation {
 
             if (!view.waitForExists(viewTimeout)) {
                 throw new UiObjectNotFoundException("Could not find \"photo view\".");
-            };
+            }
 
-            startDumpsysGfxInfo();
-            startDumpsysSurfaceFlinger(viewName);
+            startDumpsysGfxInfo(parameters);
+            startDumpsysSurfaceFlinger(parameters, viewName);
 
             Timer results = new Timer();
 
@@ -133,8 +123,8 @@ public class UiAutomation extends UxPerfUiAutomation {
                     break;
             }
 
-            stopDumpsysSurfaceFlinger(viewName, surfFlingerlogName);
-            stopDumpsysGfxInfo(gfxInfologName);
+            stopDumpsysSurfaceFlinger(parameters, viewName, surfFlingerlogName);
+            stopDumpsysGfxInfo(parameters, gfxInfologName);
 
             timingResults.put(runName, results);
         }
@@ -172,9 +162,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         timingResults.put(testTag, result);
     }
 
-    // Helper to click on an individual photographs based on index in Camera gallery.
-    private void selectPhoto(int index) throws Exception {
-        UiObject cameraHeading = new UiObject(new UiSelector().text("Camera"));
+    // Helper to click on an individual photographs based on index in wa-working gallery.
+    private void selectPhoto(final int index) throws Exception {
+        UiObject cameraHeading = new UiObject(new UiSelector().text("wa-working"));
         cameraHeading.clickAndWaitForNewWindow();
 
         UiObject photo =
@@ -182,110 +172,5 @@ public class UiAutomation extends UxPerfUiAutomation {
                                          .childSelector(new UiSelector()
                                          .index(index)));
         photo.click();
-    }
-
-    // Helper for testing zoom facility. NOTE: the built in UiObject methods
-    // pinchIn() and pinchOut() do not zoom appropriately for this application.
-    private Timer uiObjectVertPinchTest(
-            UiObject view, PinchType direction,
-            int steps, int percent) throws Exception {
-
-        Timer results = new Timer();
-        results.start();
-
-        final int FINGER_TOUCH_HALF_WIDTH = 20;
-
-        // make value between 1 and 100
-        percent = (percent < 0) ? 1 : (percent > 100) ? 100 : percent;
-        float percentage = percent / 100f;
-
-        Rect rect = view.getVisibleBounds();
-        if (rect.width() <= FINGER_TOUCH_HALF_WIDTH * 2)
-            throw new IllegalStateException("Object width is too small for operation");
-
-        // start from the same point at the center of the control
-        Point startPoint1 = new Point(rect.centerX(), rect.centerY() + FINGER_TOUCH_HALF_WIDTH);
-        Point startPoint2 = new Point(rect.centerX(), rect.centerY() - FINGER_TOUCH_HALF_WIDTH);
-
-        // End at the top-center and bottom-center of the control
-        Point endPoint1 = new Point(rect.centerX(), rect.centerY() + (int) ((rect.height() / 2) * percentage));
-        Point endPoint2 = new Point(rect.centerX(), rect.centerY() - (int) ((rect.height() / 2) * percentage));
-
-        if (direction.equals(PinchType.IN)) {
-            view.performTwoPointerGesture(endPoint1, endPoint2, startPoint1, startPoint2, steps);
-        } else if (direction.equals(PinchType.OUT)) {
-            view.performTwoPointerGesture(startPoint1, startPoint2, endPoint1, endPoint2, steps);
-        }
-
-        results.end();
-
-        return results;
-    }
-
-    private class GestureTestParams {
-        GestureType gestureType;
-        Direction gestureDirection;
-        PinchType pinchType;
-        private int percent;
-        private int steps;
-
-        GestureTestParams(GestureType gesture, Direction direction, int steps) {
-            this.gestureType = gesture;
-            this.gestureDirection = direction;
-            this.pinchType = PinchType.NULL;
-            this.steps = steps;
-            this.percent = 0;
-        }
-
-        GestureTestParams(GestureType gesture, PinchType pinchType, int steps, int percent) {
-            this.gestureType = gesture;
-            this.gestureDirection = Direction.NULL;
-            this.pinchType = pinchType;
-            this.steps = steps;
-            this.percent = percent;
-        }
-    }
-
-    private void writeResultsToFile(LinkedHashMap timingResults, String file) throws Exception {
-        // Write out the key/value pairs to the instrumentation log file
-        FileWriter fstream = new FileWriter(file);
-        BufferedWriter out = new BufferedWriter(fstream);
-        Iterator<Entry<String, Timer>> it = timingResults.entrySet().iterator();
-
-        while (it.hasNext()) {
-            Map.Entry<String, Timer> pairs = it.next();
-            Timer results = pairs.getValue();
-            long start = results.getStart();
-            long finish = results.getFinish();
-            long duration = results.getDuration();
-            out.write(String.format(pairs .getKey() + " " + start + " " + finish + " " + duration + "\n"));
-        }
-        out.close();
-    }
-
-    private void startDumpsysSurfaceFlinger(String view) {
-        if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
-            initDumpsysSurfaceFlinger(parameters.getString("package"), view);
-        }
-    }
-
-    private void stopDumpsysSurfaceFlinger(String view, String filename) throws Exception {
-        if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
-            File out_file = new File(parameters.getString("output_dir"), filename);
-            exitDumpsysSurfaceFlinger(parameters.getString("package"), view, out_file);
-          }
-    }
-
-    private void startDumpsysGfxInfo() {
-        if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
-            initDumpsysGfxInfo(parameters.getString("package"));
-          }
-    }
-
-    private void stopDumpsysGfxInfo(String filename) throws Exception {
-      if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
-            File out_file = new File(parameters.getString("output_dir"), filename);
-            exitDumpsysGfxInfo(parameters.getString("package"), out_file);
-          }
     }
 }
