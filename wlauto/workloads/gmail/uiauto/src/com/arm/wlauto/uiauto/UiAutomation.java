@@ -1,24 +1,16 @@
 package com.arm.wlauto.uiauto.gmail;
 
 import android.os.Bundle;
-import android.os.SystemClock;
 
 // Import the uiautomator libraries
 import com.android.uiautomator.core.UiObject;
 import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
 import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.util.concurrent.TimeUnit;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Map.Entry;
 
 public class UiAutomation extends UxPerfUiAutomation {
 
@@ -55,7 +47,7 @@ public class UiAutomation extends UxPerfUiAutomation {
                                             .className("android.widget.ListView"));
         if (!converationView.waitForExists(networkTimeout)) {
             throw new UiObjectNotFoundException("Could not find \"converationView\".");
-        };
+        }
     }
 
     public void clickNewMail() throws Exception {
@@ -112,9 +104,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject attachIcon = getUiObjectByResourceId("com.google.android.gm:id/add_attachment",
                                                       "android.widget.TextView");
 
-        String [] imageFiles = {"1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg"};
+        String[] imageFiles = {"1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg"};
 
-        for ( int i=0; i < imageFiles.length; i++) {
+        for ( int i = 0; i < imageFiles.length; i++) {
             result.start();
 
             clickUiObject(attachIcon, timeout);
@@ -173,22 +165,5 @@ public class UiAutomation extends UxPerfUiAutomation {
             String file = imageFiles[i].replaceAll("\\.", "_").replaceAll("\\s+", "_");
             timingResults.put(String.format("AttachFiles" + "_" + file), result);
         }
-    }
-
-    private void writeResultsToFile(LinkedHashMap timingResults, String file) throws Exception {
-        // Write out the key/value pairs to the instrumentation log file
-        FileWriter fstream = new FileWriter(file);
-        BufferedWriter out = new BufferedWriter(fstream);
-        Iterator<Entry<String, Timer>> it = timingResults.entrySet().iterator();
-
-        while (it.hasNext()) {
-            Map.Entry<String, Timer> pairs = it.next();
-            Timer results = pairs.getValue();
-            long start = results.getStart();
-            long finish = results.getFinish();
-            long duration = results.getDuration();
-            out.write(String.format(pairs.getKey() + " " + start + " " + finish + " " + duration + "\n"));
-        }
-        out.close();
     }
 }

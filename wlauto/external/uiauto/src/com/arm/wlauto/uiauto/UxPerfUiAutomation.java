@@ -17,6 +17,7 @@ package com.arm.wlauto.uiauto;
 
 import android.os.Build;
 import android.os.SystemClock;
+import android.os.Bundle;
 
 import com.android.uiautomator.core.UiObject;
 import com.android.uiautomator.core.UiObjectNotFoundException;
@@ -26,6 +27,7 @@ import com.android.uiautomator.core.UiSelector;
 import com.arm.wlauto.uiauto.BaseUiAutomation;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.InputStreamReader;
@@ -34,6 +36,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Arrays;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
 
 public class UxPerfUiAutomation extends BaseUiAutomation {
 
@@ -208,5 +214,86 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
         }
         results.end();
         return results;
+    }
+
+    public Timer uiObjectVertPinchTest(UiObject view, PinchType direction,
+                                       int steps, int percent) throws Exception {
+        Timer results = new Timer();
+        results.start();
+        if (direction.equals(PinchType.IN)) {
+            uiDeviceVertPinchIn(view, steps, percent);
+        } else if (direction.equals(PinchType.OUT)) {
+            uiDeviceVertPinchOut(view, steps, percent);
+        }
+        results.end();
+        return results;
+    }
+
+    public class GestureTestParams {
+        public GestureType gestureType;
+        public Direction gestureDirection;
+        public PinchType pinchType;
+        public int percent;
+        public int steps;
+
+        public GestureTestParams(GestureType gesture, Direction direction, int steps) {
+            this.gestureType = gesture;
+            this.gestureDirection = direction;
+            this.pinchType = PinchType.NULL;
+            this.steps = steps;
+            this.percent = 0;
+        }
+
+        public GestureTestParams(GestureType gesture, PinchType pinchType, int steps, int percent) {
+            this.gestureType = gesture;
+            this.gestureDirection = Direction.NULL;
+            this.pinchType = pinchType;
+            this.steps = steps;
+            this.percent = percent;
+        }
+    }
+
+    public void writeResultsToFile(LinkedHashMap timingResults, String file) throws Exception {
+        // Write out the key/value pairs to the instrumentation log file
+        FileWriter fstream = new FileWriter(file);
+        BufferedWriter out = new BufferedWriter(fstream);
+        Iterator<Entry<String, Timer>> it = timingResults.entrySet().iterator();
+
+        while (it.hasNext()) {
+            Map.Entry<String, Timer> pairs = it.next();
+            Timer results = pairs.getValue();
+            long start = results.getStart();
+            long finish = results.getFinish();
+            long duration = results.getDuration();
+            out.write(String.format(pairs .getKey() + " " + start + " " + finish + " " + duration + "\n"));
+        }
+        out.close();
+    }
+
+    public void startDumpsysSurfaceFlinger(Bundle parameters, String view) {
+        if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
+            initDumpsysSurfaceFlinger(parameters.getString("package"), view);
+        }
+    }
+
+    public void stopDumpsysSurfaceFlinger(Bundle parameters, String view,
+                                          String filename) throws Exception {
+        if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
+            File out_file = new File(parameters.getString("output_dir"), filename);
+            exitDumpsysSurfaceFlinger(parameters.getString("package"), view, out_file);
+          }
+    }
+
+    public void startDumpsysGfxInfo(Bundle parameters) {
+        if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
+            initDumpsysGfxInfo(parameters.getString("package"));
+          }
+    }
+
+    public void stopDumpsysGfxInfo(Bundle parameters, String filename) throws Exception {
+      if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
+            File out_file = new File(parameters.getString("output_dir"), filename);
+            exitDumpsysGfxInfo(parameters.getString("package"), out_file);
+          }
     }
 }
