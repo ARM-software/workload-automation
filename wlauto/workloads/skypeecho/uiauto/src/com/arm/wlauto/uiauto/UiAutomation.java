@@ -68,6 +68,9 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void runUiAutomation() throws Exception {
+        // Override superclass value
+        this.waitTimeout = 10000;
+
         // Get Params
         Bundle parameters = getParams();
         String loginName = parameters.getString("my_id");
@@ -89,10 +92,6 @@ public class UiAutomation extends UxPerfUiAutomation {
             videoCallTest(callDuration);
         } else if ("voice".equalsIgnoreCase(callType)) {
             voiceCallTest(callDuration);
-        } else {
-            // both ?
-            // voiceCallTest(callDuration);
-            // videoCallTest(callDuration);
         }
         overallTimer.end();
 
@@ -104,8 +103,9 @@ public class UiAutomation extends UxPerfUiAutomation {
     private void saveResults(Map<String, Timer> results, String file) throws Exception {
         BufferedWriter out = new BufferedWriter(new FileWriter(file));
         long start, finish, duration;
+        Timer timer;
         for (Map.Entry<String, Timer> entry : results.entrySet()) {
-            Timer timer = entry.getValue();
+            timer = entry.getValue();
             start = timer.getStart();
             finish = timer.getFinish();
             duration = timer.getDuration();
@@ -183,7 +183,6 @@ public class UiAutomation extends UxPerfUiAutomation {
     private void makeCall(int duration, boolean video, String testTag) throws Exception {
         String viewName = "com.skype.android.app.calling.CallActivity";
         String dumpsysTag = TAG + "_" + testTag;
-        int viewTimeout = 5000;
         if (video && dumpsysEnabled) {
             initDumpsysSurfaceFlinger(PACKAGE, viewName);
             initDumpsysGfxInfo(PACKAGE);
