@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 
-import os
+import os.path as op
 import time
 
 from wlauto import AndroidUiAutoBenchmark, Parameter
@@ -28,7 +28,19 @@ SKYPE_ACTION_URIS = {
 class SkypeEcho(AndroidUiAutoBenchmark):
 
     name = 'skypeecho'
-    description = 'Workload that makes a Skype test call'
+    description = '''
+    Workload that makes Skype calls
+
+    It allows for the agenda to decide whether to make a voice call or a video call.
+    Credentials for the user account used to log into the Skype app have to be provided
+    in the agenda, as well as the display name and skype ID of the contact to call.
+
+    Other optional arguments allow controlling the duration of the call, whether the
+    call includes video or voice only, and whether to collect sys dumps.
+
+    For reliable testing, this workload requires a good and stable internet connection,
+    preferably on Wi-Fi.
+    '''
     package = 'com.skype.raider'
     activity = ''
     # Skype has no default 'main' activity
@@ -37,9 +49,6 @@ class SkypeEcho(AndroidUiAutoBenchmark):
     instrumentation_log = '{}_instrumentation.log'.format(name)
 
     parameters = [
-        # Workload parameters go here e.g.
-        # Parameter('example_parameter', kind=int, allowed_values=[1,2,3], default=1, override=True, mandatory=False,
-        #           description='This is an example parameter')
         Parameter('login_name', kind=str, mandatory=True,
                   description='''
                   Account to use when logging into the device from which the call will be made
@@ -52,16 +61,27 @@ class SkypeEcho(AndroidUiAutoBenchmark):
                   description='This is the contact display name as it appears in the people list'),
         Parameter('duration', kind=int, default=60,
                   description='This is the duration of the call in seconds'),
-        Parameter('action', kind=str, allowed_values=['voice', 'video'], default='voice',
-                  description='Action to take - either voice (default) or video call'),
+        Parameter('action', kind=str, allowed_values=['voice', 'video'], default='video',
+                  description='Action to take - either video (default) or voice call'),
         Parameter('use_gui', kind=bool, default=True,
                   description='Specifies whether to use GUI or direct Skype URI'),
+        Parameter('dumpsys_enabled', kind=bool, default=True,
+                  description='''
+                  If ``True``, dumpsys captures will be carried out during the test run.
+                  The output is piped to log files which are then pulled from the phone.
+                  '''),
     ]
 
     def __init__(self, device, **kwargs):
         super(SkypeEcho, self).__init__(device, **kwargs)
-        self.output_file = os.path.join(self.device.working_directory, self.instrumentation_log)
+        self.output_file = op.join(self.device.working_directory, self.instrumentation_log)
+        self.run_timeout = self.duration + 60
+
+    def validate(self):
+        super(SkypeEcho, self).validate()
         self.uiauto_params['results_file'] = self.output_file
+        self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
+        self.uiauto_params['output_dir'] = self.device.working_directory
         if self.use_gui:
             self.uiauto_params['my_id'] = self.login_name
             self.uiauto_params['my_pwd'] = self.login_pass
@@ -69,7 +89,6 @@ class SkypeEcho(AndroidUiAutoBenchmark):
             self.uiauto_params['name'] = self.contact_name.replace(' ', '_')
             self.uiauto_params['duration'] = self.duration
             self.uiauto_params['action'] = self.action
-        self.run_timeout = self.duration + 30
 
     def setup(self, context):
         self.logger.info('===== setup() ======')
@@ -96,11 +115,11 @@ class SkypeEcho(AndroidUiAutoBenchmark):
     def update_result(self, context):
         self.logger.info('===== update_result() ======')
         super(SkypeEcho, self).update_result(context)
-        # if not self.dumpsys_enabled:
-        #     return
+        if not self.dumpsys_enabled:
+            return
 
         self.device.pull_file(self.output_file, context.output_directory)
-        results_file = os.path.join(context.output_directory, self.instrumentation_log)
+        results_file = op.join(context.output_directory, self.instrumentation_log)
 
         # process results and add them using
         # context.result.add_metric
@@ -116,9 +135,9 @@ class SkypeEcho(AndroidUiAutoBenchmark):
         self.logger.info('===== teardown() ======')
         super(SkypeEcho, self).teardown(context)
         # Pull log files
-        for entry in self.device.listdir(self.device.working_directory):
+        wd = self.device.working_directory
+        for entry in self.device.listdir(wd):
             if entry.startswith(self.name) and entry.endswith(".log"):
-                self.device.pull_file(os.path.join(self.device.working_directory, entry),
-                                      context.output_directory)
-                self.device.delete_file(os.path.join(self.device.working_directory, entry))
+                self.device.pull_file(op.join(wd, entry), context.output_directory)
+                self.device.delete_file(op.join(wd, entry))
         # self.device.execute('am force-stop {}'.format(self.package))
