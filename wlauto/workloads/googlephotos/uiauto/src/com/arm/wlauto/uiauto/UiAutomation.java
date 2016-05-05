@@ -20,12 +20,14 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static String TAG = "uxperf_googlephotos";
 
     public Bundle parameters;
-    private long viewTimeout =  TimeUnit.SECONDS.toMillis(10);
+    private int viewTimeoutSecs = 10;
+    private long viewTimeout =  TimeUnit.SECONDS.toMillis(viewTimeoutSecs);
     private LinkedHashMap<String, Timer> timingResults = new LinkedHashMap<String, Timer>();
 
     public void runUiAutomation() throws Exception {
         parameters = getParams();
 
+        confirmLocalFileAccess();
         dismissWelcomeView();
         gesturesTest();
         editPhotoTest();
@@ -33,16 +35,31 @@ public class UiAutomation extends UxPerfUiAutomation {
         writeResultsToFile(timingResults, parameters.getString("output_file"));
     }
 
+    private void confirmLocalFileAccess() throws Exception {
+        // First time run requires confirmation to allow access to local files
+        UiObject allowButton = new UiObject(new UiSelector().textContains("Allow")
+                                                            .className("android.widget.Button"));
+        if (allowButton.waitForExists(timeout)) {
+            allowButton.clickAndWaitForNewWindow(timeout);
+        }
+    }
+
+
     private void dismissWelcomeView() throws Exception {
+
         // Click through the first two pages and make sure that we don't sign
         // in to our google account. This ensures the same set of photographs
         // are placed in the camera directory for each run.
 
-        sleep(3); // Pause while splash screen loads
+        sleep(5); // Pause while splash screen loads
 
         UiObject getStartedButton =
-            getUiObjectByResourceId("com.google.android.apps.photos:id/get_started",
-                                    "android.widget.Button");
+            new UiObject (new UiSelector().textContains("Get started")
+                                          .className("android.widget.Button"));
+
+        tapDisplayCentre();
+        waitObject(getStartedButton, 10);
+
         getStartedButton.clickAndWaitForNewWindow();
 
         UiObject welcomeButton =
@@ -78,7 +95,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         testParams.put("pinch_out", new GestureTestParams(GestureType.PINCH, PinchType.OUT, 100, 50));
         testParams.put("pinch_in", new GestureTestParams(GestureType.PINCH, PinchType.IN, 100, 50));
         testParams.put("swipe_right", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.RIGHT, 10));
-        testParams.put("swipe_up", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.UP, 10));
 
         Iterator<Entry<String, GestureTestParams>> it = testParams.entrySet().iterator();
 
@@ -128,6 +144,10 @@ public class UiAutomation extends UxPerfUiAutomation {
 
             timingResults.put(runName, results);
         }
+
+        UiObject navigateUpButton =
+            getUiObjectByDescription("Navigate Up", "android.widget.ImageButton");
+        navigateUpButton.click();
     }
 
     private void editPhotoTest() throws Exception {
