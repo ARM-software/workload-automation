@@ -127,6 +127,11 @@ class ApkWorkload(Workload):
     :view: The class of the main view pane of the app. This needs to be defined in order
            to collect SurfaceFlinger-derived statistics (such as FPS) for the app, but
            may otherwise be left as ``None``.
+    :launch_main: If ``False``, the default activity will not be launched (during setup),
+                  allowing workloads to start the app with an intent of their choice in
+                  the run step. This is useful for apps without a launchable default/main
+                  activity or those where it cannot be launched without intent data (which
+                  is provided at the run phase).
     :install_timeout: Timeout for the installation of the APK. This may vary wildly based on
                       the size and nature of a specific APK, and so should be defined on
                       per-workload basis.
@@ -144,6 +149,7 @@ class ApkWorkload(Workload):
     activity = None
     view = None
     supported_platforms = ['android']
+    launch_main = True
 
     parameters = [
         Parameter('install_timeout', kind=int, default=300,
@@ -160,6 +166,11 @@ class ApkWorkload(Workload):
                   '''),
         Parameter('uninstall_apk', kind=boolean, default=False,
                   description='If ``True``, will uninstall workload\'s APK as part of teardown.'),
+        Parameter('clear_data_on_reset', kind=bool, default=True,
+                  description='''
+                  If set to ``False``, this will prevent WA from clearing package
+                  data for this workload prior to running it.
+                  '''),
     ]
 
     def __init__(self, device, _call_super=True, **kwargs):
@@ -184,7 +195,8 @@ class ApkWorkload(Workload):
 
     def setup(self, context):
         self.initialize_package(context)
-        self.launch_package()
+        if self.launch_main:
+            self.launch_package() # launch default activity without intent data
         self.device.execute('am kill-all')  # kill all *background* activities
         self.device.clear_logcat()
 
@@ -239,13 +251,14 @@ class ApkWorkload(Workload):
         else:
             output = self.device.execute('am start -W -n {}/{}'.format(self.package, self.activity))
         if 'Error:' in output:
-            self.device.execute('am force-stop {}'.format(self.package))  # this will dismiss any erro dialogs
+            self.device.execute('am force-stop {}'.format(self.package))  # this will dismiss any error dialogs
             raise WorkloadError(output)
         self.logger.debug(output)
 
     def reset(self, context):  # pylint: disable=W0613
         self.device.execute('am force-stop {}'.format(self.package))
-        self.device.execute('pm clear {}'.format(self.package))
+        if self.clear_data_on_reset:
+            self.device.execute('pm clear {}'.format(self.package))
 
         # As of android API level 23, apps can request permissions at runtime,
         # this will grant all of them so requests do not pop up when running the app
@@ -434,7 +447,7 @@ class GameWorkload(ApkWorkload, ReventWorkload):
         Parameter('install_timeout', default=500, override=True),
         Parameter('assets_push_timeout', kind=int, default=500,
                   description='Timeout used during deployment of the assets package (if there is one).'),
-        Parameter('clear_data_on_reset', kind=bool, default=True,
+        Parameter('clear_data_on_reset', kind=bool, default=True, override=True,
                   description="""
                   If set to ``False``, this will prevent WA from clearing package
                   data for this workload prior to running it.
