@@ -7,19 +7,13 @@ import android.os.SystemClock;
 // Import the uiautomator libraries
 import com.android.uiautomator.core.UiObject;
 import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
 import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.core.UiCollection;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.BufferedWriter;
 import java.util.concurrent.TimeUnit;
-import java.util.LinkedHashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -33,8 +27,6 @@ public class UiAutomation extends UxPerfUiAutomation {
     private LinkedHashMap<String, Timer> timingResults = new LinkedHashMap<String, Timer>();
 
     public void runUiAutomation() throws Exception {
-        Timer result = new Timer();
-        result.start();
         parameters = getParams();
 
         dismissWelcomeView();
@@ -45,11 +37,8 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         gesturesTest("Getting Started.pdf");
 
-        String [] searchStrings = {"Glossary", "cortex"};
+        String[] searchStrings = {"Glossary", "cortex"};
         searchPdfTest("cortex_m4", searchStrings);
-
-        result.end();
-        timingResults.put("Total", result);
 
         writeResultsToFile(timingResults, parameters.getString("output_file"));
     }
@@ -72,8 +61,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         int i = 0;
         do {
             i += 10;
-            tapDisplay(webViewCoords.centerX(), webViewCoords.bottom - i);
-        } while ( welcomeView.exists() || i < webViewCoords.top  );
+            tapDisplay(webViewCoords.centerX(), webViewCoords.centerY() + i);
+        } while (welcomeView.exists() || i < webViewCoords.top);
     }
 
     private void signInOnline(Bundle parameters) throws Exception {
@@ -139,17 +128,20 @@ public class UiAutomation extends UxPerfUiAutomation {
                                                             .className("android.widget.Button"));
         if (allowButton.waitForExists(timeout)) {
             allowButton.clickAndWaitForNewWindow(timeout);
-        };
+        }
     }
 
-    private void openFile(String filename) throws Exception {
+    private void openFile(final String filename) throws Exception {
+
+        String TestTag = "openfile";
+
         // Replace whitespace and full stops within the filename
         String file = filename.replaceAll("\\.", "_").replaceAll("\\s+", "_");
 
-        timingResults.put(String.format("selectLocalFilesList" + "_" + file), selectLocalFilesList());
-        timingResults.put(String.format("selectSearchDuration" + "_" + file), selectSearchFileButton());
-        timingResults.put(String.format("searchFileList" + "_" + file), searchFileList(filename));
-        timingResults.put(String.format("openFileFromList" + "_" + file), openFileFromList(filename));
+        timingResults.put(String.format(TestTag + "_" + "selectLocalFilesList" + "_" + file), selectLocalFilesList());
+        timingResults.put(String.format(TestTag + "_" + "selectSearchDuration" + "_" + file), selectSearchFileButton());
+        timingResults.put(String.format(TestTag + "_" + "searchFileList" + "_" + file), searchFileList(filename));
+        timingResults.put(String.format(TestTag + "_" + "openFileFromList" + "_" + file), openFileFromList(filename));
 
         // Cludge to get rid of the first time run help dialogue boxes
         tapDisplayCentre();
@@ -181,7 +173,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         return result;
     }
 
-    private Timer searchFileList(String searchText) throws Exception {
+    private Timer searchFileList(final String searchText) throws Exception {
         // Enter search text into the file searchBox.  This will automatically filter the list.
         UiObject searchBox = getUiObjectByResourceId("android:id/search_src_text",
                                                      "android.widget.EditText");
@@ -193,7 +185,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         return result;
     }
 
-    private Timer openFileFromList(String file) throws Exception {
+    private Timer openFileFromList(final String file) throws Exception {
         // Open a file from a file list view by searching for UiObjects containing the doc title.
         UiObject fileObject = getUiObjectByText(file, "android.widget.TextView");
         Timer result = new Timer();
@@ -209,31 +201,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         return result;
     }
 
-    private class GestureTestParams {
-        GestureType gestureType;
-        Direction gestureDirection;
-        PinchType pinchType;
-        int percent;
-        int steps;
-
-        GestureTestParams(GestureType gesture, Direction direction, int steps) {
-            this.gestureType = gesture;
-            this.gestureDirection = direction;
-            this.pinchType = PinchType.NULL;
-            this.steps = steps;
-            this.percent = 0;
-        }
-
-        GestureTestParams(GestureType gesture, PinchType pinchType, int steps, int percent) {
-            this.gestureType = gesture;
-            this.gestureDirection = Direction.NULL;
-            this.pinchType = pinchType;
-            this.steps = steps;
-            this.percent = percent;
-        }
-    }
-
-    private void gesturesTest (String filename) throws Exception {
+    private void gesturesTest(final String filename) throws Exception {
 
         String TestTag = "gestures";
 
@@ -259,14 +227,14 @@ public class UiAutomation extends UxPerfUiAutomation {
             int percent = pair.getValue().percent;
 
             String runName = String.format(TestTag + "_" + pair.getKey());
-            String gfxInfologName =  String.format(TAG + "_" + runName + "_gfxInfo.log");
+            String gfxInfologName =  String.format(runName + "_gfxInfo.log");
             String surfFlingerlogName =  String.format(runName + "_surfFlinger.log");
             String viewName = new String("com.adobe.reader.viewer.ARViewerActivity");
 
             UiObject view = new UiObject(new UiSelector().resourceId("com.adobe.reader:id/viewPager"));
 
-            startDumpsysGfxInfo();
-            startDumpsysSurfaceFlinger(viewName);
+            startDumpsysGfxInfo(parameters);
+            startDumpsysSurfaceFlinger(parameters, viewName);
 
             Timer results = new Timer();
 
@@ -284,8 +252,8 @@ public class UiAutomation extends UxPerfUiAutomation {
                     break;
             }
 
-            stopDumpsysSurfaceFlinger(viewName, surfFlingerlogName);
-            stopDumpsysGfxInfo(gfxInfologName);
+            stopDumpsysSurfaceFlinger(parameters, viewName, surfFlingerlogName);
+            stopDumpsysGfxInfo(parameters, gfxInfologName);
 
             timingResults.put(runName, results);
         }
@@ -293,7 +261,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         exitDocument();
     }
 
-    private void searchPdfTest (String filename, String [] searchStrings) throws Exception {
+    private void searchPdfTest(final String filename, final String[] searchStrings) throws Exception {
 
         String TestTag = "search";
 
@@ -302,7 +270,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Get the page view for the opened document which we can use for pinch actions
         UiObject pageView = getUiObjectByResourceId("com.adobe.reader:id/pageView",
                                                     "android.widget.RelativeLayout");
-        for ( int i=0; i < searchStrings.length; i++) {
+        for (int i = 0; i < searchStrings.length; i++) {
             timingResults.put(String.format(TestTag + "_" + i),
                                             searchTest(searchStrings[i]));
         }
@@ -310,7 +278,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         exitDocument();
     }
 
-    private Timer searchTest(String searchText) throws Exception {
+    private Timer searchTest(final String searchText) throws Exception {
         // Click on the search button icon and enter text in the box.  This closes the keyboad
         // so click the box again and press Enter to start the search.
         UiObject searchButton = getUiObjectByResourceId("com.adobe.reader:id/document_view_search_icon",
@@ -352,48 +320,5 @@ public class UiAutomation extends UxPerfUiAutomation {
         myDocsButton.clickAndWaitForNewWindow();
         UiObject upButton = getUiObjectByResourceId("android:id/up", "android.widget.ImageView" );
         upButton.clickAndWaitForNewWindow();
-    }
-
-    private void writeResultsToFile(LinkedHashMap timingResults, String file) throws Exception {
-        // Write out the key/value pairs to the instrumentation log file
-        FileWriter fstream = new FileWriter(file);
-        BufferedWriter out = new BufferedWriter(fstream);
-        Iterator<Entry<String, Timer>> it = timingResults.entrySet().iterator();
-
-        while (it.hasNext()) {
-            Map.Entry<String, Timer> pairs = it.next();
-            Timer results = pairs.getValue();
-            long start = results.getStart();
-            long finish = results.getFinish();
-            long duration = results.getDuration();
-            out.write(String.format(pairs.getKey() + " " + start + " " + finish + " " + duration + "\n"));
-        }
-        out.close();
-    }
-
-    private void startDumpsysSurfaceFlinger(String view) {
-        if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
-            initDumpsysSurfaceFlinger(parameters.getString("package"), view);
-        }
-    }
-
-    private void stopDumpsysSurfaceFlinger(String view, String filename) throws Exception {
-        if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
-            File out_file = new File(parameters.getString("output_dir"), filename);
-            exitDumpsysSurfaceFlinger(parameters.getString("package"), view, out_file);
-          }
-    }
-
-    private void startDumpsysGfxInfo() {
-        if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
-            initDumpsysGfxInfo(parameters.getString("package"));
-          }
-    }
-
-    private void stopDumpsysGfxInfo(String filename) throws Exception {
-      if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
-            File out_file = new File(parameters.getString("output_dir"), filename);
-            exitDumpsysGfxInfo(parameters.getString("package"), out_file);
-          }
     }
 }

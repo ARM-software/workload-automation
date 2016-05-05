@@ -16,7 +16,7 @@ class Gmail(AndroidUiAutoBenchmark):
     description = """
     A workload to perform standard productivity tasks within Gmail.
 
-    The workload carries out various tasks, such as creatign new emails and
+    The workload carries out various tasks, such as creating new emails and
     sending them, whilst also producing metrics for action completion times.
     """
 
@@ -45,13 +45,12 @@ class Gmail(AndroidUiAutoBenchmark):
     def setup(self, context):
         super(Gmail, self).setup(context)
 
-        self.camera_dir = self.device.path.join(self.device.external_storage_directory,
-                                                      'DCIM/Camera/')
+        self.storage_dir = self.device.path.join(self.device.working_directory)
 
         for file in os.listdir(self.dependencies_directory):
             if file.endswith(".jpg"):
                 self.device.push_file(os.path.join(self.dependencies_directory, file),
-                                      os.path.join(self.camera_dir, file), timeout=300)
+                                      os.path.join(self.storage_dir, file), timeout=300)
 
         # Force a re-index of the mediaserver cache to pick up new files
         self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
@@ -67,26 +66,30 @@ class Gmail(AndroidUiAutoBenchmark):
     def update_result(self, context):
         super(Gmail, self).update_result(context)
 
-        if self.dumpsys_enabled:
-            self.device.pull_file(self.output_file, context.output_directory)
-            result_file = os.path.join(context.output_directory, self.instrumentation_log)
+        self.device.pull_file(self.output_file, context.output_directory)
+        result_file = os.path.join(context.output_directory, self.instrumentation_log)
 
-            with open(result_file, 'r') as wfh:
-                regex = re.compile(r'(?P<key>\w+)\s+(?P<value1>\d+)\s+(?P<value2>\d+)\s+(?P<value3>\d+)')
-                for line in wfh:
-                    match = regex.search(line)
-                    if match:
-                        context.result.add_metric((match.group('key') + "_start"),
-                                                  match.group('value1'))
-                        context.result.add_metric((match.group('key') + "_finish"),
-                                                  match.group('value2'))
-                        context.result.add_metric((match.group('key') + "_duration"),
-                                                  match.group('value3'))
+        with open(result_file, 'r') as wfh:
+            regex = re.compile(r'(?P<key>\w+)\s+(?P<value1>\d+)\s+(?P<value2>\d+)\s+(?P<value3>\d+)')
+            for line in wfh:
+                match = regex.search(line)
+                if match:
+                    context.result.add_metric((match.group('key') + "_start"),
+                                              match.group('value1'))
+                    context.result.add_metric((match.group('key') + "_finish"),
+                                              match.group('value2'))
+                    context.result.add_metric((match.group('key') + "_duration"),
+                                              match.group('value3'))
 
     def teardown(self, context):
         super(Gmail, self).teardown(context)
 
         for file in self.device.listdir(self.device.working_directory):
-            if file.startswith (self.name) and file.endswith(".log"):
+            if file.endswith(".log"):
                 self.device.pull_file(os.path.join(self.device.working_directory, file), context.output_directory)
                 self.device.delete_file(os.path.join(self.device.working_directory, file))
+            if file.endswith(".jpg"):
+                self.device.delete_file(os.path.join(self.device.working_directory, file))
+
+        # Force a re-index of the mediaserver cache to pick up new files
+        self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')

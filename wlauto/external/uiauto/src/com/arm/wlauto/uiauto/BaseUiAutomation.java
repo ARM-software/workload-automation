@@ -22,13 +22,13 @@ import java.io.InputStreamReader;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
 
-import android.app.Activity;
 import android.os.Bundle;
+import android.graphics.Point;
+import android.graphics.Rect;
 
 // Import the uiautomator libraries
 import com.android.uiautomator.core.UiObject;
 import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
 import com.android.uiautomator.core.UiSelector;
 import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
@@ -142,6 +142,12 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         return object;
     }
 
+    public void clickUiObject(UiObject uiobject, long timeout) throws Exception {
+        if (!uiobject.clickAndWaitForNewWindow(timeout)) {
+            throw new UiObjectNotFoundException(String.format("Timeout waiting for New Window"));
+        }
+    }
+
     public int getDisplayHeight () {
         return getUiDevice().getInstance().getDisplayHeight();
     }
@@ -200,5 +206,49 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
             (getDisplayCentreWidth() + (getDisplayCentreWidth() / 2)),
             getDisplayCentreHeight(),
             steps);
+    }
+
+    public void uiDeviceVertPinchIn(UiObject view, int steps, int percent) throws Exception {
+        final int FINGER_TOUCH_HALF_WIDTH = 20;
+
+        // Make value between 1 and 100
+        percent = (percent < 0) ? 1 : (percent > 100) ? 100 : percent;
+        float percentage = percent / 100f;
+
+        Rect rect = view.getVisibleBounds();
+        if (rect.width() <= FINGER_TOUCH_HALF_WIDTH * 2)
+            throw new IllegalStateException("Object width is too small for operation");
+
+        // Start at the top-center and bottom-center of the control
+        Point startPoint1 = new Point(rect.centerX(), rect.centerY() + (int) ((rect.height() / 2) * percentage));
+        Point startPoint2 = new Point(rect.centerX(), rect.centerY() - (int) ((rect.height() / 2) * percentage));
+
+        // End at the same point at the center of the control
+        Point endPoint1 = new Point(rect.centerX(), rect.centerY() + FINGER_TOUCH_HALF_WIDTH);
+        Point endPoint2 = new Point(rect.centerX(), rect.centerY() - FINGER_TOUCH_HALF_WIDTH);
+
+        view.performTwoPointerGesture(startPoint1, startPoint2, endPoint1, endPoint2, steps);
+    }
+
+    public void uiDeviceVertPinchOut(UiObject view, int steps, int percent) throws Exception {
+        final int FINGER_TOUCH_HALF_WIDTH = 20;
+
+        // Make value between 1 and 100
+        percent = (percent < 0) ? 1 : (percent > 100) ? 100 : percent;
+        float percentage = percent / 100f;
+
+        Rect rect = view.getVisibleBounds();
+        if (rect.width() <= FINGER_TOUCH_HALF_WIDTH * 2)
+            throw new IllegalStateException("Object width is too small for operation");
+
+        // Start from the same point at the center of the control
+        Point startPoint1 = new Point(rect.centerX(), rect.centerY() + FINGER_TOUCH_HALF_WIDTH);
+        Point startPoint2 = new Point(rect.centerX(), rect.centerY() - FINGER_TOUCH_HALF_WIDTH);
+
+        // End at the top-center and bottom-center of the control
+        Point endPoint1 = new Point(rect.centerX(), rect.centerY() + (int) ((rect.height() / 2) * percentage));
+        Point endPoint2 = new Point(rect.centerX(), rect.centerY() - (int) ((rect.height() / 2) * percentage));
+
+        view.performTwoPointerGesture(startPoint1, startPoint2, endPoint1, endPoint2, steps);
     }
 }
