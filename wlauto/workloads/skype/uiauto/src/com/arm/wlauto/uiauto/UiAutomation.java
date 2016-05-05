@@ -49,6 +49,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         // Run tests
         handleLoginScreen(loginName, loginPass);
+        confirmLocalFileAccess();
         selectContact(contactName, contactSkypeId);
         if ("video".equalsIgnoreCase(callType)) {
             videoCallTest(callDuration);
@@ -74,6 +75,15 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject signinButton = new UiObject(new UiSelector().resourceId(signinButtonResourceId));
         passwordField.setText(password);
         signinButton.clickAndWaitForNewWindow();
+    }
+
+    private void confirmLocalFileAccess() throws Exception {
+        // First time run requires confirmation to allow access to local files
+        UiObject allowButton = new UiObject(new UiSelector().textContains("Allow")
+                                                            .className("android.widget.Button"));
+        if (allowButton.waitForExists(timeout)) {
+            allowButton.clickAndWaitForNewWindow(timeout);
+        }
     }
 
     private void selectContact(String name, String id) throws Exception {
