@@ -1,11 +1,8 @@
 package com.arm.wlauto.uiauto.skype;
 
 import java.io.File;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.util.TreeMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -29,8 +26,6 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final String PACKAGE = "com.skype.raider";
     public static final String PACKAGE_ID = "com.skype.raider:id/";
     public static final String TEXT_VIEW = "android.widget.TextView";
-
-    public static String noContactMessage = "Could not find contact \"%s\" in the contacts list.";
 
     private Map<String, Timer> results = new TreeMap<String, Timer>();
     private boolean dumpsysEnabled;
@@ -62,22 +57,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
 
         // Save results
-        saveResults(results, resultsFile);
-    }
-
-    private void saveResults(Map<String, Timer> results, String file) throws Exception {
-        BufferedWriter out = new BufferedWriter(new FileWriter(file));
-        long start, finish, duration;
-        Timer timer;
-        for (Map.Entry<String, Timer> entry : results.entrySet()) {
-            timer = entry.getValue();
-            start = timer.getStart();
-            finish = timer.getFinish();
-            duration = timer.getDuration();
-            // Format used to parse out results in workload's update_result function
-            out.write(String.format("timer: %s %d %d %d\n", entry.getKey(), start, finish, duration));
-        }
-        out.close();
+        writeResultsToFile(results, resultsFile);
     }
 
     private void handleLoginScreen(String username, String password) throws Exception {
@@ -155,8 +135,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         sleep(duration);
 
         if (video && dumpsysEnabled) {
-            exitDumpsysSurfaceFlinger(PACKAGE, viewName, new File(outputDir, dumpsysTag + "_surface_flinger.log"));
-            exitDumpsysGfxInfo(PACKAGE, new File(outputDir, dumpsysTag + "_gfxinfo.log"));
+            exitDumpsysSurfaceFlinger(PACKAGE, viewName, new File(outputDir, dumpsysTag + "_surfFlinger.log"));
+            exitDumpsysGfxInfo(PACKAGE, new File(outputDir, dumpsysTag + "_gfxInfo.log"));
         }
     }
 
