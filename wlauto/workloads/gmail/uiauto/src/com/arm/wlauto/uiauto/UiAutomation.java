@@ -17,7 +17,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static String TAG = "uxperf_gmail";
 
     private Bundle parameters;
-    private long networkTimeout =  TimeUnit.SECONDS.toMillis(20);
+    private int networkTimeoutSecs = 20;
+    private long networkTimeout =  TimeUnit.SECONDS.toMillis(networkTimeoutSecs);
     private LinkedHashMap<String, Timer> timingResults = new LinkedHashMap<String, Timer>();
 
     public void runUiAutomation() throws Exception {
@@ -26,10 +27,10 @@ public class UiAutomation extends UxPerfUiAutomation {
         clearFirstRunDialogues();
 
         clickNewMail();
-        attachFiles();
         setToField();
         setSubjectField();
         setComposeField();
+        attachFiles();
         clickSendButton();
 
         writeResultsToFile(timingResults, parameters.getString("output_file"));
@@ -61,7 +62,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void setToField() throws Exception {
         Timer result = new Timer();
-        UiObject toField = getUiObjectByDescription("To", "android.widget.TextView");
+        UiObject toField = getUiObjectByText("To", "android.widget.TextView");
         String recipient = parameters.getString("recipient").replace('_', ' ');
         result.start();
         toField.setText(recipient);
@@ -74,6 +75,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         Timer result = new Timer();
         UiObject subjectField = getUiObjectByText("Subject", "android.widget.EditText");
         result.start();
+        // Click on the subject field is required on some platforms to exit the To box cleanly
+        subjectField.click();
         subjectField.setText("This is a test message");
         getUiDevice().pressEnter();
         result.end();
@@ -97,6 +100,10 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickUiObject(sendButton, timeout);
         result.end();
         timingResults.put("Send", result);
+
+        UiObject drawerButton = new UiObject(new UiSelector().descriptionContains("avigat")
+                                                           .className("android.widget.ImageButton"));
+        waitObject(drawerButton, networkTimeoutSecs);
     }
 
     public void attachFiles() throws Exception {

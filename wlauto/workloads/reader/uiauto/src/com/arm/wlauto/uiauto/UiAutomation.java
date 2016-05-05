@@ -287,7 +287,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject searchBox = getUiObjectByResourceId("android:id/search_src_text",
                                                      "android.widget.EditText");
         searchBox.setText(searchText);
-        searchBox.click();
+        getUiDevice().getInstance().pressSearch();
         Timer result = new Timer();
         result.start();
         getUiDevice().getInstance().pressEnter();
