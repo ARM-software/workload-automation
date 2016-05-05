@@ -1,4 +1,4 @@
-package com.arm.wlauto.uiauto.skypeecho;
+package com.arm.wlauto.uiauto.skype;
 
 import java.io.File;
 import java.io.BufferedWriter;
@@ -25,7 +25,7 @@ import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
 public class UiAutomation extends UxPerfUiAutomation {
 
-    public static final String TAG = "skypeecho";
+    public static final String TAG = "skype";
     public static final String PACKAGE = "com.skype.raider";
     public static final String PACKAGE_ID = "com.skype.raider:id/";
     public static final String TEXT_VIEW = "android.widget.TextView";

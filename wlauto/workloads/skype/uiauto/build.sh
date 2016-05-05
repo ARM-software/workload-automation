@@ -12,6 +12,6 @@ if [[ $exit_code -ne 0 ]]; then
     echo "ERROR: ant build exited with code $exit_code" && exit $exit_code
 fi
 
-if [[ -f bin/com.arm.wlauto.uiauto.skypeecho.jar ]]; then
-    cp bin/com.arm.wlauto.uiauto.skypeecho.jar ..
+if [[ -f bin/com.arm.wlauto.uiauto.skype.jar ]]; then
+    cp bin/com.arm.wlauto.uiauto.skype.jar ..
 fi

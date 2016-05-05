@@ -25,9 +25,9 @@ SKYPE_ACTION_URIS = {
 }
 
 
-class SkypeEcho(AndroidUiAutoBenchmark):
+class Skype(AndroidUiAutoBenchmark):
 
-    name = 'skypeecho'
+    name = 'skype'
     description = '''
     Workload that makes Skype calls
 
@@ -71,12 +71,12 @@ class SkypeEcho(AndroidUiAutoBenchmark):
     ]
 
     def __init__(self, device, **kwargs):
-        super(SkypeEcho, self).__init__(device, **kwargs)
+        super(Skype, self).__init__(device, **kwargs)
         self.output_file = op.join(self.device.working_directory, self.instrumentation_log)
         self.run_timeout = self.duration + 60
 
     def validate(self):
-        super(SkypeEcho, self).validate()
+        super(Skype, self).validate()
         self.uiauto_params['results_file'] = self.output_file
         self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
         self.uiauto_params['output_dir'] = self.device.working_directory
@@ -89,18 +89,18 @@ class SkypeEcho(AndroidUiAutoBenchmark):
 
     def setup(self, context):
         self.logger.info('===== setup() ======')
-        super(SkypeEcho, self).setup(context)
+        super(Skype, self).setup(context)
         self.device.execute('am force-stop {}'.format(self.package))
         self.device.execute('am start -W -a android.intent.action.VIEW -d skype:dummy?dummy')
         time.sleep(1)
 
     def run(self, context):
         self.logger.info('===== run() ======')
-        super(SkypeEcho, self).run(context)
+        super(Skype, self).run(context)
 
     def update_result(self, context):
         self.logger.info('===== update_result() ======')
-        super(SkypeEcho, self).update_result(context)
+        super(Skype, self).update_result(context)
         if not self.dumpsys_enabled:
             return
 
@@ -119,7 +119,7 @@ class SkypeEcho(AndroidUiAutoBenchmark):
 
     def teardown(self, context):
         self.logger.info('===== teardown() ======')
-        super(SkypeEcho, self).teardown(context)
+        super(Skype, self).teardown(context)
         # Pull log files
         wd = self.device.working_directory
         for entry in self.device.listdir(wd):
