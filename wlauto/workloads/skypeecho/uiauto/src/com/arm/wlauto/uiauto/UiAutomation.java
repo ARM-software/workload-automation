@@ -30,43 +30,11 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final String PACKAGE_ID = "com.skype.raider:id/";
     public static final String TEXT_VIEW = "android.widget.TextView";
 
-    public static String sendSmsButtonResourceId = PACKAGE_ID + "chat_menu_item_send_sms";
-    public static String voiceCallButtonResourceId = PACKAGE_ID + "chat_menu_item_call_voice";
-    public static String videoCallButtonResourceId = PACKAGE_ID + "chat_menu_item_call_video";
-    public static String endCallButtonResourceId = PACKAGE_ID + "call_end_button";
     public static String noContactMessage = "Could not find contact \"%s\" in the contacts list.";
 
     private Map<String, Timer> results = new TreeMap<String, Timer>();
     private boolean dumpsysEnabled;
     private String outputDir;
-
-    private static Arguments args;
-
-    private static final class Arguments {
-        String loginName;
-        String loginPass;
-        String contactSkypeid;
-        String contactName;
-        int callDuration;
-        String callType;
-        String resultsFile;
-        String outputDir;
-        boolean dumpsysEnabled;
-    }
-
-    private static Arguments parseBundle(Bundle bundle) {
-        Arguments args = new Arguments();
-        args.loginName = bundle.getString("my_id");
-        args.loginPass = bundle.getString("my_pwd");
-        args.contactSkypeid = bundle.getString("skypeid");
-        args.contactName = bundle.getString("name").replace("_", " ");
-        args.callDuration = Integer.parseInt(bundle.getString("duration"));
-        args.callType = bundle.getString("action");
-        args.resultsFile = bundle.getString("results_file");
-        args.outputDir = bundle.getString("output_dir");
-        args.dumpsysEnabled = Boolean.parseBoolean(bundle.getString("dumpsys_enabled"));
-        return args;
-    }
 
     public void runUiAutomation() throws Exception {
         // Override superclass value
@@ -76,7 +44,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         Bundle parameters = getParams();
         String loginName = parameters.getString("my_id");
         String loginPass = parameters.getString("my_pwd");
-        String contactSkypeid = parameters.getString("skypeid");
+        String contactSkypeId = parameters.getString("skypeid");
         String contactName = parameters.getString("name").replace("_", " ");
         int callDuration = Integer.parseInt(parameters.getString("duration"));
         String callType = parameters.getString("action");
@@ -85,19 +53,15 @@ public class UiAutomation extends UxPerfUiAutomation {
         dumpsysEnabled = Boolean.parseBoolean(parameters.getString("dumpsys_enabled"));
 
         // Run tests
-        Timer overallTimer = new Timer();
-        overallTimer.start();
         handleLoginScreen(loginName, loginPass);
-        selectContact(contactName, contactSkypeid);
+        selectContact(contactName, contactSkypeId);
         if ("video".equalsIgnoreCase(callType)) {
             videoCallTest(callDuration);
         } else if ("voice".equalsIgnoreCase(callType)) {
             voiceCallTest(callDuration);
         }
-        overallTimer.end();
 
         // Save results
-        results.put("overall_test", overallTimer);
         saveResults(results, resultsFile);
     }
 
@@ -124,13 +88,10 @@ public class UiAutomation extends UxPerfUiAutomation {
         useridField.setText(username);
         nextButton.clickAndWaitForNewWindow();
 
-        String skypenameResoureId = PACKAGE_ID + "signin_skypename";
         String passwordResoureId = PACKAGE_ID + "signin_password";
         String signinButtonResourceId = PACKAGE_ID + "sign_in_btn";
-        // UiObject skypenameField = new UiObject(new UiSelector().resourceId(skypenameResoureId));
         UiObject passwordField = new UiObject(new UiSelector().resourceId(passwordResoureId));
         UiObject signinButton = new UiObject(new UiSelector().resourceId(signinButtonResourceId));
-        // skypenameField.setText(username);
         passwordField.setText(password);
         signinButton.clickAndWaitForNewWindow();
     }
@@ -141,7 +102,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject peopleTab;
         // Open the 'People' tab aka contacts view
         // On phones, it is represented by an image with description
-        // On tablets, it the full text is shown without a description
+        // On tablets, the full text is shown without a description
         try {
             peopleTab = getUiObjectByDescription("People", TEXT_VIEW);
         } catch (UiObjectNotFoundException e) {
@@ -156,7 +117,6 @@ public class UiAutomation extends UxPerfUiAutomation {
             contactCard = getUiObjectByText(name, TEXT_VIEW);
         } catch (UiObjectNotFoundException e) {
             contactCard = getUiObjectByText(name, TEXT_VIEW);
-            // contactCard = getUiObjectByText(id, TEXT_VIEW);
         }
         contactCard.clickAndWaitForNewWindow();
         timer.end();
@@ -189,14 +149,10 @@ public class UiAutomation extends UxPerfUiAutomation {
             initDumpsysGfxInfo(PACKAGE);
         }
 
-        // String resource = video ? videoCallButtonResourceId : voiceCallButtonResourceId;
-        // UiObject callButton = new UiObject(new UiSelector().resourceId(resource));
         String description = video ? "Video call" : "Call options";
         UiObject callButton = new UiObject(new UiSelector().descriptionContains(description));
         callButton.click();
-        // callButton.clickAndWaitForNewWindow();
         sleep(duration);
-        // endCall();
 
         if (video && dumpsysEnabled) {
             exitDumpsysSurfaceFlinger(PACKAGE, viewName, new File(outputDir, dumpsysTag + "_surface_flinger.log"));

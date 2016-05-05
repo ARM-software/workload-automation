@@ -63,8 +63,6 @@ class SkypeEcho(AndroidUiAutoBenchmark):
                   description='This is the duration of the call in seconds'),
         Parameter('action', kind=str, allowed_values=['voice', 'video'], default='video',
                   description='Action to take - either video (default) or voice call'),
-        Parameter('use_gui', kind=bool, default=True,
-                  description='Specifies whether to use GUI or direct Skype URI'),
         Parameter('dumpsys_enabled', kind=bool, default=True,
                   description='''
                   If ``True``, dumpsys captures will be carried out during the test run.
@@ -82,35 +80,23 @@ class SkypeEcho(AndroidUiAutoBenchmark):
         self.uiauto_params['results_file'] = self.output_file
         self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
         self.uiauto_params['output_dir'] = self.device.working_directory
-        if self.use_gui:
-            self.uiauto_params['my_id'] = self.login_name
-            self.uiauto_params['my_pwd'] = self.login_pass
-            self.uiauto_params['skypeid'] = self.contact_skypeid
-            self.uiauto_params['name'] = self.contact_name.replace(' ', '_')
-            self.uiauto_params['duration'] = self.duration
-            self.uiauto_params['action'] = self.action
+        self.uiauto_params['my_id'] = self.login_name
+        self.uiauto_params['my_pwd'] = self.login_pass
+        self.uiauto_params['skypeid'] = self.contact_skypeid
+        self.uiauto_params['name'] = self.contact_name.replace(' ', '_')
+        self.uiauto_params['duration'] = self.duration
+        self.uiauto_params['action'] = self.action
 
     def setup(self, context):
         self.logger.info('===== setup() ======')
-        if self.use_gui:
-            super(SkypeEcho, self).setup(context)
-            self.device.execute('am force-stop {}'.format(self.package))
-            self.device.execute('am start -W -a android.intent.action.VIEW -d skype:dummy?dummy')
-            time.sleep(1)
-        else:
-            self.device.execute('am force-stop {}'.format(self.package))
+        super(SkypeEcho, self).setup(context)
+        self.device.execute('am force-stop {}'.format(self.package))
+        self.device.execute('am start -W -a android.intent.action.VIEW -d skype:dummy?dummy')
+        time.sleep(1)
 
     def run(self, context):
         self.logger.info('===== run() ======')
-        if self.use_gui:
-            super(SkypeEcho, self).run(context)
-        else:
-            data_uri = 'skype:{}?{}'.format(self.contact_skypeid, SKYPE_ACTION_URIS[self.action])
-            command = 'am start -W -a android.intent.action.VIEW -d "{}"'.format(data_uri)
-            self.logger.debug(self.device.execute(command))
-            self.logger.debug('Call started; waiting for {} seconds...'.format(self.duration))
-            time.sleep(self.duration)
-            self.device.execute('am force-stop {}'.format(self.package))
+        super(SkypeEcho, self).run(context)
 
     def update_result(self, context):
         self.logger.info('===== update_result() ======')
@@ -140,4 +126,3 @@ class SkypeEcho(AndroidUiAutoBenchmark):
             if entry.startswith(self.name) and entry.endswith(".log"):
                 self.device.pull_file(op.join(wd, entry), context.output_directory)
                 self.device.delete_file(op.join(wd, entry))
-        # self.device.execute('am force-stop {}'.format(self.package))
