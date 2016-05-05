@@ -227,7 +227,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             int percent = pair.getValue().percent;
 
             String runName = String.format(TestTag + "_" + pair.getKey());
-            String gfxInfologName =  String.format(TAG + "_" + runName + "_gfxInfo.log");
+            String gfxInfologName =  String.format(runName + "_gfxInfo.log");
             String surfFlingerlogName =  String.format(runName + "_surfFlinger.log");
             String viewName = new String("com.adobe.reader.viewer.ARViewerActivity");
 
