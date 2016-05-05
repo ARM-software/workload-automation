@@ -28,6 +28,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final String TAG = "skypeecho";
     public static final String PACKAGE = "com.skype.raider";
     public static final String PACKAGE_ID = "com.skype.raider:id/";
+    public static final String TEXT_VIEW = "android.widget.TextView";
 
     public static String sendSmsButtonResourceId = PACKAGE_ID + "chat_menu_item_send_sms";
     public static String voiceCallButtonResourceId = PACKAGE_ID + "chat_menu_item_call_voice";
@@ -63,7 +64,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         args.callType = bundle.getString("action");
         args.resultsFile = bundle.getString("results_file");
         args.outputDir = bundle.getString("output_dir");
-        args.dumpsysEnabled = bundle.getBoolean("dumpsys_enabled");
+        args.dumpsysEnabled = Boolean.parseBoolean(bundle.getString("dumpsys_enabled"));
         return args;
     }
 
@@ -81,7 +82,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         String callType = parameters.getString("action");
         String resultsFile = parameters.getString("results_file");
         outputDir = parameters.getString("output_dir", "/sdcard/wa-working");
-        dumpsysEnabled = parameters.getBoolean("dumpsys_enabled", true);
+        dumpsysEnabled = Boolean.parseBoolean(parameters.getString("dumpsys_enabled"));
 
         // Run tests
         Timer overallTimer = new Timer();
@@ -142,9 +143,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         // On phones, it is represented by an image with description
         // On tablets, it the full text is shown without a description
         try {
-            peopleTab = getUiObjectByDescription("People", "android.widget.TextView");
+            peopleTab = getUiObjectByDescription("People", TEXT_VIEW);
         } catch (UiObjectNotFoundException e) {
-            peopleTab = getUiObjectByText("People", "android.widget.TextView");
+            peopleTab = getUiObjectByText("People", TEXT_VIEW);
         }
         peopleTab.click();
 
@@ -152,10 +153,10 @@ public class UiAutomation extends UxPerfUiAutomation {
         // so try twice before declaring failure
         UiObject contactCard;
         try {
-            contactCard = getUiObjectByText(name, "android.widget.TextView");
+            contactCard = getUiObjectByText(name, TEXT_VIEW);
         } catch (UiObjectNotFoundException e) {
-            contactCard = getUiObjectByText(name, "android.widget.TextView");
-            // contactCard = getUiObjectByText(id, "android.widget.TextView");
+            contactCard = getUiObjectByText(name, TEXT_VIEW);
+            // contactCard = getUiObjectByText(id, TEXT_VIEW);
         }
         contactCard.clickAndWaitForNewWindow();
         timer.end();
