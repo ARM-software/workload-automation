@@ -84,7 +84,7 @@ class Googlephotos(AndroidUiAutoBenchmark):
         super(Googlephotos, self).teardown(context)
 
         for entry in self.device.listdir(self.device.working_directory):
-            if entry.startswith(self.name) and entry.endswith(".log"):
+            if entry.endswith(".log"):
                 self.device.pull_file(os.path.join(self.device.working_directory, entry),
                                       context.output_directory)
                 self.device.delete_file(os.path.join(self.device.working_directory, entry))
