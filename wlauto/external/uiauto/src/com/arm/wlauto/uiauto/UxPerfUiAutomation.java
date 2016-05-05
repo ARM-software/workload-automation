@@ -36,8 +36,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Arrays;
 import java.util.List;
-import java.util.LinkedHashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -253,19 +251,18 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
         }
     }
 
-    public void writeResultsToFile(LinkedHashMap timingResults, String file) throws Exception {
+    public void writeResultsToFile(Map<String, Timer> results, String file) throws Exception {
         // Write out the key/value pairs to the instrumentation log file
-        FileWriter fstream = new FileWriter(file);
-        BufferedWriter out = new BufferedWriter(fstream);
-        Iterator<Entry<String, Timer>> it = timingResults.entrySet().iterator();
-
-        while (it.hasNext()) {
-            Map.Entry<String, Timer> pairs = it.next();
-            Timer results = pairs.getValue();
-            long start = results.getStart();
-            long finish = results.getFinish();
-            long duration = results.getDuration();
-            out.write(String.format(pairs .getKey() + " " + start + " " + finish + " " + duration + "\n"));
+        BufferedWriter out = new BufferedWriter(new FileWriter(file));
+        long start, finish, duration;
+        Timer timer;
+        for (Map.Entry<String, Timer> entry : results.entrySet()) {
+            timer = entry.getValue();
+            start = timer.getStart();
+            finish = timer.getFinish();
+            duration = timer.getDuration();
+            // Format used to parse out results in workload's update_result function
+            out.write(String.format("%s %d %d %d\n", entry.getKey(), start, finish, duration));
         }
         out.close();
     }
