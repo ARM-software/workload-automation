@@ -84,6 +84,9 @@ public class UiAutomation extends UxPerfUiAutomation {
             getUiObjectByResourceId("com.google.android.apps.photos:id/next_button",
                                     "android.widget.ImageView");
         nextButton.clickAndWaitForNewWindow();
+
+        UiObject workingFolder = new UiObject(new UiSelector().text("wa-working"));
+        waitObject(workingFolder, viewTimeoutSecs);
     }
 
     private void gesturesTest() throws Exception {
