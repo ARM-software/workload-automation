@@ -637,7 +637,15 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         """
         lockdb = '/data/system/locksettings.db'
         sqlcommand = "update locksettings set value='0' where name='screenlock.disabled';"
-        self.execute('{} {} "{}"'.format(self.sqlite, lockdb, sqlcommand), as_root=True)
+        f = tempfile.NamedTemporaryFile()
+        try:
+            f.write('{} {} "{}"'.format(self.sqlite, lockdb, sqlcommand))
+            f.flush()
+            on_device_executable = self.install_executable(f.name,
+                                                           with_name="disable_screen_lock")
+        finally:
+            f.close()
+        self.execute(on_device_executable, as_root=True)
 
     def disable_selinux(self):
         # This may be invoked from intialize() so we can't use execute() or the

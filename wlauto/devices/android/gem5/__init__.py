@@ -199,16 +199,6 @@ class Gem5AndroidDevice(BaseGem5Device, AndroidDevice):
         props = self._get_android_properties(context)
         return props
 
-    def disable_screen_lock(self):
-        """
-        Attempts to disable he screen lock on the device.
-
-        Overridden here as otherwise we have issues with too many backslashes.
-        """
-        lockdb = '/data/system/locksettings.db'
-        sqlcommand = "update locksettings set value=\'0\' where name=\'screenlock.disabled\';"
-        self.execute('{} {} "{}"'.format(self.sqlite, lockdb, sqlcommand), as_root=True)
-
     def capture_screen(self, filepath):
         if BaseGem5Device.capture_screen(self, filepath):
             return
