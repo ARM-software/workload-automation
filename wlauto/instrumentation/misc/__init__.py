@@ -57,7 +57,7 @@ class SysfsExtractor(Instrument):
 
     mount_command = 'mount -t tmpfs -o size={} tmpfs {}'
     extract_timeout = 30
-    tarname = 'sysfs.tar.gz'
+    tarname = 'sysfs.tar'
     DEVICE_PATH = 0
     BEFORE_PATH = 1
     AFTER_PATH = 2
@@ -298,7 +298,7 @@ class DynamicFrequencyInstrument(SysfsExtractor):
 
     """
 
-    tarname = 'cpufreq.tar.gz'
+    tarname = 'cpufreq.tar'
 
     parameters = [
         Parameter('paths', mandatory=False, override=True),
