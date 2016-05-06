@@ -64,6 +64,7 @@ class HwmonInstrument(Instrument):
     parameters = [
         Parameter('sensors', kind=list_of_strs, default=['energy', 'temp'],
                   global_alias='hwmon_sensors',
+                  allowed_values=HWMON_SENSORS.keys(),
                   description='The kinds of sensors hwmon instrument will look for')
     ]
 
@@ -73,11 +74,7 @@ class HwmonInstrument(Instrument):
         if self.sensors:
             self.sensor_kinds = {}
             for kind in self.sensors:
-                if kind in HWMON_SENSORS:
-                    self.sensor_kinds[kind] = HWMON_SENSORS[kind]
-                else:
-                    message = 'Unexpected sensor type: {}; must be in {}'.format(kind, HWMON_SENSORS.keys())
-                    raise ConfigError(message)
+                self.sensor_kinds[kind] = HWMON_SENSORS[kind]
         else:
             self.sensor_kinds = HWMON_SENSORS
 
