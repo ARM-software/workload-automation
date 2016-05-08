@@ -28,7 +28,6 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void runUiAutomation() throws Exception {
         parameters = getParams();
 
-        confirmLocalFileAccess();
         dismissWelcomeView();
         gesturesTest();
         editPhotoColorTest();
@@ -36,15 +35,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         rotatePhotoTest();
 
         writeResultsToFile(timingResults, parameters.getString("output_file"));
-    }
-
-    private void confirmLocalFileAccess() throws Exception {
-        // First time run requires confirmation to allow access to local files
-        UiObject allowButton = new UiObject(new UiSelector().textContains("Allow")
-                                                            .className("android.widget.Button"));
-        if (allowButton.waitForExists(timeout)) {
-            allowButton.clickAndWaitForNewWindow(timeout);
-        }
     }
 
     private void dismissWelcomeView() throws Exception {
@@ -59,7 +49,6 @@ public class UiAutomation extends UxPerfUiAutomation {
             new UiObject(new UiSelector().textContains("Get started")
                                           .className("android.widget.Button"));
 
-        tapDisplayCentre();
         waitObject(getStartedButton, viewTimeoutSecs);
 
         getStartedButton.clickAndWaitForNewWindow();
@@ -228,19 +217,14 @@ public class UiAutomation extends UxPerfUiAutomation {
             timingResults.put(runName, result);
         }
 
-        UiObject accept = getUiObjectByDescription("Accept", "android.widget.ImageView");
-        accept.click();
-
-        UiObject save = getUiObjectByText("SAVE", "android.widget.TextView");
-        save.waitForExists(viewTimeout);
-        save.click();
-
-        // Return to application home screen
-        getUiDevice().pressBack();
+        saveAndReturn();
     }
 
     private void cropPhotoTest() throws Exception {
         String testTag = "crop_photo";
+
+        // To improve travel accuracy perform the slide bar operation slowly
+        final int steps = 500;
 
         // Perform a range of swipe tests while browsing photo gallery
         LinkedHashMap<String, Position> testParams = new LinkedHashMap<String, Position>();
@@ -270,14 +254,14 @@ public class UiAutomation extends UxPerfUiAutomation {
             Position pos = pair.getValue();
 
             String runName = String.format(TAG + "_" + testTag + "_" + pair.getKey());
-            String gfxInfologName =  String.format(runName + "_" + runName + "_gfxInfo.log");
+            String gfxInfologName =  String.format(runName + "_gfxInfo.log");
             String surfFlingerlogName =  String.format(runName + "_surfFlinger.log");
 
             startDumpsysGfxInfo(parameters);
             startDumpsysSurfaceFlinger(parameters, viewName);
 
             Timer result = new Timer();
-            result = slideBarTest(straightenSlider , pos, 100);
+            result = slideBarTest(straightenSlider , pos, steps);
 
             stopDumpsysSurfaceFlinger(parameters, viewName, surfFlingerlogName);
             stopDumpsysGfxInfo(parameters, gfxInfologName);
@@ -285,15 +269,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             timingResults.put(runName, result);
         }
 
-        UiObject accept = getUiObjectByDescription("Accept", "android.widget.ImageView");
-        accept.click();
-
-        UiObject save = getUiObjectByText("SAVE", "android.widget.TextView");
-        save.waitForExists(viewTimeout);
-        save.click();
-
-        // Return to application home screen
-        getUiDevice().pressBack();
+        saveAndReturn();
     }
 
     private void rotatePhotoTest() throws Exception {
@@ -335,15 +311,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             timingResults.put(runName, result);
         }
 
-        UiObject accept = getUiObjectByDescription("Accept", "android.widget.ImageView");
-        accept.click();
-
-        UiObject save = getUiObjectByText("SAVE", "android.widget.TextView");
-        save.waitForExists(viewTimeout);
-        save.click();
-
-        // Return to application home screen
-        getUiDevice().pressBack();
+        saveAndReturn();
     }
 
     // Helper to slide the seekbar during photo edit.
@@ -353,7 +321,6 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         Timer result = new Timer();
         result.start();
-
 
         switch (pos) {
             case LEFT:
@@ -383,12 +350,12 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         switch (pos) {
             case LEFT:
-                getUiDevice().drag(rect.left + SWIPE_MARGIN_LIMIT , rect.centerY(),
+                getUiDevice().drag(rect.left + SWIPE_MARGIN_LIMIT, rect.centerY(),
                                    rect.left + rect.width() / 4, rect.centerY(),
                                    steps);
                 break;
             case RIGHT:
-                getUiDevice().drag(rect.right - SWIPE_MARGIN_LIMIT , rect.centerY(),
+                getUiDevice().drag(rect.right - SWIPE_MARGIN_LIMIT, rect.centerY(),
                                    rect.right - rect.width() / 4, rect.centerY(),
                                    steps);
                 break;
@@ -410,5 +377,20 @@ public class UiAutomation extends UxPerfUiAutomation {
                                          .childSelector(new UiSelector()
                                          .index(index)));
         photo.click();
+    }
+
+    // Helper that accepts, saves and navigates back to application home screen after an edit operation
+    private void saveAndReturn() throws Exception {
+
+        UiObject accept = getUiObjectByDescription("Accept", "android.widget.ImageView");
+        accept.click();
+
+        UiObject save = getUiObjectByText("SAVE", "android.widget.TextView");
+        save.waitForExists(viewTimeout);
+        save.click();
+
+        UiObject navigateUpButton =
+            getUiObjectByDescription("Navigate Up", "android.widget.ImageButton");
+        navigateUpButton.click();
     }
 }
