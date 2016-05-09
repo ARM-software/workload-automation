@@ -18,7 +18,7 @@ import java.util.Map.Entry;
 
 public class UiAutomation extends UxPerfUiAutomation {
 
-    public static String TAG = "googlephotos";
+    public static String TAG = "uxperf_googlephotos";
 
     public Bundle parameters;
     private int viewTimeoutSecs = 10;
@@ -105,7 +105,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             int steps = pair.getValue().steps;
             int percent = pair.getValue().percent;
 
-            String runName = String.format(TAG + "_" + testTag + "_" + pair.getKey());
+            String runName = String.format(testTag + "_" + pair.getKey());
             String gfxInfologName =  String.format(runName + "_gfxInfo.log");
             String surfFlingerlogName =  String.format(runName + "_surfFlinger.log");
 
@@ -201,7 +201,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             int steps = pair.getValue().steps;
             int percent = pair.getValue().percent;
 
-            String runName = String.format(TAG + "_" + testTag + "_" + pair.getKey());
+            String runName = String.format(testTag + "_" + pair.getKey());
             String gfxInfologName =  String.format(runName + "_gfxInfo.log");
             String surfFlingerlogName =  String.format(runName + "_surfFlinger.log");
 
@@ -253,7 +253,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             Map.Entry<String, Position> pair = it.next();
             Position pos = pair.getValue();
 
-            String runName = String.format(TAG + "_" + testTag + "_" + pair.getKey());
+            String runName = String.format(testTag + "_" + pair.getKey());
             String gfxInfologName =  String.format(runName + "_gfxInfo.log");
             String surfFlingerlogName =  String.format(runName + "_surfFlinger.log");
 
@@ -293,7 +293,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         String viewName = "com.google.android.apps.consumerphotoeditor.fragments.ConsumerPhotoEditorActivity";
 
         for (String subTest : subTests) {
-            String runName = String.format(TAG + "_" + testTag + "_" + subTest);
+            String runName = String.format(testTag + "_" + subTest);
             String gfxInfologName =  String.format(runName + "_gfxInfo.log");
             String surfFlingerlogName =  String.format(runName + "_surfFlinger.log");
 
