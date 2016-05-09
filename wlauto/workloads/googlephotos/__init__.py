@@ -13,8 +13,15 @@ class Googlephotos(AndroidUiAutoBenchmark):
     description = """
     A workload to perform standard productivity tasks with googlephotos.
 
-    The workload carries out various tasks, such as browsing images, performing zooms,
-    postprocessing and saving a selected image to file.
+    The workload carries out various tasks, such as browsing images, performing
+    zooms, post-processing and saving a selected image to file.
+
+    gesture test - browsing through the wa-working gallery using swipe
+                   gestures and performing pinch gestures for zooming
+    color test   - selects a photograph, increments, resets and decrements color balance
+    crop test    - uses image straightener facility to simultaneously rotate and
+                   crop a selected photograph
+    rotate tests - selects a photograph and performs 90 degree rotations
 
     NOTE: This workload requires four jpeg files to be placed in the
     dependencies directory to run.
@@ -73,18 +80,15 @@ class Googlephotos(AndroidUiAutoBenchmark):
                 for line in wfh:
                     match = regex.search(line)
                     if match:
-                        context.result.add_metric((match.group('key') + "_start"),
-                                                  match.group('value1'))
-                        context.result.add_metric((match.group('key') + "_finish"),
-                                                  match.group('value2'))
-                        context.result.add_metric((match.group('key') + "_duration"),
-                                                  match.group('value3'))
+                        context.result.add_metric((match.group('key') + "_start"), match.group('value1'))
+                        context.result.add_metric((match.group('key') + "_finish"), match.group('value2'))
+                        context.result.add_metric((match.group('key') + "_duration"), match.group('value3'))
 
     def teardown(self, context):
         super(Googlephotos, self).teardown(context)
 
         for entry in self.device.listdir(self.device.working_directory):
-            if entry.startswith(self.name) and entry.endswith(".log"):
+            if entry.endswith(".log"):
                 self.device.pull_file(os.path.join(self.device.working_directory, entry),
                                       context.output_directory)
                 self.device.delete_file(os.path.join(self.device.working_directory, entry))
