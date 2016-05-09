@@ -77,16 +77,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         signinButton.clickAndWaitForNewWindow();
     }
 
-    private void confirmAccess() throws Exception {
-        // First time run requires confirmation to allow access to local files
-        UiObject allowButton = new UiObject(new UiSelector().textContains("Allow")
-                                                            .className("android.widget.Button"));
-        // Some devices request multiple permisson rights so clear them all here
-        while (allowButton.waitForExists(timeout)) {
-            allowButton.clickAndWaitForNewWindow(timeout);
-        }
-    }
-
     private void selectContact(String name, String id) throws Exception {
         Timer timer = new Timer();
         timer.start();
@@ -150,5 +140,4 @@ public class UiAutomation extends UxPerfUiAutomation {
             exitDumpsysGfxInfo(PACKAGE, new File(outputDir, dumpsysTag + "_gfxInfo.log"));
         }
     }
-
 }
