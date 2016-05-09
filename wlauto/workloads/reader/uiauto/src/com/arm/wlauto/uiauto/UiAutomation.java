@@ -139,6 +139,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         String file = filename.replaceAll("\\.", "_").replaceAll("\\s+", "_");
 
         timingResults.put(String.format(TestTag + "_" + "selectLocalFilesList" + "_" + file), selectLocalFilesList());
+        // On some devices permissions to access local files occurs here rather than the earlier step
+        confirmLocalFileAccess();
         timingResults.put(String.format(TestTag + "_" + "selectSearchDuration" + "_" + file), selectSearchFileButton());
         timingResults.put(String.format(TestTag + "_" + "searchFileList" + "_" + file), searchFileList(filename));
         timingResults.put(String.format(TestTag + "_" + "openFileFromList" + "_" + file), openFileFromList(filename));
