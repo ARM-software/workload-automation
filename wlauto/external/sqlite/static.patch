@@ -1,0 +1,20 @@
+--- shell.c	2016-05-09 15:35:26.952309563 +0100
++++ shell.c.bak	2016-05-09 15:33:41.991259588 +0100
+@@ -4503,7 +4503,7 @@
+   static char *home_dir = NULL;
+   if( home_dir ) return home_dir;
+ 
++/*#if !defined(_WIN32) && !defined(WIN32) && !defined(_WIN32_WCE) \
+-#if !defined(_WIN32) && !defined(WIN32) && !defined(_WIN32_WCE) \
+      && !defined(__RTP__) && !defined(_WRS_KERNEL)
+   {
+     struct passwd *pwent;
+@@ -4512,7 +4512,7 @@
+       home_dir = pwent->pw_dir;
+     }
+   }
++#endif*/
+-#endif
+ 
+ #if defined(_WIN32_WCE)
+   /* Windows CE (arm-wince-mingw32ce-gcc) does not provide getenv()

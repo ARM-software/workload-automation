@@ -1,0 +1,11 @@
+For WA we use a slightly modified version of sqlite3 so that it can
+be built statically. We used the amalgamated sqlite3 version 3.12.2.
+which is under the public domain.
+
+https://www.sqlite.org/download.html
+
+Build command:
+gcc shell.c sqlite3.c -lpthread -ldl -static -O2 -fPIC -DPIC  -DSQLITE_OMIT_LOAD_EXTENSION
+
+You will need to apply the diff in static.patch
+

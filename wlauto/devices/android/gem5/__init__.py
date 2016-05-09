@@ -207,7 +207,7 @@ class Gem5AndroidDevice(BaseGem5Device, AndroidDevice):
         """
         lockdb = '/data/system/locksettings.db'
         sqlcommand = "update locksettings set value=\'0\' where name=\'screenlock.disabled\';"
-        self.execute('sqlite3 {} "{}"'.format(lockdb, sqlcommand), as_root=True)
+        self.execute('{} {} "{}"'.format(self.sqlite, lockdb, sqlcommand), as_root=True)
 
     def capture_screen(self, filepath):
         if BaseGem5Device.capture_screen(self, filepath):

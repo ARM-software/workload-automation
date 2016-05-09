@@ -24,6 +24,8 @@ import threading
 from subprocess import CalledProcessError
 
 from wlauto.core.extension import Parameter
+from wlauto.common.resources import Executable
+from wlauto.core.resource import NO_ONE
 from wlauto.common.linux.device import BaseLinuxDevice, PsEntry
 from wlauto.exceptions import DeviceError, WorkerThreadError, TimeoutError, DeviceNotRespondingError
 from wlauto.utils.misc import convert_new_lines
@@ -193,6 +195,7 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         self._is_ready = True
 
     def initialize(self, context):
+        self.sqlite = self.deploy_sqlite3(context)  # pylint: disable=attribute-defined-outside-init
         if self.is_rooted:
             self.disable_screen_lock()
             self.disable_selinux()
@@ -442,7 +445,7 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         else:
             return adb_shell(self.adb_name, command, timeout, check_exit_code, as_root)
 
-    def kick_off(self, command):
+    def kick_off(self, command, as_root=True):
         """
         Like execute but closes adb session and returns immediately, leaving the command running on the
         device (this is different from execute(background=True) which keeps adb connection open and returns
@@ -453,7 +456,7 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         Added in version 2.1.4
 
         """
-        if not self.is_rooted:
+        if not self.is_rooted or not as_root:
             raise DeviceError('kick_off uses busybox\'s nohup applet and so can only be run a rooted device.')
         try:
             command = 'cd {} && busybox nohup {}'.format(self.working_directory, command)
@@ -528,6 +531,11 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         if prop:
             return props[prop]
         return props
+
+    def deploy_sqlite3(self, context):
+        host_file = context.resolver.get(Executable(NO_ONE, self.abi, 'sqlite3'))
+        target_file = self.install_if_needed(host_file)
+        return target_file
 
     # Android-specific methods. These either rely on specifics of adb or other
     # Android-only concepts in their interface and/or implementation.
@@ -629,7 +637,7 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         """
         lockdb = '/data/system/locksettings.db'
         sqlcommand = "update locksettings set value='0' where name='screenlock.disabled';"
-        self.execute('sqlite3 {} "{}"'.format(lockdb, sqlcommand), as_root=True)
+        self.execute('{} {} "{}"'.format(self.sqlite, lockdb, sqlcommand), as_root=True)
 
     def disable_selinux(self):
         # This may be invoked from intialize() so we can't use execute() or the
