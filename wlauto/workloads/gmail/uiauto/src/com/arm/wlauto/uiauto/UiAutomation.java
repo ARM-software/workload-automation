@@ -37,12 +37,17 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void clearFirstRunDialogues () throws Exception {
-        // Enter search text into the file searchBox.  This will automatically filter the list.
-        UiObject gotItBox = getUiObjectByResourceId("com.google.android.gm:id/welcome_tour_got_it",
-                                                     "android.widget.TextView");
-        clickUiObject(gotItBox, timeout);
-        UiObject takeMeToBox = getUiObjectByText("Take me to Gmail", "android.widget.TextView");
-        clickUiObject(takeMeToBox, timeout);
+        // The first run dialogues vary on different devices so check if they are there and dismiss
+        UiObject gotItBox = new UiObject(new UiSelector().resourceId("com.google.android.gm:id/welcome_tour_got_it")
+                                                     .className("android.widget.TextView"));
+        if (gotItBox.exists()) {
+            clickUiObject(gotItBox, timeout);
+        }
+        UiObject takeMeToBox = new UiObject(new UiSelector().textContains("Take me to Gmail")
+                                                            .className("android.widget.TextView"));
+        if (takeMeToBox.exists()) {
+            clickUiObject(takeMeToBox, timeout);
+        }
         UiObject converationView = new UiObject(new UiSelector()
                                             .resourceId("com.google.android.gm:id/conversation_list_view")
                                             .className("android.widget.ListView"));
