@@ -181,7 +181,8 @@ class CpuStatesProcessor(ResultProcessor):
             cpu_utilisation = os.path.join(context.output_directory, 'cpu_utilisation.csv')
         else:
             cpu_utilisation = None
-        parallel_report, powerstate_report = report_power_stats(  # pylint: disable=unbalanced-tuple-unpacking
+
+        reports = report_power_stats(  # pylint: disable=unbalanced-tuple-unpacking
             trace_file=trace.path,
             idle_state_names=self.idle_state_names,
             core_names=self.core_names,
@@ -194,6 +195,9 @@ class CpuStatesProcessor(ResultProcessor):
             cpu_utilisation=cpu_utilisation,
             max_freq_list=self.max_freq_list,
         )
+        parallel_report = reports.pop(0)
+        powerstate_report = reports.pop(0)
+
         if parallel_report is None:
             self.logger.warning('No power state reports generated; are power '
                                 'events enabled in the trace?')

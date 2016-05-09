@@ -644,8 +644,7 @@ def report_power_stats(trace_file, idle_state_names, core_names, core_clusters,
     reports = []
     for reporter in reporters:
         report = reporter.report()
-        if report:
-            reports.append(report)
+        reports.append(report)
     return reports
 
 
