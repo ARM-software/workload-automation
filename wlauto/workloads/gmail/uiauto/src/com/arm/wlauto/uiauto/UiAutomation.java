@@ -62,7 +62,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         result.start();
         clickUiObject(newMailButton, timeout);
         result.end();
-        timingResults.put("newMail", result);
+        timingResults.put("Create_newMail", result);
     }
 
     public void setToField() throws Exception {
@@ -73,7 +73,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         toField.setText(recipient);
         getUiDevice().pressEnter();
         result.end();
-        timingResults.put("To", result);
+        timingResults.put("Create_To", result);
     }
 
     public void setSubjectField() throws Exception {
@@ -85,7 +85,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         subjectField.setText("This is a test message");
         getUiDevice().pressEnter();
         result.end();
-        timingResults.put("Subject", result);
+        timingResults.put("Create_Subject", result);
     }
 
     public void setComposeField() throws Exception {
@@ -95,7 +95,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         composeField.setText("This is a test composition");
         getUiDevice().pressEnter();
         result.end();
-        timingResults.put("Compose", result);
+        timingResults.put("Create_Compose", result);
     }
 
     public void clickSendButton() throws Exception {
@@ -104,11 +104,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         result.start();
         clickUiObject(sendButton, timeout);
         result.end();
-        timingResults.put("Send", result);
+        timingResults.put("Create_Send", result);
 
-        UiObject drawerButton = new UiObject(new UiSelector().descriptionContains("avigat")
-                                                           .className("android.widget.ImageButton"));
-        waitObject(drawerButton, networkTimeoutSecs);
+        sendButton.waitUntilGone(networkTimeoutSecs);
     }
 
     public void attachFiles() throws Exception {
