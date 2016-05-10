@@ -62,6 +62,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         outputDir = parameters.getString("output_dir", "/sdcard/wa-working");
         dumpsysEnabled = Boolean.parseBoolean(parameters.getString("dumpsys_enabled"));
 
+        setScreenOrientation(ScreenOrientation.NATURAL);
+
         // Run tests
         handleLoginScreen(loginName, loginPass);
         confirmAccess();
@@ -71,6 +73,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         } else if ("voice".equalsIgnoreCase(callType)) {
             voiceCallTest(callDuration);
         }
+
+        unsetScreenOrientation();
 
         // Save results
         writeResultsToFile(results, resultsFile);

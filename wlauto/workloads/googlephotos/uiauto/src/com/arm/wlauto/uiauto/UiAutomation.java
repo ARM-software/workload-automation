@@ -43,12 +43,14 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void runUiAutomation() throws Exception {
         parameters = getParams();
 
+        setScreenOrientation(ScreenOrientation.NATURAL);
         confirmAccess();
         dismissWelcomeView();
         gesturesTest();
         editPhotoColorTest();
         cropPhotoTest();
         rotatePhotoTest();
+        unsetScreenOrientation();
 
         writeResultsToFile(timingResults, parameters.getString("output_file"));
     }

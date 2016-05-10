@@ -44,16 +44,22 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void runUiAutomation() throws Exception {
         parameters = getParams();
 
-        dismissWelcomeView();
+        setScreenOrientation(ScreenOrientation.NATURAL);
 
+        dismissWelcomeView();
         signInOnline(parameters);
+<<<<<<< HEAD
 
         confirmAccess();
 
+=======
+        confirmLocalFileAccess();
+>>>>>>> 3991e73... Add setScreenOrientation to BaseUiAutomation class
         gesturesTest("Getting Started.pdf");
-
         String[] searchStrings = {"Glossary", "cortex"};
         searchPdfTest("cortex_m4", searchStrings);
+
+        unsetScreenOrientation();
 
         writeResultsToFile(timingResults, parameters.getString("output_file"));
     }

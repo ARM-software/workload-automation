@@ -35,6 +35,7 @@ import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 public class BaseUiAutomation extends UiAutomatorTestCase {
 
     public long waitTimeout = TimeUnit.SECONDS.toMillis(4);
+    public enum ScreenOrientation { RIGHT, NATURAL, LEFT };
 
     public void sleep(int second) {
         super.sleep(second * 1000);
@@ -250,5 +251,25 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         Point endPoint2 = new Point(rect.centerX(), rect.centerY() - (int) ((rect.height() / 2) * percentage));
 
         view.performTwoPointerGesture(startPoint1, startPoint2, endPoint1, endPoint2, steps);
+    }
+
+    public void setScreenOrientation(ScreenOrientation orientation) throws Exception {
+        switch (orientation) {
+            case RIGHT:
+                getUiDevice().setOrientationRight();
+                break;
+            case NATURAL:
+                getUiDevice().setOrientationNatural();
+                break;
+            case LEFT:
+                getUiDevice().setOrientationLeft();
+                break;
+            default:
+                throw new Exception("No orientation specified");
+        }
+    }
+
+    public void unsetScreenOrientation() throws Exception {
+        getUiDevice().unfreezeRotation();
     }
 }

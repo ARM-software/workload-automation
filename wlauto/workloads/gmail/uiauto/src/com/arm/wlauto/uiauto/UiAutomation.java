@@ -39,6 +39,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void runUiAutomation() throws Exception {
         parameters = getParams();
 
+        setScreenOrientation(ScreenOrientation.NATURAL);
+
         clearFirstRunDialogues();
 
         clickNewMail();
