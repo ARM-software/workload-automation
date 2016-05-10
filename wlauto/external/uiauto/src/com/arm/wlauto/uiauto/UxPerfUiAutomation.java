@@ -267,6 +267,16 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
         out.close();
     }
 
+    public void confirmAccess() throws Exception {
+        // First time run requires confirmation to allow access to local files
+        UiObject allowButton = new UiObject(new UiSelector().textContains("Allow")
+                .className("android.widget.Button"));
+        // Some devices request multiple permisson rights so clear them all here
+        while (allowButton.waitForExists(timeout)) {
+            allowButton.clickAndWaitForNewWindow(timeout);
+        }
+    }
+
     public void startDumpsysSurfaceFlinger(Bundle parameters, String view) {
         if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
             initDumpsysSurfaceFlinger(parameters.getString("package"), view);

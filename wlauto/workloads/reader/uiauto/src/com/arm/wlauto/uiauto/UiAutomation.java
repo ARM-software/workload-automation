@@ -33,7 +33,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         signInOnline(parameters);
 
-        confirmLocalFileAccess();
+        confirmAccess();
 
         gesturesTest("Getting Started.pdf");
 
@@ -122,15 +122,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
     }
 
-    private void confirmLocalFileAccess() throws Exception {
-        // First time run requires confirmation to allow access to local files
-        UiObject allowButton = new UiObject(new UiSelector().textContains("Allow")
-                                                            .className("android.widget.Button"));
-        if (allowButton.waitForExists(timeout)) {
-            allowButton.clickAndWaitForNewWindow(timeout);
-        }
-    }
-
     private void openFile(final String filename) throws Exception {
 
         String TestTag = "openfile";
@@ -140,7 +131,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         timingResults.put(String.format(TestTag + "_" + "selectLocalFilesList" + "_" + file), selectLocalFilesList());
         // On some devices permissions to access local files occurs here rather than the earlier step
-        confirmLocalFileAccess();
+        confirmAccess();
         timingResults.put(String.format(TestTag + "_" + "selectSearchDuration" + "_" + file), selectSearchFileButton());
         timingResults.put(String.format(TestTag + "_" + "searchFileList" + "_" + file), searchFileList(filename));
         timingResults.put(String.format(TestTag + "_" + "openFileFromList" + "_" + file), openFileFromList(filename));
