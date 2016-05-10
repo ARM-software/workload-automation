@@ -28,6 +28,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void runUiAutomation() throws Exception {
         parameters = getParams();
 
+        confirmAccess();
         dismissWelcomeView();
         gesturesTest();
         editPhotoColorTest();
@@ -390,7 +391,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         save.click();
 
         UiObject navigateUpButton =
-            getUiObjectByDescription("Navigate Up", "android.widget.ImageButton");
+            new UiObject(new UiSelector().descriptionContains("Navigate Up")
+                                         .className("android.widget.ImageButton"));
+        navigateUpButton.waitForExists(viewTimeout);
         navigateUpButton.click();
     }
 }
