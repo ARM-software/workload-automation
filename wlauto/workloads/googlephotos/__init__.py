@@ -9,7 +9,11 @@ class Googlephotos(AndroidUiAutoBenchmark):
     name = 'googlephotos'
     package = 'com.google.android.apps.photos'
     activity = 'com.google.android.apps.photos.home.HomeActivity'
-
+    view = [package+'/com.google.android.apps.consumerphotoeditor.fragments.ConsumerPhotoEditorActivity',
+            package+'/com.google.android.apps.photos.home.HomeActivity',
+            package+'/com.google.android.apps.photos.localmedia.ui.LocalPhotosActivity',
+            package+'/com.google.android.apps.photos.onboarding.AccountPickerActivity',
+            package+'/com.google.android.apps.photos.onboarding.IntroActivity']
     description = """
     A workload to perform standard productivity tasks with googlephotos.
 
