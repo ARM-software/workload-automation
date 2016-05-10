@@ -74,19 +74,18 @@ class Googlephotos(AndroidUiAutoBenchmark):
     def update_result(self, context):
         super(Googlephotos, self).update_result(context)
 
-        if self.dumpsys_enabled:
-            self.device.pull_file(self.output_file, context.output_directory)
-            result_file = os.path.join(context.output_directory, self.instrumentation_log)
+        self.device.pull_file(self.output_file, context.output_directory)
+        result_file = os.path.join(context.output_directory, self.instrumentation_log)
 
-            with open(result_file, 'r') as wfh:
-                pattern = r'(?P<key>\w+)\s+(?P<value1>\d+)\s+(?P<value2>\d+)\s+(?P<value3>\d+)'
-                regex = re.compile(pattern)
-                for line in wfh:
-                    match = regex.search(line)
-                    if match:
-                        context.result.add_metric((match.group('key') + "_start"), match.group('value1'))
-                        context.result.add_metric((match.group('key') + "_finish"), match.group('value2'))
-                        context.result.add_metric((match.group('key') + "_duration"), match.group('value3'))
+        with open(result_file, 'r') as wfh:
+            pattern = r'(?P<key>\w+)\s+(?P<value1>\d+)\s+(?P<value2>\d+)\s+(?P<value3>\d+)'
+            regex = re.compile(pattern)
+            for line in wfh:
+                match = regex.search(line)
+                if match:
+                    context.result.add_metric((match.group('key') + "_start"), match.group('value1'))
+                    context.result.add_metric((match.group('key') + "_finish"), match.group('value2'))
+                    context.result.add_metric((match.group('key') + "_duration"), match.group('value3'))
 
     def teardown(self, context):
         super(Googlephotos, self).teardown(context)
