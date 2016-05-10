@@ -276,7 +276,7 @@ def adb_shell(device, command, timeout=None, check_exit_code=False, as_root=Fals
     full_command = 'adb {} shell "{}"'.format(device_string, escape_double_quotes(command))
     logger.debug(full_command)
     if check_exit_code:
-        actual_command = "adb {} shell '({}); echo; echo $?'".format(device_string, escape_single_quotes(command))
+        actual_command = "adb {} shell '({}); echo \"\n$?\"'".format(device_string, escape_single_quotes(command))
         try:
             raw_output, error = check_output(actual_command, timeout, shell=True)
         except CalledProcessErrorWithStderr as e:

@@ -64,6 +64,7 @@ class HwmonInstrument(Instrument):
     parameters = [
         Parameter('sensors', kind=list_of_strs, default=['energy', 'temp'],
                   global_alias='hwmon_sensors',
+                  allowed_values=HWMON_SENSORS.keys(),
                   description='The kinds of sensors hwmon instrument will look for')
     ]
 
@@ -73,11 +74,7 @@ class HwmonInstrument(Instrument):
         if self.sensors:
             self.sensor_kinds = {}
             for kind in self.sensors:
-                if kind in HWMON_SENSORS:
-                    self.sensor_kinds[kind] = HWMON_SENSORS[kind]
-                else:
-                    message = 'Unexpected sensor type: {}; must be in {}'.format(kind, HWMON_SENSORS.keys())
-                    raise ConfigError(message)
+                self.sensor_kinds[kind] = HWMON_SENSORS[kind]
         else:
             self.sensor_kinds = HWMON_SENSORS
 
@@ -110,13 +107,17 @@ class HwmonInstrument(Instrument):
                 if report_type == 'diff':
                     before, after = sensor.readings
                     diff = conversion(after - before)
-                    context.result.add_metric(sensor.label, diff, units)
+                    context.result.add_metric(sensor.label, diff, units,
+                                              classifiers={"hwmon_device": sensor.device_name})
                 elif report_type == 'before/after':
                     before, after = sensor.readings
                     mean = conversion((after + before) / 2)
-                    context.result.add_metric(sensor.label, mean, units)
-                    context.result.add_metric(sensor.label + ' before', conversion(before), units)
-                    context.result.add_metric(sensor.label + ' after', conversion(after), units)
+                    context.result.add_metric(sensor.label, mean, units,
+                                              classifiers={"hwmon_device": sensor.device_name})
+                    context.result.add_metric(sensor.label + ' before', conversion(before), units,
+                                              classifiers={"hwmon_device": sensor.device_name})
+                    context.result.add_metric(sensor.label + ' after', conversion(after), units,
+                                              classifiers={"hwmon_device": sensor.device_name})
                 else:
                     raise InstrumentError('Unexpected report_type: {}'.format(report_type))
             except ValueError, e:

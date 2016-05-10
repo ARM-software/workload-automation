@@ -22,9 +22,10 @@ HWMON_ROOT = '/sys/class/hwmon'
 
 class HwmonSensor(object):
 
-    def __init__(self, device, kind, label, filepath):
+    def __init__(self, device, kind, device_name, label, filepath):
         self.device = device
         self.kind = kind
+        self.device_name = device_name
         self.label = label
         self.filepath = filepath
         self.readings = []
@@ -58,10 +59,10 @@ def discover_sensors(device, sensor_kinds):
     for hwmon_device in hwmon_devices:
         try:
             device_path = path.join(HWMON_ROOT, hwmon_device, 'device')
-            name = device.get_sysfile_value(path.join(device_path, 'name'))
+            base_name = device.get_sysfile_value(path.join(device_path, 'name'))
         except DeviceError:  # probably a virtual device
             device_path = path.join(HWMON_ROOT, hwmon_device)
-            name = device.get_sysfile_value(path.join(device_path, 'name'))
+            base_name = device.get_sysfile_value(path.join(device_path, 'name'))
 
         for sensor_kind in sensor_kinds:
             i = 1
@@ -69,9 +70,17 @@ def discover_sensors(device, sensor_kinds):
             while device.file_exists(input_path):
                 label_path = path.join(device_path, '{}{}_label'.format(sensor_kind, i))
                 if device.file_exists(label_path):
-                    name += ' ' + device.get_sysfile_value(label_path)
-                sensors.append(HwmonSensor(device, sensor_kind, name, input_path))
+                    sensors.append(HwmonSensor(device,
+                                               sensor_kind,
+                                               base_name,
+                                               device.get_sysfile_value(label_path),
+                                               input_path))
+                else:
+                    sensors.append(HwmonSensor(device,
+                                               sensor_kind,
+                                               base_name,
+                                               "{}{}".format(sensor_kind, i),
+                                               input_path))
                 i += 1
                 input_path = path.join(device_path, '{}{}_input'.format(sensor_kind, i))
     return sensors
-
