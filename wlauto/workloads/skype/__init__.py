@@ -43,6 +43,13 @@ class Skype(AndroidUiAutoBenchmark):
     preferably on Wi-Fi.
     '''
     package = 'com.skype.raider'
+    view = [package+'/com.skype.android.app.calling.CallActivity',
+            package+'/com.skype.android.app.calling.PreCallActivity',
+            package+'/com.skype.android.app.chat.ChatActivity',
+            package+'/com.skype.android.app.main.HubActivity',
+            package+'/com.skype.android.app.main.SplashActivity',
+            package+'/com.skype.android.app.signin.SignInActivity',
+            package+'/com.skype.android.app.signin.UnifiedLandingPageActivity']
     activity = ''
     # Skype has no default 'main' activity
     launch_main = False # overrides extended class
