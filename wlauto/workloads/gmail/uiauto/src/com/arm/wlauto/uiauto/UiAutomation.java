@@ -166,8 +166,8 @@ public class UiAutomation extends UxPerfUiAutomation {
                                                 .className("android.widget.GridView")
                                                 .childSelector(new UiSelector()
                                                 .index(i).className("android.widget.FrameLayout")));
-
-            clickUiObject(imageFileButton, timeout);
+            imageFileButton.click();
+            imageFileButton.waitUntilGone(timeout);
 
             result.end();
 
