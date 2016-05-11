@@ -109,8 +109,6 @@ class Skype(AndroidUiAutoBenchmark):
     def update_result(self, context):
         self.logger.info('===== update_result() ======')
         super(Skype, self).update_result(context)
-        if not self.dumpsys_enabled:
-            return
 
         self.device.pull_file(self.output_file, context.output_directory)
         results_file = op.join(context.output_directory, self.instrumentation_log)
