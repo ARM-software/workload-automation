@@ -110,13 +110,13 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void attachFiles() throws Exception {
-        Timer result = new Timer();
         UiObject attachIcon = getUiObjectByResourceId("com.google.android.gm:id/add_attachment",
                                                       "android.widget.TextView");
 
         String[] imageFiles = {"1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg"};
 
         for ( int i = 0; i < imageFiles.length; i++) {
+            Timer result = new Timer();
             result.start();
 
             clickUiObject(attachIcon, timeout);
