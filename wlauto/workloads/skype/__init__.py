@@ -117,14 +117,18 @@ class Skype(AndroidUiAutoBenchmark):
 
         # process results and add them using
         # context.result.add_metric
-        with open(results_file, 'r') as wfh:
-            regex = re.compile(r'(\w+)\s+(\d+)\s+(\d+)\s+(\d+)')
+        self.device.pull_file(self.output_file, context.output_directory)
+        result_file = op.join(context.output_directory, self.instrumentation_log)
+
+        with open(result_file, 'r') as wfh:
+            pattern = r'(?P<key>\w+)\s+(?P<value1>\d+)\s+(?P<value2>\d+)\s+(?P<value3>\d+)'
+            regex = re.compile(pattern)
             for line in wfh:
                 match = regex.search(line)
                 if match:
-                    context.result.add_metric((match.group(1) + "_start"), match.group(2))
-                    context.result.add_metric((match.group(1) + "_finish"), match.group(3))
-                    context.result.add_metric((match.group(1) + "_duration"), match.group(4))
+                    context.result.add_metric((match.group('key') + "_start"), match.group('value1'))
+                    context.result.add_metric((match.group('key') + "_finish"), match.group('value2'))
+                    context.result.add_metric((match.group('key') + "_duration"), match.group('value3'))
 
     def teardown(self, context):
         self.logger.info('===== teardown() ======')
