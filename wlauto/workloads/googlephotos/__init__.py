@@ -58,8 +58,8 @@ class Googlephotos(AndroidUiAutoBenchmark):
         self.uiauto_params['output_file'] = self.output_file
         self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
 
-    def setup(self, context):
-        super(Googlephotos, self).setup(context)
+    def initialize(self, context):
+        super(Googlephotos, self).initialize(context)
 
         for entry in os.listdir(self.dependencies_directory):
             wa_file = ''.join([self.file_prefix, entry])
@@ -96,6 +96,10 @@ class Googlephotos(AndroidUiAutoBenchmark):
                                       context.output_directory)
                 self.device.delete_file(os.path.join(self.device.working_directory, entry))
 
+    def finalize(self, context):
+        super(Googlephotos, self).finalize(context)
+
+        for entry in self.device.listdir(self.device.working_directory):
             if entry.startswith(self.file_prefix) and entry.endswith(".jpg"):
                 self.device.delete_file(os.path.join(self.device.working_directory, entry))
 

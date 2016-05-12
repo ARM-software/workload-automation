@@ -42,8 +42,16 @@ class Gmail(AndroidUiAutoBenchmark):
         super(Gmail, self).__init__(device, **kwargs)
         self.uiauto_params['recipient'] = self.recipient
 
-    def setup(self, context):
-        super(Gmail, self).setup(context)
+    def validate(self):
+        super(Gmail, self).validate()
+        self.output_file = os.path.join(self.device.working_directory, self.instrumentation_log)
+        self.uiauto_params['package'] = self.package
+        self.uiauto_params['output_dir'] = self.device.working_directory
+        self.uiauto_params['output_file'] = self.output_file
+        self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
+
+    def initialize(self, context):
+        super(Gmail, self).initialize(context)
 
         self.storage_dir = self.device.path.join(self.device.working_directory)
 
@@ -54,14 +62,6 @@ class Gmail(AndroidUiAutoBenchmark):
 
         # Force a re-index of the mediaserver cache to pick up new files
         self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
-
-    def validate(self):
-        super(Gmail, self).validate()
-        self.output_file = os.path.join(self.device.working_directory, self.instrumentation_log)
-        self.uiauto_params['package'] = self.package
-        self.uiauto_params['output_dir'] = self.device.working_directory
-        self.uiauto_params['output_file'] = self.output_file
-        self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
 
     def update_result(self, context):
         super(Gmail, self).update_result(context)
@@ -88,6 +88,11 @@ class Gmail(AndroidUiAutoBenchmark):
             if file.endswith(".log"):
                 self.device.pull_file(os.path.join(self.device.working_directory, file), context.output_directory)
                 self.device.delete_file(os.path.join(self.device.working_directory, file))
+
+    def finalize(self, context):
+        super(Gmail, self).finalize(context)
+
+        for file in self.device.listdir(self.device.working_directory):
             if file.endswith(".jpg"):
                 self.device.delete_file(os.path.join(self.device.working_directory, file))
 
