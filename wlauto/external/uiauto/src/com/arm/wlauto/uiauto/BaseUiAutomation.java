@@ -152,6 +152,14 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         return object;
     }
 
+    public void pressEnter() {
+        getUiDevice().getInstance().pressEnter();
+    }
+
+    public void pressBack() {
+        getUiDevice().getInstance().pressBack();
+    }
+
     public int getDisplayHeight () {
         return getUiDevice().getInstance().getDisplayHeight();
     }
@@ -174,10 +182,6 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
     public void tapDisplay (int x, int y) {
         getUiDevice().getInstance().click(x, y);
-    }
-
-    public void pressBack() {
-        getUiDevice().getInstance().pressBack();
     }
 
     public void uiDeviceSwipeUp (int steps) {
