@@ -16,6 +16,7 @@
 # pylint: disable=E1101
 
 from wlauto import UiAutomatorWorkload, Parameter
+from wlauto.utils.types import range_dict
 
 
 class Cameracapture(UiAutomatorWorkload):
@@ -27,6 +28,10 @@ class Cameracapture(UiAutomatorWorkload):
     """
     package = 'com.google.android.gallery3d'
     activity = 'com.android.camera.CameraActivity'
+
+    api_packages = range_dict()
+    api_packages[1] = 'com.google.android.gallery3d'
+    api_packages[23] = 'com.google.android.GoogleCamera'
 
     parameters = [
         Parameter('no_of_captures', kind=int, default=5,
@@ -40,12 +45,18 @@ class Cameracapture(UiAutomatorWorkload):
         self.uiauto_params['no_of_captures'] = self.no_of_captures
         self.uiauto_params['time_between_captures'] = self.time_between_captures
 
+    def initialize(self, context):
+        api = self.device.get_sdk_version()
+        self.uiauto_params['api_level'] = api
+        self.package = self.api_packages[api]
+        version = self.device.get_installed_package_version(self.package)
+        version = version.replace(' ', '_')
+        self.uiauto_params['version'] = version
+
     def setup(self, context):
         super(Cameracapture, self).setup(context)
         self.device.execute('am start -n {}/{}'.format(self.package, self.activity))
 
-    def update_result(self, context):
-        pass
-
     def teardown(self, context):
+        self.device.execute('am force-stop {}'.format(self.package))
         super(Cameracapture, self).teardown(context)

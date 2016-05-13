@@ -14,6 +14,7 @@
 #
 
 from wlauto import UiAutomatorWorkload, Parameter
+from wlauto.utils.types import range_dict
 
 
 class Camerarecord(UiAutomatorWorkload):
@@ -28,6 +29,10 @@ class Camerarecord(UiAutomatorWorkload):
     activity = 'com.android.camera.CameraActivity'
     run_timeout = 0
 
+    api_packages = range_dict()
+    api_packages[1] = 'com.google.android.gallery3d'
+    api_packages[23] = 'com.google.android.GoogleCamera'
+
     parameters = [
         Parameter('recording_time', kind=int, default=60,
                   description='The video recording time in seconds.'),
@@ -36,7 +41,16 @@ class Camerarecord(UiAutomatorWorkload):
     def __init__(self, device, **kwargs):
         super(Camerarecord, self).__init__(device)
         self.uiauto_params['recording_time'] = self.recording_time  # pylint: disable=E1101
+        self.uiauto_params['version'] = "button"
         self.run_timeout = 3 * self.uiauto_params['recording_time']
+
+    def initialize(self, context):
+        api = self.device.get_sdk_version()
+        self.uiauto_params['api_level'] = api
+        self.package = self.api_packages[api]
+        version = self.device.get_installed_package_version(self.package)
+        version = version.replace(' ', '_')
+        self.uiauto_params['version'] = version
 
     def setup(self, context):
         super(Camerarecord, self).setup(context)

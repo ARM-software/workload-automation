@@ -111,7 +111,6 @@ def list_of_numbers(value):
     """
     Value must be iterable. All elements will be converted to numbers (either ``ints`` or
     ``float``\ s depending on the elements).
-
     """
     if not isiterable(value):
         raise ValueError(value)
@@ -300,3 +299,32 @@ class arguments(list):
     def __str__(self):
         return ' '.join(self)
 
+
+class range_dict(dict):
+    """
+    This dict allows you to specify mappings with a range.
+
+    If a key is not in the dict it will search downward until
+    the next key and return its value. E.g:
+
+    If:
+        a[5] = "Hello"
+        a[10] = "There"
+
+    Then:
+        a[2] == None
+        a[7] == "Hello"
+        a[999] == "There"
+
+    """
+    def __getitem__(self, i):
+        key = int(i)
+        while key not in self and key > 0:
+            key -= 1
+        if key <= 0:
+            raise KeyError(i)
+        return dict.__getitem__(self, key)
+
+    def __setitem__(self, i, v):
+        i = int(i)
+        super(range_dict, self).__setitem__(i, v)
