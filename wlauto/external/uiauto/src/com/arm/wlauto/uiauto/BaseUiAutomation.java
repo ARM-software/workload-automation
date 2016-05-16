@@ -20,6 +20,10 @@ import java.io.File;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.concurrent.TimeoutException;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -108,6 +112,41 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         if ((currentTime - startTime) >= timeout) {
             throw new TimeoutException("Timed out waiting for Logcat text \"%s\"".format(searchText));
         }
+    }
+
+    public Integer[] splitVersion(String versionString) {
+        String pattern = "(\\d+).(\\d+).(\\d+)";
+        Pattern r = Pattern.compile(pattern);
+        ArrayList<Integer> result = new ArrayList<Integer>();
+
+        Matcher m = r.matcher(versionString);
+        if (m.find() && m.groupCount() > 0) {
+            for(int i=1; i<=m.groupCount(); i++) {
+                result.add(Integer.parseInt(m.group(i)));
+            }
+        } else {
+            throw new IllegalArgumentException(versionString + " - unknown format");
+        }
+        return result.toArray(new Integer[result.size()]);
+    }
+
+    //Return values:
+    // -1 = a lower than b
+    //  0 = a and b equal
+    //  1 = a greater than b
+    public int compareVersions(Integer[] a, Integer[] b) {
+        if (a.length != b.length) {
+            String msg = "Versions do not match format:\n %1$s\n %1$s";
+            msg = String.format(msg, Arrays.toString(a), Arrays.toString(b));
+            throw new IllegalArgumentException(msg);
+        }
+        for(int i=0; i<a.length; i++) {
+            if(a[i] > b[i])
+                return 1;
+            else if(a[i] < b[i])
+                return -1;
+        }
+        return 0;
     }
 }
 
