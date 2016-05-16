@@ -30,11 +30,22 @@ class Reader(AndroidUiAutoBenchmark):
             package+'/com.adobe.reader.viewer.ARSplitPaneActivity',
             package+'/com.adobe.reader.viewer.ARViewerActivity']
     description = """
-    A workload to perform standard productivity tasks within Adobe Reader.
+    The Adobe Reader workflow carries out the following typical productivity tasks using
+    Workload-Automation.
 
-    The workload carries out various tasks, such as opening PDF documents,
-    scrolling and searching through them, whilst also producing metrics for
-    action completion times.
+    Test description:
+
+    1. Open the application and sign in to an Adobe Cloud account over wifi
+    2. Select the local files browser list - a test measuring the time taken to navigate through the
+       menus and for the list to be created.
+    3. Search for a specific file from within the - a test measuring the entry of a search string
+       and time taken to locate the document within the file list.
+    4. Open the selected file - a test measuring the time taken to open the document and present
+       within a new view.
+    5. Gestures test - measurement of fps, jank and other frame statistics, via dumpsys, for swipe
+       and pinch gestures.
+    6. Search test - a test measuring the time taken to search a large 100+ page mixed content
+       document for specific strings.  Steps 2-4 are repeated to open the Cortex M4 manual.
     """
 
     parameters = [

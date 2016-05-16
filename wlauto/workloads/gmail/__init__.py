@@ -29,10 +29,19 @@ class Gmail(AndroidUiAutoBenchmark):
     view = [package+'/com.google.android.gm.ConversationListActivityGmail',
             package+'/com.google.android.gm.ComposeActivityGmail']
     description = """
-    A workload to perform standard productivity tasks within Gmail.
+    A workload to perform standard productivity tasks within Gmail.  The workload carries out
+    various tasks, such as creating new emails and sending them, whilst also producing metrics for
+    action completion times.
 
-    The workload carries out various tasks, such as creating new emails and
-    sending them, whilst also producing metrics for action completion times.
+    Test description:
+
+    1. Open Gmail application
+    2. Click to create New mail
+    3. Enter recipient details in the To: field
+    4. Enter text in the Subject edit box
+    5. Enter text in the Compose edit box
+    6. Attach five images from the local Images folder to the email
+    7. Click the Send mail button
     """
 
     regex = re.compile(r'uxperf_gmail.*: (?P<key>\w+) (?P<value>\d+)')

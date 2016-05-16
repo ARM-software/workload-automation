@@ -30,24 +30,26 @@ class Googlephotos(AndroidUiAutoBenchmark):
             package+'/com.google.android.apps.photos.onboarding.AccountPickerActivity',
             package+'/com.google.android.apps.photos.onboarding.IntroActivity']
     description = """
-    A workload to perform standard productivity tasks with googlephotos.
+    A workload to perform standard productivity tasks with Google Photos.  The workload carries out
+    various tasks, such as browsing images, performing zooms, post-processing and saving a selected
+    image to file.
 
-    The workload carries out various tasks, such as browsing images, performing
-    zooms, post-processing and saving a selected image to file.
+    Although this workload attempts to be network independent it requires a network connection
+    (ideally, wifi) to run. This is because the welcome screen UI is dependent on an existing
+    connection.
 
-    gesture test - browsing through the wa-working gallery using swipe
-                   gestures and performing pinch gestures for zooming
-    color test   - selects a photograph, increments, resets and decrements color balance
-    crop test    - uses image straightener facility to simultaneously rotate and
-                   crop a selected photograph
-    rotate tests - selects a photograph and performs 90 degree rotations
-
-    NOTE: This workload requires four jpeg files to be placed in the
-    dependencies directory to run.
-
-    Although this workload attempts to be network independent it requires a
-    network connection (ideally, wifi) to run. This is because the welcome
-    screen UI is dependent on an existing connection.
+    Test description:
+    1. Four images are copied to the devices
+    2. The application is started in offline access mode
+    3. Gestures are performed to swipe between images and pinch zoom in and out of the selected
+       image
+    4. The Colour of a selected image is edited by selecting the colour menu, incrementing the
+       colour, resetting the colour and decrementing the colour using the seek bar.
+    5. A Crop test is performed on a selected image.  UiAutomator does not allow the selection of
+       the crop markers so the image is tilted positively, reset and then negatively to get a
+       similar cropping effect.
+    6. A Rotate test is performed on a selected image, rotating anticlockwise 90 degrees, 180
+       degrees and 270 degrees.
     """
 
     parameters = [
