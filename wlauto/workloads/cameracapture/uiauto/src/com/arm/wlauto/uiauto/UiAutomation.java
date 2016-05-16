@@ -16,6 +16,8 @@
 
 package com.arm.wlauto.uiauto.cameracapture;
 
+import java.util.concurrent.TimeUnit;
+
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
@@ -32,37 +34,98 @@ import com.arm.wlauto.uiauto.BaseUiAutomation;
 public class UiAutomation extends BaseUiAutomation {
 
     public static String TAG = "cameracapture";
+    int timeDurationBetweenEachCapture = 0;
+    int sleepTime = 2;
+    int iterations = 0;
+    int api = 0;
+    Integer[] version = {0,0,0};
 
     public void runUiAutomation() throws Exception {
-       int timeDurationBetweenEachCapture = 0;
-       int sleepTime = 2;
-       Bundle parameters = getParams();
-       String noOfCaptures = "";
-       int iterations = 0;
+        Bundle parameters = getParams();
+        if (parameters.size() > 0) {
+            iterations = Integer.parseInt(parameters
+                    .getString("no_of_captures"));
+            timeDurationBetweenEachCapture = Integer.parseInt(parameters
+                    .getString("time_between_captures"));
+            api = Integer.parseInt(parameters.getString("api_level"));
+            String versionString = parameters.getString("version");
+            version = splitVersion(versionString);
+        }
+        
+        // Pre Android M UI
+        if(api < 23) 
+            takePhotosAosp();
+        else
+        {
+            if(compareVersions(version, new Integer[]{3,2,0}) >= 0)
+                takePhotosGoogleV3_2();
+            else
+                takePhotosGoogle();
+        }
+    }
 
-       if (parameters.size() > 0) {
-             iterations = Integer.parseInt(parameters
-                          .getString("no_of_captures"));
-             timeDurationBetweenEachCapture = Integer.parseInt(parameters
-                     .getString("time_between_captures"));
-       }
-       // switch to camera capture mode
-       UiObject clickModes = new UiObject(new UiSelector().descriptionMatches("Camera, video or panorama selector"));
-       clickModes.click();
-       sleep(sleepTime);
+    private void takePhotosAosp() throws Exception 
+    {
+        // switch to camera capture mode
+        UiObject clickModes = new UiObject(new UiSelector().descriptionMatches("Camera, video or panorama selector"));
+        clickModes.click();
+        sleep(sleepTime);
 
-       UiObject changeModeToCapture = new UiObject(new UiSelector().descriptionMatches("Switch to photo"));
+        UiObject changeModeToCapture = new UiObject(new UiSelector().descriptionMatches("Switch to photo"));
 
-       changeModeToCapture.click();
-       sleep(sleepTime);
+        changeModeToCapture.click();
+        sleep(sleepTime);
 
-       // click to capture photos
-       UiObject clickCaptureButton = new UiObject(new UiSelector().descriptionMatches("Shutter button"));
+        // click to capture photos
+        UiObject clickCaptureButton = new UiObject(new UiSelector().descriptionMatches("Shutter button"));
 
-       for (int i = 0; i < iterations; i++) {
-           clickCaptureButton.longClick();
-           sleep(timeDurationBetweenEachCapture);
-       }
-       getUiDevice().pressBack();
+        for (int i = 0; i < iterations; i++) {
+            clickCaptureButton.longClick();
+            sleep(timeDurationBetweenEachCapture);
+        }
+        getUiDevice().pressBack();
+    }
+
+    private void takePhotosGoogleV3_2() throws Exception 
+    {
+        // clear tutorial if needed
+        UiObject tutorialText = new UiObject(new UiSelector().resourceId("com.android.camera2:id/photoVideoSwipeTutorialText"));
+        if (tutorialText.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
+            tutorialText.swipeLeft(5);
+            sleep(sleepTime);
+            tutorialText.swipeRight(5);
+        }
+        
+        // ensure we are in photo mode
+        UiObject viewFinder = new UiObject(new UiSelector().resourceId("com.android.camera2:id/viewfinder_frame"));
+        viewFinder.swipeRight(5);
+
+        // click to capture photos
+        UiObject clickCaptureButton = new UiObject(new UiSelector().resourceId("com.android.camera2:id/photo_video_button"));
+
+        for (int i = 0; i < iterations; i++) {
+            clickCaptureButton.longClick();
+            sleep(timeDurationBetweenEachCapture);
+        }
+    }
+
+    private void takePhotosGoogle() throws Exception 
+    {
+        // open mode select menu
+        UiObject swipeScreen = new UiObject(new UiSelector().resourceId("com.android.camera2:id/mode_options_overlay"));
+        swipeScreen.swipeRight(5);
+
+        // switch to video mode
+        UiObject changeModeToCapture = new UiObject(new UiSelector().descriptionMatches("Switch to Camera Mode"));
+        changeModeToCapture.click();
+        sleep(sleepTime);
+
+        // click to capture photos
+        UiObject clickCaptureButton = new UiObject(new UiSelector().descriptionMatches("Shutter"));
+
+        for (int i = 0; i < iterations; i++) {
+            clickCaptureButton.longClick();
+            sleep(timeDurationBetweenEachCapture);
+        }
     }
 }
