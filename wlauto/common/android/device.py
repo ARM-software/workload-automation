@@ -665,6 +665,10 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         except KeyError:
             return None
 
+    def is_wifi_connected(self):
+        self.logger.debug('Checking for wi-fi connectivity.')
+        return self.execute('dumpsys wifi| grep curState=ConnectedState')
+
     # Internal methods: do not use outside of the class.
 
     def _update_build_properties(self, filepath, props):

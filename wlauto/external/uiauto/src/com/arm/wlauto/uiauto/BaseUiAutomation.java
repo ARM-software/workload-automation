@@ -20,19 +20,21 @@ import java.io.File;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.TimeUnit;
 
-import android.app.Activity;
 import android.os.Bundle;
+import android.graphics.Point;
+import android.graphics.Rect;
 
 // Import the uiautomator libraries
 import com.android.uiautomator.core.UiObject;
 import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
 import com.android.uiautomator.core.UiSelector;
 import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
-public class BaseUiAutomation extends UiAutomatorTestCase {   
+public class BaseUiAutomation extends UiAutomatorTestCase {
 
+    public long waitTimeout = TimeUnit.SECONDS.toMillis(4);
 
     public void sleep(int second) {
         super.sleep(second * 1000);
@@ -40,7 +42,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
     public boolean takeScreenshot(String name) {
         Bundle params = getParams();
-	String png_dir = params.getString("workdir");
+        String png_dir = params.getString("workdir");
 
         try {
             return getUiDevice().takeScreenshot(new File(png_dir, name + ".png"));
@@ -87,7 +89,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
         long currentTime = System.currentTimeMillis();
         boolean found = false;
-        while ((currentTime - startTime) < timeout){ 
+        while ((currentTime - startTime) < timeout){
             sleep(2);  // poll every two seconds
 
             while((line=reader.readLine())!=null) {
@@ -109,5 +111,144 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
             throw new TimeoutException("Timed out waiting for Logcat text \"%s\"".format(searchText));
         }
     }
-}
 
+    public UiObject getUiObjectByResourceId(String resourceId, String className) throws Exception {
+        UiObject object = new UiObject(new UiSelector().resourceId(resourceId)
+                                                       .className(className));
+        if (!object.waitForExists(waitTimeout)) {
+           throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
+                                                              resourceId, className));
+        };
+        return object;
+    }
+
+    public UiObject getUiObjectByDescription(String description, String className) throws Exception {
+        UiObject object = new UiObject(new UiSelector().descriptionContains(description)
+                                                       .className(className));
+        if (!object.waitForExists(waitTimeout)) {
+            throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
+                                                              description, className));
+        };
+        return object;
+    }
+
+    public UiObject getUiObjectByText(String text, String className) throws Exception {
+        UiObject object = new UiObject(new UiSelector().textContains(text)
+                                                      .className(className));
+        if (!object.waitForExists(waitTimeout)) {
+            throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
+                                                              text, className));
+        };
+        return object;
+    }
+
+    public void clickUiObject(UiObject uiobject, long timeout) throws Exception {
+        if (!uiobject.clickAndWaitForNewWindow(timeout)) {
+            throw new UiObjectNotFoundException(String.format("Timeout waiting for New Window"));
+        }
+    }
+
+    public int getDisplayHeight () {
+        return getUiDevice().getInstance().getDisplayHeight();
+    }
+
+    public int getDisplayWidth () {
+        return getUiDevice().getInstance().getDisplayWidth();
+    }
+
+    public int getDisplayCentreWidth () {
+        return getDisplayWidth() / 2;
+    }
+
+    public int getDisplayCentreHeight () {
+        return getDisplayHeight() / 2;
+    }
+
+    public void tapDisplayCentre () {
+        tapDisplay(getDisplayCentreWidth(),  getDisplayCentreHeight());
+    }
+
+    public void tapDisplay (int x, int y) {
+        getUiDevice().getInstance().click(x, y);
+    }
+
+    public void uiDeviceSwipeUp (int steps) {
+        getUiDevice().getInstance().swipe(
+            getDisplayCentreWidth(),
+            (getDisplayCentreHeight() / 2),
+            getDisplayCentreWidth(),
+            (getDisplayCentreHeight() + (getDisplayCentreHeight() / 2)),
+            steps);
+    }
+
+    public void uiDeviceSwipeDown (int steps) {
+        getUiDevice().getInstance().swipe(
+            getDisplayCentreWidth(),
+            (getDisplayCentreHeight() + (getDisplayCentreHeight() / 2)),
+            getDisplayCentreWidth(),
+            (getDisplayCentreHeight() / 2),
+            steps);
+    }
+
+    public void uiDeviceSwipeLeft (int steps) {
+        getUiDevice().getInstance().swipe(
+            (getDisplayCentreWidth() + (getDisplayCentreWidth() / 2)),
+            getDisplayCentreHeight(),
+            (getDisplayCentreWidth() / 2),
+            getDisplayCentreHeight(),
+            steps);
+    }
+
+    public void uiDeviceSwipeRight (int steps) {
+        getUiDevice().getInstance().swipe(
+            (getDisplayCentreWidth() / 2),
+            getDisplayCentreHeight(),
+            (getDisplayCentreWidth() + (getDisplayCentreWidth() / 2)),
+            getDisplayCentreHeight(),
+            steps);
+    }
+
+    public void uiDeviceVertPinchIn(UiObject view, int steps, int percent) throws Exception {
+        final int FINGER_TOUCH_HALF_WIDTH = 20;
+
+        // Make value between 1 and 100
+        percent = (percent < 0) ? 1 : (percent > 100) ? 100 : percent;
+        float percentage = percent / 100f;
+
+        Rect rect = view.getVisibleBounds();
+        if (rect.width() <= FINGER_TOUCH_HALF_WIDTH * 2)
+            throw new IllegalStateException("Object width is too small for operation");
+
+        // Start at the top-center and bottom-center of the control
+        Point startPoint1 = new Point(rect.centerX(), rect.centerY() + (int) ((rect.height() / 2) * percentage));
+        Point startPoint2 = new Point(rect.centerX(), rect.centerY() - (int) ((rect.height() / 2) * percentage));
+
+        // End at the same point at the center of the control
+        Point endPoint1 = new Point(rect.centerX(), rect.centerY() + FINGER_TOUCH_HALF_WIDTH);
+        Point endPoint2 = new Point(rect.centerX(), rect.centerY() - FINGER_TOUCH_HALF_WIDTH);
+
+        view.performTwoPointerGesture(startPoint1, startPoint2, endPoint1, endPoint2, steps);
+    }
+
+    public void uiDeviceVertPinchOut(UiObject view, int steps, int percent) throws Exception {
+        final int FINGER_TOUCH_HALF_WIDTH = 20;
+
+        // Make value between 1 and 100
+        percent = (percent < 0) ? 1 : (percent > 100) ? 100 : percent;
+        float percentage = percent / 100f;
+
+        Rect rect = view.getVisibleBounds();
+        if (rect.width() <= FINGER_TOUCH_HALF_WIDTH * 2)
+            throw new IllegalStateException("Object width is too small for operation");
+
+        // Start from the same point at the center of the control
+        Point startPoint1 = new Point(rect.centerX(), rect.centerY() + FINGER_TOUCH_HALF_WIDTH);
+        Point startPoint2 = new Point(rect.centerX(), rect.centerY() - FINGER_TOUCH_HALF_WIDTH);
+
+        // End at the top-center and bottom-center of the control
+        Point endPoint1 = new Point(rect.centerX(), rect.centerY() + (int) ((rect.height() / 2) * percentage));
+        Point endPoint2 = new Point(rect.centerX(), rect.centerY() - (int) ((rect.height() / 2) * percentage));
+
+        view.performTwoPointerGesture(startPoint1, startPoint2, endPoint1, endPoint2, steps);
+    }
+}
