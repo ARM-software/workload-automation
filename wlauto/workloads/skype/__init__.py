@@ -30,17 +30,16 @@ class Skype(AndroidUiAutoBenchmark):
 
     name = 'skype'
     description = '''
-    Workload that makes Skype calls
+    A workload to perform standard productivity tasks within Skype.  The workload logs in to the
+    Skype application, selects a recipient from the contacts list and then initiates a 5 second
+    call.
 
-    It allows for the agenda to decide whether to make a voice call or a video call.
-    Credentials for the user account used to log into the Skype app have to be provided
-    in the agenda, as well as the display name and skype ID of the contact to call.
-
-    Other optional arguments allow controlling the duration of the call, whether the
-    call includes video or voice only, and whether to collect sys dumps.
-
-    For reliable testing, this workload requires a good and stable internet connection,
-    preferably on Wi-Fi.
+    Test description:
+    
+    1. Open Skype application
+    2. Log in to a pre-defined account
+    3. Select a recipient from the Contacts list
+    4. Initiate a 5 second video Call
     '''
     package = 'com.skype.raider'
     view = [package+'/com.skype.android.app.calling.CallActivity',
