@@ -59,20 +59,22 @@ public class UiAutomation extends BaseUiAutomation {
             getScore("html5", "com.quicinc.vellamo:id/act_ba_results_img_0");
             getScore("metal", "com.quicinc.vellamo:id/act_ba_results_img_1");
         }
-
         else {
             dismissLetsRoll();
+            if (version.equals("3.2.4")) {
+                dismissArrow();
+            }
             if (browser) {
-                startBrowserTest(browserToUse);
+                startBrowserTest(browserToUse, version);
                 proccessTest("Browser");
             }
             if (multicore) {
-                startTestV3(1);
+                startTestV3(1, version);
                 proccessTest("Multicore");
 
             }
             if (metal) {
-                startTestV3(2);
+                startTestV3(2, version);
                 proccessTest("Metal");
             }
         }
@@ -96,7 +98,7 @@ public class UiAutomation extends BaseUiAutomation {
         runButton.click();
     }
 
-    public void startBrowserTest(int browserToUse) throws Exception {
+    public void startBrowserTest(int browserToUse, String version) throws Exception {
         //Ensure chrome is selected as "browser" fails to run the benchmark
         UiSelector selector = new UiSelector();
         UiObject browserToUseButton = new UiObject(selector.className("android.widget.ImageButton")
@@ -136,13 +138,13 @@ public class UiAutomation extends BaseUiAutomation {
         // Run watcher
         UiDevice.getInstance().runWatchers();
 
-        startTestV3(0);
+        startTestV3(0, version);
     }
 
-    public void startTestV3(int run) throws Exception {
+    public void startTestV3(int run, String version) throws Exception {
         UiSelector selector = new UiSelector();
 
-        UiObject thirdRunButton = new UiObject(selector.resourceId("com.quicinc.vellamo:id/card_launcher_run_button").instance(run));
+        UiObject thirdRunButton = new UiObject(selector.resourceId("com.quicinc.vellamo:id/card_launcher_run_button").instance(2));
         if (!thirdRunButton.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
             if (!thirdRunButton.exists()) {
                 throw new UiObjectNotFoundException("Could not find three \"Run\" buttons.");
@@ -158,17 +160,29 @@ public class UiAutomation extends BaseUiAutomation {
         }
         runButton.click();
 
-        //Skip tutorial screens
-        UiObject swipeScreen = new UiObject(selector.textContains("Swipe left to continue"));
-        if (!swipeScreen.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
-            if (!swipeScreen.exists()) {
-                throw new UiObjectNotFoundException("Could not find \"Swipe screen\".");
+        //Skip tutorial screen
+        if (version.equals("3.2.4")) {
+            UiObject gotItButton = new UiObject(selector.textContains("Got it"));
+            if (!gotItButton.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
+                if (!gotItButton.exists()) {
+                    throw new UiObjectNotFoundException("Could not find correct \"GOT IT\" button.");
+                }
             }
+            gotItButton.click();
         }
-        sleep(1);
-        swipeScreen.swipeLeft(2);
-        sleep(1);
-        swipeScreen.swipeLeft(2);
+
+        else {
+            UiObject swipeScreen = new UiObject(selector.textContains("Swipe left to continue"));
+            if (!swipeScreen.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
+                if (!swipeScreen.exists()) {
+                    throw new UiObjectNotFoundException("Could not find \"Swipe screen\".");
+                }
+            }
+            sleep(1);
+            swipeScreen.swipeLeft(2);
+            sleep(1);
+            swipeScreen.swipeLeft(2);
+        }
 
     }
 
@@ -234,6 +248,17 @@ public class UiAutomation extends BaseUiAutomation {
             }
         }
         letsRollButton.click();
+    }
+
+    public void dismissArrow() throws Exception {
+        UiSelector selector = new UiSelector();
+        UiObject cardContainer = new UiObject(selector.resourceId("com.quicinc.vellamo:id/cards_container")) ;
+        if (!cardContainer.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
+            if (!cardContainer.exists()) {
+                throw new UiObjectNotFoundException("Could not find vellamo main screen");
+            }
+        }
+        cardContainer.click();
     }
 
     public void dismissNetworkConnectionDialogIfNecessary() throws Exception {

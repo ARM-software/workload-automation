@@ -17,6 +17,7 @@ import os
 import logging
 from HTMLParser import HTMLParser
 from collections import defaultdict, OrderedDict
+from distutils.version import StrictVersion
 
 from wlauto import AndroidUiAutoBenchmark, Parameter
 from wlauto.utils.types import list_of_strs, numeric
@@ -46,6 +47,7 @@ class Vellamo(AndroidUiAutoBenchmark):
     benchmark_types = {
         '2.0.3': ['html5', 'metal'],
         '3.0': ['Browser', 'Metal', 'Multi'],
+        '3.2.4': ['Browser', 'Metal', 'Multi'],
     }
     valid_versions = benchmark_types.keys()
     summary_metrics = None
@@ -66,11 +68,10 @@ class Vellamo(AndroidUiAutoBenchmark):
 
     def __init__(self, device, **kwargs):
         super(Vellamo, self).__init__(device, **kwargs)
-        if self.version == '2.0.3':
-            self.activity = 'com.quicinc.vellamo.VellamoActivity'
-        if self.version == '3.0':
+        if StrictVersion(self.version) >= StrictVersion("3.0.0"):
             self.activity = 'com.quicinc.vellamo.main.MainActivity'
-        self.summary_metrics = self.benchmark_types[self.version]
+        if StrictVersion(self.version) == StrictVersion('2.0.3'):
+            self.activity = 'com.quicinc.vellamo.VellamoActivity'
 
     def setup(self, context):
         self.uiauto_params['version'] = self.version
@@ -97,7 +98,12 @@ class Vellamo(AndroidUiAutoBenchmark):
 
         if not self.device.is_rooted:
             return
+        elif self.version == '3.0.0':
+            self.update_result_v3(context)
+        elif self.version == '3.2.4':
+            self.update_result_v3_2(context)
 
+    def update_result_v3(self, context):
         for test in self.benchmarks:  # Get all scores from HTML files
             filename = None
             if test == "Browser":
@@ -121,7 +127,23 @@ class Vellamo(AndroidUiAutoBenchmark):
                         name = name.replace(' ', '_')
                         context.result.add_metric('{}_{}'.format(benchmark.name, name), score)
             context.add_iteration_artifact('vellamo_output', kind='raw', path=filename)
-
+    
+    def update_result_v3_2(self, context):
+        device_file = self.device.path.join(self.device.package_data_directory,
+                                            self.package,
+                                            'files',
+                                            'chapterscores.json')
+        host_file = os.path.join(context.output_directory, 'vellamo.json')
+        self.device.pull_file(device_file, host_file, as_root=True)
+        context.add_iteration_artifact('vellamo_output', kind='raw', path=host_file)
+        with open(host_file) as results_file:
+            data = json.load(results_file)
+            for chapter in data:
+                for result in chapter['benchmark_results']:
+                    name = result['id']
+                    score = result['score']
+                    context.result.add_metric(name, score)
+    
     def non_root_update_result(self, context):
         failed = []
         with open(self.logcat_log) as logcat:
