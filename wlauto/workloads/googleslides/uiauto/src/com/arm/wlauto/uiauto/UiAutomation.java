@@ -51,6 +51,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final int DOCTYPE_TEMPLATE = 1;
     public static final int DOCTYPE_PPT = 2;
     public static final int DOCTYPE_SLIDES = 3;
+    public static final String DOC_FILENAME = "UX Perf Slides";
+    // public static final String DOC_FILENAME = "Untitled Presentation";
 
     protected Map<String, Timer> results = new LinkedHashMap<String, Timer>();
 
@@ -77,15 +79,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         if (useLocalFiles) {
             openFromStorage(documents[0]);
         } else {
-            // createNewDoc(DOCTYPE_TEMPLATE);
-            createNewDoc(DOCTYPE_PPT);
+            // createNewDoc(DOCTYPE_TEMPLATE, DOC_FILENAME);
+            createNewDoc(DOCTYPE_PPT, DOC_FILENAME);
         }
 
         // toggleWifiState(false);
         // tapDisplayNormalised(0.99, 0.99); // dismiss help overlay
-        sleep(5);
-        getUiDevice().pressBack();
-        deleteDocument();
+        deleteDocument(DOC_FILENAME);
 
         if (false) { // TODO currently unused
             writeResultsToFile(results, parameters.getString("results_file"));
@@ -124,7 +124,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         sleep(1);
     }
 
-    protected void createNewDoc(int docType) throws Exception {
+    protected void createNewDoc(int docType, String docName) throws Exception {
         UiObject newButton = getUiObjectByDescription("New presentation", CLASS_IMAGE_BUTTON);
         newButton.click();
         UiObject fromTemplate = getUiObjectByText("Choose template", CLASS_TEXT_VIEW);
@@ -133,6 +133,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         // UiObject newSlidesFile = getUiObjectByDescription("New Slides", CLASS_IMAGE_BUTTON);
         UiObject newPowerpoint = getUiObjectByText("New PowerPoint", CLASS_TEXT_VIEW);
         UiObject newSlidesFile = getUiObjectByText("New Slides", CLASS_TEXT_VIEW);
+        UiObject view;
 
         switch (docType) {
             case DOCTYPE_TEMPLATE:
@@ -147,26 +148,51 @@ public class UiAutomation extends UxPerfUiAutomation {
                 newPowerpoint.clickAndWaitForNewWindow();
                 enterTextInSlide("Title", "WORKLOAD AUTOMATION");
                 enterTextInSlide("Subtitle", "Measuring perfomance of different productivity apps on Android OS");
-                UiObject view = getViewByDesc("Insert slide");
-                view.clickAndWaitForNewWindow();
-                view = getViewByText("Title and Content");
-                view.clickAndWaitForNewWindow();
+                saveDocument(docName);
+                insertSlide("Title and Content");
                 enterTextInSlide("title", "INTRODUCTION");
                 enterTextInSlide("Text placeholder", "Welcome to Documentation for Workload Automation");
                 view = getViewByDesc("Undo");
                 view.click();
-                sleep(1);
                 enterTextInSlide("Text placeholder", "Workload Automation (WA) is a framework for running workloads on real hardware devices. "
                     + "WA supports a number of output formats as well as additional instrumentation "
                     + "(such as Streamline traces). A number of workloads are included with the framework.");
-                view = getViewByDesc("Done");
-                view.clickAndWaitForNewWindow();
+                // view = getViewByDesc("Done");
+                // view = getViewByDesc("Navigate up");
+                // view.clickAndWaitForNewWindow();
                 break;
 
             case DOCTYPE_SLIDES:
             default:
                 newSlidesFile.clickAndWaitForNewWindow();
                 break;
+        }
+        sleep(1);
+        getUiDevice().pressBack();
+    }
+
+    public void insertSlide(String slideLayout) throws Exception {
+        UiObject view = getViewByDesc("Insert slide");
+        view.clickAndWaitForNewWindow();
+        view = getViewByText(slideLayout);
+        view.clickAndWaitForNewWindow();
+    }
+
+    public void saveDocument(String docName) throws Exception {
+        UiObject saveButton = getViewByText("SAVE");
+        saveButton.click();
+        saveButton = getViewByText("Save on Device");
+        saveButton.click();
+        UiObject filename = getViewById(PACKAGE_ID + "file_name_edit_text");
+        filename.clearTextField();
+        filename.setText(docName);
+        saveButton = getUiObjectByText("Save", CLASS_BUTTON);
+        saveButton.click();
+        // Overwrite if prompted
+        UiObject overwriteView = new UiObject(new UiSelector().textContains("already exists"));
+        if (overwriteView.waitForExists(1000)) {
+            saveButton = getViewByText("Overwrite");
+            saveButton.click();
         }
         sleep(1);
     }
@@ -178,12 +204,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         view.click(); // double click
         view.setText(textToEnter);
         getUiDevice().pressBack();
+        sleep(1);
         return view;
     }
 
-    public void deleteDocument() throws Exception {
-        UiObject moreOptions = getUiObjectByResourceId(PACKAGE_ID + "more_actions_button", CLASS_IMAGE_BUTTON);
-        moreOptions.click();
+    public void deleteDocument(String docName) throws Exception {
+        UiObject doc = getViewByText(docName);
+        doc.longClick();
         UiObject deleteButton = getUiObjectByText("Remove", CLASS_TEXT_VIEW);
         deleteButton.click();
         try {
