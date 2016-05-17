@@ -17,6 +17,7 @@ import os
 import os.path as path
 import re
 from wlauto import AndroidUiAutoBenchmark, Parameter
+from wlauto.utils.types import list_of_strings
 
 
 def not_implemented(workload, text):
@@ -34,8 +35,9 @@ class GoogleSlides(AndroidUiAutoBenchmark):
 
     # Views for FPS instrumentation
     view = [
-        "com.google.android.apps.docs.editors.slides/com.google.android.apps.docs.app.DocListActivity",
-        "com.google.android.apps.docs.editors.slides/com.google.android.apps.docs.welcome.warmwelcome.TrackingWelcomeActivity",
+        package + '/com.google.android.apps.docs.app.DocListActivity',
+        package + '/com.google.android.apps.docs.welcome.warmwelcome.TrackingWelcomeActivity',
+        package + '/com.google.android.apps.docs.app.NewMainProxyActivity',
     ]
 
     parameters = [
@@ -44,7 +46,8 @@ class GoogleSlides(AndroidUiAutoBenchmark):
                   If ``True``, dumpsys captures will be carried out during the test run.
                   The output is piped to log files which are then pulled from the phone.
                   '''),
-        Parameter('local_files', kind=bool, default=True,
+        # Parameter('local_files', kind=list_of_strings, default=['Slides_Album.pptx', 'Slides_Pitch.pptx'],
+        Parameter('local_files', kind=list_of_strings,
                   description='''
                   If ``True``, the workload will push PowerPoint files to be used for testing on
                   the device. Otherwise, the files will be created from template inside the app.
@@ -59,7 +62,7 @@ class GoogleSlides(AndroidUiAutoBenchmark):
     def __init__(self, device, **kwargs):
         super(GoogleSlides, self).__init__(device, **kwargs)
         self.output_file = path.join(self.device.working_directory, self.instrumentation_log)
-        self.run_timeout = 60
+        self.run_timeout = 120
 
     def validate(self):
         log_method(self, 'validate')
@@ -67,6 +70,8 @@ class GoogleSlides(AndroidUiAutoBenchmark):
         self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
         self.uiauto_params['output_dir'] = self.device.working_directory
         self.uiauto_params['results_file'] = self.output_file
+        if self.local_files:
+            self.uiauto_params['local_files'] = '::'.join(self.local_files)
 
     def initialize(self, context):
         log_method(self, 'initialize')
@@ -75,12 +80,12 @@ class GoogleSlides(AndroidUiAutoBenchmark):
             # push local PPT files
             for entry in os.listdir(self.local_dir):
                 wa_file = self.file_prefix + entry
-                if entry.endswith(".pptx"):
+                if entry.endswith('.pptx'):
                     self.device.push_file(path.join(self.local_dir, entry),
                                           path.join(self.device_dir, wa_file),
                                           timeout=60)
             # Force a re-index of the mediaserver cache to pick up new files
-            self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
+            # self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
 
     def setup(self, context):
         log_method(self, 'setup')
@@ -93,8 +98,7 @@ class GoogleSlides(AndroidUiAutoBenchmark):
     def update_result(self, context):
         log_method(self, 'update_result')
         super(GoogleSlides, self).update_result(context)
-        if self.dumpsys_enabled:
-            not_implemented(self, 'get_metrics(context)')
+        not_implemented(self, 'get_metrics(context)')
 
     def teardown(self, context):
         log_method(self, 'teardown')
@@ -108,10 +112,10 @@ class GoogleSlides(AndroidUiAutoBenchmark):
             # delete pushed PPT files
             for entry in os.listdir(self.local_dir):
                 wa_file = self.file_prefix + entry
-                if entry.endswith(".pptx"):
+                if entry.endswith('.pptx'):
                     self.device.delete_file(path.join(self.device_dir, wa_file))
             # Force a re-index of the mediaserver cache to pick up new files
-            self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
+            # self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
 
     def get_metrics(self, context):
         self.device.pull_file(self.output_file, context.output_directory)

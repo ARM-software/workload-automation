@@ -23,6 +23,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.KeyEvent;
 
@@ -51,21 +52,21 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final int DOCTYPE_PPT = 2;
     public static final int DOCTYPE_SLIDES = 3;
 
-    private Map<String, Timer> results = new LinkedHashMap<String, Timer>();
+    protected Map<String, Timer> results = new LinkedHashMap<String, Timer>();
 
-    private Bundle parameters;
-    private boolean dumpsysEnabled;
-    private String outputDir;
-    private String documentName;
-    private boolean useLocalFiles;
-
-    private static final String[] DEFAULT_DOCS = { "wa_test_Slides_Album.pptx", "wa_test_Slides_Pitch.pptx" };
+    protected Bundle parameters;
+    protected boolean dumpsysEnabled;
+    protected String outputDir;
+    protected String[] documents;
+    protected boolean useLocalFiles;
+    protected String resultsFile;
 
     public void parseParams(Bundle parameters) throws Exception {
         dumpsysEnabled = Boolean.parseBoolean(parameters.getString("dumpsys_enabled"));
-        outputDir = parameters.getString("output_dir", "/sdcard/wa-working");
-        documentName = parameters.getString("local_files", DEFAULT_DOCS[0]);
-        useLocalFiles = true;
+        outputDir = parameters.getString("output_dir");
+        resultsFile = parameters.getString("results_file");
+        documents = parameters.getString("local_files", "::").split("::");
+        useLocalFiles = documents.length != 0;
     }
 
     public void runUiAutomation() throws Exception {
@@ -73,28 +74,31 @@ public class UiAutomation extends UxPerfUiAutomation {
         parseParams(parameters);
         skipWelcomeScreen();
         enablePowerpointCompat();
-        if (useLocalFiles) { // TODO currently unused
-            openFromStorage(documentName);
+        if (useLocalFiles) {
+            openFromStorage(documents[0]);
         } else {
-            createNewDoc(DOCTYPE_TEMPLATE);
+            // createNewDoc(DOCTYPE_TEMPLATE);
+            createNewDoc(DOCTYPE_PPT);
         }
-        setWifiStatus(false);
-        tapDisplayNormalised(0.99, 0.99);
+
+        // toggleWifiState(false);
+        // tapDisplayNormalised(0.99, 0.99); // dismiss help overlay
         sleep(5);
         getUiDevice().pressBack();
+        deleteDocument();
 
         if (false) { // TODO currently unused
             writeResultsToFile(results, parameters.getString("results_file"));
         }
     }
 
-    private void skipWelcomeScreen() throws Exception {
+    protected void skipWelcomeScreen() throws Exception {
         UiObject skipButton = getUiObjectByText("Skip", CLASS_BUTTON);
         skipButton.clickAndWaitForNewWindow();
         sleep(1);
     }
 
-    private void enablePowerpointCompat() throws Exception {
+    protected void enablePowerpointCompat() throws Exception {
         uiDeviceEdgeSwipeFromLeft(10);
         UiObject settings = getUiObjectByText("Settings", CLASS_TEXT_VIEW);
         settings.clickAndWaitForNewWindow();
@@ -104,7 +108,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         sleep(1);
     }
 
-    private void openFromStorage(String document) throws Exception {
+    protected void openFromStorage(String document) throws Exception {
         // UiObject newButton = getUiObjectByResourceId(PACKAGE_ID + "menu_open_with_picker", CLASS_TEXT_VIEW);
         UiObject openButton = getUiObjectByDescription("Open presentation", CLASS_TEXT_VIEW);
         openButton.click();
@@ -120,11 +124,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         sleep(1);
     }
 
-    private void createNewDoc(int docType) throws Exception {
-        // UiObject newButton = getUiObjectByResourceId(PACKAGE_ID + "fab_base_button", CLASS_IMAGE_BUTTON);
+    protected void createNewDoc(int docType) throws Exception {
         UiObject newButton = getUiObjectByDescription("New presentation", CLASS_IMAGE_BUTTON);
         newButton.click();
-        // UiObject fromTemplate = getUiObjectByDescription("Choose template", CLASS_IMAGE_BUTTON);
         UiObject fromTemplate = getUiObjectByText("Choose template", CLASS_TEXT_VIEW);
 
         // UiObject newPowerpoint = getUiObjectByDescription("New PowerPoint", CLASS_IMAGE_BUTTON);
@@ -143,6 +145,22 @@ public class UiAutomation extends UxPerfUiAutomation {
 
             case DOCTYPE_PPT:
                 newPowerpoint.clickAndWaitForNewWindow();
+                enterTextInSlide("Title", "WORKLOAD AUTOMATION");
+                enterTextInSlide("Subtitle", "Measuring perfomance of different productivity apps on Android OS");
+                UiObject view = getViewByDesc("Insert slide");
+                view.clickAndWaitForNewWindow();
+                view = getViewByText("Title and Content");
+                view.clickAndWaitForNewWindow();
+                enterTextInSlide("title", "INTRODUCTION");
+                enterTextInSlide("Text placeholder", "Welcome to Documentation for Workload Automation");
+                view = getViewByDesc("Undo");
+                view.click();
+                sleep(1);
+                enterTextInSlide("Text placeholder", "Workload Automation (WA) is a framework for running workloads on real hardware devices. "
+                    + "WA supports a number of output formats as well as additional instrumentation "
+                    + "(such as Streamline traces). A number of workloads are included with the framework.");
+                view = getViewByDesc("Done");
+                view.clickAndWaitForNewWindow();
                 break;
 
             case DOCTYPE_SLIDES:
@@ -151,6 +169,54 @@ public class UiAutomation extends UxPerfUiAutomation {
                 break;
         }
         sleep(1);
+    }
+
+    public UiObject enterTextInSlide(String viewName, String textToEnter) throws Exception {
+        UiObject view = getViewByDesc(viewName);
+        view.click();
+        SystemClock.sleep(100);
+        view.click(); // double click
+        view.setText(textToEnter);
+        getUiDevice().pressBack();
+        return view;
+    }
+
+    public void deleteDocument() throws Exception {
+        UiObject moreOptions = getUiObjectByResourceId(PACKAGE_ID + "more_actions_button", CLASS_IMAGE_BUTTON);
+        moreOptions.click();
+        UiObject deleteButton = getUiObjectByText("Remove", CLASS_TEXT_VIEW);
+        deleteButton.click();
+        try {
+            deleteButton = getUiObjectByText("Remove", CLASS_BUTTON);
+        } catch (UiObjectNotFoundException e) {
+            deleteButton = getUiObjectByText("Ok", CLASS_BUTTON);
+        }
+        deleteButton.clickAndWaitForNewWindow();
+        sleep(1);
+    }
+
+    public UiObject getViewByText(String text) throws Exception {
+        UiObject object = new UiObject(new UiSelector().textContains(text));
+        if (!object.waitForExists(waitTimeout)) {
+           throw new UiObjectNotFoundException("Could not find view with text: " + text);
+        };
+        return object;
+    }
+
+    public UiObject getViewByDesc(String desc) throws Exception {
+        UiObject object = new UiObject(new UiSelector().descriptionContains(desc));
+        if (!object.waitForExists(waitTimeout)) {
+           throw new UiObjectNotFoundException("Could not find view with description: " + desc);
+        };
+        return object;
+    }
+
+    public UiObject getViewById(String id) throws Exception {
+        UiObject object = new UiObject(new UiSelector().resourceId(id));
+        if (!object.waitForExists(waitTimeout)) {
+           throw new UiObjectNotFoundException("Could not find view with resource ID: " + id);
+        };
+        return object;
     }
 
     public void uiDeviceEdgeSwipeFromLeft(int steps) {
@@ -167,25 +233,33 @@ public class UiAutomation extends UxPerfUiAutomation {
         getUiDevice().click(tapX, tapY);
     }
 
-    public void setWifiStatus(boolean flag) throws Exception {
+    public void toggleWifiState(boolean flag) throws Exception {
+        int exitValue = -1;
         // To enable, check for "UninitializedState"
-        String checkFor = flag ? "UninitializedState" : "ConnectedState";
-        String adbCommand =
-              "dumpsys wifi | grep curState=" + checkFor + ";"
-            + "exit_code=$?;"
-            + "if [ $exit_code = 0 ]; then"
-            + "    am start -a android.intent.action.MAIN -n com.android.settings/.wifi.WifiSettings;"
-            + "    input keyevent 20;"
-            + "    input keyevent 23;"
-            + "    sleep 1;"
-            + "    input keyevent 4;"
-            + "fi";
-        runShellCommand(adbCommand);
-        // runShellCommand("dumpsys wifi | grep curState=ConnectedState");
+        // String checkFor = flag ? "UninitializedState" : "ConnectedState";
+        // exitValue = runShellCommand("dumpsys wifi | grep curState=" + checkFor);
+        // if (0 == exitValue) { // toggle state
+        String statusString = flag ? "ConnectedState" : "UninitializedState";
+        exitValue = runShellCommand("dumpsys wifi | grep curState=" + statusString);
+        if (0 != exitValue) { // not in the expected so toggle it
+            String[] adbCommands = {
+                "am start -a android.intent.action.MAIN -n com.android.settings/.wifi.WifiSettings;",
+                "input keyevent 20;",
+                "input keyevent 23;",
+                "sleep 1;",
+                "input keyevent 4;",
+            };
+            for (String command : adbCommands) {
+                exitValue = runShellCommand(command);
+            }
+        }
         sleep(1);
     }
 
-    public void runShellCommand(String command) throws Exception {
+    public int runShellCommand(String command) throws Exception {
         Process proc = Runtime.getRuntime().exec(command);
+        Log.d(TAG, String.format("Command:\n%s\nExit value:%d\n", command, proc.exitValue()));
+        proc.waitFor();
+        return proc.exitValue();
     }
 }
