@@ -48,13 +48,9 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         dismissWelcomeView();
         signInOnline(parameters);
-<<<<<<< HEAD
 
         confirmAccess();
 
-=======
-        confirmLocalFileAccess();
->>>>>>> 3991e73... Add setScreenOrientation to BaseUiAutomation class
         gesturesTest("Getting Started.pdf");
         String[] searchStrings = {"Glossary", "cortex"};
         searchPdfTest("cortex_m4", searchStrings);
