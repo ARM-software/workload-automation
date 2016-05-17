@@ -15,6 +15,9 @@
 
 import os
 import logging
+import json
+import re
+
 from HTMLParser import HTMLParser
 from collections import defaultdict, OrderedDict
 from distutils.version import StrictVersion
@@ -127,7 +130,7 @@ class Vellamo(AndroidUiAutoBenchmark):
                         name = name.replace(' ', '_')
                         context.result.add_metric('{}_{}'.format(benchmark.name, name), score)
             context.add_iteration_artifact('vellamo_output', kind='raw', path=filename)
-    
+
     def update_result_v3_2(self, context):
         device_file = self.device.path.join(self.device.package_data_directory,
                                             self.package,
@@ -143,25 +146,21 @@ class Vellamo(AndroidUiAutoBenchmark):
                     name = result['id']
                     score = result['score']
                     context.result.add_metric(name, score)
-    
+
     def non_root_update_result(self, context):
         failed = []
-        with open(self.logcat_log) as logcat:
-            metrics = OrderedDict()
-            for line in logcat:
-                if 'VELLAMO RESULT:' in line:
-                    info = line.split(':')
-                    parts = info[2].split(" ")
-                    metric = parts[1].strip()
-                    value = int(parts[2].strip())
-                    metrics[metric] = value
+        with open(self.logcat_log) as fh:
+            iteration_result_regex = re.compile("VELLAMO RESULT: (Browser|Metal|Multicore) (\d+)")
+            for line in fh:
                 if 'VELLAMO ERROR:' in line:
                     self.logger.warning("Browser crashed during benchmark, results may not be accurate")
-            for key, value in metrics.iteritems():
-                key = key.replace(' ', '_')
-                context.result.add_metric(key, value)
-                if value == 0:
-                    failed.append(key)
+                result = iteration_result_regex.findall(line)
+                if result:
+                    for (metric, score) in result:
+                        if not score:
+                            failed.append(metric)
+                        else:
+                            context.result.add_metric(metric, score)
         if failed:
             raise WorkloadError("The following benchmark groups failed: {}".format(", ".join(failed)))
 
