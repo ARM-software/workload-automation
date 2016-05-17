@@ -173,6 +173,10 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         getUiDevice().getInstance().click(x, y);
     }
 
+    public void pressBack() {
+        getUiDevice().getInstance().pressBack();
+    }
+
     public void uiDeviceSwipeUp (int steps) {
         getUiDevice().getInstance().swipe(
             getDisplayCentreWidth(),
@@ -271,5 +275,11 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
     public void unsetScreenOrientation() throws Exception {
         getUiDevice().unfreezeRotation();
+    }
+
+   public void uiDevicePerformLongClick(UiObject view, int steps) throws Exception {
+        Rect rect = view.getBounds();
+        getUiDevice().getInstance().swipe(rect.centerX(), rect.centerY(),
+                                          rect.centerX(), rect.centerY(), steps);
     }
 }
