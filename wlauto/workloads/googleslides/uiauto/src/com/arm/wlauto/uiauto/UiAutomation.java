@@ -54,6 +54,26 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final String DOC_FILENAME = "UX Perf Slides";
     // public static final String DOC_FILENAME = "Untitled Presentation";
 
+    public static final int BY_ID = 1;
+    public static final int BY_TEXT = 2;
+    public static final int BY_DESC = 3;
+
+    public static final String DOCUMENTATION_WORKLOADS =
+        "class Workload(Extension):\n\tname = None\n\tdef init_resources(self, context):\n\t\tpass\n"
+        + "\tdef validate(self):\n\t\tpass\n\tdef initialize(self, context):\n\t\tpass\n"
+        + "\tdef setup(self, context):\n\t\tpass\n\tdef setup(self, context):\n\t\tpass\n"
+        + "\tdef run(self, context):\n\t\tpass\n\tdef update_result(self, context):\n\t\tpass\n"
+        + "\tdef teardown(self, context):\n\t\tpass\n\tdef finalize(self, context):\n\t\tpass\n";
+
+    public static final String DOCUMENTATION_AGENDAS_1 = "An agenda specifies what is to be done during a Workload Automation run, "
+        + "including which workloads will be run, with what configuration, which instruments and result processors will be enabled, etc. "
+        + "Agenda syntax is designed to be both succinct and expressive. Agendas are specified using YAML notation.";
+
+    public static final String DOCUMENTATION_AGENDAS_2 =
+        "Use agendas for:\n\tSpecifying which workloads to run\n\t\t- Multiple iterations\n\t\t- Configuring workloads\n\t"
+        + "\t- IDs and Labels\n\tResult Processors and Instrumentation\n\t\t- Result Processors\n\t\t- Instrumentation\n\t"
+        + "\t- Disabling result processors and instrumentation\n\tOther Configuration (via config.py)\n";
+
     protected Map<String, Timer> results = new LinkedHashMap<String, Timer>();
 
     protected Bundle parameters;
@@ -127,17 +147,11 @@ public class UiAutomation extends UxPerfUiAutomation {
     protected void createNewDoc(int docType, String docName) throws Exception {
         UiObject newButton = getUiObjectByDescription("New presentation", CLASS_IMAGE_BUTTON);
         newButton.click();
-        UiObject fromTemplate = getUiObjectByText("Choose template", CLASS_TEXT_VIEW);
-
-        // UiObject newPowerpoint = getUiObjectByDescription("New PowerPoint", CLASS_IMAGE_BUTTON);
-        // UiObject newSlidesFile = getUiObjectByDescription("New Slides", CLASS_IMAGE_BUTTON);
-        UiObject newPowerpoint = getUiObjectByText("New PowerPoint", CLASS_TEXT_VIEW);
-        UiObject newSlidesFile = getUiObjectByText("New Slides", CLASS_TEXT_VIEW);
         UiObject view;
-
         switch (docType) {
             case DOCTYPE_TEMPLATE:
                 String[] templateNames = { "Lesson plan", "Book report", " Field trip", "Science project" };
+                UiObject fromTemplate = getUiObjectByText("Choose template", CLASS_TEXT_VIEW);
                 fromTemplate.clickAndWaitForNewWindow();
                 // UiObject template = getUiObjectByText(templateNames[1], CLASS_TEXT_VIEW);
                 UiObject template = new UiObject(new UiSelector().resourceId(PACKAGE_ID + "template_item").instance(2));
@@ -145,18 +159,63 @@ public class UiAutomation extends UxPerfUiAutomation {
                 break;
 
             case DOCTYPE_PPT:
+                // UiObject newPowerpoint = getUiObjectByDescription("New PowerPoint", CLASS_IMAGE_BUTTON);
+                UiObject newPowerpoint = getUiObjectByText("New PowerPoint", CLASS_TEXT_VIEW);
                 newPowerpoint.clickAndWaitForNewWindow();
                 enterTextInSlide("Title", "WORKLOAD AUTOMATION");
                 enterTextInSlide("Subtitle", "Measuring perfomance of different productivity apps on Android OS");
                 saveDocument(docName);
+/*
                 insertSlide("Title and Content");
-                enterTextInSlide("title", "INTRODUCTION");
+                enterTextInSlide("title", "Introduction");
                 enterTextInSlide("Text placeholder", "Welcome to Documentation for Workload Automation");
                 view = getViewByDesc("Undo");
                 view.click();
                 enterTextInSlide("Text placeholder", "Workload Automation (WA) is a framework for running workloads on real hardware devices. "
                     + "WA supports a number of output formats as well as additional instrumentation "
                     + "(such as Streamline traces). A number of workloads are included with the framework.");
+
+                insertSlide("Title and Content");
+                enterTextInSlide("title", "Extensions - Workloads");
+                enterTextInSlide("Text placeholder", DOCUMENTATION_WORKLOADS);
+                clickView(BY_DESC, "Text placeholder");
+                clickView(BY_DESC, "Format");
+                clickView(BY_TEXT, "Droid Sans");
+                clickView(BY_TEXT, "Droid Sans Mono");
+                clickView(BY_ID, PACKAGE_ID + "palette_back_button");
+                view = getViewByDesc("Decrease text");
+                repeatClickView(view, 20);
+                getUiDevice().pressBack();
+
+                insertSlide("Title and Content");
+                enterTextInSlide("title", "Agendas - 1");
+                enterTextInSlide("Text placeholder", DOCUMENTATION_AGENDAS_1);
+
+                insertSlide("Title and Content");
+                enterTextInSlide("title", "Agendas - 2");
+                enterTextInSlide("Text placeholder", DOCUMENTATION_AGENDAS_2);
+*/
+
+                // get first image in gallery and insert
+                insertSlide("Title Only");
+                clickView(BY_DESC, "Insert");
+                clickView(BY_TEXT, "Image", true);
+                clickView(BY_TEXT, "Recent");
+                clickView(BY_ID, "com.android.documentsui:id/date", true);
+
+                // last slide
+                insertSlide("Title Slide");
+                // insert "?" shape
+                clickView(BY_DESC, "Insert");
+                clickView(BY_TEXT, "Shape");
+                clickView(BY_TEXT, "Buttons");
+                clickView(BY_DESC, "actionButtonHelp");
+                UiObject resize = getViewByDesc("Bottom-left resize");
+                UiObject shape = getViewByDesc("actionButtonHelp");
+                UiObject subtitle = getViewByDesc("subTitle");
+                resize.dragTo(subtitle, 40);
+                shape.dragTo(subtitle, 40);
+                enterTextInSlide("title", "THE END. QUESTIONS?");
                 // view = getViewByDesc("Done");
                 // view = getViewByDesc("Navigate up");
                 // view.clickAndWaitForNewWindow();
@@ -164,6 +223,8 @@ public class UiAutomation extends UxPerfUiAutomation {
 
             case DOCTYPE_SLIDES:
             default:
+                // UiObject newSlidesFile = getUiObjectByDescription("New Slides", CLASS_IMAGE_BUTTON);
+                UiObject newSlidesFile = getUiObjectByText("New Slides", CLASS_TEXT_VIEW);
                 newSlidesFile.clickAndWaitForNewWindow();
                 break;
         }
@@ -179,20 +240,22 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void saveDocument(String docName) throws Exception {
-        UiObject saveButton = getViewByText("SAVE");
-        saveButton.click();
-        saveButton = getViewByText("Save on Device");
-        saveButton.click();
+        clickView(BY_TEXT, "SAVE");
+        clickView(BY_TEXT, "Device");
+        // Allow SD card access if requested
+        UiObject permissionView = new UiObject(new UiSelector().textContains("Allow Slides"));
+        if (permissionView.waitForExists(1000)) {
+            clickView(BY_TEXT, "Allow");
+        }
         UiObject filename = getViewById(PACKAGE_ID + "file_name_edit_text");
         filename.clearTextField();
         filename.setText(docName);
-        saveButton = getUiObjectByText("Save", CLASS_BUTTON);
+        UiObject saveButton = getUiObjectByText("Save", CLASS_BUTTON);
         saveButton.click();
         // Overwrite if prompted
         UiObject overwriteView = new UiObject(new UiSelector().textContains("already exists"));
         if (overwriteView.waitForExists(1000)) {
-            saveButton = getViewByText("Overwrite");
-            saveButton.click();
+            clickView(BY_TEXT, "Overwrite");
         }
         sleep(1);
     }
@@ -200,11 +263,11 @@ public class UiAutomation extends UxPerfUiAutomation {
     public UiObject enterTextInSlide(String viewName, String textToEnter) throws Exception {
         UiObject view = getViewByDesc(viewName);
         view.click();
-        SystemClock.sleep(100);
+        sleepMicro(100);
         view.click(); // double click
         view.setText(textToEnter);
         getUiDevice().pressBack();
-        sleep(1);
+        sleepMicro(200);
         return view;
     }
 
@@ -220,6 +283,44 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
         deleteButton.clickAndWaitForNewWindow();
         sleep(1);
+    }
+
+    public void sleepMicro(int microseconds) {
+        SystemClock.sleep(microseconds);
+    }
+
+    public void repeatClickView(UiObject view, int repeat) throws Exception {
+        if (repeat < 1 || !view.isClickable()) return;
+        while (repeat-- > 0) {
+            view.click();
+            sleepMicro(10); // in order to register as separate
+        }
+    }
+
+    public UiObject clickView(int criteria, String matching) throws Exception {
+        return clickView(criteria, matching, false);
+    }
+
+    public UiObject clickView(int criteria, String matching, boolean wait) throws Exception {
+        UiObject view;
+        switch (criteria) {
+            case BY_ID:
+                view = getViewById(matching);
+                break;
+            case BY_DESC:
+                view = getViewByDesc(matching);
+                break;
+            case BY_TEXT:
+            default:
+                view = getViewByText(matching);
+                break;
+        }
+        if (wait) {
+            view.clickAndWaitForNewWindow();
+        } else {
+            view.click();
+        }
+        return view;
     }
 
     public UiObject getViewByText(String text) throws Exception {

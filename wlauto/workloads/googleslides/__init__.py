@@ -62,7 +62,7 @@ class GoogleSlides(AndroidUiAutoBenchmark):
     def __init__(self, device, **kwargs):
         super(GoogleSlides, self).__init__(device, **kwargs)
         self.output_file = path.join(self.device.working_directory, self.instrumentation_log)
-        self.run_timeout = 120
+        self.run_timeout = 300
 
     def validate(self):
         log_method(self, 'validate')
@@ -104,6 +104,7 @@ class GoogleSlides(AndroidUiAutoBenchmark):
         log_method(self, 'teardown')
         super(GoogleSlides, self).teardown(context)
         not_implemented(self, 'pull_logs(context)')
+        self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
 
     def finalize(self, context):
         log_method(self, 'finalize')
