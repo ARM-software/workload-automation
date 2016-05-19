@@ -417,7 +417,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         navigateUpButton.click();
     }
 
-    // Helper to tag an individual photograph based on index in wa-working gallery.
+    // Helper to tag an individual photograph based on the index in wa-working
+    // gallery.  After long clicking it tags the photograph with a tick in the
+    // corner of the image to indicate that the photograph has been selected
     public void tagPhoto(final int index) throws Exception {
         UiObject workdir = getUiObjectByText("wa-working", "android.widget.TextView");
         workdir.clickAndWaitForNewWindow();
