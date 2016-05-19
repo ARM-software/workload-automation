@@ -135,6 +135,16 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickView(BY_TEXT, document);
         clickView(BY_TEXT, "Open", CLASS_BUTTON, true);
         sleep(5);
+        clickView(BY_DESC, "Start slideshow", true);
+
+        int centerY = getUiDevice().getDisplayHeight() / 2;
+        int centerX = getUiDevice().getDisplayWidth() / 2;
+        int slidesLeft = 10;
+        while (slidesLeft-- > 0) {
+            getUiDevice().swipe(centerX + centerX/2, centerY, centerX - centerX/2, centerY, 20);
+            sleep(2);
+        }
+        getUiDevice().pressBack();
         getUiDevice().pressBack();
     }
 
