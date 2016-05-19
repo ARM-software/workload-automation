@@ -97,15 +97,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         skipWelcomeScreen();
         enablePowerpointCompat();
         if (useLocalFiles) {
-            openFromStorage(documents[0]);
+            testEditFileFromStorage(documents[0]);
         } else {
             // createNewDoc(DOCTYPE_TEMPLATE, DOC_FILENAME);
-            createNewDoc(DOCTYPE_PPT, DOC_FILENAME);
+            testEditNewSlidesDoc(DOCTYPE_PPT, DOC_FILENAME);
         }
-
         // toggleWifiState(false);
         // tapDisplayNormalised(0.99, 0.99); // dismiss help overlay
-        deleteDocument(DOC_FILENAME);
 
         if (false) { // TODO currently unused
             writeResultsToFile(results, parameters.getString("results_file"));
@@ -128,7 +126,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         sleep(1);
     }
 
-    protected void openFromStorage(String document) throws Exception {
+    protected void testEditFileFromStorage(String document) throws Exception {
         // UiObject newButton = getUiObjectByResourceId(PACKAGE_ID + "menu_open_with_picker", CLASS_TEXT_VIEW);
         UiObject openButton = getUiObjectByDescription("Open presentation", CLASS_TEXT_VIEW);
         openButton.click();
@@ -142,9 +140,10 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         getUiDevice().pressBack();
         sleep(1);
+        deleteDocument(document);
     }
 
-    protected void createNewDoc(int docType, String docName) throws Exception {
+    protected void testEditNewSlidesDoc(int docType, String docName) throws Exception {
         UiObject newButton = getUiObjectByDescription("New presentation", CLASS_IMAGE_BUTTON);
         newButton.click();
         UiObject view;
@@ -221,6 +220,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
         sleep(1);
         getUiDevice().pressBack();
+        deleteDocument(docName);
     }
 
     public void insertSlide(String slideLayout) throws Exception {
