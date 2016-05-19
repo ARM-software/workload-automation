@@ -48,15 +48,11 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final String CLASS_IMAGE_BUTTON = "android.widget.ImageButton";
     public static final String CLASS_TABLE_ROW = "android.widget.TableRow";
 
-    public static final int DOCTYPE_TEMPLATE = 1;
-    public static final int DOCTYPE_PPT = 2;
-    public static final int DOCTYPE_SLIDES = 3;
-    public static final String DOC_FILENAME = "UX Perf Slides";
-    // public static final String DOC_FILENAME = "Untitled Presentation";
-
     public static final int BY_ID = 1;
     public static final int BY_TEXT = 2;
     public static final int BY_DESC = 3;
+
+    public static final String DOC_FILENAME = "UX Perf Slides";
 
     public static final String DOCUMENTATION_WORKLOADS =
         "class Workload(Extension):\n\tname = None\n\tdef init_resources(self, context):\n\t\tpass\n"
@@ -99,11 +95,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         if (useLocalFiles) {
             testEditFileFromStorage(documents[0]);
         } else {
-            // createNewDoc(DOCTYPE_TEMPLATE, DOC_FILENAME);
-            testEditNewSlidesDoc(DOCTYPE_PPT, DOC_FILENAME);
+            testEditNewSlidesDoc(DOC_FILENAME);
         }
-        // toggleWifiState(false);
-        // tapDisplayNormalised(0.99, 0.99); // dismiss help overlay
 
         if (false) { // TODO currently unused
             writeResultsToFile(results, parameters.getString("results_file"));
@@ -127,7 +120,6 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     protected void testEditFileFromStorage(String document) throws Exception {
-        // UiObject newButton = getUiObjectByResourceId(PACKAGE_ID + "menu_open_with_picker", CLASS_TEXT_VIEW);
         UiObject openButton = getUiObjectByDescription("Open presentation", CLASS_TEXT_VIEW);
         openButton.click();
         openButton = getUiObjectByText("Device storage", CLASS_TEXT_VIEW);
@@ -138,86 +130,69 @@ public class UiAutomation extends UxPerfUiAutomation {
         openButton = getUiObjectByText("Open", CLASS_BUTTON);
         openButton.clickAndWaitForNewWindow();
 
-        getUiDevice().pressBack();
         sleep(1);
+        getUiDevice().pressBack();
         deleteDocument(document);
     }
 
-    protected void testEditNewSlidesDoc(int docType, String docName) throws Exception {
-        UiObject newButton = getUiObjectByDescription("New presentation", CLASS_IMAGE_BUTTON);
-        newButton.click();
-        UiObject view;
-        switch (docType) {
-            case DOCTYPE_TEMPLATE:
-                String[] templateNames = { "Lesson plan", "Book report", " Field trip", "Science project" };
-                UiObject fromTemplate = getUiObjectByText("Choose template", CLASS_TEXT_VIEW);
-                fromTemplate.clickAndWaitForNewWindow();
-                // UiObject template = getUiObjectByText(templateNames[1], CLASS_TEXT_VIEW);
-                UiObject template = new UiObject(new UiSelector().resourceId(PACKAGE_ID + "template_item").instance(2));
-                template.clickAndWaitForNewWindow();
-                break;
+    protected void testEditNewSlidesDoc(String docName) throws Exception {
+        // create new file
+        clickView(BY_DESC, "New presentation");
+        clickView(BY_TEXT, "New PowerPoint", true);
+        // first slide
+        enterTextInSlide("Title", "WORKLOAD AUTOMATION");
+        enterTextInSlide("Subtitle", "Measuring perfomance of different productivity apps on Android OS");
+        saveDocument(docName);
 
-            case DOCTYPE_SLIDES:
-            case DOCTYPE_PPT:
-            default:
-                UiObject newPowerpoint = getUiObjectByText("New PowerPoint", CLASS_TEXT_VIEW);
-                newPowerpoint.clickAndWaitForNewWindow();
-                // first slide
-                enterTextInSlide("Title", "WORKLOAD AUTOMATION");
-                enterTextInSlide("Subtitle", "Measuring perfomance of different productivity apps on Android OS");
-                saveDocument(docName);
+        insertSlide("Title and Content");
+        enterTextInSlide("title", "Introduction");
+        enterTextInSlide("Text placeholder", "Welcome to Documentation for Workload Automation");
+        clickView(BY_DESC, "Undo");
+        enterTextInSlide("Text placeholder", "Workload Automation (WA) is a framework for running workloads on real hardware devices. "
+            + "WA supports a number of output formats as well as additional instrumentation "
+            + "(such as Streamline traces). A number of workloads are included with the framework.");
 
-                insertSlide("Title and Content");
-                enterTextInSlide("title", "Introduction");
-                enterTextInSlide("Text placeholder", "Welcome to Documentation for Workload Automation");
-                view = getViewByDesc("Undo");
-                view.click();
-                enterTextInSlide("Text placeholder", "Workload Automation (WA) is a framework for running workloads on real hardware devices. "
-                    + "WA supports a number of output formats as well as additional instrumentation "
-                    + "(such as Streamline traces). A number of workloads are included with the framework.");
+        insertSlide("Title and Content");
+        enterTextInSlide("title", "Extensions - Workloads");
+        enterTextInSlide("Text placeholder", DOCUMENTATION_WORKLOADS);
+        clickView(BY_DESC, "Text placeholder");
+        clickView(BY_DESC, "Format");
+        clickView(BY_TEXT, "Droid Sans");
+        clickView(BY_TEXT, "Droid Sans Mono");
+        clickView(BY_ID, PACKAGE_ID + "palette_back_button");
+        UiObject decreaseFont = getViewByDesc("Decrease text");
+        repeatClickView(decreaseFont, 20);
+        getUiDevice().pressBack();
 
-                insertSlide("Title and Content");
-                enterTextInSlide("title", "Extensions - Workloads");
-                enterTextInSlide("Text placeholder", DOCUMENTATION_WORKLOADS);
-                clickView(BY_DESC, "Text placeholder");
-                clickView(BY_DESC, "Format");
-                clickView(BY_TEXT, "Droid Sans");
-                clickView(BY_TEXT, "Droid Sans Mono");
-                clickView(BY_ID, PACKAGE_ID + "palette_back_button");
-                view = getViewByDesc("Decrease text");
-                repeatClickView(view, 20);
-                getUiDevice().pressBack();
+        insertSlide("Title and Content");
+        enterTextInSlide("title", "Agendas - 1");
+        enterTextInSlide("Text placeholder", DOCUMENTATION_AGENDAS_1);
 
-                insertSlide("Title and Content");
-                enterTextInSlide("title", "Agendas - 1");
-                enterTextInSlide("Text placeholder", DOCUMENTATION_AGENDAS_1);
+        insertSlide("Title and Content");
+        enterTextInSlide("title", "Agendas - 2");
+        enterTextInSlide("Text placeholder", DOCUMENTATION_AGENDAS_2);
 
-                insertSlide("Title and Content");
-                enterTextInSlide("title", "Agendas - 2");
-                enterTextInSlide("Text placeholder", DOCUMENTATION_AGENDAS_2);
+        // get first image in gallery and insert
+        insertSlide("Title Only");
+        clickView(BY_DESC, "Insert");
+        clickView(BY_TEXT, "Image", true);
+        clickView(BY_TEXT, "Recent");
+        clickView(BY_ID, "com.android.documentsui:id/date", true);
 
-                // get first image in gallery and insert
-                insertSlide("Title Only");
-                clickView(BY_DESC, "Insert");
-                clickView(BY_TEXT, "Image", true);
-                clickView(BY_TEXT, "Recent");
-                clickView(BY_ID, "com.android.documentsui:id/date", true);
+        // last slide
+        insertSlide("Title Slide");
+        // insert "?" shape
+        clickView(BY_DESC, "Insert");
+        clickView(BY_TEXT, "Shape");
+        clickView(BY_TEXT, "Buttons");
+        clickView(BY_DESC, "actionButtonHelp");
+        UiObject resize = getViewByDesc("Bottom-left resize");
+        UiObject shape = getViewByDesc("actionButtonHelp");
+        UiObject subtitle = getViewByDesc("subTitle");
+        resize.dragTo(subtitle, 40);
+        shape.dragTo(subtitle, 40);
+        enterTextInSlide("title", "THE END. QUESTIONS?");
 
-                // last slide
-                insertSlide("Title Slide");
-                // insert "?" shape
-                clickView(BY_DESC, "Insert");
-                clickView(BY_TEXT, "Shape");
-                clickView(BY_TEXT, "Buttons");
-                clickView(BY_DESC, "actionButtonHelp");
-                UiObject resize = getViewByDesc("Bottom-left resize");
-                UiObject shape = getViewByDesc("actionButtonHelp");
-                UiObject subtitle = getViewByDesc("subTitle");
-                resize.dragTo(subtitle, 40);
-                shape.dragTo(subtitle, 40);
-                enterTextInSlide("title", "THE END. QUESTIONS?");
-                break;
-        }
         sleep(1);
         getUiDevice().pressBack();
         deleteDocument(docName);
