@@ -19,6 +19,7 @@ import re
 import time
 
 from wlauto import AndroidUiAutoBenchmark, Parameter
+from wlauto.exceptions import DeviceError
 
 
 class Gmail(AndroidUiAutoBenchmark):
@@ -76,6 +77,9 @@ class Gmail(AndroidUiAutoBenchmark):
 
     def initialize(self, context):
         super(Gmail, self).initialize(context)
+
+        if not self.device.is_wifi_connected():
+            raise DeviceError('Wifi is not connected for device {}'.format(self.device.name))
 
         self.storage_dir = self.device.path.join(self.device.working_directory)
 

@@ -19,6 +19,7 @@ import re
 import time
 
 from wlauto import AndroidUiAutoBenchmark, Parameter
+from wlauto.exceptions import DeviceError
 
 
 class Reader(AndroidUiAutoBenchmark):
@@ -76,6 +77,12 @@ class Reader(AndroidUiAutoBenchmark):
         self.uiauto_params['email'] = self.email
         self.uiauto_params['password'] = self.password
         self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
+
+    def initialize(self, context):
+        super(Reader, self).initialize(context)
+
+        if not self.device.is_wifi_connected():
+            raise DeviceError('Wifi is not connected for device {}'.format(self.device.name))
 
     def setup(self, context):
         super(Reader, self).setup(context)

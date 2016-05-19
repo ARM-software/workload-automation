@@ -17,6 +17,7 @@ import os
 import re
 
 from wlauto import AndroidUiAutoBenchmark, Parameter
+from wlauto.exceptions import DeviceError
 
 
 class Googlephotos(AndroidUiAutoBenchmark):
@@ -77,6 +78,9 @@ class Googlephotos(AndroidUiAutoBenchmark):
 
     def initialize(self, context):
         super(Googlephotos, self).initialize(context)
+
+        if not self.device.is_wifi_connected():
+            raise DeviceError('Wifi is not connected for device {}'.format(self.device.name))
 
         for entry in os.listdir(self.dependencies_directory):
             wa_file = ''.join([self.file_prefix, entry])
