@@ -158,14 +158,16 @@ public class UiAutomation extends UxPerfUiAutomation {
                 template.clickAndWaitForNewWindow();
                 break;
 
+            case DOCTYPE_SLIDES:
             case DOCTYPE_PPT:
-                // UiObject newPowerpoint = getUiObjectByDescription("New PowerPoint", CLASS_IMAGE_BUTTON);
+            default:
                 UiObject newPowerpoint = getUiObjectByText("New PowerPoint", CLASS_TEXT_VIEW);
                 newPowerpoint.clickAndWaitForNewWindow();
+                // first slide
                 enterTextInSlide("Title", "WORKLOAD AUTOMATION");
                 enterTextInSlide("Subtitle", "Measuring perfomance of different productivity apps on Android OS");
                 saveDocument(docName);
-/*
+
                 insertSlide("Title and Content");
                 enterTextInSlide("title", "Introduction");
                 enterTextInSlide("Text placeholder", "Welcome to Documentation for Workload Automation");
@@ -194,7 +196,6 @@ public class UiAutomation extends UxPerfUiAutomation {
                 insertSlide("Title and Content");
                 enterTextInSlide("title", "Agendas - 2");
                 enterTextInSlide("Text placeholder", DOCUMENTATION_AGENDAS_2);
-*/
 
                 // get first image in gallery and insert
                 insertSlide("Title Only");
@@ -216,16 +217,6 @@ public class UiAutomation extends UxPerfUiAutomation {
                 resize.dragTo(subtitle, 40);
                 shape.dragTo(subtitle, 40);
                 enterTextInSlide("title", "THE END. QUESTIONS?");
-                // view = getViewByDesc("Done");
-                // view = getViewByDesc("Navigate up");
-                // view.clickAndWaitForNewWindow();
-                break;
-
-            case DOCTYPE_SLIDES:
-            default:
-                // UiObject newSlidesFile = getUiObjectByDescription("New Slides", CLASS_IMAGE_BUTTON);
-                UiObject newSlidesFile = getUiObjectByText("New Slides", CLASS_TEXT_VIEW);
-                newSlidesFile.clickAndWaitForNewWindow();
                 break;
         }
         sleep(1);
