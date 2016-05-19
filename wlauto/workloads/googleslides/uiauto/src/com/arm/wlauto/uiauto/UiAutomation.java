@@ -52,6 +52,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final int BY_TEXT = 2;
     public static final int BY_DESC = 3;
 
+    public static final int ONE_SECOND_IN_MS = 1000;
+
     public static final String DOC_FILENAME = "UX Perf Slides";
 
     public static final String DOCUMENTATION_WORKLOADS =
@@ -93,9 +95,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         skipWelcomeScreen();
         enablePowerpointCompat();
         if (useLocalFiles) {
-            testEditFileFromStorage(documents[0]);
+            testSlideshowFromStorage(documents[0]);
         } else {
-            testEditNewSlidesDoc(DOC_FILENAME);
+            testEditNewSlidesDocument(DOC_FILENAME);
         }
 
         if (false) { // TODO currently unused
@@ -104,38 +106,39 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     protected void skipWelcomeScreen() throws Exception {
-        UiObject skipButton = getUiObjectByText("Skip", CLASS_BUTTON);
-        skipButton.clickAndWaitForNewWindow();
+        clickView(BY_TEXT, "Skip", true);
         sleep(1);
     }
 
     protected void enablePowerpointCompat() throws Exception {
         uiDeviceEdgeSwipeFromLeft(10);
-        UiObject settings = getUiObjectByText("Settings", CLASS_TEXT_VIEW);
-        settings.clickAndWaitForNewWindow();
-        UiObject checkboxRow = getUiObjectByText("Create PowerPoint", CLASS_TEXT_VIEW);
-        checkboxRow.click();
+        clickView(BY_TEXT, "Settings", true);
+        clickView(BY_TEXT, "Create PowerPoint");
         getUiDevice().pressBack();
         sleep(1);
     }
 
-    protected void testEditFileFromStorage(String document) throws Exception {
-        UiObject openButton = getUiObjectByDescription("Open presentation", CLASS_TEXT_VIEW);
-        openButton.click();
-        openButton = getUiObjectByText("Device storage", CLASS_TEXT_VIEW);
-        openButton.clickAndWaitForNewWindow();
-
-        UiObject selectDoc = getUiObjectByText(document, CLASS_TEXT_VIEW);
-        selectDoc.click();
-        openButton = getUiObjectByText("Open", CLASS_BUTTON);
-        openButton.clickAndWaitForNewWindow();
-
-        sleep(1);
+    protected void testSlideshowFromStorage(String document) throws Exception {
+        // Sometimes docs deleted in __init__.py falsely appear on the app's home
+        // For robustness, it's nice to remove these placeholders
+        // However, the test should not crash because of it, so a silent catch is used
+        UiObject docView = new UiObject(new UiSelector().textContains(document));
+        if (docView.waitForExists(ONE_SECOND_IN_MS)) {
+            try {
+                deleteDocument(document);
+            } catch (Exception e) {
+                // do nothing
+            }
+        }
+        clickView(BY_DESC, "Open presentation");
+        clickView(BY_TEXT, "Device storage", true);
+        clickView(BY_TEXT, document);
+        clickView(BY_TEXT, "Open", CLASS_BUTTON, true);
+        sleep(5);
         getUiDevice().pressBack();
-        deleteDocument(document);
     }
 
-    protected void testEditNewSlidesDoc(String docName) throws Exception {
+    protected void testEditNewSlidesDocument(String docName) throws Exception {
         // create new file
         clickView(BY_DESC, "New presentation");
         clickView(BY_TEXT, "New PowerPoint", true);
@@ -210,17 +213,16 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickView(BY_TEXT, "Device");
         // Allow SD card access if requested
         UiObject permissionView = new UiObject(new UiSelector().textContains("Allow Slides"));
-        if (permissionView.waitForExists(1000)) {
+        if (permissionView.waitForExists(ONE_SECOND_IN_MS)) {
             clickView(BY_TEXT, "Allow");
         }
         UiObject filename = getViewById(PACKAGE_ID + "file_name_edit_text");
         filename.clearTextField();
         filename.setText(docName);
-        UiObject saveButton = getUiObjectByText("Save", CLASS_BUTTON);
-        saveButton.click();
+        clickView(BY_TEXT, "Save");
         // Overwrite if prompted
         UiObject overwriteView = new UiObject(new UiSelector().textContains("already exists"));
-        if (overwriteView.waitForExists(1000)) {
+        if (overwriteView.waitForExists(ONE_SECOND_IN_MS)) {
             clickView(BY_TEXT, "Overwrite");
         }
         sleep(1);
@@ -240,8 +242,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void deleteDocument(String docName) throws Exception {
         UiObject doc = getViewByText(docName);
         doc.longClick();
-        UiObject deleteButton = getUiObjectByText("Remove", CLASS_TEXT_VIEW);
-        deleteButton.click();
+        clickView(BY_TEXT, "Remove");
+        UiObject deleteButton;
         try {
             deleteButton = getUiObjectByText("Remove", CLASS_BUTTON);
         } catch (UiObjectNotFoundException e) {
@@ -259,26 +261,34 @@ public class UiAutomation extends UxPerfUiAutomation {
         if (repeat < 1 || !view.isClickable()) return;
         while (repeat-- > 0) {
             view.click();
-            sleepMicro(10); // in order to register as separate
+            sleepMicro(100); // in order to register as separate click
         }
     }
 
     public UiObject clickView(int criteria, String matching) throws Exception {
-        return clickView(criteria, matching, false);
+        return clickView(criteria, matching, null, false);
     }
 
     public UiObject clickView(int criteria, String matching, boolean wait) throws Exception {
+        return clickView(criteria, matching, null, wait);
+    }
+
+    public UiObject clickView(int criteria, String matching, String clazz) throws Exception {
+        return clickView(criteria, matching, clazz, false);
+    }
+
+    public UiObject clickView(int criteria, String matching, String clazz, boolean wait) throws Exception {
         UiObject view;
         switch (criteria) {
             case BY_ID:
-                view = getViewById(matching);
+                view =  clazz == null ? getViewById(matching) : getUiObjectByResourceId(matching, clazz);
                 break;
             case BY_DESC:
-                view = getViewByDesc(matching);
+                view =  clazz == null ? getViewByDesc(matching) : getUiObjectByDescription(matching, clazz);
                 break;
             case BY_TEXT:
             default:
-                view = getViewByText(matching);
+                view = clazz == null ? getViewByText(matching) : getUiObjectByText(matching, clazz);
                 break;
         }
         if (wait) {

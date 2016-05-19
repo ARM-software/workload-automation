@@ -35,6 +35,7 @@ class GoogleSlides(AndroidUiAutoBenchmark):
 
     # Views for FPS instrumentation
     view = [
+        package + '/com.qo.android.quickpoint.Quickpoint',
         package + '/com.google.android.apps.docs.app.DocListActivity',
         package + '/com.google.android.apps.docs.welcome.warmwelcome.TrackingWelcomeActivity',
         package + '/com.google.android.apps.docs.app.NewMainProxyActivity',
@@ -46,18 +47,17 @@ class GoogleSlides(AndroidUiAutoBenchmark):
                   If ``True``, dumpsys captures will be carried out during the test run.
                   The output is piped to log files which are then pulled from the phone.
                   '''),
-        # Parameter('local_files', kind=list_of_strings, default=['Slides_Album.pptx', 'Slides_Pitch.pptx'],
         Parameter('local_files', kind=list_of_strings,
                   description='''
-                  If ``True``, the workload will push PowerPoint files to be used for testing on
-                  the device. Otherwise, the files will be created from template inside the app.
+                  If specified, the workload will push the PowerPoint files to be used for
+                  testing on the device. Otherwise, a file will be created inside the app.
                   '''),
     ]
 
     instrumentation_log = '{}_instrumentation.log'.format(name)
     file_prefix = 'wa_test_'
+    device_dir = '/sdcard/Download'
     local_dir = '.' # self.dependencies_directory
-    device_dir = '/sdcard/Download' # self.device.working_directory
 
     def __init__(self, device, **kwargs):
         super(GoogleSlides, self).__init__(device, **kwargs)
@@ -71,7 +71,8 @@ class GoogleSlides(AndroidUiAutoBenchmark):
         self.uiauto_params['output_dir'] = self.device.working_directory
         self.uiauto_params['results_file'] = self.output_file
         if self.local_files:
-            self.uiauto_params['local_files'] = '::'.join(self.local_files)
+            wa_files = [self.wa_filename(f) for f in self.local_files]
+            self.uiauto_params['local_files'] = '::'.join(wa_files)
 
     def initialize(self, context):
         log_method(self, 'initialize')
@@ -79,10 +80,9 @@ class GoogleSlides(AndroidUiAutoBenchmark):
         if self.local_files:
             # push local PPT files
             for entry in os.listdir(self.local_dir):
-                wa_file = self.file_prefix + entry
                 if entry.endswith('.pptx'):
                     self.device.push_file(path.join(self.local_dir, entry),
-                                          path.join(self.device_dir, wa_file),
+                                          path.join(self.device_dir, self.wa_filename(entry)),
                                           timeout=60)
             # Force a re-index of the mediaserver cache to pick up new files
             # self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
@@ -112,11 +112,13 @@ class GoogleSlides(AndroidUiAutoBenchmark):
         if self.local_files:
             # delete pushed PPT files
             for entry in os.listdir(self.local_dir):
-                wa_file = self.file_prefix + entry
                 if entry.endswith('.pptx'):
-                    self.device.delete_file(path.join(self.device_dir, wa_file))
+                    self.device.delete_file(path.join(self.device_dir, self.wa_filename(entry)))
             # Force a re-index of the mediaserver cache to pick up new files
             # self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
+
+    def wa_filename(self, filename):
+        return self.file_prefix + filename
 
     def get_metrics(self, context):
         self.device.pull_file(self.output_file, context.output_directory)
