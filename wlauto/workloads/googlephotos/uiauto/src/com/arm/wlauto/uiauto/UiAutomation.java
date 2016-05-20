@@ -43,8 +43,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void runUiAutomation() throws Exception {
         parameters = getParams();
 
-        setScreenOrientation(ScreenOrientation.NATURAL);
         pauseForSplashScreen();
+        setScreenOrientation(ScreenOrientation.NATURAL);
         confirmAccess();
         dismissWelcomeView();
         gesturesTest();
