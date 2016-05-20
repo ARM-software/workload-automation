@@ -53,8 +53,9 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final int BY_DESC = 3;
 
     public static final int ONE_SECOND_IN_MS = 1000;
+    public static final int DEFAULT_SWIPE_STEPS = 20;
 
-    public static final String DOC_FILENAME = "UX Perf Slides";
+    public static final String NEW_DOC_FILENAME = "UX Perf Slides";
 
     public static final String DOCUMENTATION_WORKLOADS =
         "class Workload(Extension):\n\tname = None\n\tdef init_resources(self, context):\n\t\tpass\n"
@@ -77,16 +78,18 @@ public class UiAutomation extends UxPerfUiAutomation {
     protected Bundle parameters;
     protected boolean dumpsysEnabled;
     protected String outputDir;
-    protected String[] documents;
-    protected boolean useLocalFiles;
+    protected String localFile;
+    protected int slideCount;
+    protected boolean useLocalFile;
     protected String resultsFile;
 
     public void parseParams(Bundle parameters) throws Exception {
         dumpsysEnabled = Boolean.parseBoolean(parameters.getString("dumpsys_enabled"));
         outputDir = parameters.getString("output_dir");
         resultsFile = parameters.getString("results_file");
-        documents = parameters.getString("local_files", "::").split("::");
-        useLocalFiles = documents.length != 0;
+        localFile = parameters.getString("local_file", "");
+        slideCount = Integer.parseInt(parameters.getString("slide_count"));
+        useLocalFile = localFile != null;
     }
 
     public void runUiAutomation() throws Exception {
@@ -94,12 +97,11 @@ public class UiAutomation extends UxPerfUiAutomation {
         parseParams(parameters);
         skipWelcomeScreen();
         enablePowerpointCompat();
-        if (useLocalFiles) {
-            testSlideshowFromStorage(documents[0]);
+        if (useLocalFile) {
+            testSlideshowFromStorage(localFile);
         } else {
-            testEditNewSlidesDocument(DOC_FILENAME);
+            testEditNewSlidesDocument(NEW_DOC_FILENAME);
         }
-
         if (false) { // TODO currently unused
             writeResultsToFile(results, parameters.getString("results_file"));
         }
@@ -111,21 +113,21 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     protected void enablePowerpointCompat() throws Exception {
-        uiDeviceEdgeSwipeFromLeft(10);
+        uiDeviceSwipeHorizontal(0, getDisplayWidth()/2, getDisplayHeight()/2);
         clickView(BY_TEXT, "Settings", true);
         clickView(BY_TEXT, "Create PowerPoint");
         getUiDevice().pressBack();
         sleep(1);
     }
 
-    protected void testSlideshowFromStorage(String document) throws Exception {
+    protected void testSlideshowFromStorage(String docName) throws Exception {
         // Sometimes docs deleted in __init__.py falsely appear on the app's home
         // For robustness, it's nice to remove these placeholders
         // However, the test should not crash because of it, so a silent catch is used
-        UiObject docView = new UiObject(new UiSelector().textContains(document));
+        UiObject docView = new UiObject(new UiSelector().textContains(docName));
         if (docView.waitForExists(ONE_SECOND_IN_MS)) {
             try {
-                deleteDocument(document);
+                deleteDocument(docName);
             } catch (Exception e) {
                 // do nothing
             }
@@ -137,24 +139,32 @@ public class UiAutomation extends UxPerfUiAutomation {
         if (permissionView.waitForExists(ONE_SECOND_IN_MS)) {
             clickView(BY_TEXT, "Allow");
         }
-        try {
-            clickView(BY_TEXT, document);
-        } catch (UiObjectNotFoundException e) {
-            // Click failed, scroll down and retry
-            UiScrollable list = new UiScrollable(new UiSelector().className("android.widget.ListView"));
-            list.scrollIntoView(new UiSelector().textContains(document));
-            clickView(BY_TEXT, document);
-        }
+        // Scroll through document list if necessary
+        UiScrollable list = new UiScrollable(new UiSelector().className("android.widget.ListView"));
+        list.scrollIntoView(new UiSelector().textContains(docName));
+        clickView(BY_TEXT, docName);
         clickView(BY_TEXT, "Open", CLASS_BUTTON, true);
         sleep(5);
-        clickView(BY_DESC, "Start slideshow", true);
 
         int centerY = getUiDevice().getDisplayHeight() / 2;
         int centerX = getUiDevice().getDisplayWidth() / 2;
-        int slidesLeft = 10;
+        int slidesLeft = slideCount - 1;
+        // scroll forward in edit mode
         while (slidesLeft-- > 0) {
-            getUiDevice().swipe(centerX + centerX/2, centerY, centerX - centerX/2, centerY, 20);
-            sleep(2);
+            uiDeviceSwipeHorizontal(centerX + centerX/2, centerX - centerX/2, centerY);
+            sleep(1);
+        }
+        sleep(1);
+        // scroll backward in edit mode
+        while (++slidesLeft < slideCount - 1) {
+            uiDeviceSwipeHorizontal(centerX - centerX/2, centerX + centerX/2, centerY);
+            sleep(1);
+        }
+        // scroll forward in slideshow mode
+        clickView(BY_DESC, "Start slideshow", true);
+        while (--slidesLeft > 0) {
+            uiDeviceSwipeHorizontal(centerX + centerX/2, centerX - centerX/2, centerY);
+            sleep(1);
         }
         getUiDevice().pressBack();
         getUiDevice().pressBack();
@@ -230,6 +240,17 @@ public class UiAutomation extends UxPerfUiAutomation {
         view.clickAndWaitForNewWindow();
     }
 
+    public UiObject enterTextInSlide(String viewName, String textToEnter) throws Exception {
+        UiObject view = getViewByDesc(viewName);
+        view.click();
+        sleepMicro(100);
+        view.click(); // double click
+        view.setText(textToEnter);
+        getUiDevice().pressBack();
+        sleepMicro(200);
+        return view;
+    }
+
     public void saveDocument(String docName) throws Exception {
         clickView(BY_TEXT, "SAVE");
         clickView(BY_TEXT, "Device");
@@ -248,17 +269,6 @@ public class UiAutomation extends UxPerfUiAutomation {
             clickView(BY_TEXT, "Overwrite");
         }
         sleep(1);
-    }
-
-    public UiObject enterTextInSlide(String viewName, String textToEnter) throws Exception {
-        UiObject view = getViewByDesc(viewName);
-        view.click();
-        sleepMicro(100);
-        view.click(); // double click
-        view.setText(textToEnter);
-        getUiDevice().pressBack();
-        sleepMicro(200);
-        return view;
     }
 
     public void deleteDocument(String docName) throws Exception {
@@ -345,47 +355,11 @@ public class UiAutomation extends UxPerfUiAutomation {
         return object;
     }
 
-    public void uiDeviceEdgeSwipeFromLeft(int steps) {
-        int height = getDisplayHeight();
-        int width = getDisplayWidth();
-        getUiDevice().swipe(0, height/2, width/2, height/2, steps);
+    public void uiDeviceSwipeHorizontal(int startX, int endX, int height) {
+        uiDeviceSwipeHorizontal(startX, endX, height, DEFAULT_SWIPE_STEPS);
     }
 
-    public void tapDisplayNormalised(double percentX, double percentY) {
-        double x = Math.max(0, Math.min(1, percentX));
-        double y = Math.max(0, Math.min(1, percentY));
-        int tapX = (int) Math.floor(x * getDisplayWidth());
-        int tapY = (int) Math.floor(y * getDisplayHeight());
-        getUiDevice().click(tapX, tapY);
-    }
-
-    public void toggleWifiState(boolean flag) throws Exception {
-        int exitValue = -1;
-        // To enable, check for "UninitializedState"
-        // String checkFor = flag ? "UninitializedState" : "ConnectedState";
-        // exitValue = runShellCommand("dumpsys wifi | grep curState=" + checkFor);
-        // if (0 == exitValue) { // toggle state
-        String statusString = flag ? "ConnectedState" : "UninitializedState";
-        exitValue = runShellCommand("dumpsys wifi | grep curState=" + statusString);
-        if (0 != exitValue) { // not in the expected so toggle it
-            String[] adbCommands = {
-                "am start -a android.intent.action.MAIN -n com.android.settings/.wifi.WifiSettings;",
-                "input keyevent 20;",
-                "input keyevent 23;",
-                "sleep 1;",
-                "input keyevent 4;",
-            };
-            for (String command : adbCommands) {
-                exitValue = runShellCommand(command);
-            }
-        }
-        sleep(1);
-    }
-
-    public int runShellCommand(String command) throws Exception {
-        Process proc = Runtime.getRuntime().exec(command);
-        Log.d(TAG, String.format("Command:\n%s\nExit value:%d\n", command, proc.exitValue()));
-        proc.waitFor();
-        return proc.exitValue();
+    public void uiDeviceSwipeHorizontal(int startX, int endX, int height, int steps) {
+        getUiDevice().swipe(startX, height, endX, height, steps);
     }
 }

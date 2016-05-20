@@ -47,21 +47,26 @@ class GoogleSlides(AndroidUiAutoBenchmark):
                   If ``True``, dumpsys captures will be carried out during the test run.
                   The output is piped to log files which are then pulled from the phone.
                   '''),
-        Parameter('local_files', kind=list_of_strings,
+        Parameter('local_file', kind=str,
                   description='''
-                  If specified, the workload will push the PowerPoint files to be used for
+                  If specified, the workload will push the PowerPoint file to be used for
                   testing on the device. Otherwise, a file will be created inside the app.
+                  '''),
+        Parameter('slide_count', kind=int, default=5,
+                  description='''
+                  Number of slides in aforementioned local file. Determines number of
+                  swipe actions when playing slide show.
                   '''),
     ]
 
     instrumentation_log = '{}_instrumentation.log'.format(name)
-    file_prefix = 'wa_test_'
-    device_dir = '/sdcard/Download'
-    local_dir = '.' # self.dependencies_directory
 
     def __init__(self, device, **kwargs):
         super(GoogleSlides, self).__init__(device, **kwargs)
         self.output_file = path.join(self.device.working_directory, self.instrumentation_log)
+        self.local_dir = self.dependencies_directory
+        self.device_dir = path.join(self.device.working_directory, '..', 'Download') # Android downloads folder
+        self.wa_test_file = 'wa_test_' + self.local_file
         self.run_timeout = 300
 
     def validate(self):
@@ -70,22 +75,22 @@ class GoogleSlides(AndroidUiAutoBenchmark):
         self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
         self.uiauto_params['output_dir'] = self.device.working_directory
         self.uiauto_params['results_file'] = self.output_file
-        if self.local_files:
-            wa_files = [self.wa_filename(f) for f in self.local_files]
-            self.uiauto_params['local_files'] = '::'.join(wa_files)
+        if self.local_file:
+            self.uiauto_params['local_file'] = self.wa_test_file
+            self.uiauto_params['slide_count'] = self.slide_count
 
     def initialize(self, context):
         log_method(self, 'initialize')
         super(GoogleSlides, self).initialize(context)
-        if self.local_files:
-            # push local PPT files
+        if self.local_file:
+            # push local PPT file
             for entry in os.listdir(self.local_dir):
-                if entry.endswith('.pptx'):
-                    self.device.push_file(path.join(self.local_dir, entry),
-                                          path.join(self.device_dir, self.wa_filename(entry)),
+                if entry is self.local_file:
+                    self.device.push_file(path.join(self.local_dir, self.local_file),
+                                          path.join(self.device_dir, self.wa_test_file),
                                           timeout=60)
-            # Force a re-index of the mediaserver cache to pick up new files
-            # self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
+        self.logger.info(path.join(self.local_dir, self.local_file))
+        self.logger.info(path.join(self.device_dir, self.wa_test_file))
 
     def setup(self, context):
         log_method(self, 'setup')
@@ -98,24 +103,21 @@ class GoogleSlides(AndroidUiAutoBenchmark):
     def update_result(self, context):
         log_method(self, 'update_result')
         super(GoogleSlides, self).update_result(context)
-        not_implemented(self, 'get_metrics(context)')
+        not_implemented(self, 'self.get_metrics(context)')
 
     def teardown(self, context):
         log_method(self, 'teardown')
         super(GoogleSlides, self).teardown(context)
-        not_implemented(self, 'pull_logs(context)')
-        self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
+        not_implemented(self, 'self.pull_logs(context)')
 
     def finalize(self, context):
         log_method(self, 'finalize')
         super(GoogleSlides, self).finalize(context)
-        if self.local_files:
-            # delete pushed PPT files
-            for entry in os.listdir(self.local_dir):
-                if entry.endswith('.pptx'):
-                    self.device.delete_file(path.join(self.device_dir, self.wa_filename(entry)))
-            # Force a re-index of the mediaserver cache to pick up new files
-            # self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
+        if self.local_file:
+            # delete pushed PPT file
+            for entry in self.device.listdir(self.device_dir):
+                if entry is self.wa_test_file:
+                    self.device.delete_file(path.join(self.device_dir, entry))
 
     def wa_filename(self, filename):
         return self.file_prefix + filename
