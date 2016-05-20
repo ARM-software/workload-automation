@@ -20,6 +20,8 @@ import time
 
 from wlauto import AndroidUiAutoBenchmark, Parameter
 
+__version__ = '0.1.0'
+
 
 class Reader(AndroidUiAutoBenchmark):
 

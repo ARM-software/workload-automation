@@ -18,6 +18,8 @@ import re
 
 from wlauto import AndroidUiAutoBenchmark, Parameter
 
+__version__ = '0.1.0'
+
 
 class Googlephotos(AndroidUiAutoBenchmark):
 
