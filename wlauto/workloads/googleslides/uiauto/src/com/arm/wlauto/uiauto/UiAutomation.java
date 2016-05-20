@@ -132,7 +132,19 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
         clickView(BY_DESC, "Open presentation");
         clickView(BY_TEXT, "Device storage", true);
-        clickView(BY_TEXT, document);
+        // Allow SD card access if requested
+        UiObject permissionView = new UiObject(new UiSelector().textContains("Allow Slides"));
+        if (permissionView.waitForExists(ONE_SECOND_IN_MS)) {
+            clickView(BY_TEXT, "Allow");
+        }
+        try {
+            clickView(BY_TEXT, document);
+        } catch (UiObjectNotFoundException e) {
+            // Click failed, scroll down and retry
+            UiScrollable list = new UiScrollable(new UiSelector().className("android.widget.ListView"));
+            list.scrollIntoView(new UiSelector().textContains(document));
+            clickView(BY_TEXT, document);
+        }
         clickView(BY_TEXT, "Open", CLASS_BUTTON, true);
         sleep(5);
         clickView(BY_DESC, "Start slideshow", true);
