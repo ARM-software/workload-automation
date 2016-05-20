@@ -20,6 +20,7 @@ import time
 
 from wlauto import AndroidUiAutoBenchmark, Parameter
 from wlauto.exceptions import DeviceError
+from wlauto.exceptions import NotFoundError
 
 __version__ = '0.1.0'
 
@@ -86,16 +87,19 @@ class Reader(AndroidUiAutoBenchmark):
         if not self.device.is_wifi_connected():
             raise DeviceError('Wifi is not connected for device {}'.format(self.device.name))
 
-    def setup(self, context):
-        super(Reader, self).setup(context)
-
         self.reader_local_dir = self.device.path.join(self.device.external_storage_directory,
                                                       'Android/data/com.adobe.reader/files/')
 
-        for file in os.listdir(self.dependencies_directory):
-            if file.endswith(".pdf"):
-                self.device.push_file(os.path.join(self.dependencies_directory, file),
-                                      os.path.join(self.reader_local_dir, file), timeout=300)
+        # Check for workload dependencies before proceeding
+        pdf_files = [entry for entry in os.listdir(self.dependencies_directory) if entry.endswith(".pdf")]
+
+        if not len(pdf_files):
+            raise NotFoundError("Cannot find {} file(s) in {}".format('pdf', self.dependencies_directory))
+        else:
+            for entry in pdf_files:
+                self.device.push_file(os.path.join(self.dependencies_directory, entry),
+                                      os.path.join(self.reader_local_dir, entry),
+                                      timeout=300)
 
     def update_result(self, context):
         super(Reader, self).update_result(context)
@@ -117,11 +121,15 @@ class Reader(AndroidUiAutoBenchmark):
 
     def teardown(self, context):
         super(Reader, self).teardown(context)
-        for file in self.device.listdir(self.reader_local_dir):
-            if file.endswith(".pdf"):
-                self.device.delete_file(os.path.join(self.reader_local_dir, file))
 
-        for file in self.device.listdir(self.device.working_directory):
-            if file.endswith(".log"):
-                self.device.pull_file(os.path.join(self.device.working_directory, file), context.output_directory)
-                self.device.delete_file(os.path.join(self.device.working_directory, file))
+        for entry in self.device.listdir(self.device.working_directory):
+            if entry.endswith(".log"):
+                self.device.pull_file(os.path.join(self.device.working_directory, entry), context.output_directory)
+                self.device.delete_file(os.path.join(self.device.working_directory, entry))
+
+    def finalize(self, context):
+        super(Reader, self).finalize(context)
+
+        for entry in self.device.listdir(self.reader_local_dir):
+            if entry.endswith(".pdf"):
+                self.device.delete_file(os.path.join(self.reader_local_dir, entry))
