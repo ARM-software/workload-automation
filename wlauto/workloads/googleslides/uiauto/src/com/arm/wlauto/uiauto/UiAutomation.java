@@ -73,8 +73,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         + "\t- IDs and Labels\n\tResult Processors and Instrumentation\n\t\t- Result Processors\n\t\t- Instrumentation\n\t"
         + "\t- Disabling result processors and instrumentation\n\tOther Configuration (via config.py)\n";
 
-    protected Benchmarker bench = new Benchmarker();
     protected Map<String, Timer> results = new LinkedHashMap<String, Timer>();
+    protected Timer resultTimer;
 
     protected Bundle parameters;
     protected boolean dumpsysEnabled;
@@ -91,41 +91,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         useLocalFile = localFile != null;
     }
 
-    interface MeasurableAction {
-        public void perform() throws Exception;
-    }
-
-    public class Benchmarker {
-        protected Map<String, Timer> benchResults = new LinkedHashMap<String, Timer>();
-
-        public Map<String, Timer> getResults() {
-            return benchResults;
-        }
-
-        public void measure(String tag, MeasurableAction action) throws Exception {
-            Timer timer = new Timer();
-            timer.start();
-            action.perform();
-            timer.end();
-            benchResults.put(tag, timer);
-        }
-    }
-
-    public void startDumpsys(String viewName) throws Exception {
-        if (!dumpsysEnabled)
-            return;
-        initDumpsysSurfaceFlinger(PACKAGE, viewName);
-        initDumpsysGfxInfo(PACKAGE);
-    }
-
-    public void endDumpsys(String viewName, String testTag) throws Exception {
-        if (!dumpsysEnabled)
-            return;
-        String dumpsysTag = TAG + "_" + testTag;
-        exitDumpsysSurfaceFlinger(PACKAGE, viewName, new File(outputDir, dumpsysTag + "_surfFlinger.log"));
-        exitDumpsysGfxInfo(PACKAGE, new File(outputDir, dumpsysTag + "_gfxInfo.log"));
-    }
-
     public void runUiAutomation() throws Exception {
         parameters = getParams();
         parseParams(parameters);
@@ -136,48 +101,27 @@ public class UiAutomation extends UxPerfUiAutomation {
         } else {
             testEditNewSlidesDocument(NEW_DOC_FILENAME);
         }
-        results.putAll(bench.getResults());
         writeResultsToFile(results, parameters.getString("results_file"));
     }
 
     protected void skipWelcomeScreen() throws Exception {
-        String testTag = "skip_welcome";
         Timer timer = new Timer();
         timer.start();
         clickView(BY_TEXT, "Skip", true);
         timer.end();
-        results.put(testTag, timer);
-/*
-        bench.measure(testTag, new MeasurableAction() {
-            public void perform() throws Exception {
-                clickView(BY_TEXT, "Skip", true);
-            }
-        });
-*/
+        results.put("skip_welcome", timer);
         sleep(1);
     }
 
     protected void enablePowerpointCompat() throws Exception {
-        String testTag = "enable_ppt_compat";
         Timer timer = new Timer();
         timer.start();
-        uiDeviceSwipeHorizontal(0, getDisplayWidth()/2, getDisplayHeight()/2);
+        uiDeviceSwipeHorizontal(0, getDisplayWidth()/2, getDisplayHeight()/2, 10);
         clickView(BY_TEXT, "Settings", true);
         clickView(BY_TEXT, "Create PowerPoint");
         getUiDevice().pressBack();
         timer.end();
-        results.put(testTag, timer);
-/*
-        bench.measure(testTag, new MeasurableAction() {
-            @Override
-            public void perform() throws Exception {
-                uiDeviceSwipeHorizontal(0, getDisplayWidth()/2, getDisplayHeight()/2);
-                clickView(BY_TEXT, "Settings", true);
-                clickView(BY_TEXT, "Create PowerPoint");
-                getUiDevice().pressBack();
-            }
-        });
-*/
+        results.put("enable_ppt_compat", timer);
         sleep(1);
     }
 
@@ -304,11 +248,11 @@ public class UiAutomation extends UxPerfUiAutomation {
     public UiObject enterTextInSlide(String viewName, String textToEnter) throws Exception {
         UiObject view = getViewByDesc(viewName);
         view.click();
-        sleepMicro(100);
+        SystemClock.sleep(100);
         view.click(); // double click
         view.setText(textToEnter);
         getUiDevice().pressBack();
-        sleepMicro(200);
+        SystemClock.sleep(200);
         return view;
     }
 
@@ -346,15 +290,11 @@ public class UiAutomation extends UxPerfUiAutomation {
         sleep(1);
     }
 
-    public void sleepMicro(int microseconds) {
-        SystemClock.sleep(microseconds);
-    }
-
     public void repeatClickView(UiObject view, int repeat) throws Exception {
         if (repeat < 1 || !view.isClickable()) return;
         while (repeat-- > 0) {
             view.click();
-            sleepMicro(100); // in order to register as separate click
+            SystemClock.sleep(100); // in order to register as separate click
         }
     }
 
