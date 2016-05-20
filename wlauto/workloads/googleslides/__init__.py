@@ -20,9 +20,6 @@ from wlauto import AndroidUiAutoBenchmark, Parameter
 from wlauto.utils.types import list_of_strings
 
 
-def not_implemented(workload, text):
-    workload.logger.info('## ++ NOT IMPLEMENTED ++ ##\n## {}\n## -- NOT IMPLEMENTED -- ##'.format(text))
-
 def log_method(workload, name):
     workload.logger.info('===== {}() ======'.format(name))
 
@@ -63,11 +60,12 @@ class GoogleSlides(AndroidUiAutoBenchmark):
 
     def __init__(self, device, **kwargs):
         super(GoogleSlides, self).__init__(device, **kwargs)
+        self.run_timeout = 300
         self.output_file = path.join(self.device.working_directory, self.instrumentation_log)
         self.local_dir = self.dependencies_directory
-        self.device_dir = path.join(self.device.working_directory, '..', 'Download') # Android downloads folder
+        # Android downloads folder
+        self.device_dir = path.join(self.device.working_directory, '..', 'Download')
         self.wa_test_file = 'wa_test_' + self.local_file
-        self.run_timeout = 300
 
     def validate(self):
         log_method(self, 'validate')
@@ -89,8 +87,6 @@ class GoogleSlides(AndroidUiAutoBenchmark):
                     self.device.push_file(path.join(self.local_dir, self.local_file),
                                           path.join(self.device_dir, self.wa_test_file),
                                           timeout=60)
-        self.logger.info(path.join(self.local_dir, self.local_file))
-        self.logger.info(path.join(self.device_dir, self.wa_test_file))
 
     def setup(self, context):
         log_method(self, 'setup')
@@ -103,12 +99,12 @@ class GoogleSlides(AndroidUiAutoBenchmark):
     def update_result(self, context):
         log_method(self, 'update_result')
         super(GoogleSlides, self).update_result(context)
-        not_implemented(self, 'self.get_metrics(context)')
+        self.get_metrics(context)
 
     def teardown(self, context):
         log_method(self, 'teardown')
         super(GoogleSlides, self).teardown(context)
-        not_implemented(self, 'self.pull_logs(context)')
+        self.pull_logs(context)
 
     def finalize(self, context):
         log_method(self, 'finalize')
@@ -126,13 +122,16 @@ class GoogleSlides(AndroidUiAutoBenchmark):
         self.device.pull_file(self.output_file, context.output_directory)
         metrics_file = path.join(context.output_directory, self.instrumentation_log)
         with open(metrics_file, 'r') as wfh:
-            regex = re.compile(r'(\w+)\s+(\d+)\s+(\d+)\s+(\d+)')
+            regex = re.compile(r'(?P<key>\w+)\s+(?P<value1>\d+)\s+(?P<value2>\d+)\s+(?P<value3>\d+)')
             for line in wfh:
                 match = regex.search(line)
                 if match:
-                    context.result.add_metric((match.group(1) + '_start'), match.group(2))
-                    context.result.add_metric((match.group(1) + '_finish'), match.group(3))
-                    context.result.add_metric((match.group(1) + '_duration'), match.group(4))
+                    context.result.add_metric(match.group('key') + "_start",
+                                              match.group('value1'), units='ms')
+                    context.result.add_metric(match.group('key') + "_finish",
+                                              match.group('value2'), units='ms')
+                    context.result.add_metric(match.group('key') + "_duration",
+                                              match.group('value3'), units='ms')
 
     def pull_logs(self, context):
         wd = self.device.working_directory

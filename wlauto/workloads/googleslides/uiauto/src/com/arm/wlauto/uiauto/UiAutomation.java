@@ -73,6 +73,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         + "\t- IDs and Labels\n\tResult Processors and Instrumentation\n\t\t- Result Processors\n\t\t- Instrumentation\n\t"
         + "\t- Disabling result processors and instrumentation\n\tOther Configuration (via config.py)\n";
 
+    protected Benchmarker bench = new Benchmarker();
     protected Map<String, Timer> results = new LinkedHashMap<String, Timer>();
 
     protected Bundle parameters;
@@ -81,15 +82,48 @@ public class UiAutomation extends UxPerfUiAutomation {
     protected String localFile;
     protected int slideCount;
     protected boolean useLocalFile;
-    protected String resultsFile;
 
     public void parseParams(Bundle parameters) throws Exception {
         dumpsysEnabled = Boolean.parseBoolean(parameters.getString("dumpsys_enabled"));
         outputDir = parameters.getString("output_dir");
-        resultsFile = parameters.getString("results_file");
         localFile = parameters.getString("local_file", "");
         slideCount = Integer.parseInt(parameters.getString("slide_count"));
         useLocalFile = localFile != null;
+    }
+
+    interface MeasurableAction {
+        public void perform() throws Exception;
+    }
+
+    public class Benchmarker {
+        protected Map<String, Timer> benchResults = new LinkedHashMap<String, Timer>();
+
+        public Map<String, Timer> getResults() {
+            return benchResults;
+        }
+
+        public void measure(String tag, MeasurableAction action) throws Exception {
+            Timer timer = new Timer();
+            timer.start();
+            action.perform();
+            timer.end();
+            benchResults.put(tag, timer);
+        }
+    }
+
+    public void startDumpsys(String viewName) throws Exception {
+        if (!dumpsysEnabled)
+            return;
+        initDumpsysSurfaceFlinger(PACKAGE, viewName);
+        initDumpsysGfxInfo(PACKAGE);
+    }
+
+    public void endDumpsys(String viewName, String testTag) throws Exception {
+        if (!dumpsysEnabled)
+            return;
+        String dumpsysTag = TAG + "_" + testTag;
+        exitDumpsysSurfaceFlinger(PACKAGE, viewName, new File(outputDir, dumpsysTag + "_surfFlinger.log"));
+        exitDumpsysGfxInfo(PACKAGE, new File(outputDir, dumpsysTag + "_gfxInfo.log"));
     }
 
     public void runUiAutomation() throws Exception {
@@ -102,21 +136,48 @@ public class UiAutomation extends UxPerfUiAutomation {
         } else {
             testEditNewSlidesDocument(NEW_DOC_FILENAME);
         }
-        if (false) { // TODO currently unused
-            writeResultsToFile(results, parameters.getString("results_file"));
-        }
+        results.putAll(bench.getResults());
+        writeResultsToFile(results, parameters.getString("results_file"));
     }
 
     protected void skipWelcomeScreen() throws Exception {
+        String testTag = "skip_welcome";
+        Timer timer = new Timer();
+        timer.start();
         clickView(BY_TEXT, "Skip", true);
+        timer.end();
+        results.put(testTag, timer);
+/*
+        bench.measure(testTag, new MeasurableAction() {
+            public void perform() throws Exception {
+                clickView(BY_TEXT, "Skip", true);
+            }
+        });
+*/
         sleep(1);
     }
 
     protected void enablePowerpointCompat() throws Exception {
+        String testTag = "enable_ppt_compat";
+        Timer timer = new Timer();
+        timer.start();
         uiDeviceSwipeHorizontal(0, getDisplayWidth()/2, getDisplayHeight()/2);
         clickView(BY_TEXT, "Settings", true);
         clickView(BY_TEXT, "Create PowerPoint");
         getUiDevice().pressBack();
+        timer.end();
+        results.put(testTag, timer);
+/*
+        bench.measure(testTag, new MeasurableAction() {
+            @Override
+            public void perform() throws Exception {
+                uiDeviceSwipeHorizontal(0, getDisplayWidth()/2, getDisplayHeight()/2);
+                clickView(BY_TEXT, "Settings", true);
+                clickView(BY_TEXT, "Create PowerPoint");
+                getUiDevice().pressBack();
+            }
+        });
+*/
         sleep(1);
     }
 
