@@ -15,24 +15,17 @@
 
 package com.arm.wlauto.uiauto.googleslides;
 
-import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import android.app.Activity;
-import android.content.Context;
-import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.util.Log;
-import android.view.KeyEvent;
 
 // Import the uiautomator libraries
 import com.android.uiautomator.core.UiObject;
 import com.android.uiautomator.core.UiObjectNotFoundException;
 import com.android.uiautomator.core.UiScrollable;
 import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
@@ -64,14 +57,16 @@ public class UiAutomation extends UxPerfUiAutomation {
         + "\tdef run(self, context):\n\t\tpass\n\tdef update_result(self, context):\n\t\tpass\n"
         + "\tdef teardown(self, context):\n\t\tpass\n\tdef finalize(self, context):\n\t\tpass\n";
 
-    public static final String DOCUMENTATION_AGENDAS_1 = "An agenda specifies what is to be done during a Workload Automation run, "
-        + "including which workloads will be run, with what configuration, which instruments and result processors will be enabled, etc. "
-        + "Agenda syntax is designed to be both succinct and expressive. Agendas are specified using YAML notation.";
+    public static final String DOCUMENTATION_AGENDAS_1 =
+        "An agenda specifies what is to be done during a Workload Automation run, "
+        + "including which workloads will be run, with what configuration, "
+        + "which instruments and result processors will be enabled, etc. "
+        + "Agenda syntax is designed to be both succinct and expressive. "
+        + "Agendas are specified using YAML notation.";
 
     public static final String DOCUMENTATION_AGENDAS_2 =
-        "Use agendas for:\n\tSpecifying which workloads to run\n\t\t- Multiple iterations\n\t\t- Configuring workloads\n\t"
-        + "\t- IDs and Labels\n\tResult Processors and Instrumentation\n\t\t- Result Processors\n\t\t- Instrumentation\n\t"
-        + "\t- Disabling result processors and instrumentation\n\tOther Configuration (via config.py)\n";
+        "- Specifying which workloads to run\n- Multiple iterations\n- Configuring workloads\n- IDs and Labels\n"
+        + "- Result Processors and Instrumentation\n- Other Configuration (via config.py)\n";
 
     protected Map<String, Timer> results = new LinkedHashMap<String, Timer>();
     protected Timer timer = new Timer();
@@ -224,7 +219,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         enterTextInSlide("title", "Introduction");
         enterTextInSlide("Text placeholder", "Welcome to Documentation for Workload Automation");
         clickView(BY_DESC, "Undo");
-        enterTextInSlide("Text placeholder", "Workload Automation (WA) is a framework for running workloads on real hardware devices. "
+        enterTextInSlide("Text placeholder",
+            "Workload Automation (WA) is a framework for running workloads on real hardware devices. "
             + "WA supports a number of output formats as well as additional instrumentation "
             + "(such as Streamline traces). A number of workloads are included with the framework.");
 
@@ -241,11 +237,11 @@ public class UiAutomation extends UxPerfUiAutomation {
         getUiDevice().pressBack();
 
         insertSlide("Title and Content");
-        enterTextInSlide("title", "Agendas - 1");
+        enterTextInSlide("title", "Agendas - Intro");
         enterTextInSlide("Text placeholder", DOCUMENTATION_AGENDAS_1);
 
         insertSlide("Title and Content");
-        enterTextInSlide("title", "Agendas - 2");
+        enterTextInSlide("title", "Agendas - Uses");
         enterTextInSlide("Text placeholder", DOCUMENTATION_AGENDAS_2);
 
         // get first image in gallery and insert
@@ -275,7 +271,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void insertSlide(String slideLayout) throws Exception {
-        sleep(1); // a bit of time to see previous slide
+        sleep(2); // a bit of time to see previous slide
         UiObject view = getViewByDesc("Insert slide");
         view.clickAndWaitForNewWindow();
         view = getViewByText(slideLayout);
