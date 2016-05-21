@@ -32,7 +32,11 @@ class GoogleSlides(AndroidUiAutoBenchmark):
 
     # Views for FPS instrumentation
     view = [
+        package + '/com.google.android.apps.docs.quickoffice.filepicker.FilePickerActivity',
+        package + '/com.google.android.apps.docs.editors.shared.filepicker.FilePickerActivity',
+        package + '/com.google.android.apps.docs.quickoffice.filepicker.LocalSaveAsActivity',
         package + '/com.qo.android.quickpoint.Quickpoint',
+        package + '/com.google.android.apps.docs.app.DocsPreferencesActivity',
         package + '/com.google.android.apps.docs.app.DocListActivity',
         package + '/com.google.android.apps.docs.welcome.warmwelcome.TrackingWelcomeActivity',
         package + '/com.google.android.apps.docs.app.NewMainProxyActivity',
@@ -65,7 +69,7 @@ class GoogleSlides(AndroidUiAutoBenchmark):
         self.local_dir = self.dependencies_directory
         # Android downloads folder
         self.device_dir = path.join(self.device.working_directory, '..', 'Download')
-        self.wa_test_file = 'wa_test_' + self.local_file
+        self.wa_test_file = 'wa_test_{}'.format(self.local_file) if self.local_file else None
 
     def validate(self):
         log_method(self, 'validate')
@@ -80,10 +84,12 @@ class GoogleSlides(AndroidUiAutoBenchmark):
     def initialize(self, context):
         log_method(self, 'initialize')
         super(GoogleSlides, self).initialize(context)
+        self.logger.info('local_dir={}, local_file={}'.format(self.local_dir, self.local_file))
+        self.logger.info('device_dir={}, wa_test_file={}'.format(self.device_dir, self.wa_test_file))
         if self.local_file:
             # push local PPT file
             for entry in os.listdir(self.local_dir):
-                if entry is self.local_file:
+                if entry == self.local_file:
                     self.device.push_file(path.join(self.local_dir, self.local_file),
                                           path.join(self.device_dir, self.wa_test_file),
                                           timeout=60)
@@ -112,7 +118,7 @@ class GoogleSlides(AndroidUiAutoBenchmark):
         if self.local_file:
             # delete pushed PPT file
             for entry in self.device.listdir(self.device_dir):
-                if entry is self.wa_test_file:
+                if entry == self.wa_test_file:
                     self.device.delete_file(path.join(self.device_dir, entry))
 
     def wa_filename(self, filename):

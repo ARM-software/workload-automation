@@ -52,8 +52,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final int BY_TEXT = 2;
     public static final int BY_DESC = 3;
 
-    public static final int ONE_SECOND_IN_MS = 1000;
-    public static final int DEFAULT_SWIPE_STEPS = 20;
+    public static final int DIALOG_WAIT_TIME_MS = 3000;
+    public static final int DEFAULT_SWIPE_STEPS = 10;
 
     public static final String NEW_DOC_FILENAME = "UX Perf Slides";
 
@@ -74,7 +74,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         + "\t- Disabling result processors and instrumentation\n\tOther Configuration (via config.py)\n";
 
     protected Map<String, Timer> results = new LinkedHashMap<String, Timer>();
-    protected Timer resultTimer;
+    protected Timer timer = new Timer();
 
     protected Bundle parameters;
     protected boolean dumpsysEnabled;
@@ -86,9 +86,11 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void parseParams(Bundle parameters) throws Exception {
         dumpsysEnabled = Boolean.parseBoolean(parameters.getString("dumpsys_enabled"));
         outputDir = parameters.getString("output_dir");
-        localFile = parameters.getString("local_file", "");
-        slideCount = Integer.parseInt(parameters.getString("slide_count"));
+        localFile = parameters.getString("local_file");
         useLocalFile = localFile != null;
+        if (useLocalFile) {
+            slideCount = Integer.parseInt(parameters.getString("slide_count"));
+        }
     }
 
     public void runUiAutomation() throws Exception {
@@ -105,7 +107,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     protected void skipWelcomeScreen() throws Exception {
-        Timer timer = new Timer();
+        timer = new Timer();
         timer.start();
         clickView(BY_TEXT, "Skip", true);
         timer.end();
@@ -114,9 +116,9 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     protected void enablePowerpointCompat() throws Exception {
-        Timer timer = new Timer();
+        timer = new Timer();
         timer.start();
-        uiDeviceSwipeHorizontal(0, getDisplayWidth()/2, getDisplayHeight()/2, 10);
+        uiDeviceSwipeHorizontal(0, getDisplayWidth()/2, getDisplayHeight()/2);
         clickView(BY_TEXT, "Settings", true);
         clickView(BY_TEXT, "Create PowerPoint");
         getUiDevice().pressBack();
@@ -130,55 +132,89 @@ public class UiAutomation extends UxPerfUiAutomation {
         // For robustness, it's nice to remove these placeholders
         // However, the test should not crash because of it, so a silent catch is used
         UiObject docView = new UiObject(new UiSelector().textContains(docName));
-        if (docView.waitForExists(ONE_SECOND_IN_MS)) {
+        if (docView.waitForExists(1000)) {
             try {
                 deleteDocument(docName);
             } catch (Exception e) {
                 // do nothing
             }
         }
+
+        // Open document
+        timer = new Timer();
+        timer.start();
         clickView(BY_DESC, "Open presentation");
         clickView(BY_TEXT, "Device storage", true);
+        timer.end();
+        results.put("open_picker", timer);
         // Allow SD card access if requested
         UiObject permissionView = new UiObject(new UiSelector().textContains("Allow Slides"));
-        if (permissionView.waitForExists(ONE_SECOND_IN_MS)) {
+        if (permissionView.waitForExists(DIALOG_WAIT_TIME_MS)) {
             clickView(BY_TEXT, "Allow");
         }
+
         // Scroll through document list if necessary
         UiScrollable list = new UiScrollable(new UiSelector().className("android.widget.ListView"));
         list.scrollIntoView(new UiSelector().textContains(docName));
+        timer = new Timer();
+        timer.start();
         clickView(BY_TEXT, docName);
         clickView(BY_TEXT, "Open", CLASS_BUTTON, true);
+        timer.end();
+        results.put("open_document", timer);
         sleep(5);
 
         int centerY = getUiDevice().getDisplayHeight() / 2;
         int centerX = getUiDevice().getDisplayWidth() / 2;
         int slidesLeft = slideCount - 1;
+
         // scroll forward in edit mode
+        timer = new Timer();
+        timer.start();
         while (slidesLeft-- > 0) {
             uiDeviceSwipeHorizontal(centerX + centerX/2, centerX - centerX/2, centerY);
             sleep(1);
         }
+        timer.end();
+        results.put("slides_forward", timer);
         sleep(1);
+
         // scroll backward in edit mode
+        timer = new Timer();
+        timer.start();
         while (++slidesLeft < slideCount - 1) {
             uiDeviceSwipeHorizontal(centerX - centerX/2, centerX + centerX/2, centerY);
             sleep(1);
         }
+        timer.end();
+        results.put("slides_reverse", timer);
+        sleep(1);
+
         // scroll forward in slideshow mode
+        timer = new Timer();
+        timer.start();
         clickView(BY_DESC, "Start slideshow", true);
-        while (--slidesLeft > 0) {
+        while (slidesLeft-- > 0) {
             uiDeviceSwipeHorizontal(centerX + centerX/2, centerX - centerX/2, centerY);
             sleep(1);
         }
+        timer.end();
+        results.put("play_slideshow", timer);
+        sleep(1);
+
         getUiDevice().pressBack();
         getUiDevice().pressBack();
     }
 
     protected void testEditNewSlidesDocument(String docName) throws Exception {
         // create new file
+        timer = new Timer();
+        timer.start();
         clickView(BY_DESC, "New presentation");
         clickView(BY_TEXT, "New PowerPoint", true);
+        timer.end();
+        results.put("create_document", timer);
+
         // first slide
         enterTextInSlide("Title", "WORKLOAD AUTOMATION");
         enterTextInSlide("Subtitle", "Measuring perfomance of different productivity apps on Android OS");
@@ -239,47 +275,65 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void insertSlide(String slideLayout) throws Exception {
+        sleep(1); // a bit of time to see previous slide
         UiObject view = getViewByDesc("Insert slide");
         view.clickAndWaitForNewWindow();
         view = getViewByText(slideLayout);
         view.clickAndWaitForNewWindow();
     }
 
-    public UiObject enterTextInSlide(String viewName, String textToEnter) throws Exception {
+    public void enterTextInSlide(String viewName, String textToEnter) throws Exception {
         UiObject view = getViewByDesc(viewName);
         view.click();
-        SystemClock.sleep(100);
-        view.click(); // double click
         view.setText(textToEnter);
-        getUiDevice().pressBack();
+        try {
+            clickView(BY_DESC, "Done");
+        } catch (UiObjectNotFoundException e) {
+            clickView(BY_ID, "android:id/action_mode_close_button");
+        }
         SystemClock.sleep(200);
-        return view;
     }
 
     public void saveDocument(String docName) throws Exception {
+        timer = new Timer();
+        timer.start();
         clickView(BY_TEXT, "SAVE");
         clickView(BY_TEXT, "Device");
+        timer.end();
+        results.put("save_dialog1", timer);
         // Allow SD card access if requested
         UiObject permissionView = new UiObject(new UiSelector().textContains("Allow Slides"));
-        if (permissionView.waitForExists(ONE_SECOND_IN_MS)) {
+        if (permissionView.waitForExists(DIALOG_WAIT_TIME_MS)) {
             clickView(BY_TEXT, "Allow");
         }
+
+        timer = new Timer();
+        timer.start();
         UiObject filename = getViewById(PACKAGE_ID + "file_name_edit_text");
         filename.clearTextField();
         filename.setText(docName);
-        clickView(BY_TEXT, "Save");
+        clickView(BY_TEXT, "Save", CLASS_BUTTON);
+        timer.end();
+        results.put("save_dialog2", timer);
         // Overwrite if prompted
         UiObject overwriteView = new UiObject(new UiSelector().textContains("already exists"));
-        if (overwriteView.waitForExists(ONE_SECOND_IN_MS)) {
+        if (overwriteView.waitForExists(DIALOG_WAIT_TIME_MS)) {
             clickView(BY_TEXT, "Overwrite");
         }
         sleep(1);
     }
 
     public void deleteDocument(String docName) throws Exception {
+        timer = new Timer();
+        timer.start();
         UiObject doc = getViewByText(docName);
         doc.longClick();
         clickView(BY_TEXT, "Remove");
+        timer.end();
+        results.put("delete_dialog1", timer);
+
+        timer = new Timer();
+        timer.start();
         UiObject deleteButton;
         try {
             deleteButton = getUiObjectByText("Remove", CLASS_BUTTON);
@@ -287,6 +341,8 @@ public class UiAutomation extends UxPerfUiAutomation {
             deleteButton = getUiObjectByText("Ok", CLASS_BUTTON);
         }
         deleteButton.clickAndWaitForNewWindow();
+        timer.end();
+        results.put("delete_dialog2", timer);
         sleep(1);
     }
 
@@ -294,7 +350,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         if (repeat < 1 || !view.isClickable()) return;
         while (repeat-- > 0) {
             view.click();
-            SystemClock.sleep(100); // in order to register as separate click
+            SystemClock.sleep(50); // in order to register as separate click
         }
     }
 
