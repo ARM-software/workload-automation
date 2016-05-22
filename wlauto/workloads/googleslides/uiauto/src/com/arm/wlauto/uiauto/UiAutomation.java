@@ -153,7 +153,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickView(BY_DESC, "Open presentation");
         clickView(BY_TEXT, "Device storage", true);
         timer.end();
-        results.put("open_picker", timer);
+        results.put("open_file_picker", timer);
         // Allow SD card access if requested
         UiObject permissionView = new UiObject(new UiSelector().textContains("Allow Slides"));
         if (permissionView.waitForExists(DIALOG_WAIT_TIME_MS)) {
@@ -173,7 +173,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         int centerY = getUiDevice().getDisplayHeight() / 2;
         int centerX = getUiDevice().getDisplayWidth() / 2;
-        int slidesLeft = slideCount - 1;
+        int slideIndex = 0;
         String testTag;
         Timer slideTimer;
 
@@ -181,8 +181,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         startDumpsys(ACTIVITY_SLIDES);
         timer = new Timer();
         timer.start();
-        while (slidesLeft-- > 0) {
-            testTag = "slides_next_" + (slideCount - slidesLeft);
+        while (++slideIndex < slideCount) {
+            testTag = "slides_next_" + slideIndex;
             startDumpsys(ACTIVITY_SLIDES);
             slideTimer = new Timer();
             slideTimer.start();
@@ -201,8 +201,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         startDumpsys(ACTIVITY_SLIDES);
         timer = new Timer();
         timer.start();
-        while (++slidesLeft < slideCount - 1) {
-            testTag = "slides_previous_" + (slideCount - 1 - slidesLeft);
+        while (--slideIndex > 0) {
+            testTag = "slides_previous_" + slideIndex;
             startDumpsys(ACTIVITY_SLIDES);
             slideTimer = new Timer();
             slideTimer.start();
@@ -227,8 +227,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         startDumpsys(ACTIVITY_SLIDES);
         timer = new Timer();
         timer.start();
-        while (slidesLeft-- > 0) {
-            testTag = "slideshow_next_" + (slideCount - slidesLeft);
+        while (++slideIndex < slideCount) {
+            testTag = "slideshow_next_" + slideIndex;
             startDumpsys(ACTIVITY_SLIDES);
             slideTimer = new Timer();
             slideTimer.start();
