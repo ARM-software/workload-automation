@@ -15,6 +15,7 @@
 
 package com.arm.wlauto.uiauto.googleslides;
 
+import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -34,6 +35,9 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final String TAG = "googleslides";
     public static final String PACKAGE = "com.google.android.apps.docs.editors.slides";
     public static final String PACKAGE_ID = PACKAGE + ":id/";
+    public static final String ACTIVITY_DOCLIST = "com.google.android.apps.docs.app.DocListActivity";
+    public static final String ACTIVITY_SLIDES = "com.qo.android.quickpoint.Quickpoint";
+    public static final String ACTIVITY_SETTINGS = "com.google.android.apps.docs.app.DocsPreferencesActivity";
 
     public static final String CLASS_TEXT_VIEW = "android.widget.TextView";
     public static final String CLASS_IMAGE_VIEW = "android.widget.ImageView";
@@ -92,6 +96,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         parameters = getParams();
         parseParams(parameters);
         skipWelcomeScreen();
+        openAndCloseDrawer();
         enablePowerpointCompat();
         if (useLocalFile) {
             testSlideshowFromStorage(localFile);
@@ -110,15 +115,29 @@ public class UiAutomation extends UxPerfUiAutomation {
         sleep(1);
     }
 
-    protected void enablePowerpointCompat() throws Exception {
+    protected void openAndCloseDrawer() throws Exception {
+        startDumpsys(ACTIVITY_DOCLIST);
         timer = new Timer();
         timer.start();
-        uiDeviceSwipeHorizontal(0, getDisplayWidth()/2, getDisplayHeight()/2);
+        clickView(BY_DESC, "drawer");
+        getUiDevice().pressBack();
+        timer.end();
+        results.put("open_drawer", timer);
+        endDumpsys(ACTIVITY_DOCLIST, "open_drawer");
+        sleep(1);
+    }
+
+    protected void enablePowerpointCompat() throws Exception {
+        startDumpsys(ACTIVITY_SETTINGS);
+        timer = new Timer();
+        timer.start();
+        clickView(BY_DESC, "drawer");
         clickView(BY_TEXT, "Settings", true);
         clickView(BY_TEXT, "Create PowerPoint");
         getUiDevice().pressBack();
         timer.end();
         results.put("enable_ppt_compat", timer);
+        endDumpsys(ACTIVITY_SETTINGS, "enable_ppt_compat");
         sleep(1);
     }
 
@@ -164,6 +183,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         int slidesLeft = slideCount - 1;
 
         // scroll forward in edit mode
+        startDumpsys(ACTIVITY_SLIDES);
         timer = new Timer();
         timer.start();
         while (slidesLeft-- > 0) {
@@ -172,9 +192,11 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
         timer.end();
         results.put("slides_forward", timer);
+        endDumpsys(ACTIVITY_SLIDES, "slides_forward");
         sleep(1);
 
         // scroll backward in edit mode
+        startDumpsys(ACTIVITY_SLIDES);
         timer = new Timer();
         timer.start();
         while (++slidesLeft < slideCount - 1) {
@@ -183,9 +205,11 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
         timer.end();
         results.put("slides_reverse", timer);
+        endDumpsys(ACTIVITY_SLIDES, "slides_reverse");
         sleep(1);
 
         // scroll forward in slideshow mode
+        startDumpsys(ACTIVITY_SLIDES);
         timer = new Timer();
         timer.start();
         clickView(BY_DESC, "Start slideshow", true);
@@ -195,6 +219,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
         timer.end();
         results.put("play_slideshow", timer);
+        endDumpsys(ACTIVITY_SLIDES, "play_slideshow");
         sleep(1);
 
         getUiDevice().pressBack();
@@ -202,6 +227,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     protected void testEditNewSlidesDocument(String docName) throws Exception {
+        startDumpsys(ACTIVITY_DOCLIST);
         // create new file
         timer = new Timer();
         timer.start();
@@ -209,12 +235,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickView(BY_TEXT, "New PowerPoint", true);
         timer.end();
         results.put("create_document", timer);
+        endDumpsys(ACTIVITY_DOCLIST, "create_document");
 
         // first slide
         enterTextInSlide("Title", "WORKLOAD AUTOMATION");
         enterTextInSlide("Subtitle", "Measuring perfomance of different productivity apps on Android OS");
         saveDocument(docName);
-
+/*
         insertSlide("Title and Content");
         enterTextInSlide("title", "Introduction");
         enterTextInSlide("Text placeholder", "Welcome to Documentation for Workload Automation");
@@ -223,7 +250,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             "Workload Automation (WA) is a framework for running workloads on real hardware devices. "
             + "WA supports a number of output formats as well as additional instrumentation "
             + "(such as Streamline traces). A number of workloads are included with the framework.");
-
+*/
         insertSlide("Title and Content");
         enterTextInSlide("title", "Extensions - Workloads");
         enterTextInSlide("Text placeholder", DOCUMENTATION_WORKLOADS);
@@ -235,7 +262,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject decreaseFont = getViewByDesc("Decrease text");
         repeatClickView(decreaseFont, 20);
         getUiDevice().pressBack();
-
+/*
         insertSlide("Title and Content");
         enterTextInSlide("title", "Agendas - Intro");
         enterTextInSlide("Text placeholder", DOCUMENTATION_AGENDAS_1);
@@ -243,13 +270,18 @@ public class UiAutomation extends UxPerfUiAutomation {
         insertSlide("Title and Content");
         enterTextInSlide("title", "Agendas - Uses");
         enterTextInSlide("Text placeholder", DOCUMENTATION_AGENDAS_2);
-
-        // get first image in gallery and insert
+*/
+        // get image from gallery and insert
         insertSlide("Title Only");
         clickView(BY_DESC, "Insert");
         clickView(BY_TEXT, "Image", true);
         clickView(BY_TEXT, "Recent");
-        clickView(BY_ID, "com.android.documentsui:id/date", true);
+        try {
+            UiObject image = new UiObject(new UiSelector().resourceId("com.android.documentsui:id/date").instance(2));
+            image.clickAndWaitForNewWindow();
+        } catch (UiObjectNotFoundException e) {
+            clickView(BY_ID, "com.android.documentsui:id/date", true);
+        }
 
         // last slide
         insertSlide("Title Slide");
@@ -271,7 +303,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void insertSlide(String slideLayout) throws Exception {
-        sleep(2); // a bit of time to see previous slide
+        sleep(1); // a bit of time to see previous slide
         UiObject view = getViewByDesc("Insert slide");
         view.clickAndWaitForNewWindow();
         view = getViewByText(slideLayout);
@@ -414,5 +446,20 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void uiDeviceSwipeHorizontal(int startX, int endX, int height, int steps) {
         getUiDevice().swipe(startX, height, endX, height, steps);
+    }
+
+    public void startDumpsys(String viewName) throws Exception {
+        if (!dumpsysEnabled)
+            return;
+        initDumpsysSurfaceFlinger(PACKAGE, viewName);
+        initDumpsysGfxInfo(PACKAGE);
+    }
+
+    public void endDumpsys(String viewName, String testTag) throws Exception {
+        if (!dumpsysEnabled)
+            return;
+        String dumpsysTag = TAG + "_" + testTag;
+        exitDumpsysSurfaceFlinger(PACKAGE, viewName, new File(outputDir, dumpsysTag + "_surfFlinger.log"));
+        exitDumpsysGfxInfo(PACKAGE, new File(outputDir, dumpsysTag + "_gfxInfo.log"));
     }
 }
