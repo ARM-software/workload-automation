@@ -30,6 +30,10 @@ import com.android.uiautomator.core.UiSelector;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
+import static com.arm.wlauto.uiauto.googleslides.UiAutomation.FindByCriteria.BY_ID;
+import static com.arm.wlauto.uiauto.googleslides.UiAutomation.FindByCriteria.BY_TEXT;
+import static com.arm.wlauto.uiauto.googleslides.UiAutomation.FindByCriteria.BY_DESC;
+
 public class UiAutomation extends UxPerfUiAutomation {
 
     public static final String TAG = "googleslides";
@@ -45,32 +49,21 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final String CLASS_IMAGE_BUTTON = "android.widget.ImageButton";
     public static final String CLASS_TABLE_ROW = "android.widget.TableRow";
 
-    public static final int BY_ID = 1;
-    public static final int BY_TEXT = 2;
-    public static final int BY_DESC = 3;
+    public enum FindByCriteria {
+        BY_ID, BY_TEXT, BY_DESC;
+    }
 
     public static final int DIALOG_WAIT_TIME_MS = 3000;
     public static final int DEFAULT_SWIPE_STEPS = 10;
 
     public static final String NEW_DOC_FILENAME = "UX Perf Slides";
 
-    public static final String DOCUMENTATION_WORKLOADS =
+    public static final String SLIDE_TEXT_CONTENT =
         "class Workload(Extension):\n\tname = None\n\tdef init_resources(self, context):\n\t\tpass\n"
         + "\tdef validate(self):\n\t\tpass\n\tdef initialize(self, context):\n\t\tpass\n"
         + "\tdef setup(self, context):\n\t\tpass\n\tdef setup(self, context):\n\t\tpass\n"
         + "\tdef run(self, context):\n\t\tpass\n\tdef update_result(self, context):\n\t\tpass\n"
         + "\tdef teardown(self, context):\n\t\tpass\n\tdef finalize(self, context):\n\t\tpass\n";
-
-    public static final String DOCUMENTATION_AGENDAS_1 =
-        "An agenda specifies what is to be done during a Workload Automation run, "
-        + "including which workloads will be run, with what configuration, "
-        + "which instruments and result processors will be enabled, etc. "
-        + "Agenda syntax is designed to be both succinct and expressive. "
-        + "Agendas are specified using YAML notation.";
-
-    public static final String DOCUMENTATION_AGENDAS_2 =
-        "- Specifying which workloads to run\n- Multiple iterations\n- Configuring workloads\n- IDs and Labels\n"
-        + "- Result Processors and Instrumentation\n- Other Configuration (via config.py)\n";
 
     protected Map<String, Timer> results = new LinkedHashMap<String, Timer>();
     protected Timer timer = new Timer();
@@ -181,13 +174,22 @@ public class UiAutomation extends UxPerfUiAutomation {
         int centerY = getUiDevice().getDisplayHeight() / 2;
         int centerX = getUiDevice().getDisplayWidth() / 2;
         int slidesLeft = slideCount - 1;
+        String testTag;
+        Timer slideTimer;
 
         // scroll forward in edit mode
         startDumpsys(ACTIVITY_SLIDES);
         timer = new Timer();
         timer.start();
         while (slidesLeft-- > 0) {
+            testTag = "slides_next_" + (slideCount - slidesLeft);
+            startDumpsys(ACTIVITY_SLIDES);
+            slideTimer = new Timer();
+            slideTimer.start();
             uiDeviceSwipeHorizontal(centerX + centerX/2, centerX - centerX/2, centerY);
+            slideTimer.end();
+            results.put(testTag, slideTimer);
+            endDumpsys(ACTIVITY_SLIDES, testTag);
             sleep(1);
         }
         timer.end();
@@ -200,7 +202,14 @@ public class UiAutomation extends UxPerfUiAutomation {
         timer = new Timer();
         timer.start();
         while (++slidesLeft < slideCount - 1) {
+            testTag = "slides_previous_" + (slideCount - 1 - slidesLeft);
+            startDumpsys(ACTIVITY_SLIDES);
+            slideTimer = new Timer();
+            slideTimer.start();
             uiDeviceSwipeHorizontal(centerX - centerX/2, centerX + centerX/2, centerY);
+            slideTimer.end();
+            results.put(testTag, slideTimer);
+            endDumpsys(ACTIVITY_SLIDES, testTag);
             sleep(1);
         }
         timer.end();
@@ -209,12 +218,24 @@ public class UiAutomation extends UxPerfUiAutomation {
         sleep(1);
 
         // scroll forward in slideshow mode
-        startDumpsys(ACTIVITY_SLIDES);
         timer = new Timer();
         timer.start();
         clickView(BY_DESC, "Start slideshow", true);
+        timer.end();
+        results.put("open_slideshow", timer);
+
+        startDumpsys(ACTIVITY_SLIDES);
+        timer = new Timer();
+        timer.start();
         while (slidesLeft-- > 0) {
+            testTag = "slideshow_next_" + (slideCount - slidesLeft);
+            startDumpsys(ACTIVITY_SLIDES);
+            slideTimer = new Timer();
+            slideTimer.start();
             uiDeviceSwipeHorizontal(centerX + centerX/2, centerX - centerX/2, centerY);
+            slideTimer.end();
+            results.put(testTag, slideTimer);
+            endDumpsys(ACTIVITY_SLIDES, testTag);
             sleep(1);
         }
         timer.end();
@@ -241,19 +262,10 @@ public class UiAutomation extends UxPerfUiAutomation {
         enterTextInSlide("Title", "WORKLOAD AUTOMATION");
         enterTextInSlide("Subtitle", "Measuring perfomance of different productivity apps on Android OS");
         saveDocument(docName);
-/*
-        insertSlide("Title and Content");
-        enterTextInSlide("title", "Introduction");
-        enterTextInSlide("Text placeholder", "Welcome to Documentation for Workload Automation");
-        clickView(BY_DESC, "Undo");
-        enterTextInSlide("Text placeholder",
-            "Workload Automation (WA) is a framework for running workloads on real hardware devices. "
-            + "WA supports a number of output formats as well as additional instrumentation "
-            + "(such as Streamline traces). A number of workloads are included with the framework.");
-*/
+
         insertSlide("Title and Content");
         enterTextInSlide("title", "Extensions - Workloads");
-        enterTextInSlide("Text placeholder", DOCUMENTATION_WORKLOADS);
+        enterTextInSlide("Text placeholder", SLIDE_TEXT_CONTENT);
         clickView(BY_DESC, "Text placeholder");
         clickView(BY_DESC, "Format");
         clickView(BY_TEXT, "Droid Sans");
@@ -262,15 +274,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject decreaseFont = getViewByDesc("Decrease text");
         repeatClickView(decreaseFont, 20);
         getUiDevice().pressBack();
-/*
-        insertSlide("Title and Content");
-        enterTextInSlide("title", "Agendas - Intro");
-        enterTextInSlide("Text placeholder", DOCUMENTATION_AGENDAS_1);
 
-        insertSlide("Title and Content");
-        enterTextInSlide("title", "Agendas - Uses");
-        enterTextInSlide("Text placeholder", DOCUMENTATION_AGENDAS_2);
-*/
         // get image from gallery and insert
         insertSlide("Title Only");
         clickView(BY_DESC, "Insert");
@@ -382,19 +386,19 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
     }
 
-    public UiObject clickView(int criteria, String matching) throws Exception {
+    public UiObject clickView(FindByCriteria criteria, String matching) throws Exception {
         return clickView(criteria, matching, null, false);
     }
 
-    public UiObject clickView(int criteria, String matching, boolean wait) throws Exception {
+    public UiObject clickView(FindByCriteria criteria, String matching, boolean wait) throws Exception {
         return clickView(criteria, matching, null, wait);
     }
 
-    public UiObject clickView(int criteria, String matching, String clazz) throws Exception {
+    public UiObject clickView(FindByCriteria criteria, String matching, String clazz) throws Exception {
         return clickView(criteria, matching, clazz, false);
     }
 
-    public UiObject clickView(int criteria, String matching, String clazz, boolean wait) throws Exception {
+    public UiObject clickView(FindByCriteria criteria, String matching, String clazz, boolean wait) throws Exception {
         UiObject view;
         switch (criteria) {
             case BY_ID:
