@@ -291,8 +291,6 @@ class ApkWorkload(Workload):
         for line in lines:
             if "android.permission." in line:
                 permissions.append(line.split(":")[0].strip())
-            else:
-                break
 
         for permission in permissions:
             # "Normal" Permisions are automatically granted and cannot be changed
