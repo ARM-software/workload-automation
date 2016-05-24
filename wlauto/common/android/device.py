@@ -21,6 +21,7 @@ import time
 import tempfile
 import shutil
 import threading
+import json
 from subprocess import CalledProcessError
 
 from wlauto.core.extension import Parameter
@@ -508,17 +509,18 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
     def _get_android_properties(self, context):
         props = {}
         props['android_id'] = self.get_android_id()
-        buildprop_file = os.path.join(context.host_working_directory, 'build.prop')
-        if not os.path.isfile(buildprop_file):
-            self.pull_file('/system/build.prop', context.host_working_directory)
-        self._update_build_properties(buildprop_file, props)
-        context.add_run_artifact('build_properties', buildprop_file, 'export')
+        self._update_build_properties(props)
 
         dumpsys_target_file = self.path.join(self.working_directory, 'window.dumpsys')
         dumpsys_host_file = os.path.join(context.host_working_directory, 'window.dumpsys')
         self.execute('{} > {}'.format('dumpsys window', dumpsys_target_file))
         self.pull_file(dumpsys_target_file, dumpsys_host_file)
         context.add_run_artifact('dumpsys_window', dumpsys_host_file, 'meta')
+
+        prop_file = os.path.join(context.host_working_directory, 'android-props.json')
+        with open(prop_file, 'w') as wfh:
+            json.dump(props, wfh)
+        context.add_run_artifact('android_properties', prop_file, 'export')
         return props
 
     def getprop(self, prop=None):
@@ -667,15 +669,15 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
 
     # Internal methods: do not use outside of the class.
 
-    def _update_build_properties(self, filepath, props):
+    def _update_build_properties(self, props):
         try:
-            with open(filepath) as fh:
-                for line in fh:
-                    line = re.sub(r'#.*', '', line).strip()
-                    if not line:
-                        continue
-                    key, value = line.split('=', 1)
-                    props[key] = value
+            def strip(somestring):
+                return somestring.strip().replace('[', '').replace(']', '')
+            for line in self.execute("getprop").splitlines():
+                key, value = line.split(':', 1)
+                key = strip(key)
+                value = strip(value)
+                props[key] = value
         except ValueError:
             self.logger.warning('Could not parse build.prop.')
 
