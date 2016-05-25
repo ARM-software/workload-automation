@@ -18,6 +18,7 @@ import re
 import time
 
 from wlauto import AndroidUiAutoBenchmark, Parameter
+from wlauto.exceptions import DeviceError
 
 
 SKYPE_ACTION_URIS = {
@@ -90,6 +91,12 @@ class Skype(AndroidUiAutoBenchmark):
         self.uiauto_params['name'] = self.contact_name.replace(' ', '_')
         self.uiauto_params['duration'] = self.duration
         self.uiauto_params['action'] = self.action
+
+    def initialize(self, context):
+        super(Skype, self).initialize(context)
+
+        if not self.device.is_wifi_connected():
+            raise DeviceError('Wifi is not connected for device {}'.format(self.device.name))
 
     def setup(self, context):
         self.logger.info('===== setup() ======')
