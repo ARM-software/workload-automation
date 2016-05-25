@@ -20,6 +20,7 @@ import time
 from wlauto import AndroidUiAutoBenchmark, Parameter
 from wlauto.exceptions import DeviceError
 
+__version__ = '0.1.0'
 
 SKYPE_ACTION_URIS = {
     'call': 'call',

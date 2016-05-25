@@ -19,6 +19,8 @@ import re
 from wlauto import AndroidUiAutoBenchmark, Parameter
 from wlauto.exceptions import DeviceError
 
+__version__ = '0.1.0'
+
 
 class Googlephotos(AndroidUiAutoBenchmark):
 
