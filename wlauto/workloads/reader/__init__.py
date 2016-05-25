@@ -100,11 +100,11 @@ class Reader(AndroidUiAutoBenchmark):
                 match = regex.search(line)
                 if match:
                     context.result.add_metric((match.group('key') + "_start"),
-                                              match.group('value1'))
+                                              match.group('value1'), units='ms')
                     context.result.add_metric((match.group('key') + "_finish"),
-                                              match.group('value2'))
+                                              match.group('value2'), units='ms')
                     context.result.add_metric((match.group('key') + "_duration"),
-                                              match.group('value3'))
+                                              match.group('value3'), units='ms')
 
     def teardown(self, context):
         super(Reader, self).teardown(context)

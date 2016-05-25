@@ -120,9 +120,12 @@ class Skype(AndroidUiAutoBenchmark):
             for line in wfh:
                 match = regex.search(line)
                 if match:
-                    context.result.add_metric((match.group('key') + "_start"), match.group('value1'))
-                    context.result.add_metric((match.group('key') + "_finish"), match.group('value2'))
-                    context.result.add_metric((match.group('key') + "_duration"), match.group('value3'))
+                    context.result.add_metric((match.group('key') + "_start"),
+                                              match.group('value1'), units='ms')
+                    context.result.add_metric((match.group('key') + "_finish"),
+                                              match.group('value2'), units='ms')
+                    context.result.add_metric((match.group('key') + "_duration"),
+                                              match.group('value3'), units='ms')
 
     def teardown(self, context):
         self.logger.info('===== teardown() ======')
