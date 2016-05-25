@@ -38,13 +38,10 @@ class Camerarecord(UiAutomatorWorkload):
                   description='The video recording time in seconds.'),
     ]
 
-    def __init__(self, device, **kwargs):
-        super(Camerarecord, self).__init__(device)
+    def initialize(self, context):
         self.uiauto_params['recording_time'] = self.recording_time  # pylint: disable=E1101
         self.uiauto_params['version'] = "button"
         self.run_timeout = 3 * self.uiauto_params['recording_time']
-
-    def initialize(self, context):
         api = self.device.get_sdk_version()
         self.uiauto_params['api_level'] = api
         self.package = self.api_packages[api]

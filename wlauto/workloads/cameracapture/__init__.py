@@ -40,13 +40,10 @@ class Cameracapture(UiAutomatorWorkload):
                   description='Time, in seconds, between two consecutive camera clicks.'),
     ]
 
-    def __init__(self, device, **kwargs):
-        super(Cameracapture, self).__init__(device, **kwargs)
-        self.uiauto_params['no_of_captures'] = self.no_of_captures
-        self.uiauto_params['time_between_captures'] = self.time_between_captures
-
     def initialize(self, context):
         api = self.device.get_sdk_version()
+        self.uiauto_params['no_of_captures'] = self.no_of_captures
+        self.uiauto_params['time_between_captures'] = self.time_between_captures
         self.uiauto_params['api_level'] = api
         self.package = self.api_packages[api]
         version = self.device.get_installed_package_version(self.package)
