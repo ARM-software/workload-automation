@@ -62,8 +62,6 @@ class Skype(AndroidUiAutoBenchmark):
                   '''),
         Parameter('login_pass', kind=str, mandatory=True,
                   description='Password associated with the account to log into the device'),
-        Parameter('contact_skypeid', kind=str, mandatory=True,
-                  description='This is the Skype ID of the contact to call from the device'),
         Parameter('contact_name', kind=str, mandatory=True,
                   description='This is the contact display name as it appears in the people list'),
         Parameter('duration', kind=int, default=60,
@@ -89,7 +87,6 @@ class Skype(AndroidUiAutoBenchmark):
         self.uiauto_params['output_dir'] = self.device.working_directory
         self.uiauto_params['my_id'] = self.login_name
         self.uiauto_params['my_pwd'] = self.login_pass
-        self.uiauto_params['skypeid'] = self.contact_skypeid
         self.uiauto_params['name'] = self.contact_name.replace(' ', '_')
         self.uiauto_params['duration'] = self.duration
         self.uiauto_params['action'] = self.action

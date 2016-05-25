@@ -43,6 +43,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void runUiAutomation() throws Exception {
         parameters = getParams();
 
+        pauseForSplashScreen();
         setScreenOrientation(ScreenOrientation.NATURAL);
         confirmAccess();
         dismissWelcomeView();
@@ -55,13 +56,15 @@ public class UiAutomation extends UxPerfUiAutomation {
         writeResultsToFile(timingResults, parameters.getString("output_file"));
     }
 
-    private void dismissWelcomeView() throws Exception {
+    public void pauseForSplashScreen() {
+        sleep(5); // Pause while splash screen loads
+    }
+
+    public void dismissWelcomeView() throws Exception {
 
         // Click through the first two pages and make sure that we don't sign
         // in to our google account. This ensures the same set of photographs
         // are placed in the camera directory for each run.
-
-        sleep(5); // Pause while splash screen loads
 
         UiObject getStartedButton =
             new UiObject(new UiSelector().textContains("Get started")
@@ -279,7 +282,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             startDumpsysSurfaceFlinger(parameters, viewName);
 
             Timer result = new Timer();
-            result = slideBarTest(straightenSlider , pos, steps);
+            result = slideBarTest(straightenSlider, pos, steps);
 
             stopDumpsysSurfaceFlinger(parameters, viewName, surfFlingerlogName);
             stopDumpsysGfxInfo(parameters, gfxInfologName);
@@ -385,8 +388,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         return result;
     }
 
-    // Helper to click on an individual photographs based on index in wa-working gallery.
-    private void selectPhoto(final int index) throws Exception {
+    // Helper to click on an individual photograph based on index in wa-working gallery.
+    public void selectPhoto(final int index) throws Exception {
         UiObject workdir = getUiObjectByText("wa-working", "android.widget.TextView");
         workdir.clickAndWaitForNewWindow();
 
@@ -398,7 +401,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     // Helper that accepts, saves and navigates back to application home screen after an edit operation
-    private void saveAndReturn() throws Exception {
+    public void saveAndReturn() throws Exception {
 
         UiObject accept = getUiObjectByDescription("Accept", "android.widget.ImageView");
         accept.click();
@@ -412,5 +415,20 @@ public class UiAutomation extends UxPerfUiAutomation {
                                          .className("android.widget.ImageButton"));
         navigateUpButton.waitForExists(viewTimeout);
         navigateUpButton.click();
+    }
+
+    // Helper to tag an individual photograph based on the index in wa-working
+    // gallery.  After long clicking it tags the photograph with a tick in the
+    // corner of the image to indicate that the photograph has been selected
+    public void tagPhoto(final int index) throws Exception {
+        UiObject workdir = getUiObjectByText("wa-working", "android.widget.TextView");
+        workdir.clickAndWaitForNewWindow();
+
+        UiObject photo =
+            new UiObject(new UiSelector().resourceId("com.google.android.apps.photos:id/recycler_view")
+                                         .childSelector(new UiSelector()
+                                         .index(index)));
+        photo.waitForExists(viewTimeout);
+        uiDevicePerformLongClick(photo, 100);
     }
 }

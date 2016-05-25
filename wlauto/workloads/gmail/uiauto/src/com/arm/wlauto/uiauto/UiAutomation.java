@@ -44,7 +44,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         clearFirstRunDialogues();
 
         clickNewMail();
-        setToField();
+        setToField(parameters);
         setSubjectField();
         setComposeField();
         attachFiles();
@@ -53,7 +53,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         writeResultsToFile(timingResults, parameters.getString("output_file"));
     }
 
-    public void clearFirstRunDialogues () throws Exception {
+    public void clearFirstRunDialogues() throws Exception {
         // The first run dialogues vary on different devices so check if they are there and dismiss
         UiObject gotItBox = new UiObject(new UiSelector().resourceId("com.google.android.gm:id/welcome_tour_got_it")
                                                      .className("android.widget.TextView"));
@@ -65,15 +65,27 @@ public class UiAutomation extends UxPerfUiAutomation {
         if (takeMeToBox.exists()) {
             clickUiObject(takeMeToBox, timeout);
         }
-        UiObject converationView = new UiObject(new UiSelector()
-                                            .resourceId("com.google.android.gm:id/conversation_list_view")
-                                            .className("android.widget.ListView"));
-        if (!converationView.waitForExists(networkTimeout)) {
-            throw new UiObjectNotFoundException("Could not find \"converationView\".");
+
+        UiObject syncNowButton = new UiObject(new UiSelector().textContains("Sync now")
+                                                              .className("android.widget.Button"));
+
+        // On some devices we need to wait for a sync to occur after clearing the data
+        // We also need to sleep here since waiting for a new window is not enough
+        if (syncNowButton.exists()) {
+            syncNowButton.clickAndWaitForNewWindow(timeout);
+            sleep(10);
         }
     }
 
     public void clickNewMail() throws Exception {
+        UiObject conversationView = new UiObject(new UiSelector()
+                                            .resourceId("com.google.android.gm:id/conversation_list_view")
+                                            .className("android.widget.ListView"));
+
+        if (!conversationView.waitForExists(networkTimeout)) {
+            throw new UiObjectNotFoundException("Could not find \"conversationView\".");
+        }
+
         Timer result = new Timer();
         UiObject newMailButton = getUiObjectByDescription("Compose", "android.widget.ImageButton");
         result.start();
@@ -82,13 +94,18 @@ public class UiAutomation extends UxPerfUiAutomation {
         timingResults.put("Create_newMail", result);
     }
 
-    public void setToField() throws Exception {
+    public boolean hasComposeView() throws Exception {
+        UiObject composeView = new UiObject(new UiSelector().resourceId("com.google.android.gm:id/compose"));
+        return composeView.waitForExists(networkTimeout);
+    }
+
+    public void setToField(final Bundle parameters) throws Exception {
         Timer result = new Timer();
         UiObject toField = getUiObjectByText("To", "android.widget.TextView");
         String recipient = parameters.getString("recipient").replace('_', ' ');
         result.start();
         toField.setText(recipient);
-        getUiDevice().pressEnter();
+        getUiDevice().getInstance().pressEnter();
         result.end();
         timingResults.put("Create_To", result);
     }
@@ -100,7 +117,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Click on the subject field is required on some platforms to exit the To box cleanly
         subjectField.click();
         subjectField.setText("This is a test message");
-        getUiDevice().pressEnter();
+        getUiDevice().getInstance().pressEnter();
         result.end();
         timingResults.put("Create_Subject", result);
     }
@@ -110,7 +127,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject composeField = getUiObjectByText("Compose email", "android.widget.EditText");
         result.start();
         composeField.setText("This is a test composition");
-        getUiDevice().pressEnter();
+        getUiDevice().getInstance().pressEnter();
         result.end();
         timingResults.put("Create_Compose", result);
     }

@@ -54,7 +54,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         Bundle parameters = getParams();
         String loginName = parameters.getString("my_id");
         String loginPass = parameters.getString("my_pwd");
-        String contactSkypeId = parameters.getString("skypeid");
         String contactName = parameters.getString("name").replace("_", " ");
         int callDuration = Integer.parseInt(parameters.getString("duration"));
         String callType = parameters.getString("action");
@@ -67,7 +66,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Run tests
         handleLoginScreen(loginName, loginPass);
         confirmAccess();
-        selectContact(contactName, contactSkypeId);
+        selectContact(contactName);
         if ("video".equalsIgnoreCase(callType)) {
             videoCallTest(callDuration);
         } else if ("voice".equalsIgnoreCase(callType)) {
@@ -80,7 +79,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         writeResultsToFile(results, resultsFile);
     }
 
-    private void handleLoginScreen(String username, String password) throws Exception {
+    public void handleLoginScreen(String username, String password) throws Exception {
         String useridResoureId = PACKAGE_ID + "sign_in_userid";
         String nextButtonResourceId = PACKAGE_ID + "sign_in_next_btn";
         UiObject useridField = new UiObject(new UiSelector().resourceId(useridResoureId));
@@ -96,7 +95,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         signinButton.clickAndWaitForNewWindow();
     }
 
-    private void selectContact(String name, String id) throws Exception {
+    public void selectContact(String name) throws Exception {
         Timer timer = new Timer();
         timer.start();
         UiObject peopleTab;
@@ -121,6 +120,22 @@ public class UiAutomation extends UxPerfUiAutomation {
         contactCard.clickAndWaitForNewWindow();
         timer.end();
         results.put("select_contact", timer);
+    }
+
+    public void searchForContact(String name) throws Exception {
+
+        UiObject search = getUiObjectByText("Search", "android.widget.EditText");
+        search.setText(name);
+
+        UiObject peopleItem =
+            new UiObject(new UiSelector().resourceId("com.skype.raider:id/list")
+                                         .childSelector(new UiSelector()
+                                         .index(0)
+                                         .clickable(true)));
+        peopleItem.click();
+        UiObject confirm =
+            getUiObjectByResourceId("com.skype.raider:id/fab", "android.widget.ImageView");
+        confirm.click();
     }
 
     private void voiceCallTest(int duration) throws Exception {
