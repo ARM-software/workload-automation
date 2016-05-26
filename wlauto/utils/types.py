@@ -169,7 +169,7 @@ def list_or_string(value):
         return [value]
     else:
         try:
-            return list(value)
+            return map(str, value)
         except ValueError:
             return [str(value)]
 
