@@ -58,12 +58,12 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject gotItBox = new UiObject(new UiSelector().resourceId("com.google.android.gm:id/welcome_tour_got_it")
                                                      .className("android.widget.TextView"));
         if (gotItBox.exists()) {
-            clickUiObject(gotItBox, timeout);
+            gotItBox.clickAndWaitForNewWindow(timeout);
         }
         UiObject takeMeToBox = new UiObject(new UiSelector().textContains("Take me to Gmail")
                                                             .className("android.widget.TextView"));
         if (takeMeToBox.exists()) {
-            clickUiObject(takeMeToBox, timeout);
+            takeMeToBox.clickAndWaitForNewWindow(timeout);
         }
 
         UiObject syncNowButton = new UiObject(new UiSelector().textContains("Sync now")
@@ -89,7 +89,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         Timer result = new Timer();
         UiObject newMailButton = getUiObjectByDescription("Compose", "android.widget.ImageButton");
         result.start();
-        clickUiObject(newMailButton, timeout);
+        newMailButton.clickAndWaitForNewWindow(timeout);
         result.end();
         timingResults.put("Create_newMail", result);
     }
@@ -136,7 +136,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         Timer result = new Timer();
         UiObject sendButton = getUiObjectByDescription("Send", "android.widget.TextView");
         result.start();
-        clickUiObject(sendButton, timeout);
+        sendButton.clickAndWaitForNewWindow(timeout);
         result.end();
         timingResults.put("Create_Send", result);
 
@@ -153,9 +153,9 @@ public class UiAutomation extends UxPerfUiAutomation {
             Timer result = new Timer();
             result.start();
 
-            clickUiObject(attachIcon, timeout);
+            attachIcon.click();
             UiObject attachFile = getUiObjectByText("Attach file", "android.widget.TextView");
-            clickUiObject(attachFile, timeout);
+            attachFile.clickAndWaitForNewWindow(timeout);
 
             UiObject titleIsWaWorking = new UiObject(new UiSelector()
                                                 .className("android.widget.TextView")
