@@ -446,22 +446,20 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         else:
             return adb_shell(self.adb_name, command, timeout, check_exit_code, as_root)
 
-    def kick_off(self, command, as_root=True):
+    def kick_off(self, command, as_root=None):
         """
         Like execute but closes adb session and returns immediately, leaving the command running on the
         device (this is different from execute(background=True) which keeps adb connection open and returns
         a subprocess object).
 
-        .. note:: This relies on busybox's nohup applet and so won't work on unrooted devices.
-
         Added in version 2.1.4
 
         """
-        if not self.is_rooted or not as_root:
-            raise DeviceError('kick_off uses busybox\'s nohup applet and so can only be run a rooted device.')
+        if as_root is None:
+            as_root = self.is_rooted
         try:
-            command = 'cd {} && busybox nohup {}'.format(self.working_directory, command)
-            output = self.execute(command, timeout=1, as_root=True)
+            command = 'cd {} && {} nohup {}'.format(self.working_directory, self.busybox, command)
+            output = self.execute(command, timeout=1, as_root=as_root)
         except TimeoutError:
             pass
         else:
