@@ -31,8 +31,7 @@ class GoogleSlides(AndroidUiAutoBenchmark):
     out various tasks, such as creating a new presentation, adding text, images, and shapes,
     as well as basic editing and playing a slideshow.
 
-    Although this workload attempts to be network independent it may require a network connection
-    to run.
+    Under normal circumstances, this workload should be able to run without a network connection.
 
     Test description:
     1. The workload is split into two main scenarios:
@@ -90,7 +89,9 @@ class GoogleSlides(AndroidUiAutoBenchmark):
         self.run_timeout = 300
         self.output_file = path.join(self.device.working_directory, self.instrumentation_log)
         self.local_dir = self.dependencies_directory
-        # Android downloads folder
+        # Use Android downloads folder as it is the default folder opened by Google Slides'
+        # file picker, and not WA's working directory. Helps test reliability by avoiding
+        # having to navigate around the filesystem to locate pushed file.
         self.device_dir = path.join(self.device.working_directory, '..', 'Download')
         self.wa_test_file = 'wa_test_{}'.format(self.local_file) if self.local_file else None
 
