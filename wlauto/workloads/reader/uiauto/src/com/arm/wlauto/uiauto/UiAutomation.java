@@ -51,9 +51,10 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         confirmAccess();
 
-        gesturesTest("Getting Started.pdf");
-        String[] searchStrings = {"Glossary", "cortex"};
-        searchPdfTest("cortex_m4", searchStrings);
+        String filename = "Getting Started.pdf";
+        gesturesTest(filename);
+        String[] searchStrings = {"read", "the"};
+        searchPdfTest(filename, searchStrings);
 
         unsetScreenOrientation();
 
@@ -61,8 +62,14 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void dismissWelcomeView() throws Exception {
-        UiObject welcomeView = getUiObjectByDescription("Acrobat - First Time Experience",
-                                                        "android.webkit.WebView");
+        UiObject welcomeView;
+        try {
+            welcomeView = getUiObjectByDescription("Acrobat - First Time Experience",
+                                                   "android.webkit.WebView");
+        } catch (UiObjectNotFoundException e) {
+            welcomeView = new UiObject(new UiSelector().className("android.webkit.WebView"));
+        }
+
         // Click through the first two pages and wait for pages to transition.
         // These pages are webkit views so clickAndWaitForNewWindow or waitForExists cannot be used
         tapDisplayCentre();
@@ -73,13 +80,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Get the box coords for the webView window
         Rect webViewCoords = welcomeView.getBounds();
 
-        // Iterate up from the bottom middle of the webView until we hit these
-        // Continue button and change view
+        // Iterate up from the bottom of the webView until we hit the continue
+        // button and change view
         int i = 0;
         do {
             i += 10;
-            tapDisplay(webViewCoords.centerX(), webViewCoords.centerY() + i);
-        } while (welcomeView.exists() || i < webViewCoords.top);
+            tapDisplay(webViewCoords.centerX(), webViewCoords.bottom - i);
+        } while (welcomeView.exists() && i < webViewCoords.top);
     }
 
     private void signInOnline(Bundle parameters) throws Exception {
@@ -147,6 +154,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         String file = filename.replaceAll("\\.", "_").replaceAll("\\s+", "_");
 
         timingResults.put(String.format(TestTag + "_" + "selectLocalFilesList" + "_" + file), selectLocalFilesList());
+
         // On some devices permissions to access local files occurs here rather than the earlier step
         confirmAccess();
         timingResults.put(String.format(TestTag + "_" + "selectSearchDuration" + "_" + file), selectSearchFileButton());
@@ -165,7 +173,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject localButton = getUiObjectByText("LOCAL", "android.widget.TextView");
         Timer result = new Timer();
         result.start();
-        localButton.clickAndWaitForNewWindow(timeout);
+        localButton.click();
         long finish = SystemClock.elapsedRealtime();
         result.end();
         return result;
@@ -239,12 +247,11 @@ public class UiAutomation extends UxPerfUiAutomation {
             String runName = String.format(TestTag + "_" + pair.getKey());
             String gfxInfologName =  String.format(runName + "_gfxInfo.log");
             String surfFlingerlogName =  String.format(runName + "_surfFlinger.log");
-            String viewName = new String("com.adobe.reader.viewer.ARViewerActivity");
 
             UiObject view = new UiObject(new UiSelector().resourceId("com.adobe.reader:id/viewPager"));
 
             startDumpsysGfxInfo(parameters);
-            startDumpsysSurfaceFlinger(parameters, viewName);
+            startDumpsysSurfaceFlinger(parameters);
 
             Timer results = new Timer();
 
@@ -262,7 +269,7 @@ public class UiAutomation extends UxPerfUiAutomation {
                     break;
             }
 
-            stopDumpsysSurfaceFlinger(parameters, viewName, surfFlingerlogName);
+            stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
             stopDumpsysGfxInfo(parameters, gfxInfologName);
 
             timingResults.put(runName, results);

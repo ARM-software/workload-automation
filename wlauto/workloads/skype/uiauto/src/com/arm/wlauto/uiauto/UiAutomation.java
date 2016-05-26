@@ -157,10 +157,9 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void makeCall(int duration, boolean video, String testTag) throws Exception {
-        String viewName = "com.skype.android.app.calling.CallActivity";
         String dumpsysTag = TAG + "_" + testTag;
         if (video && dumpsysEnabled) {
-            initDumpsysSurfaceFlinger(PACKAGE, viewName);
+            initDumpsysSurfaceFlinger(PACKAGE);
             initDumpsysGfxInfo(PACKAGE);
         }
 
@@ -170,7 +169,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         sleep(duration);
 
         if (video && dumpsysEnabled) {
-            exitDumpsysSurfaceFlinger(PACKAGE, viewName, new File(outputDir, dumpsysTag + "_surfFlinger.log"));
+            exitDumpsysSurfaceFlinger(PACKAGE, new File(outputDir, dumpsysTag + "_surfFlinger.log"));
             exitDumpsysGfxInfo(PACKAGE, new File(outputDir, dumpsysTag + "_gfxInfo.log"));
         }
     }

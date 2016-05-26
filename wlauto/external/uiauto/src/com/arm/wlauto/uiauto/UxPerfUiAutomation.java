@@ -19,6 +19,8 @@ import android.os.Build;
 import android.os.SystemClock;
 import android.os.Bundle;
 
+import android.util.Pair;
+
 import com.android.uiautomator.core.UiObject;
 import com.android.uiautomator.core.UiObjectNotFoundException;
 import com.android.uiautomator.core.UiScrollable;
@@ -35,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -75,15 +78,46 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
         }
     }
 
-    public void initDumpsysSurfaceFlinger(String appPackage, String view) {
-        String packageView = String.format(appPackage + "/" + view);
-        List<String> command = Arrays.asList("dumpsys", "SurfaceFlinger", "--latency-clear"
-                                                      , packageView);
-        initDumpsys(command);
+    public String getSurfaceFlingerView(String appPackage) {
+        BufferedReader bufferedReader = null;
+        List<String> surfaceFlingerList = new ArrayList<String>();
+        String packageView = "";
+        try {
+            List<String> command =
+                Arrays.asList("dumpsys", "SurfaceFlinger", "--list");
+
+            ProcessBuilder builder = new ProcessBuilder();
+            builder.command(command);
+            Process process = builder.start();
+            process.waitFor();
+            bufferedReader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream()));
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                if (line.startsWith(appPackage)) {
+                    surfaceFlingerList.add(line);
+                }
+            }
+
+            if (surfaceFlingerList.size() != 0) {
+                packageView = surfaceFlingerList.get(surfaceFlingerList.size() - 1);
+            }
+        } catch (Exception exception) {
+            logger.log(Level.SEVERE, "Unable to list SurfaceFlinger views in dumpsys", exception);
+        }
+
+        return packageView;
     }
 
-    public void exitDumpsysSurfaceFlinger(String appPackage, String view, File  filename) {
-      String packageView = String.format(appPackage + "/" + view);
+    public void initDumpsysSurfaceFlinger(String appPackage) {
+            String packageView = getSurfaceFlingerView(appPackage);
+            List<String> command = Arrays.asList("dumpsys", "SurfaceFlinger", "--latency-clear",
+                                                 packageView);
+            executeCommand(command);
+    }
+
+    public void exitDumpsysSurfaceFlinger(String appPackage, File filename) {
+        String packageView = getSurfaceFlingerView(appPackage);
         List<String> command = Arrays.asList("dumpsys", "SurfaceFlinger", "--latency", packageView);
         exitDumpsys(command,  filename);
     }
@@ -95,7 +129,7 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
         } else {
             command = Arrays.asList("dumpsys", "gfxinfo", appPackage, "reset");
         }
-        initDumpsys(command);
+        executeCommand(command);
     }
 
     public void exitDumpsysGfxInfo(String appPackage, File  filename) {
@@ -108,15 +142,49 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
         exitDumpsys(command, filename);
     }
 
-    public void initDumpsys(List<String> command) {
+    public Pair<Integer, String> executeCommand(List<String> command) {
+        return executeCommand(command, false);
+    }
+
+    public Pair<Integer, String> executeCommand(List<String> command, boolean readOutput)
+    {
+        StringBuilder stringBuilder = new StringBuilder();
+        ProcessBuilder processBuilder = new ProcessBuilder();
+        BufferedReader bufferedReader = null;
+        int exitValue = -1;
+        String output = "Unable to execute command\n" + Arrays.toString(command.toArray());
+
         try {
-            ProcessBuilder builder = new ProcessBuilder();
-            builder.command(command);
-            Process process = builder.start();
-            process.waitFor();
+            processBuilder.command(command);
+            Process process = processBuilder.start();
+            exitValue = process.waitFor();
+
+            if (readOutput) {
+                bufferedReader = new BufferedReader(
+                        new InputStreamReader(process.getInputStream()));
+                String line;
+                String lineSeparator = System.getProperty("line.separator");
+                while ((line = bufferedReader.readLine()) != null) {
+                    stringBuilder.append(line);
+                    stringBuilder.append(lineSeparator);
+                }
+            }
+
+            output = stringBuilder.toString();
+
         } catch (Exception exception) {
-            logger.log(Level.SEVERE, "Unable to reset dumpsys", exception);
+            logger.log(Level.SEVERE, "Unable to execute command", exception);
+        } finally {
+            if (bufferedReader != null) {
+                try {
+                    bufferedReader.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         }
+
+        return Pair.create(exitValue, output);
     }
 
     public void exitDumpsys(List<String> command, File  filename) {
@@ -271,23 +339,25 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
         // First time run requires confirmation to allow access to local files
         UiObject allowButton = new UiObject(new UiSelector().textContains("Allow")
                 .className("android.widget.Button"));
-        // Some devices request multiple permisson rights so clear them all here
-        while (allowButton.waitForExists(timeout)) {
-            allowButton.clickAndWaitForNewWindow(timeout);
+
+        if (allowButton.exists()) {
+            // Some devices request multiple permisson rights so clear them all here
+            do {
+                allowButton.clickAndWaitForNewWindow(timeout);
+            } while (allowButton.waitForExists(TimeUnit.SECONDS.toMillis(1)));
         }
     }
 
-    public void startDumpsysSurfaceFlinger(Bundle parameters, String view) {
+    public void startDumpsysSurfaceFlinger(Bundle parameters) {
         if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
-            initDumpsysSurfaceFlinger(parameters.getString("package"), view);
+            initDumpsysSurfaceFlinger(parameters.getString("package"));
         }
     }
 
-    public void stopDumpsysSurfaceFlinger(Bundle parameters, String view,
-                                          String filename) throws Exception {
+    public void stopDumpsysSurfaceFlinger(Bundle parameters, String filename) throws Exception {
         if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
             File out_file = new File(parameters.getString("output_dir"), filename);
-            exitDumpsysSurfaceFlinger(parameters.getString("package"), view, out_file);
+            exitDumpsysSurfaceFlinger(parameters.getString("package"), out_file);
           }
     }
 

@@ -116,8 +116,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Select first photograph
         selectPhoto(0);
 
-        String viewName = "com.google.android.apps.photos.localmedia.ui.LocalPhotosActivity";
-
         while (it.hasNext()) {
             Map.Entry<String, GestureTestParams> pair = it.next();
             GestureType type = pair.getValue().gestureType;
@@ -137,7 +135,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             }
 
             startDumpsysGfxInfo(parameters);
-            startDumpsysSurfaceFlinger(parameters, viewName);
+            startDumpsysSurfaceFlinger(parameters);
 
             Timer result = new Timer();
 
@@ -155,7 +153,7 @@ public class UiAutomation extends UxPerfUiAutomation {
                     break;
             }
 
-            stopDumpsysSurfaceFlinger(parameters, viewName, surfFlingerlogName);
+            stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
             stopDumpsysGfxInfo(parameters, gfxInfologName);
 
             timingResults.put(runName, result);
@@ -214,8 +212,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject seekBar = getUiObjectByResourceId("com.google.android.apps.photos:id/cpe_strength_seek_bar",
                                                    "android.widget.SeekBar");
 
-        String viewName = "com.google.android.apps.consumerphotoeditor.fragments.ConsumerPhotoEditorActivity";
-
         while (it.hasNext()) {
             Map.Entry<String, SeekBarTestParams> pair = it.next();
             Position pos = pair.getValue().seekBarPosition;
@@ -227,12 +223,12 @@ public class UiAutomation extends UxPerfUiAutomation {
             String surfFlingerlogName =  String.format(runName + "_surfFlinger.log");
 
             startDumpsysGfxInfo(parameters);
-            startDumpsysSurfaceFlinger(parameters, viewName);
+            startDumpsysSurfaceFlinger(parameters);
 
             Timer result = new Timer();
             result = seekBarTest(seekBar, pos, steps);
 
-            stopDumpsysSurfaceFlinger(parameters, viewName, surfFlingerlogName);
+            stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
             stopDumpsysGfxInfo(parameters, gfxInfologName);
 
             timingResults.put(runName, result);
@@ -268,8 +264,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject straightenSlider = getUiObjectByResourceId("com.google.android.apps.photos:id/cpe_straighten_slider",
                                                              "android.view.View");
 
-        String viewName = "com.google.android.apps.consumerphotoeditor.fragments.ConsumerPhotoEditorActivity";
-
         while (it.hasNext()) {
             Map.Entry<String, Position> pair = it.next();
             Position pos = pair.getValue();
@@ -279,12 +273,12 @@ public class UiAutomation extends UxPerfUiAutomation {
             String surfFlingerlogName =  String.format(runName + "_surfFlinger.log");
 
             startDumpsysGfxInfo(parameters);
-            startDumpsysSurfaceFlinger(parameters, viewName);
+            startDumpsysSurfaceFlinger(parameters);
 
             Timer result = new Timer();
             result = slideBarTest(straightenSlider, pos, steps);
 
-            stopDumpsysSurfaceFlinger(parameters, viewName, surfFlingerlogName);
+            stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
             stopDumpsysGfxInfo(parameters, gfxInfologName);
 
             timingResults.put(runName, result);
@@ -311,22 +305,20 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject rotate = getUiObjectByResourceId("com.google.android.apps.photos:id/cpe_rotate_90",
                                                   "android.widget.ImageView");
 
-        String viewName = "com.google.android.apps.consumerphotoeditor.fragments.ConsumerPhotoEditorActivity";
-
         for (String subTest : subTests) {
             String runName = String.format(testTag + "_" + subTest);
             String gfxInfologName =  String.format(runName + "_gfxInfo.log");
             String surfFlingerlogName =  String.format(runName + "_surfFlinger.log");
 
             startDumpsysGfxInfo(parameters);
-            startDumpsysSurfaceFlinger(parameters, viewName);
+            startDumpsysSurfaceFlinger(parameters);
 
             Timer result = new Timer();
             result.start();
             rotate.click();
             result.end();
 
-            stopDumpsysSurfaceFlinger(parameters, viewName, surfFlingerlogName);
+            stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
             stopDumpsysGfxInfo(parameters, gfxInfologName);
 
             timingResults.put(runName, result);
