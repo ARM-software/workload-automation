@@ -18,6 +18,7 @@ import re
 
 from wlauto import AndroidUiAutoBenchmark, Parameter
 from wlauto.exceptions import DeviceError
+from wlauto.exceptions import NotFoundError
 
 __version__ = '0.1.0'
 
@@ -65,7 +66,6 @@ class Googlephotos(AndroidUiAutoBenchmark):
     ]
 
     instrumentation_log = ''.join([name, '_instrumentation.log'])
-    file_prefix = 'wa_test_'
 
     def __init__(self, device, **kwargs):
         super(Googlephotos, self).__init__(device, **kwargs)
@@ -84,11 +84,16 @@ class Googlephotos(AndroidUiAutoBenchmark):
         if not self.device.is_wifi_connected():
             raise DeviceError('Wifi is not connected for device {}'.format(self.device.name))
 
-        for entry in os.listdir(self.dependencies_directory):
-            wa_file = ''.join([self.file_prefix, entry])
-            if entry.endswith(".jpg"):
+        # Check for workload dependencies before proceeding
+        jpeg_files = [entry for entry in os.listdir(self.dependencies_directory) if entry.endswith(".jpg")]
+
+        if len(jpeg_files) < 4:
+            raise NotFoundError("This workload requires a minimum of four {} files in {}".format('jpg',
+                                self.dependencies_directory))
+        else:
+            for entry in jpeg_files:
                 self.device.push_file(os.path.join(self.dependencies_directory, entry),
-                                      os.path.join(self.device.working_directory, wa_file),
+                                      os.path.join(self.device.working_directory, entry),
                                       timeout=300)
 
         # Force a re-index of the mediaserver cache to pick up new files
@@ -126,7 +131,7 @@ class Googlephotos(AndroidUiAutoBenchmark):
         super(Googlephotos, self).finalize(context)
 
         for entry in self.device.listdir(self.device.working_directory):
-            if entry.startswith(self.file_prefix) and entry.endswith(".jpg"):
+            if entry.endswith(".jpg"):
                 self.device.delete_file(os.path.join(self.device.working_directory, entry))
 
         # Force a re-index of the mediaserver cache to removed cached files

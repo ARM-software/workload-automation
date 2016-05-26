@@ -20,6 +20,7 @@ import time
 
 from wlauto import AndroidUiAutoBenchmark, Parameter
 from wlauto.exceptions import DeviceError
+from wlauto.exceptions import NotFoundError
 
 __version__ = '0.1.0'
 
@@ -83,12 +84,17 @@ class Gmail(AndroidUiAutoBenchmark):
         if not self.device.is_wifi_connected():
             raise DeviceError('Wifi is not connected for device {}'.format(self.device.name))
 
-        self.storage_dir = self.device.path.join(self.device.working_directory)
+        # Check for workload dependencies before proceeding
+        jpeg_files = [entry for entry in os.listdir(self.dependencies_directory) if entry.endswith(".jpg")]
 
-        for file in os.listdir(self.dependencies_directory):
-            if file.endswith(".jpg"):
-                self.device.push_file(os.path.join(self.dependencies_directory, file),
-                                      os.path.join(self.storage_dir, file), timeout=300)
+        if len(jpeg_files) < 5:
+            raise NotFoundError("This workload requires a minimum of five {} files in {}".format('jpg',
+                                self.dependencies_directory))
+        else:
+            for entry in jpeg_files:
+                self.device.push_file(os.path.join(self.dependencies_directory, entry),
+                                      os.path.join(self.device.working_directory, entry),
+                                      timeout=300)
 
         # Force a re-index of the mediaserver cache to pick up new files
         self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
@@ -114,17 +120,17 @@ class Gmail(AndroidUiAutoBenchmark):
     def teardown(self, context):
         super(Gmail, self).teardown(context)
 
-        for file in self.device.listdir(self.device.working_directory):
-            if file.endswith(".log"):
-                self.device.pull_file(os.path.join(self.device.working_directory, file), context.output_directory)
-                self.device.delete_file(os.path.join(self.device.working_directory, file))
+        for entry in self.device.listdir(self.device.working_directory):
+            if entry.endswith(".log"):
+                self.device.pull_file(os.path.join(self.device.working_directory, entry), context.output_directory)
+                self.device.delete_file(os.path.join(self.device.working_directory, entry))
 
     def finalize(self, context):
         super(Gmail, self).finalize(context)
 
-        for file in self.device.listdir(self.device.working_directory):
-            if file.endswith(".jpg"):
-                self.device.delete_file(os.path.join(self.device.working_directory, file))
+        for entry in self.device.listdir(self.device.working_directory):
+            if entry.endswith(".jpg"):
+                self.device.delete_file(os.path.join(self.device.working_directory, entry))
 
         # Force a re-index of the mediaserver cache to pick up new files
         self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
