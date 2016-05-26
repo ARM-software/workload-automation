@@ -43,6 +43,9 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void runUiAutomation() throws Exception {
         parameters = getParams();
+        String filename = parameters.getString("filename").replace("_", " ");
+        String[] searchStrings = {parameters.getString("first_search_word"),
+                                  parameters.getString("second_search_word")};
 
         setScreenOrientation(ScreenOrientation.NATURAL);
 
@@ -51,9 +54,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         confirmAccess();
 
-        String filename = "Getting Started.pdf";
         gesturesTest(filename);
-        String[] searchStrings = {"read", "the"};
         searchPdfTest(filename, searchStrings);
 
         unsetScreenOrientation();

@@ -67,6 +67,21 @@ class Reader(AndroidUiAutoBenchmark):
                   description="""
                   Password for Adobe online services.
                   """),
+        Parameter('document_name', kind=str, default="Getting_Started.pdf",
+                  description="""
+                  The document name to use for the Gesture and Search test.
+                  Note: spaces must be replaced with underscores in the document name.
+                  """),
+        Parameter('first_search_word', kind=str, default="read",
+                  description="""
+                  The first test string to use for the word search test.
+                  Note: Accepts single words only.
+                  """),
+        Parameter('second_search_word', kind=str, default="the",
+                  description="""
+                  The second test string to use for the word search test.
+                  Note: Accepts single words only.
+                  """),
     ]
 
     instrumentation_log = ''.join([name, '_instrumentation.log'])
@@ -80,6 +95,9 @@ class Reader(AndroidUiAutoBenchmark):
         self.uiauto_params['email'] = self.email
         self.uiauto_params['password'] = self.password
         self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
+        self.uiauto_params['filename'] = self.document_name
+        self.uiauto_params['first_search_word'] = self.first_search_word
+        self.uiauto_params['second_search_word'] = self.second_search_word
 
     def initialize(self, context):
         super(Reader, self).initialize(context)
