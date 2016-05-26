@@ -26,8 +26,31 @@ def log_method(workload, name):
 class GoogleSlides(AndroidUiAutoBenchmark):
 
     name = 'googleslides'
+    description = '''
+    A workload to perform standard productivity tasks with Google Slides. The workload carries
+    out various tasks, such as creating a new presentation, adding text, images, and shapes,
+    as well as basic editing and playing a slideshow.
+
+    Although this workload attempts to be network independent it may require a network connection
+    to run.
+
+    Test description:
+    1. The workload is split into two main scenarios:
+       - A. a PowerPoint presentation is copied on to the devices to test slide navigation,
+       - B. a new file is created in the application and basic editing performed.
+    2. The application is started in offline access mode
+    3. For scenario A, the navigation test is performed while the file is in editing mode,
+       swiping forward to the next slide until the end, followed by the same action in the
+       reverse direction back to the first slide.
+    4. Afterwards, one more navigation pass through is done while in presentation mode.
+    5. In scenario B, a new PowerPoint presentation is created on-device, new slides added
+       with some text, an image from the gallery and a shape. Editing is done on the text
+       to change font size and resize the shape.
+    6. Finally, the file is saved to storage, and then deleted from the documents list and device
+       after a short delay.
+    '''
+
     package = 'com.google.android.apps.docs.editors.slides'
-    description = 'Creates a Google Slides presentation with some commonly used features'
     activity = ''
 
     # Views for FPS instrumentation
