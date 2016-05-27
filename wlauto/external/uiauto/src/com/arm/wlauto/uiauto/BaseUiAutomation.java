@@ -143,12 +143,6 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         return object;
     }
 
-    public void clickUiObject(UiObject uiobject, long timeout) throws Exception {
-        if (!uiobject.clickAndWaitForNewWindow(timeout)) {
-            throw new UiObjectNotFoundException(String.format("Timeout waiting for New Window"));
-        }
-    }
-
     public int getDisplayHeight () {
         return getUiDevice().getInstance().getDisplayHeight();
     }
