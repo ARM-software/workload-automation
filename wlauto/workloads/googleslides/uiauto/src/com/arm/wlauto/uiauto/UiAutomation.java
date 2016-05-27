@@ -30,9 +30,9 @@ import com.android.uiautomator.core.UiSelector;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
-import static com.arm.wlauto.uiauto.googleslides.UiAutomation.FindByCriteria.BY_ID;
-import static com.arm.wlauto.uiauto.googleslides.UiAutomation.FindByCriteria.BY_TEXT;
-import static com.arm.wlauto.uiauto.googleslides.UiAutomation.FindByCriteria.BY_DESC;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
 
 public class UiAutomation extends UxPerfUiAutomation {
 
@@ -48,10 +48,6 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final String CLASS_BUTTON = "android.widget.Button";
     public static final String CLASS_IMAGE_BUTTON = "android.widget.ImageButton";
     public static final String CLASS_TABLE_ROW = "android.widget.TableRow";
-
-    public enum FindByCriteria {
-        BY_ID, BY_TEXT, BY_DESC;
-    }
 
     public static final int DIALOG_WAIT_TIME_MS = 3000;
     public static final int SLIDE_WAIT_TIME_MS = 200;
@@ -188,7 +184,8 @@ public class UiAutomation extends UxPerfUiAutomation {
             startDumpsys(ACTIVITY_SLIDES);
             slideTimer = new Timer();
             slideTimer.start();
-            uiDeviceSwipeHorizontal(centerX + centerX/2, centerX - centerX/2, centerY);
+            uiDeviceSwipeHorizontal(centerX + centerX/2, centerX - centerX/2,
+                                    centerY, DEFAULT_SWIPE_STEPS);
             slideTimer.end();
             results.put(testTag, slideTimer);
             endDumpsys(ACTIVITY_SLIDES, testTag);
@@ -208,7 +205,8 @@ public class UiAutomation extends UxPerfUiAutomation {
             startDumpsys(ACTIVITY_SLIDES);
             slideTimer = new Timer();
             slideTimer.start();
-            uiDeviceSwipeHorizontal(centerX - centerX/2, centerX + centerX/2, centerY);
+            uiDeviceSwipeHorizontal(centerX - centerX/2, centerX + centerX/2,
+                                    centerY, DEFAULT_SWIPE_STEPS);
             slideTimer.end();
             results.put(testTag, slideTimer);
             endDumpsys(ACTIVITY_SLIDES, testTag);
@@ -234,7 +232,8 @@ public class UiAutomation extends UxPerfUiAutomation {
             startDumpsys(ACTIVITY_SLIDES);
             slideTimer = new Timer();
             slideTimer.start();
-            uiDeviceSwipeHorizontal(centerX + centerX/2, centerX - centerX/2, centerY);
+            uiDeviceSwipeHorizontal(centerX + centerX/2, centerX - centerX/2,
+                                    centerY, DEFAULT_SWIPE_STEPS);
             slideTimer.end();
             results.put(testTag, slideTimer);
             endDumpsys(ACTIVITY_SLIDES, testTag);
@@ -274,7 +273,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickView(BY_TEXT, "Droid Sans Mono");
         clickView(BY_ID, PACKAGE_ID + "palette_back_button");
         UiObject decreaseFont = getViewByDesc("Decrease text");
-        repeatClickView(decreaseFont, 20);
+        repeatClickView(decreaseFont, 20, CLICK_REPEAT_INTERVAL_MS);
         getUiDevice().pressBack();
 
         // get image from gallery and insert
@@ -385,80 +384,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         timer.end();
         results.put("delete_dialog_2", timer);
         sleep(1);
-    }
-
-    public void repeatClickView(UiObject view, int repeat) throws Exception {
-        if (repeat < 1 || !view.isClickable()) return;
-        while (repeat-- > 0) {
-            view.click();
-            SystemClock.sleep(CLICK_REPEAT_INTERVAL_MS); // in order to register as separate click
-        }
-    }
-
-    public UiObject clickView(FindByCriteria criteria, String matching) throws Exception {
-        return clickView(criteria, matching, null, false);
-    }
-
-    public UiObject clickView(FindByCriteria criteria, String matching, boolean wait) throws Exception {
-        return clickView(criteria, matching, null, wait);
-    }
-
-    public UiObject clickView(FindByCriteria criteria, String matching, String clazz) throws Exception {
-        return clickView(criteria, matching, clazz, false);
-    }
-
-    public UiObject clickView(FindByCriteria criteria, String matching, String clazz, boolean wait) throws Exception {
-        UiObject view;
-        switch (criteria) {
-            case BY_ID:
-                view =  clazz == null ? getViewById(matching) : getUiObjectByResourceId(matching, clazz);
-                break;
-            case BY_DESC:
-                view =  clazz == null ? getViewByDesc(matching) : getUiObjectByDescription(matching, clazz);
-                break;
-            case BY_TEXT:
-            default:
-                view = clazz == null ? getViewByText(matching) : getUiObjectByText(matching, clazz);
-                break;
-        }
-        if (wait) {
-            view.clickAndWaitForNewWindow();
-        } else {
-            view.click();
-        }
-        return view;
-    }
-
-    public UiObject getViewByText(String text) throws Exception {
-        UiObject object = new UiObject(new UiSelector().textContains(text));
-        if (!object.waitForExists(waitTimeout)) {
-           throw new UiObjectNotFoundException("Could not find view with text: " + text);
-        };
-        return object;
-    }
-
-    public UiObject getViewByDesc(String desc) throws Exception {
-        UiObject object = new UiObject(new UiSelector().descriptionContains(desc));
-        if (!object.waitForExists(waitTimeout)) {
-           throw new UiObjectNotFoundException("Could not find view with description: " + desc);
-        };
-        return object;
-    }
-
-    public UiObject getViewById(String id) throws Exception {
-        UiObject object = new UiObject(new UiSelector().resourceId(id));
-        if (!object.waitForExists(waitTimeout)) {
-           throw new UiObjectNotFoundException("Could not find view with resource ID: " + id);
-        };
-        return object;
-    }
-
-    public void uiDeviceSwipeHorizontal(int startX, int endX, int height) {
-        uiDeviceSwipeHorizontal(startX, endX, height, DEFAULT_SWIPE_STEPS);
-    }
-
-    public void uiDeviceSwipeHorizontal(int startX, int endX, int height, int steps) {
-        getUiDevice().swipe(startX, height, endX, height, steps);
     }
 
     public void startDumpsys(String viewName) throws Exception {

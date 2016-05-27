@@ -110,14 +110,20 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
     }
 
     public void initDumpsysSurfaceFlinger(String appPackage) {
-            String packageView = getSurfaceFlingerView(appPackage);
+        initDumpsysSurfaceFlinger(appPackage, getSurfaceFlingerView(appPackage));
+    }
+
+    public void initDumpsysSurfaceFlinger(String appPackage, String packageView) {
             List<String> command = Arrays.asList("dumpsys", "SurfaceFlinger", "--latency-clear",
                                                  packageView);
             executeCommand(command);
     }
 
     public void exitDumpsysSurfaceFlinger(String appPackage, File filename) {
-        String packageView = getSurfaceFlingerView(appPackage);
+        exitDumpsysSurfaceFlinger(appPackage, getSurfaceFlingerView(appPackage), filename);
+    }
+
+    public void exitDumpsysSurfaceFlinger(String appPackage, String packageView, File filename) {
         List<String> command = Arrays.asList("dumpsys", "SurfaceFlinger", "--latency", packageView);
         exitDumpsys(command,  filename);
     }
