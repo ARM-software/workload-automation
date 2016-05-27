@@ -54,6 +54,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public static final int DIALOG_WAIT_TIME_MS = 3000;
+    public static final int SLIDE_WAIT_TIME_MS = 200;
+    public static final int CLICK_REPEAT_INTERVAL_MS = 50;
     public static final int DEFAULT_SWIPE_STEPS = 10;
 
     public static final String NEW_DOC_FILENAME = "UX Perf Slides";
@@ -154,11 +156,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickView(BY_TEXT, "Device storage", true);
         timer.end();
         results.put("open_file_picker", timer);
-        // Allow SD card access if requested
-        UiObject permissionView = new UiObject(new UiSelector().textContains("Allow Slides"));
-        if (permissionView.waitForExists(DIALOG_WAIT_TIME_MS)) {
-            clickView(BY_TEXT, "Allow");
-        }
 
         // Scroll through document list if necessary
         UiScrollable list = new UiScrollable(new UiSelector().className("android.widget.ListView"));
@@ -171,6 +168,11 @@ public class UiAutomation extends UxPerfUiAutomation {
         results.put("open_document", timer);
         sleep(5);
 
+        // Begin Slide show test
+        // Note: A short wait-time is introduced before transition to the next slide to simulate
+        // a real user's behaviour. Otherwise the test swipes through the slides too quickly.
+        // These waits are not measured in the per-slide timings, and introduce a systematic
+        // error in the overall slideshow timings.
         int centerY = getUiDevice().getDisplayHeight() / 2;
         int centerX = getUiDevice().getDisplayWidth() / 2;
         int slideIndex = 0;
@@ -190,7 +192,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             slideTimer.end();
             results.put(testTag, slideTimer);
             endDumpsys(ACTIVITY_SLIDES, testTag);
-            sleep(1);
+            SystemClock.sleep(SLIDE_WAIT_TIME_MS);
         }
         timer.end();
         results.put("slides_forward", timer);
@@ -210,7 +212,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             slideTimer.end();
             results.put(testTag, slideTimer);
             endDumpsys(ACTIVITY_SLIDES, testTag);
-            sleep(1);
+            SystemClock.sleep(SLIDE_WAIT_TIME_MS);
         }
         timer.end();
         results.put("slides_reverse", timer);
@@ -236,7 +238,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             slideTimer.end();
             results.put(testTag, slideTimer);
             endDumpsys(ACTIVITY_SLIDES, testTag);
-            sleep(1);
+            SystemClock.sleep(SLIDE_WAIT_TIME_MS);
         }
         timer.end();
         results.put("play_slideshow", timer);
@@ -276,6 +278,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         getUiDevice().pressBack();
 
         // get image from gallery and insert
+        // To keep the test simple just select the most recent image regardless of what
+        // folder it's in. More reliable than trying to find a pushed image in the file
+        // picker, and fails gracefully in the rare case that no images exist.
         insertSlide("Title Only");
         clickView(BY_DESC, "Insert");
         clickView(BY_TEXT, "Image", true);
@@ -323,7 +328,11 @@ public class UiAutomation extends UxPerfUiAutomation {
         } catch (UiObjectNotFoundException e) {
             clickView(BY_ID, "android:id/action_mode_close_button");
         }
-        SystemClock.sleep(200);
+        // On some devices, keyboard pops up when entering text, and takes a noticeable
+        // amount of time (few milliseconds) to disappear after clicking Done.
+        // In these cases, trying to find a view immediately after entering text leads
+        // to an exception, so a short wait-time is added for stability.
+        SystemClock.sleep(SLIDE_WAIT_TIME_MS);
     }
 
     public void saveDocument(String docName) throws Exception {
@@ -332,12 +341,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickView(BY_TEXT, "SAVE");
         clickView(BY_TEXT, "Device");
         timer.end();
-        results.put("save_dialog1", timer);
-        // Allow SD card access if requested
-        UiObject permissionView = new UiObject(new UiSelector().textContains("Allow Slides"));
-        if (permissionView.waitForExists(DIALOG_WAIT_TIME_MS)) {
-            clickView(BY_TEXT, "Allow");
-        }
+        results.put("save_dialog_1", timer);
 
         timer = new Timer();
         timer.start();
@@ -346,8 +350,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         filename.setText(docName);
         clickView(BY_TEXT, "Save", CLASS_BUTTON);
         timer.end();
-        results.put("save_dialog2", timer);
+        results.put("save_dialog_2", timer);
+
         // Overwrite if prompted
+        // Should not happen under normal circumstances. But ensures test doesn't stop
+        // if a previous iteration failed prematurely and was unable to delete the file.
+        // Note that this file isn't removed during workload teardown as deleting it is
+        // part of the UiAutomator test case.
         UiObject overwriteView = new UiObject(new UiSelector().textContains("already exists"));
         if (overwriteView.waitForExists(DIALOG_WAIT_TIME_MS)) {
             clickView(BY_TEXT, "Overwrite");
@@ -362,7 +371,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         doc.longClick();
         clickView(BY_TEXT, "Remove");
         timer.end();
-        results.put("delete_dialog1", timer);
+        results.put("delete_dialog_1", timer);
 
         timer = new Timer();
         timer.start();
@@ -374,7 +383,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
         deleteButton.clickAndWaitForNewWindow();
         timer.end();
-        results.put("delete_dialog2", timer);
+        results.put("delete_dialog_2", timer);
         sleep(1);
     }
 
@@ -382,7 +391,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         if (repeat < 1 || !view.isClickable()) return;
         while (repeat-- > 0) {
             view.click();
-            SystemClock.sleep(50); // in order to register as separate click
+            SystemClock.sleep(CLICK_REPEAT_INTERVAL_MS); // in order to register as separate click
         }
     }
 
@@ -455,7 +464,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void startDumpsys(String viewName) throws Exception {
         if (!dumpsysEnabled)
             return;
-        initDumpsysSurfaceFlinger(PACKAGE, viewName);
+        initDumpsysSurfaceFlinger(PACKAGE);
         initDumpsysGfxInfo(PACKAGE);
     }
 
@@ -463,7 +472,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         if (!dumpsysEnabled)
             return;
         String dumpsysTag = TAG + "_" + testTag;
-        exitDumpsysSurfaceFlinger(PACKAGE, viewName, new File(outputDir, dumpsysTag + "_surfFlinger.log"));
+        exitDumpsysSurfaceFlinger(PACKAGE, new File(outputDir, dumpsysTag + "_surfFlinger.log"));
         exitDumpsysGfxInfo(PACKAGE, new File(outputDir, dumpsysTag + "_gfxInfo.log"));
     }
 }
