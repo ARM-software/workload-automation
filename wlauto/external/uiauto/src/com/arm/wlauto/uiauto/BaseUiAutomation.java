@@ -42,7 +42,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     public static final int CLICK_REPEAT_INTERVAL_DEFAULT = 50;
 
     /*
-     * Used by clickView() methods in order to provide a consistent API
+     * Used by clickUiObject() methods in order to provide a consistent API
      */
     public enum FindByCriteria { BY_ID, BY_TEXT, BY_DESC; }
 
@@ -294,7 +294,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         getUiDevice().swipe(startX, yCoordinate, endX, yCoordinate, steps);
     }
 
-    public void repeatClickView(UiObject view, int repeatCount, int intervalInMillis) throws Exception {
+    public void repeatClickUiObject(UiObject view, int repeatCount, int intervalInMillis) throws Exception {
         int repeatInterval = intervalInMillis > CLICK_REPEAT_INTERVAL_MINIMUM ? intervalInMillis : CLICK_REPEAT_INTERVAL_DEFAULT;
         if (repeatCount < 1 || !view.isClickable()) {
             return;
@@ -305,30 +305,30 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         }
     }
 
-    public UiObject clickView(FindByCriteria criteria, String matching) throws Exception {
-        return clickView(criteria, matching, null, false);
+    public UiObject clickUiObject(FindByCriteria criteria, String matching) throws Exception {
+        return clickUiObject(criteria, matching, null, false);
     }
 
-    public UiObject clickView(FindByCriteria criteria, String matching, boolean wait) throws Exception {
-        return clickView(criteria, matching, null, wait);
+    public UiObject clickUiObject(FindByCriteria criteria, String matching, boolean wait) throws Exception {
+        return clickUiObject(criteria, matching, null, wait);
     }
 
-    public UiObject clickView(FindByCriteria criteria, String matching, String clazz) throws Exception {
-        return clickView(criteria, matching, clazz, false);
+    public UiObject clickUiObject(FindByCriteria criteria, String matching, String clazz) throws Exception {
+        return clickUiObject(criteria, matching, clazz, false);
     }
 
-    public UiObject clickView(FindByCriteria criteria, String matching, String clazz, boolean wait) throws Exception {
+    public UiObject clickUiObject(FindByCriteria criteria, String matching, String clazz, boolean wait) throws Exception {
         UiObject view;
         switch (criteria) {
             case BY_ID:
-                view =  clazz == null ? getViewById(matching) : getUiObjectByResourceId(matching, clazz);
+                view =  clazz == null ? getUiObjectByResourceId(matching) : getUiObjectByResourceId(matching, clazz);
                 break;
             case BY_DESC:
-                view =  clazz == null ? getViewByDesc(matching) : getUiObjectByDescription(matching, clazz);
+                view =  clazz == null ? getUiObjectByDescription(matching) : getUiObjectByDescription(matching, clazz);
                 break;
             case BY_TEXT:
             default:
-                view = clazz == null ? getViewByText(matching) : getUiObjectByText(matching, clazz);
+                view = clazz == null ? getUiObjectByText(matching) : getUiObjectByText(matching, clazz);
                 break;
         }
         if (wait) {
@@ -339,7 +339,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         return view;
     }
 
-    public UiObject getViewByText(String text) throws Exception {
+    public UiObject getUiObjectByText(String text) throws Exception {
         UiObject object = new UiObject(new UiSelector().textContains(text));
         if (!object.waitForExists(waitTimeout)) {
            throw new UiObjectNotFoundException("Could not find view with text: " + text);
@@ -347,7 +347,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         return object;
     }
 
-    public UiObject getViewByDesc(String desc) throws Exception {
+    public UiObject getUiObjectByDescription(String desc) throws Exception {
         UiObject object = new UiObject(new UiSelector().descriptionContains(desc));
         if (!object.waitForExists(waitTimeout)) {
            throw new UiObjectNotFoundException("Could not find view with description: " + desc);
@@ -355,7 +355,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         return object;
     }
 
-    public UiObject getViewById(String id) throws Exception {
+    public UiObject getUiObjectByResourceId(String id) throws Exception {
         UiObject object = new UiObject(new UiSelector().resourceId(id));
         if (!object.waitForExists(waitTimeout)) {
            throw new UiObjectNotFoundException("Could not find view with resource ID: " + id);

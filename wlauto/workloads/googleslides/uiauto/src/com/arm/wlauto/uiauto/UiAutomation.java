@@ -100,7 +100,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     protected void skipWelcomeScreen() throws Exception {
         timer = new Timer();
         timer.start();
-        clickView(BY_TEXT, "Skip", true);
+        clickUiObject(BY_TEXT, "Skip", true);
         timer.end();
         results.put("skip_welcome", timer);
         sleep(1);
@@ -110,7 +110,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         startDumpsys(ACTIVITY_DOCLIST);
         timer = new Timer();
         timer.start();
-        clickView(BY_DESC, "drawer");
+        clickUiObject(BY_DESC, "drawer");
         getUiDevice().pressBack();
         timer.end();
         results.put("open_drawer", timer);
@@ -122,9 +122,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         startDumpsys(ACTIVITY_SETTINGS);
         timer = new Timer();
         timer.start();
-        clickView(BY_DESC, "drawer");
-        clickView(BY_TEXT, "Settings", true);
-        clickView(BY_TEXT, "Create PowerPoint");
+        clickUiObject(BY_DESC, "drawer");
+        clickUiObject(BY_TEXT, "Settings", true);
+        clickUiObject(BY_TEXT, "Create PowerPoint");
         getUiDevice().pressBack();
         timer.end();
         results.put("enable_ppt_compat", timer);
@@ -148,8 +148,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Open document
         timer = new Timer();
         timer.start();
-        clickView(BY_DESC, "Open presentation");
-        clickView(BY_TEXT, "Device storage", true);
+        clickUiObject(BY_DESC, "Open presentation");
+        clickUiObject(BY_TEXT, "Device storage", true);
         timer.end();
         results.put("open_file_picker", timer);
 
@@ -158,8 +158,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         list.scrollIntoView(new UiSelector().textContains(docName));
         timer = new Timer();
         timer.start();
-        clickView(BY_TEXT, docName);
-        clickView(BY_TEXT, "Open", CLASS_BUTTON, true);
+        clickUiObject(BY_TEXT, docName);
+        clickUiObject(BY_TEXT, "Open", CLASS_BUTTON, true);
         timer.end();
         results.put("open_document", timer);
         sleep(5);
@@ -220,7 +220,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         // scroll forward in slideshow mode
         timer = new Timer();
         timer.start();
-        clickView(BY_DESC, "Start slideshow", true);
+        clickUiObject(BY_DESC, "Start slideshow", true);
         timer.end();
         results.put("open_slideshow", timer);
 
@@ -253,8 +253,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         // create new file
         timer = new Timer();
         timer.start();
-        clickView(BY_DESC, "New presentation");
-        clickView(BY_TEXT, "New PowerPoint", true);
+        clickUiObject(BY_DESC, "New presentation");
+        clickUiObject(BY_TEXT, "New PowerPoint", true);
         timer.end();
         results.put("create_document", timer);
         endDumpsys(ACTIVITY_DOCLIST, "create_document");
@@ -267,13 +267,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         insertSlide("Title and Content");
         enterTextInSlide("title", "Extensions - Workloads");
         enterTextInSlide("Text placeholder", SLIDE_TEXT_CONTENT);
-        clickView(BY_DESC, "Text placeholder");
-        clickView(BY_DESC, "Format");
-        clickView(BY_TEXT, "Droid Sans");
-        clickView(BY_TEXT, "Droid Sans Mono");
-        clickView(BY_ID, PACKAGE_ID + "palette_back_button");
-        UiObject decreaseFont = getViewByDesc("Decrease text");
-        repeatClickView(decreaseFont, 20, CLICK_REPEAT_INTERVAL_MS);
+        clickUiObject(BY_DESC, "Text placeholder");
+        clickUiObject(BY_DESC, "Format");
+        clickUiObject(BY_TEXT, "Droid Sans");
+        clickUiObject(BY_TEXT, "Droid Sans Mono");
+        clickUiObject(BY_ID, PACKAGE_ID + "palette_back_button");
+        UiObject decreaseFont = getUiObjectByDescription("Decrease text");
+        repeatClickUiObject(decreaseFont, 20, CLICK_REPEAT_INTERVAL_MS);
         getUiDevice().pressBack();
 
         // get image from gallery and insert
@@ -281,26 +281,26 @@ public class UiAutomation extends UxPerfUiAutomation {
         // folder it's in. More reliable than trying to find a pushed image in the file
         // picker, and fails gracefully in the rare case that no images exist.
         insertSlide("Title Only");
-        clickView(BY_DESC, "Insert");
-        clickView(BY_TEXT, "Image", true);
-        clickView(BY_TEXT, "Recent");
+        clickUiObject(BY_DESC, "Insert");
+        clickUiObject(BY_TEXT, "Image", true);
+        clickUiObject(BY_TEXT, "Recent");
         try {
             UiObject image = new UiObject(new UiSelector().resourceId("com.android.documentsui:id/date").instance(2));
             image.clickAndWaitForNewWindow();
         } catch (UiObjectNotFoundException e) {
-            clickView(BY_ID, "com.android.documentsui:id/date", true);
+            clickUiObject(BY_ID, "com.android.documentsui:id/date", true);
         }
 
         // last slide
         insertSlide("Title Slide");
         // insert "?" shape
-        clickView(BY_DESC, "Insert");
-        clickView(BY_TEXT, "Shape");
-        clickView(BY_TEXT, "Buttons");
-        clickView(BY_DESC, "actionButtonHelp");
-        UiObject resize = getViewByDesc("Bottom-left resize");
-        UiObject shape = getViewByDesc("actionButtonHelp");
-        UiObject subtitle = getViewByDesc("subTitle");
+        clickUiObject(BY_DESC, "Insert");
+        clickUiObject(BY_TEXT, "Shape");
+        clickUiObject(BY_TEXT, "Buttons");
+        clickUiObject(BY_DESC, "actionButtonHelp");
+        UiObject resize = getUiObjectByDescription("Bottom-left resize");
+        UiObject shape = getUiObjectByDescription("actionButtonHelp");
+        UiObject subtitle = getUiObjectByDescription("subTitle");
         resize.dragTo(subtitle, 40);
         shape.dragTo(subtitle, 40);
         enterTextInSlide("title", "THE END. QUESTIONS?");
@@ -312,20 +312,20 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void insertSlide(String slideLayout) throws Exception {
         sleep(1); // a bit of time to see previous slide
-        UiObject view = getViewByDesc("Insert slide");
+        UiObject view = getUiObjectByDescription("Insert slide");
         view.clickAndWaitForNewWindow();
-        view = getViewByText(slideLayout);
+        view = getUiObjectByText(slideLayout);
         view.clickAndWaitForNewWindow();
     }
 
     public void enterTextInSlide(String viewName, String textToEnter) throws Exception {
-        UiObject view = getViewByDesc(viewName);
+        UiObject view = getUiObjectByDescription(viewName);
         view.click();
         view.setText(textToEnter);
         try {
-            clickView(BY_DESC, "Done");
+            clickUiObject(BY_DESC, "Done");
         } catch (UiObjectNotFoundException e) {
-            clickView(BY_ID, "android:id/action_mode_close_button");
+            clickUiObject(BY_ID, "android:id/action_mode_close_button");
         }
         // On some devices, keyboard pops up when entering text, and takes a noticeable
         // amount of time (few milliseconds) to disappear after clicking Done.
@@ -337,17 +337,17 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void saveDocument(String docName) throws Exception {
         timer = new Timer();
         timer.start();
-        clickView(BY_TEXT, "SAVE");
-        clickView(BY_TEXT, "Device");
+        clickUiObject(BY_TEXT, "SAVE");
+        clickUiObject(BY_TEXT, "Device");
         timer.end();
         results.put("save_dialog_1", timer);
 
         timer = new Timer();
         timer.start();
-        UiObject filename = getViewById(PACKAGE_ID + "file_name_edit_text");
+        UiObject filename = getUiObjectByResourceId(PACKAGE_ID + "file_name_edit_text");
         filename.clearTextField();
         filename.setText(docName);
-        clickView(BY_TEXT, "Save", CLASS_BUTTON);
+        clickUiObject(BY_TEXT, "Save", CLASS_BUTTON);
         timer.end();
         results.put("save_dialog_2", timer);
 
@@ -358,7 +358,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         // part of the UiAutomator test case.
         UiObject overwriteView = new UiObject(new UiSelector().textContains("already exists"));
         if (overwriteView.waitForExists(DIALOG_WAIT_TIME_MS)) {
-            clickView(BY_TEXT, "Overwrite");
+            clickUiObject(BY_TEXT, "Overwrite");
         }
         sleep(1);
     }
@@ -366,9 +366,9 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void deleteDocument(String docName) throws Exception {
         timer = new Timer();
         timer.start();
-        UiObject doc = getViewByText(docName);
+        UiObject doc = getUiObjectByText(docName);
         doc.longClick();
-        clickView(BY_TEXT, "Remove");
+        clickUiObject(BY_TEXT, "Remove");
         timer.end();
         results.put("delete_dialog_1", timer);
 
