@@ -165,7 +165,9 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         String description = video ? "Video call" : "Call options";
         UiObject callButton = new UiObject(new UiSelector().descriptionContains(description));
-        callButton.click();
+        callButton.clickAndWaitForNewWindow();
+        UiObject muteButton = new UiObject(new UiSelector().descriptionContains("Mute"));
+        muteButton.click();
         sleep(duration);
 
         if (video && dumpsysEnabled) {
