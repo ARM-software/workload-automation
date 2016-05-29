@@ -24,68 +24,58 @@ import java.util.Map.Entry;
 
 public class UiAutomation extends UxPerfUiAutomation {
 
-    public static String TAG = "uxperf_youtube";
+    public static final String TAG = "youtube";
+    public static final int WAIT_FOR_EXISTS_TIMEOUT = 1000;
 
-    private Bundle parameters;
-    private long networkTimeout =  TimeUnit.SECONDS.toMillis(20);
-    private LinkedHashMap<String, Timer> timingResults = new LinkedHashMap<String, Timer>();
+    protected long networkTimeout =  TimeUnit.SECONDS.toMillis(20);
+    protected String[] streamQuality = {
+        "Auto", "144p", "240p", "360p", "480p", "720p", "1080p"
+    };
 
-    private String [] streamQuality = {"Auto", "144p", "240p", "360p", "480p", "720p", "1080p"};
+    protected LinkedHashMap<String, Timer> results = new LinkedHashMap<String, Timer>();
+    protected Bundle parameters;
+    protected boolean dumpsysEnabled;
+    protected String outputDir;
+    protected String packageID;
 
     public void runUiAutomation() throws Exception {
         parameters = getParams();
-
-        Timer result = new Timer();
-        result.start();
-
+        packageID = parameters.getString("package") + ":id/";
         clearFirstRunDialogues();
         selectFirstVideo();
         seekForward();
         // changeQuality(streamQuality[1]);
         makeFullscreen();
-
-        result.end();
-        timingResults.put("Total", result);
-
-        writeResultsToFile(timingResults, parameters.getString("output_file"));
+        if (false) {
+            writeResultsToFile(results, parameters.getString("output_file"));
+        }
     }
 
     public void clearFirstRunDialogues() throws Exception {
-        UiObject laterButton = getUiObjectByResourceId("com.google.android.youtube:id/later_button",
-                                                     "android.widget.TextView");
-        if (laterButton.exists()) {
-           clickUiObject(laterButton, timeout);
+        UiObject laterButton = getUiObjectByResourceId(packageID + "later_button",
+                                                       "android.widget.TextView");
+        if (laterButton.waitForExists(WAIT_FOR_EXISTS_TIMEOUT)) {
+           laterButton.click();
         }
-
-        UiObject skipButton = new UiObject (new UiSelector().textContains("Skip")
-                                                             .className("android.widget.TextView"));
-        if (skipButton.exists()) {
-          clickUiObject(skipButton, timeout);
+        UiObject skipButton = getUiObjectByText("Skip", "android.widget.TextView");
+        if (skipButton.waitForExists(WAIT_FOR_EXISTS_TIMEOUT)) {
+            skipButton.click();
         }
-
-        UiObject gotItButton = new UiObject (new UiSelector().textContains("Got it")
-                                                             .className("android.widget.Button"));
-        gotItButton.waitForExists(timeout);
-        if (gotItButton.exists()) {
+        UiObject gotItButton = getUiObjectByText("Got it", "android.widget.Button");
+        if (gotItButton.waitForExists(WAIT_FOR_EXISTS_TIMEOUT)) {
             gotItButton.click();
         }
-
     }
 
-
     public void selectFirstVideo() throws Exception {
-
-        UiObject navigateUpButton = new UiObject (new UiSelector().descriptionContains("Navigate up")
-                                                                  .className("android.widget.ImageButton"));
-        UiObject myAccount = new UiObject (new UiSelector().descriptionContains("Account")
-                                                            .className("android.widget.Button"));
-
+        UiObject navigateUpButton = getUiObjectByDescription("Navigate up", "android.widget.ImageButton");
+        UiObject myAccount = getUiObjectByDescription("Account", "android.widget.Button");
         if (navigateUpButton.exists()) {
             navigateUpButton.click();
             UiObject uploads = getUiObjectByText("Uploads", "android.widget.TextView");
             waitObject(uploads, 4);
             uploads.click();
-            UiObject firstEntry = new UiObject (new UiSelector().resourceId("com.google.android.youtube:id/paged_list")
+            UiObject firstEntry = new UiObject(new UiSelector().resourceId(packageID + "paged_list")
                                                                 .className("android.widget.ListView")
                                                                 .childSelector(new UiSelector()
                                                                 .index(0).className("android.widget.LinearLayout")));
@@ -97,20 +87,17 @@ public class UiAutomation extends UxPerfUiAutomation {
             UiObject myVideos = getUiObjectByText("My videos", "android.widget.TextView");
             waitObject(myVideos, 4);
             myVideos.click();
-            UiObject firstEntry = new UiObject (new UiSelector().resourceId("com.google.android.youtube:id/compact_video_item")
-                                                                .className("android.widget.LinearLayout"));
+            UiObject firstEntry = getUiObjectByResourceId(packageID + "compact_video_item", "android.widget.LinearLayout");
             waitObject(firstEntry, 4);
             firstEntry.click();
         }
-
         sleep(4);
     }
 
     public void makeFullscreen() throws Exception {
-        UiObject fullscreenButton = getUiObjectByResourceId("com.google.android.youtube:id/fullscreen_button",
+        UiObject fullscreenButton = getUiObjectByResourceId(packageID + "fullscreen_button",
                                                             "android.widget.ImageView");
-        UiObject viewGroup =  new UiObject (new UiSelector().resourceId("com.google.android.youtube:id/player_fragment")
-                                                            .className("android.widget.FrameLayout"));
+        UiObject viewGroup =  getUiObjectByResourceId(packageID + "player_fragment", "android.widget.FrameLayout");
         viewGroup.click();
         waitObject(fullscreenButton, 4);
         fullscreenButton.click();
@@ -118,10 +105,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void seekForward() throws Exception {
-        UiObject timebar = new UiObject (new UiSelector().resourceId("com.google.android.youtube:id/time_bar")
-                                                         .className("android.view.View"));
-        UiObject viewGroup =  new UiObject (new UiSelector().resourceId("com.google.android.youtube:id/player_fragment")
-                                                            .className("android.widget.FrameLayout"));
+        UiObject timebar = getUiObjectByResourceId(packageID + "time_bar", "android.view.View");
+        UiObject viewGroup =  getUiObjectByResourceId(packageID + "player_fragment", "android.widget.FrameLayout");
         viewGroup.click();
         waitObject(timebar, 4);
         timebar.click();
@@ -131,22 +116,15 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void changeQuality(String quality) throws Exception {
-        UiObject viewGroup =  new UiObject (new UiSelector().resourceId("com.google.android.youtube:id/player_fragment")
-                                                     .className("android.widget.FrameLayout"));
+        UiObject viewGroup =  getUiObjectByResourceId(packageID + "player_fragment", "android.widget.FrameLayout");
         viewGroup.click();
+        UiObject moreOptions =  getUiObjectByResourceId(packageID + "player_overflow_button", "android.widget.ImageView");
+        UiObject miniPlayerViewGroup =  getUiObjectByResourceId(packageID + "watch_player", "android.view.ViewGroup");
+        UiObject miniPlayerViewLayout =  getUiObjectByResourceId(packageID + "watch_player", "android.widget.FrameLayout");
 
-        UiObject moreOptions =  new UiObject (new UiSelector().resourceId("com.google.android.youtube:id/player_overflow_button")
-                                                     .className("android.widget.ImageView"));
+        // UiObject qualityButton =  getUiObjectByResourceId(packageID + "quality_button_text", "android.widget.TextView");
 
-        UiObject miniPlayerViewGroup =  new UiObject (new UiSelector().resourceId("com.google.android.youtube:id/watch_player")
-                                                    .className("android.view.ViewGroup"));
-        UiObject miniPlayerViewLayout =  new UiObject (new UiSelector().resourceId("com.google.android.youtube:id/watch_player")
-                                                     .className("android.widget.FrameLayout"));
-
-        // UiObject qualityButton =  new UiObject (new UiSelector().resourceId("com.google.android.youtube:id/quality_button_text")
-        //                                              .className("android.widget.TextView"));
-
-        // UiObject qualityButton =  new UiObject (new UiSelector().resourceId("com.google.android.youtube:id/watch_player")
+        // UiObject qualityButton =  new UiObject(new UiSelector().resourceId(packageID + "watch_player")
         //                                              .className("android.view.ViewGroup")
         //                                                 .childSelector(new UiSelector()
         //                                                 .index(1).className("android.widget.FrameLayout")
@@ -159,40 +137,28 @@ public class UiAutomation extends UxPerfUiAutomation {
         //                                                 .childSelector(new UiSelector()
         //                                                 .index(1).className("android.widget.ImageView")))))));
 
-
-        UiObject qualityButton =  new UiObject (new UiSelector().descriptionContains("Show video quality menu"));
-
-
-        UiObject qualitySetting =  new UiObject (new UiSelector().resourceId(quality)
-                                                     .className("android.widget.CheckedTextView"));
-
+        UiObject qualityButton =  new UiObject(new UiSelector().descriptionContains("Show video quality menu"));
+        UiObject qualitySetting =  getUiObjectByResourceId(quality, "android.widget.CheckedTextView");
         Log.v(TAG, String.format("MADE IT HERE"));
-
         waitObject(moreOptions, 4);
         moreOptions.click();
-
 
         if (miniPlayerViewGroup.exists()) {
             // MATE 8
             // miniPlayerViewGroup.click();
             UiObject frameLayout =  miniPlayerViewGroup.getChild(new UiSelector()
                                                             .index(1).className("android.widget.FrameLayout")
-                                                            .childSelector(new UiSelector()
-                                                            ));
+                                                            .childSelector(new UiSelector()));
         } else {
             // ZENFONE
-
             if (qualityButton.exists()) {
                 qualityButton.click();
             }
-
             UiObject frameLayout =  miniPlayerViewLayout.getChild(new UiSelector()
                                                             .index(1).className("android.widget.FrameLayout")
-                                                            .childSelector(new UiSelector()
-                                                            ));
+                                                            .childSelector(new UiSelector()));
             int count = frameLayout.getChildCount();
             Log.v(TAG, String.format("ChildCount: %s", count));
-
             for (int i = 0; i < count ; i++) {
                 String className = frameLayout.getChild(new UiSelector().index(i)).getClassName();
                 String description = frameLayout.getChild(new UiSelector().index(i)).getContentDescription();
@@ -200,12 +166,10 @@ public class UiAutomation extends UxPerfUiAutomation {
             }
             throw new UiObjectNotFoundException(String.format("child count: %s", count));
         }
-
         // waitObject(qualityButton, 4);
         // qualityButton.click();
         // waitObject(qualitySetting, 4);
         // qualitySetting.click();
-
         // seekForward();
     }
 
