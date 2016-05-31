@@ -28,3 +28,4 @@ pmu_logger.mod.c
 obj/
 libs/armeabi
 wlauto/workloads/*/uiauto/bin/
+wlauto/external/uiauto/bin/

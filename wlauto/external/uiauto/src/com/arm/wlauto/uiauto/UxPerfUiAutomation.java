@@ -51,7 +51,7 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
     public enum GestureType { UIDEVICE_SWIPE, UIOBJECT_SWIPE, PINCH };
     public enum PinchType { IN, OUT, NULL };
 
-    public class Timer {
+    public static class Timer {
         private long startTime = 0;
         private long endTime = 0;
         private long duration = 0;
@@ -110,14 +110,20 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
     }
 
     public void initDumpsysSurfaceFlinger(String appPackage) {
-            String packageView = getSurfaceFlingerView(appPackage);
+        initDumpsysSurfaceFlinger(appPackage, getSurfaceFlingerView(appPackage));
+    }
+
+    public void initDumpsysSurfaceFlinger(String appPackage, String packageView) {
             List<String> command = Arrays.asList("dumpsys", "SurfaceFlinger", "--latency-clear",
                                                  packageView);
             executeCommand(command);
     }
 
     public void exitDumpsysSurfaceFlinger(String appPackage, File filename) {
-        String packageView = getSurfaceFlingerView(appPackage);
+        exitDumpsysSurfaceFlinger(appPackage, getSurfaceFlingerView(appPackage), filename);
+    }
+
+    public void exitDumpsysSurfaceFlinger(String appPackage, String packageView, File filename) {
         List<String> command = Arrays.asList("dumpsys", "SurfaceFlinger", "--latency", packageView);
         exitDumpsys(command,  filename);
     }
@@ -295,7 +301,7 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
         return results;
     }
 
-    public class GestureTestParams {
+    public static class GestureTestParams {
         public GestureType gestureType;
         public Direction gestureDirection;
         public PinchType pinchType;
