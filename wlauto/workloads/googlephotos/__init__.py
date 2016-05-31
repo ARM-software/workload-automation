@@ -121,11 +121,20 @@ class Googlephotos(AndroidUiAutoBenchmark):
     def teardown(self, context):
         super(Googlephotos, self).teardown(context)
 
+        regex = re.compile(r'^\w+~\d+\.jpg$')
+
         for entry in self.device.listdir(self.device.working_directory):
+            match = regex.search(entry)
             if entry.endswith(".log"):
                 self.device.pull_file(os.path.join(self.device.working_directory, entry),
                                       context.output_directory)
                 self.device.delete_file(os.path.join(self.device.working_directory, entry))
+
+            # Clean up edited files on each iteration
+            if match:
+                self.device.delete_file(os.path.join(self.device.working_directory, entry))
+
+        self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
 
     def finalize(self, context):
         super(Googlephotos, self).finalize(context)

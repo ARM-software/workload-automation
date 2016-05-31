@@ -18,6 +18,7 @@ package com.arm.wlauto.uiauto.skype;
 import java.io.File;
 import java.util.TreeMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -48,7 +49,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void runUiAutomation() throws Exception {
         // Override superclass value
-        this.waitTimeout = 10000;
+        this.waitTimeout = TimeUnit.SECONDS.toMillis(10);
 
         // Get Params
         Bundle parameters = getParams();
@@ -132,6 +133,7 @@ public class UiAutomation extends UxPerfUiAutomation {
                                          .childSelector(new UiSelector()
                                          .index(0)
                                          .clickable(true)));
+        peopleItem.waitForExists(timeout);
         peopleItem.click();
         UiObject confirm =
             getUiObjectByResourceId("com.skype.raider:id/fab", "android.widget.ImageView");

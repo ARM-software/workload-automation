@@ -28,6 +28,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         confirmAccess();
         googlephotos.dismissWelcomeView();
+        googlephotos.selectWorkingGallery();
 
         // select the first photo
         googlephotos.tagPhoto(0);
@@ -90,6 +91,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         shareUsingApp("Skype");
         skype.handleLoginScreen(loginName, loginPass);
         confirmAccess();
+
+        sleep(10); // Pause while the app settles before returning
     }
 
     private void sendToSkype() throws Exception {
