@@ -321,19 +321,24 @@ class ReventWorkload(Workload):
             super(ReventWorkload, self).__init__(device, **kwargs)
         devpath = self.device.path
         self.on_device_revent_binary = devpath.join(self.device.binaries_directory, 'revent')
-        self.on_device_setup_revent = devpath.join(self.device.working_directory, '{}.setup.revent'.format(self.device.name))
-        self.on_device_run_revent = devpath.join(self.device.working_directory, '{}.run.revent'.format(self.device.name))
         self.setup_timeout = kwargs.get('setup_timeout', self.default_setup_timeout)
         self.run_timeout = kwargs.get('run_timeout', self.default_run_timeout)
         self.revent_setup_file = None
         self.revent_run_file = None
+        self.on_device_setup_revent = None
+        self.on_device_run_revent = None
 
-    def init_resources(self, context):
+    def initialize(self, context):
         self.revent_setup_file = context.resolver.get(wlauto.common.android.resources.ReventFile(self, 'setup'))
         self.revent_run_file = context.resolver.get(wlauto.common.android.resources.ReventFile(self, 'run'))
+        devpath = self.device.path
+        self.on_device_setup_revent = devpath.join(self.device.working_directory,
+                                                   os.path.split(self.revent_setup_file)[-1])
+        self.on_device_run_revent = devpath.join(self.device.working_directory,
+                                                 os.path.split(self.revent_run_file)[-1])
+        self._check_revent_files(context)
 
     def setup(self, context):
-        self._check_revent_files(context)
         self.device.killall('revent')
         command = '{} replay {}'.format(self.on_device_revent_binary, self.on_device_setup_revent)
         self.device.execute(command, timeout=self.setup_timeout)

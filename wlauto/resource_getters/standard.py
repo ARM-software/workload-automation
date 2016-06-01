@@ -86,11 +86,16 @@ class ReventGetter(ResourceGetter):
         self.resolver.register(self, 'revent', GetterPriority.package)
 
     def get(self, resource, **kwargs):
-        filename = '.'.join([resource.owner.device.name, resource.stage, 'revent']).lower()
-        location = _d(os.path.join(self.get_base_location(resource), 'revent_files'))
-        for candidate in os.listdir(location):
-            if candidate.lower() == filename.lower():
-                return os.path.join(location, candidate)
+        device_model = resource.owner.device.get_device_model()
+        wa_device_name = resource.owner.device.name
+        for name in [device_model, wa_device_name]:
+            if not name:
+                continue
+            filename = '.'.join([name, resource.stage, 'revent']).lower()
+            location = _d(os.path.join(self.get_base_location(resource), 'revent_files'))
+            for candidate in os.listdir(location):
+                if candidate.lower() == filename.lower():
+                    return os.path.join(location, candidate)
 
 
 class PackageApkGetter(PackageFileGetter):
@@ -368,6 +373,7 @@ class HttpGetter(ResourceGetter):
         return requests.get(url, auth=auth, stream=stream)
 
     def resolve_resource(self, resource):
+        # pylint: disable=too-many-branches
         assets = self.index.get(resource.owner.name, {})
         if not assets:
             return {}
@@ -380,11 +386,16 @@ class HttpGetter(ResourceGetter):
                     if a['path'] == found:
                         return a
         elif resource.name == 'revent':
-            filename = '.'.join([resource.owner.device.name, resource.stage, 'revent']).lower()
-            for asset in assets:
-                pathname = os.path.basename(asset['path']).lower()
-                if pathname == filename:
-                    return asset
+            device_model = resource.owner.device.get_device_model()
+            wa_device_name = resource.owner.device.name
+            for name in [device_model, wa_device_name]:
+                if not name:
+                    continue
+                filename = '.'.join([name, resource.stage, 'revent']).lower()
+                for asset in assets:
+                    pathname = os.path.basename(asset['path']).lower()
+                    if pathname == filename:
+                        return asset
         else:  # file
             for asset in assets:
                 if asset['path'].lower() == resource.path.lower():
@@ -446,6 +457,7 @@ class RemoteFilerGetter(ResourceGetter):
         return local_full_path
 
     def get_from(self, resource, version, location):  # pylint: disable=no-self-use
+        # pylint: disable=too-many-branches
         if resource.name in ['apk', 'jar']:
             return get_from_location_by_extension(resource, location, resource.name, version)
         elif resource.name == 'file':
@@ -453,19 +465,24 @@ class RemoteFilerGetter(ResourceGetter):
             if os.path.exists(filepath):
                 return filepath
         elif resource.name == 'revent':
-            filename = '.'.join([resource.owner.device.name, resource.stage, 'revent']).lower()
-            alternate_location = os.path.join(location, 'revent_files')
-            # There tends to be some confusion as to where revent files should
-            # be placed. This looks both in the extension's directory, and in
-            # 'revent_files' subdirectory under it, if it exists.
-            if os.path.isdir(alternate_location):
-                for candidate in os.listdir(alternate_location):
-                    if candidate.lower() == filename.lower():
-                        return os.path.join(alternate_location, candidate)
-            if os.path.isdir(location):
-                for candidate in os.listdir(location):
-                    if candidate.lower() == filename.lower():
-                        return os.path.join(location, candidate)
+            device_model = resource.owner.device.get_device_model()
+            wa_device_name = resource.owner.device.name
+            for name in [device_model, wa_device_name]:
+                if not name:
+                    continue
+                filename = '.'.join([name, resource.stage, 'revent']).lower()
+                alternate_location = os.path.join(location, 'revent_files')
+                # There tends to be some confusion as to where revent files should
+                # be placed. This looks both in the extension's directory, and in
+                # 'revent_files' subdirectory under it, if it exists.
+                if os.path.isdir(alternate_location):
+                    for candidate in os.listdir(alternate_location):
+                        if candidate.lower() == filename.lower():
+                            return os.path.join(alternate_location, candidate)
+                if os.path.isdir(location):
+                    for candidate in os.listdir(location):
+                        if candidate.lower() == filename.lower():
+                            return os.path.join(location, candidate)
         else:
             raise ValueError('Unexpected resource type: {}'.format(resource.name))
 
