@@ -393,7 +393,7 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
         signal_string = '-s {}'.format(signal) if signal else ''
         self.execute('kill {} {}'.format(signal_string, pid), as_root=as_root)
 
-    def killall(self, process_name, signal=None, as_root=False):  # pylint: disable=W0221
+    def killall(self, process_name, signal=None, as_root=None):  # pylint: disable=W0221
         """
         Kill all processes with the specified name.
 
@@ -404,6 +404,8 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
         Modified in version 2.1.5: added ``as_root`` parameter.
 
         """
+        if as_root is None:
+            as_root = self.is_rooted
         for pid in self.get_pids_of(process_name):
             self.kill(pid, signal=signal, as_root=as_root)
 
@@ -734,13 +736,15 @@ class LinuxDevice(BaseLinuxDevice):
         except CalledProcessError as e:
             raise DeviceError(e)
 
-    def kick_off(self, command, as_root=False):
+    def kick_off(self, command, as_root=None):
         """
-        Like execute but closes adb session and returns immediately, leaving the command running on the
-        device (this is different from execute(background=True) which keeps adb connection open and returns
+        Like execute but closes ssh session and returns immediately, leaving the command running on the
+        device (this is different from execute(background=True) which keeps ssh connection open and returns
         a subprocess object).
 
         """
+        if as_root is None:
+            as_root = self.is_rooted
         self._check_ready()
         command = 'sh -c "{}" 1>/dev/null 2>/dev/null &'.format(escape_double_quotes(command))
         return self.shell.execute(command, as_root=as_root)
