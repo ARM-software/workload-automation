@@ -685,15 +685,6 @@ class LinuxDevice(BaseLinuxDevice):
 
     # Execution
 
-    def has_root(self):
-        try:
-            self.execute('ls /', as_root=True)
-            return True
-        except DeviceError as e:
-            if 'not in the sudoers file' not in e.message:
-                raise e
-            return False
-
     def execute(self, command, timeout=default_timeout, check_exit_code=True, background=False,
                 as_root=False, strip_colors=True, **kwargs):
         """
