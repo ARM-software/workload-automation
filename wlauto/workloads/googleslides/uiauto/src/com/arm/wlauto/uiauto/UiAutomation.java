@@ -104,6 +104,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         timer.end();
         results.put("skip_welcome", timer);
         sleep(1);
+        dismissWorkOfflineBanner(); // if it appears on the homescreen
     }
 
     protected void openAndCloseDrawer() throws Exception {
@@ -307,6 +308,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         sleep(1);
         getUiDevice().pressBack();
+        dismissWorkOfflineBanner(); // if it appears on the homescreen
         deleteDocument(docName);
     }
 
@@ -384,6 +386,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         timer.end();
         results.put("delete_dialog_2", timer);
         sleep(1);
+    }
+
+    public void dismissWorkOfflineBanner() throws Exception {
+        UiObject banner = new UiObject(new UiSelector().textContains("Work offline"));
+        if (banner.waitForExists(1000)) {
+            clickUiObject(BY_TEXT, "Got it", CLASS_BUTTON);
+        }
     }
 
     public void startDumpsys(String viewName) throws Exception {
