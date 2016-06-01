@@ -26,6 +26,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public static final String TAG = "youtube";
     public static final int WAIT_FOR_EXISTS_TIMEOUT = 1000;
+    public static final int WAIT_OBJECT_TIMEOUT = 4; // in seconds
 
     protected long networkTimeout =  TimeUnit.SECONDS.toMillis(20);
     protected String[] streamQuality = {
@@ -52,43 +53,47 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void clearFirstRunDialogues() throws Exception {
-        UiObject laterButton = getUiObjectByResourceId(packageID + "later_button",
-                                                       "android.widget.TextView");
+        UiObject laterButton = new UiObject(new UiSelector().textContains("Later").className("android.widget.TextView"));
         if (laterButton.waitForExists(WAIT_FOR_EXISTS_TIMEOUT)) {
            laterButton.click();
         }
-        UiObject skipButton = getUiObjectByText("Skip", "android.widget.TextView");
+        UiObject cancelButton = new UiObject(new UiSelector().textContains("Cancel").className("android.widget.Button"));
+        if (cancelButton.waitForExists(WAIT_FOR_EXISTS_TIMEOUT)) {
+            cancelButton.click();
+        }
+        UiObject skipButton = new UiObject(new UiSelector().textContains("Skip").className("android.widget.TextView"));
         if (skipButton.waitForExists(WAIT_FOR_EXISTS_TIMEOUT)) {
             skipButton.click();
         }
-        UiObject gotItButton = getUiObjectByText("Got it", "android.widget.Button");
+        UiObject gotItButton = new UiObject(new UiSelector().textContains("Got it").className("android.widget.Button"));
         if (gotItButton.waitForExists(WAIT_FOR_EXISTS_TIMEOUT)) {
             gotItButton.click();
         }
     }
 
     public void selectFirstVideo() throws Exception {
-        UiObject navigateUpButton = getUiObjectByDescription("Navigate up", "android.widget.ImageButton");
-        UiObject myAccount = getUiObjectByDescription("Account", "android.widget.Button");
+        UiObject navigateUpButton = new UiObject(new UiSelector().descriptionMatches("Navigate|navigation")
+                                                                 .className("android.widget.ImageButton"));
+        UiObject myAccount = getUiObjectByDescription("Account");
         if (navigateUpButton.exists()) {
             navigateUpButton.click();
             UiObject uploads = getUiObjectByText("Uploads", "android.widget.TextView");
-            waitObject(uploads, 4);
+            waitObject(uploads, WAIT_OBJECT_TIMEOUT);
             uploads.click();
             UiObject firstEntry = new UiObject(new UiSelector().resourceId(packageID + "paged_list")
                                                                 .className("android.widget.ListView")
                                                                 .childSelector(new UiSelector()
                                                                 .index(0).className("android.widget.LinearLayout")));
-            waitObject(firstEntry, 4);
+            waitObject(firstEntry, WAIT_OBJECT_TIMEOUT);
             firstEntry.click();
         } else {
-            waitObject(myAccount, 4);
+            waitObject(myAccount, WAIT_OBJECT_TIMEOUT);
             myAccount.click();
             UiObject myVideos = getUiObjectByText("My videos", "android.widget.TextView");
-            waitObject(myVideos, 4);
+            waitObject(myVideos, WAIT_OBJECT_TIMEOUT);
             myVideos.click();
             UiObject firstEntry = getUiObjectByResourceId(packageID + "compact_video_item", "android.widget.LinearLayout");
-            waitObject(firstEntry, 4);
+            waitObject(firstEntry, WAIT_OBJECT_TIMEOUT);
             firstEntry.click();
         }
         sleep(4);
@@ -99,7 +104,7 @@ public class UiAutomation extends UxPerfUiAutomation {
                                                             "android.widget.ImageView");
         UiObject viewGroup =  getUiObjectByResourceId(packageID + "player_fragment", "android.widget.FrameLayout");
         viewGroup.click();
-        waitObject(fullscreenButton, 4);
+        waitObject(fullscreenButton, WAIT_OBJECT_TIMEOUT);
         fullscreenButton.click();
         sleep(4);
     }
@@ -108,7 +113,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject timebar = getUiObjectByResourceId(packageID + "time_bar", "android.view.View");
         UiObject viewGroup =  getUiObjectByResourceId(packageID + "player_fragment", "android.widget.FrameLayout");
         viewGroup.click();
-        waitObject(timebar, 4);
+        waitObject(timebar, WAIT_OBJECT_TIMEOUT);
         timebar.click();
         sleep(4);
         // timebar.swipeRight(20);
@@ -140,7 +145,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject qualityButton =  new UiObject(new UiSelector().descriptionContains("Show video quality menu"));
         UiObject qualitySetting =  getUiObjectByResourceId(quality, "android.widget.CheckedTextView");
         Log.v(TAG, String.format("MADE IT HERE"));
-        waitObject(moreOptions, 4);
+        waitObject(moreOptions, WAIT_OBJECT_TIMEOUT);
         moreOptions.click();
 
         if (miniPlayerViewGroup.exists()) {
@@ -166,9 +171,9 @@ public class UiAutomation extends UxPerfUiAutomation {
             }
             throw new UiObjectNotFoundException(String.format("child count: %s", count));
         }
-        // waitObject(qualityButton, 4);
+        // waitObject(qualityButton, WAIT_OBJECT_TIMEOUT);
         // qualityButton.click();
-        // waitObject(qualitySetting, 4);
+        // waitObject(qualitySetting, WAIT_OBJECT_TIMEOUT);
         // qualitySetting.click();
         // seekForward();
     }
