@@ -125,10 +125,8 @@ public class UiAutomation extends UxPerfUiAutomation {
             new UiObject(new UiSelector().resourceId("com.google.android.apps.books:id/menu_search"));
         search.click();
 
-        UiObject searchText =
-            getUiObjectByResourceId("com.google.android.apps.books:id/search_src_text",
-                                    "android.widget.EditText");
-
+        UiObject searchText = new UiObject(new UiSelector().textContains("Search")
+                                                           .className("android.widget.EditText"));
         searchText.setText(text);
         pressEnter();
 
@@ -299,7 +297,10 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject resultList = new UiObject(
                 new UiSelector().resourceId("com.google.android.apps.books:id/search_results_list"));
 
-        if (!resultList.waitForExists(viewTimeout)) {
+        // Allow extra time for search queries involing high freqency words
+        final long searchTimeout =  TimeUnit.SECONDS.toMillis(20);
+
+        if (!resultList.waitForExists(searchTimeout)) {
             throw new UiObjectNotFoundException("Could not find \"search results list view\".");
         }
 
@@ -307,7 +308,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             new UiObject(new UiSelector().text("Search web")
                                          .className("android.widget.TextView"));
 
-        if (!searchWeb.waitForExists(viewTimeout)) {
+        if (!searchWeb.waitForExists(searchTimeout)) {
             throw new UiObjectNotFoundException("Could not find \"Search web view\".");
         }
 
@@ -327,6 +328,14 @@ public class UiAutomation extends UxPerfUiAutomation {
                                                           "android.widget.TextView");
         readerSettings.click();
 
+        // Check for lighting option button on newer versions
+        UiObject lightingOptionsButton =
+            new UiObject(new UiSelector().resourceId("com.google.android.apps.books:id/lighting_options_button"));
+
+        if (lightingOptionsButton.exists()) {
+            lightingOptionsButton.click();
+        }
+
         String[] styles = {"Night", "Sepia", "Day"};
 
         startDumpsysGfxInfo(parameters);
@@ -334,7 +343,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         for (String style : styles) {
             Timer result = new Timer();
             result.start();
-            UiObject pageStyle = getUiObjectByDescription(style, "android.widget.TextView");
+            UiObject pageStyle = new UiObject(new UiSelector().description(style));
             pageStyle.clickAndWaitForNewWindow(viewTimeout);
             result.end();
             timingResults.put(String.format(testTag + "_" + style), result);
