@@ -49,7 +49,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void runUiAutomation() throws Exception {
         // Override superclass value
-        this.waitTimeout = TimeUnit.SECONDS.toMillis(10);
+        this.timeout = TimeUnit.SECONDS.toMillis(10);
 
         // Get Params
         Bundle parameters = getParams();

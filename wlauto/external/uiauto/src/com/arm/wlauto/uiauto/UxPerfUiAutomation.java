@@ -16,17 +16,12 @@
 package com.arm.wlauto.uiauto;
 
 import android.os.Build;
-import android.os.SystemClock;
 import android.os.Bundle;
 
 import android.util.Pair;
 
 import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
 import com.android.uiautomator.core.UiSelector;
-
-import com.arm.wlauto.uiauto.BaseUiAutomation;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -45,7 +40,6 @@ import java.util.Map.Entry;
 public class UxPerfUiAutomation extends BaseUiAutomation {
 
     private Logger logger = Logger.getLogger(UxPerfUiAutomation.class.getName());
-    public long timeout = TimeUnit.SECONDS.toMillis(4);
 
     public enum Direction { UP, DOWN, LEFT, RIGHT, NULL };
     public enum GestureType { UIDEVICE_SWIPE, UIOBJECT_SWIPE, PINCH };
@@ -56,7 +50,7 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
         private long endTime = 0;
         private long duration = 0;
 
-        public void start(){
+        public void start() {
             this.startTime = System.currentTimeMillis();
         }
 
@@ -152,8 +146,7 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
         return executeCommand(command, false);
     }
 
-    public Pair<Integer, String> executeCommand(List<String> command, boolean readOutput)
-    {
+    public Pair<Integer, String> executeCommand(List<String> command, boolean readOutput) {
         StringBuilder stringBuilder = new StringBuilder();
         ProcessBuilder processBuilder = new ProcessBuilder();
         BufferedReader bufferedReader = null;
@@ -210,17 +203,25 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
             }
             process.waitFor();
             if (process.exitValue() != 0) {
-                throw new Exception("Error while taking dumpsys, exitCode=" +
-                    process.exitValue());
+                throw new Exception("Error while taking dumpsys, exitCode="
+                        + process.exitValue());
             }
         } catch (Exception exception) {
             logger.log(Level.SEVERE, "Unable to take a dumpsys", exception);
         } finally {
             if (fileWriter != null) {
-                try { fileWriter.close(); } catch (Exception e) { e.printStackTrace(); }
+                try {
+                    fileWriter.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
             if (bufferedReader != null) {
-                try { bufferedReader.close(); } catch (Exception e) { e.printStackTrace(); }
+                try {
+                    bufferedReader.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -276,7 +277,7 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
     }
 
     public Timer uiObjectPinchTest(UiObject view, PinchType direction, int steps,
-                                  int percent) throws Exception {
+                                   int percent) throws Exception {
         Timer results = new Timer();
         results.start();
         if (direction.equals(PinchType.IN)) {
@@ -362,8 +363,8 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
 
     public void stopDumpsysSurfaceFlinger(Bundle parameters, String filename) throws Exception {
         if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
-            File out_file = new File(parameters.getString("output_dir"), filename);
-            exitDumpsysSurfaceFlinger(parameters.getString("package"), out_file);
+            File outFile = new File(parameters.getString("output_dir"), filename);
+            exitDumpsysSurfaceFlinger(parameters.getString("package"), outFile);
           }
     }
 
@@ -375,8 +376,8 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
 
     public void stopDumpsysGfxInfo(Bundle parameters, String filename) throws Exception {
       if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
-            File out_file = new File(parameters.getString("output_dir"), filename);
-            exitDumpsysGfxInfo(parameters.getString("package"), out_file);
+            File outFile = new File(parameters.getString("output_dir"), filename);
+            exitDumpsysGfxInfo(parameters.getString("package"), outFile);
           }
     }
 }
