@@ -136,7 +136,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         peopleItem.waitForExists(timeout);
         peopleItem.click();
         UiObject confirm =
-            getUiObjectByResourceId("com.skype.raider:id/fab", "android.widget.ImageView");
+            new UiObject(new UiSelector().resourceId("com.skype.raider:id/fab"));
         confirm.click();
     }
 
