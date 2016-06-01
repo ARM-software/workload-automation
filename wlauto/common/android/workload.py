@@ -353,6 +353,7 @@ class ReventWorkload(Workload):
         pass
 
     def teardown(self, context):
+        self.device.killall('revent')
         self.device.delete_file(self.on_device_setup_revent)
         self.device.delete_file(self.on_device_run_revent)
 
