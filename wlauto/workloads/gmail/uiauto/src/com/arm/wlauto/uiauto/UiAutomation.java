@@ -56,7 +56,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void clearFirstRunDialogues() throws Exception {
         // The first run dialogues vary on different devices so check if they are there and dismiss
         UiObject gotItBox = new UiObject(new UiSelector().resourceId("com.google.android.gm:id/welcome_tour_got_it")
-                                                     .className("android.widget.TextView"));
+                                                         .className("android.widget.TextView"));
         if (gotItBox.exists()) {
             gotItBox.clickAndWaitForNewWindow(timeout);
         }
@@ -96,7 +96,8 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public boolean hasComposeView() throws Exception {
         UiObject composeView = new UiObject(new UiSelector().resourceId("com.google.android.gm:id/compose"));
-        return composeView.waitForExists(networkTimeout);
+
+        return composeView.waitForExists(timeout);
     }
 
     public void setToField(final Bundle parameters) throws Exception {

@@ -47,6 +47,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         setScreenOrientation(ScreenOrientation.NATURAL);
         confirmAccess();
         dismissWelcomeView();
+        selectWorkingGallery();
         gesturesTest();
         editPhotoColorTest();
         cropPhotoTest();
@@ -68,16 +69,15 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         UiObject getStartedButton =
             new UiObject(new UiSelector().textContains("Get started")
-                                          .className("android.widget.Button"));
+                                         .className("android.widget.Button"));
 
         waitObject(getStartedButton, viewTimeoutSecs);
-
-        getStartedButton.clickAndWaitForNewWindow();
+        getStartedButton.click();
 
         UiObject welcomeButton =
             getUiObjectByResourceId("com.google.android.apps.photos:id/name",
                                     "android.widget.TextView");
-        welcomeButton.clickAndWaitForNewWindow();
+        welcomeButton.click();
 
         UiObject useWithoutAccount =
             getUiObjectByText("Use without an account", "android.widget.TextView");
@@ -380,11 +380,14 @@ public class UiAutomation extends UxPerfUiAutomation {
         return result;
     }
 
-    // Helper to click on an individual photograph based on index in wa-working gallery.
-    public void selectPhoto(final int index) throws Exception {
+    // Helper to click on the wa-working gallery.
+    public void selectWorkingGallery() throws Exception {
         UiObject workdir = getUiObjectByText("wa-working", "android.widget.TextView");
         workdir.clickAndWaitForNewWindow();
+    }
 
+    // Helper to click on an individual photograph based on index in wa-working gallery.
+    public void selectPhoto(final int index) throws Exception {
         UiObject photo =
             new UiObject(new UiSelector().resourceId("com.google.android.apps.photos:id/recycler_view")
                                          .childSelector(new UiSelector()
@@ -413,9 +416,6 @@ public class UiAutomation extends UxPerfUiAutomation {
     // gallery.  After long clicking it tags the photograph with a tick in the
     // corner of the image to indicate that the photograph has been selected
     public void tagPhoto(final int index) throws Exception {
-        UiObject workdir = getUiObjectByText("wa-working", "android.widget.TextView");
-        workdir.clickAndWaitForNewWindow();
-
         UiObject photo =
             new UiObject(new UiSelector().resourceId("com.google.android.apps.photos:id/recycler_view")
                                          .childSelector(new UiSelector()
