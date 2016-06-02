@@ -105,11 +105,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void seekForward() throws Exception {
-        UiObject timebar = getUiObjectByResourceId(packageID + "time_bar", "android.view.View");
-        UiObject viewGroup =  getUiObjectByResourceId(packageID + "player_fragment", "android.widget.FrameLayout");
-        viewGroup.click();
-        waitObject(timebar, WAIT_OBJECT_TIMEOUT);
-        timebar.click();
+        clickUiObject(BY_ID, packageID + "player_fragment", "android.widget.FrameLayout");
+        clickUiObject(BY_ID, packageID + "time_bar");
         sleep(VIDEO_SLEEP_SECONDS);
         // timebar.swipeRight(20);
         // sleep(2);
