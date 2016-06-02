@@ -27,6 +27,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final String TAG = "youtube";
     public static final int WAIT_FOR_EXISTS_TIMEOUT = 1000;
     public static final int WAIT_OBJECT_TIMEOUT = 4; // in seconds
+    public static final int VIDEO_SLEEP_SECONDS = 4;
     public static final int SOURCE_MY_VIDEOS = 1;
     public static final int SOURCE_SEARCH = 2;
     public static final int SOURCE_TRENDING = 3;
@@ -49,9 +50,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         videoSource = parseVideoSource(parameters.getString("video_source"));
         clearFirstRunDialogues();
         testPlayVideo(videoSource);
-        seekForward();
-        makeFullscreen();
-        // changeQuality(streamQuality[1]);
         if (false) {
             writeResultsToFile(results, parameters.getString("output_file"));
         }
@@ -89,6 +87,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void testPlayVideo(int source) throws Exception {
         if (source == SOURCE_MY_VIDEOS) {
             clickUiObject(BY_DESC, "Account");
+            clickUiObject(BY_TEXT, "My Videos", true);
+            clickUiObject(BY_ID, packageID + "thumbnail", true);
         } else if (source == SOURCE_SEARCH) {
             clickUiObject(BY_DESC, "Search");
             UiObject textField = getUiObjectByResourceId(packageID + "search_edit_text");
@@ -99,16 +99,9 @@ public class UiAutomation extends UxPerfUiAutomation {
             clickUiObject(BY_DESC, "Trending");
             clickUiObject(BY_ID, packageID + "thumbnail", true);
         }
-    }
-
-    public void makeFullscreen() throws Exception {
-        UiObject fullscreenButton = getUiObjectByResourceId(packageID + "fullscreen_button",
-                                                            "android.widget.ImageView");
-        UiObject viewGroup =  getUiObjectByResourceId(packageID + "player_fragment", "android.widget.FrameLayout");
-        viewGroup.click();
-        waitObject(fullscreenButton, WAIT_OBJECT_TIMEOUT);
-        fullscreenButton.click();
-        sleep(4);
+        seekForward();
+        makeFullscreen();
+        // changeQuality(streamQuality[1]);
     }
 
     public void seekForward() throws Exception {
@@ -117,9 +110,15 @@ public class UiAutomation extends UxPerfUiAutomation {
         viewGroup.click();
         waitObject(timebar, WAIT_OBJECT_TIMEOUT);
         timebar.click();
-        sleep(4);
+        sleep(VIDEO_SLEEP_SECONDS);
         // timebar.swipeRight(20);
         // sleep(2);
+    }
+
+    public void makeFullscreen() throws Exception {
+        clickUiObject(BY_ID, packageID + "player_fragment", "android.widget.FrameLayout");
+        clickUiObject(BY_ID, packageID + "fullscreen_button", true);
+        sleep(VIDEO_SLEEP_SECONDS);
     }
 
     public void changeQuality(String quality) throws Exception {
