@@ -40,12 +40,17 @@ public class UiAutomation extends UxPerfUiAutomation {
     protected boolean dumpsysEnabled;
     protected String outputDir;
     protected String packageID;
+    protected String searchTerm;
 
     public void runUiAutomation() throws Exception {
         parameters = getParams();
         packageID = parameters.getString("package") + ":id/";
+        searchTerm = parameters.getString("search_term");
+        if (searchTerm != null) {
+            searchTerm = searchTerm.replaceAll("_", " ");
+        }
         clearFirstRunDialogues();
-        testPlayVideo(parameters.getString("video_source"), STREAM_QUALITY[1]);
+        testPlayVideo(parameters.getString("video_source"), STREAM_QUALITY[1], searchTerm);
         if (false) {
             writeResultsToFile(results, parameters.getString("output_file"));
         }
@@ -70,7 +75,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
     }
 
-    public void testPlayVideo(String source, String quality) throws Exception {
+    public void testPlayVideo(String source, String quality, String searchTerm) throws Exception {
         if (SOURCE_MY_VIDEOS.equalsIgnoreCase(source)) {
             clickUiObject(BY_DESC, "Account");
             clickUiObject(BY_TEXT, "My Videos", true);
@@ -78,7 +83,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         } else if (SOURCE_SEARCH.equalsIgnoreCase(source)) {
             clickUiObject(BY_DESC, "Search");
             UiObject textField = getUiObjectByResourceId(packageID + "search_edit_text");
-            textField.setText("ARM Cortex");
+            textField.setText(searchTerm);
             getUiDevice().pressEnter();
             clickUiObject(BY_ID, packageID + "thumbnail", true);
         } else { // trending videos
@@ -107,10 +112,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void changeQuality(String quality) throws Exception {
         clickUiObject(BY_ID, packageID + "player_fragment", "android.widget.FrameLayout");
         clickUiObject(BY_DESC, "More options");
-        // clickUiObject(BY_TEXT, "Quality");
-        // clickUiObject(BY_DESC, "video quality");
         clickUiObject(BY_ID, packageID + "quality_button", true);
-        clickUiObject(BY_TEXT, "240p");
+        clickUiObject(BY_TEXT, "Auto");
         sleep(VIDEO_SLEEP_SECONDS);
         // UiCollection qualityList = new UiCollection(new UiSelector().resourceId(packageID + "select_dialog_listview"));
         // UiSelector qualitySelector = new UiSelector().className("android.widget.CheckedTextView").enabled(true);

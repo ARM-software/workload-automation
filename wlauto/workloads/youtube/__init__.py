@@ -32,18 +32,32 @@ class Youtube(AndroidUiAutoBenchmark):
                   from the 'my videos' section in the YouTube account, or from the
                   top trending videos on the homepage, or one found in search.
                   '''),
+        Parameter('search_term', kind=str, default='YouTube',
+                  description='''
+                  The search term to use when ``video_source`` is set to ``search``.
+                  Not applicable otherwise.
+                  '''),
     ]
 
     instrumentation_log = '{}_instrumentation.log'.format(name)
 
+    def __init__(self, device, **kwargs):
+        super(Youtube, self).__init__(device, **kwargs)
+        self.run_timeout = 300
+        self.output_file = os.path.join(self.device.working_directory, self.instrumentation_log)
+
     def validate(self):
         super(Youtube, self).validate()
-        self.output_file = os.path.join(self.device.working_directory, self.instrumentation_log)
         self.uiauto_params['package'] = self.package
         self.uiauto_params['output_dir'] = self.device.working_directory
         self.uiauto_params['output_file'] = self.output_file
         self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
         self.uiauto_params['video_source'] = self.video_source
+        if self.video_source == 'search':
+            if self.search_term:
+                self.uiauto_params['search_term'] = self.search_term.replace(' ', '_')
+            else:
+                raise WorkloadError("Param 'search_term' must be specified when video source is 'search'")
 
     def update_result(self, context):
         super(Youtube, self).update_result(context)
