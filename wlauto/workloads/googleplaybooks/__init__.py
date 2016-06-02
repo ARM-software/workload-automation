@@ -88,9 +88,6 @@ class Googleplaybooks(AndroidUiAutoBenchmark):
     def initialize(self, context):
         super(Googleplaybooks, self).initialize(context)
 
-        if not self.device.is_wifi_connected():
-            raise DeviceError('Wifi is not connected for device {}'.format(self.device.name))
-
     def update_result(self, context):
         super(Googleplaybooks, self).update_result(context)
 
