@@ -78,6 +78,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void clickNewMail() throws Exception {
+        String testTag = "click_new_mail";
+
         UiObject conversationView = new UiObject(new UiSelector()
                                             .resourceId("com.google.android.gm:id/conversation_list_view")
                                             .className("android.widget.ListView"));
@@ -88,9 +90,20 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         Timer result = new Timer();
         UiObject newMailButton = getUiObjectByDescription("Compose", "android.widget.ImageButton");
+
+        String gfxInfologName =  String.format(testTag + "_gfxInfo.log");
+        String surfFlingerlogName =  String.format(testTag + "_surfFlinger.log");
+
         result.start();
+        startDumpsysGfxInfo(parameters);
+        startDumpsysSurfaceFlinger(parameters);
+
         newMailButton.clickAndWaitForNewWindow(timeout);
+
+        stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
+        stopDumpsysGfxInfo(parameters, gfxInfologName);
         result.end();
+
         timingResults.put("Create_newMail", result);
     }
 
@@ -145,6 +158,9 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void attachFiles() throws Exception {
+
+        String testTag = "attach_files";
+
         UiObject attachIcon = getUiObjectByResourceId("com.google.android.gm:id/add_attachment",
                                                       "android.widget.TextView");
 
@@ -153,6 +169,12 @@ public class UiAutomation extends UxPerfUiAutomation {
         for ( int i = 0; i < imageFiles.length; i++) {
             Timer result = new Timer();
             result.start();
+
+            String gfxInfologName =  String.format(testTag + "_" + (i + 1) + "_gfxInfo.log");
+            String surfFlingerlogName =  String.format(testTag + "_" + (i + 1) + "_surfFlinger.log");
+
+            startDumpsysGfxInfo(parameters);
+            startDumpsysSurfaceFlinger(parameters);
 
             attachIcon.click();
             UiObject attachFile = getUiObjectByText("Attach file", "android.widget.TextView");
@@ -203,6 +225,9 @@ public class UiAutomation extends UxPerfUiAutomation {
                                                 .index(i).className("android.widget.FrameLayout")));
             imageFileButton.click();
             imageFileButton.waitUntilGone(timeout);
+
+            stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
+            stopDumpsysGfxInfo(parameters, gfxInfologName);
 
             result.end();
 
