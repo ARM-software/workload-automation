@@ -93,9 +93,12 @@ public class UiAutomation extends UxPerfUiAutomation {
         sleep(1);
 
         UiObject nextButton =
-            getUiObjectByResourceId("com.google.android.apps.photos:id/next_button",
-                                    "android.widget.ImageView");
-        nextButton.clickAndWaitForNewWindow();
+            new UiObject(new UiSelector().resourceId("com.google.android.apps.photos:id/next_button")
+                                         .className("android.widget.ImageView"));
+
+        if (nextButton.exists()) {
+            nextButton.clickAndWaitForNewWindow();
+        }
 
         UiObject workingFolder = new UiObject(new UiSelector().text("wa-working"));
         waitObject(workingFolder, viewTimeoutSecs);
@@ -114,7 +117,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         Iterator<Entry<String, GestureTestParams>> it = testParams.entrySet().iterator();
 
         // Select first photograph
-        selectPhoto(0);
+        selectPhoto(1);
 
         while (it.hasNext()) {
             Map.Entry<String, GestureTestParams> pair = it.next();
@@ -191,7 +194,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         Iterator<Entry<String, SeekBarTestParams>> it = testParams.entrySet().iterator();
 
         // Select second photograph
-        selectPhoto(1);
+        selectPhoto(2);
         UiObject editView = getUiObjectByResourceId("com.google.android.apps.photos:id/edit",
                                                     "android.widget.ImageView");
         editView.click();
@@ -252,7 +255,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         Iterator<Entry<String, Position>> it = testParams.entrySet().iterator();
 
         // Select third photograph
-        selectPhoto(2);
+        selectPhoto(3);
         UiObject editView = getUiObjectByResourceId("com.google.android.apps.photos:id/edit",
                                                     "android.widget.ImageView");
         editView.click();
@@ -293,7 +296,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         String[] subTests = {"anticlockwise_90", "anticlockwise_180", "anticlockwise_270"};
 
         // Select fourth photograph
-        selectPhoto(3);
+        selectPhoto(4);
         UiObject editView = getUiObjectByResourceId("com.google.android.apps.photos:id/edit",
                                                     "android.widget.ImageView");
         editView.click();

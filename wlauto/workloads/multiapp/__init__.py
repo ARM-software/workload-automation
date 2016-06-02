@@ -1,13 +1,31 @@
+#    Copyright 2014-2016 ARM Limited
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 import os
 import re
 
 from wlauto import AndroidUiAutoBenchmark, Parameter, File
+from wlauto.exceptions import DeviceError
+from wlauto.exceptions import NotFoundError
+
+__version__ = '0.1.0'
 
 
 class Multiapp(AndroidUiAutoBenchmark):
 
     name = 'multiapp'
-
     googlephotos_package = 'com.google.android.apps.photos'
     gmail_package = 'com.google.android.gm'
     skype_package = 'com.skype.raider'
@@ -88,8 +106,6 @@ class Multiapp(AndroidUiAutoBenchmark):
                   '''),
     ]
 
-    file_prefix = 'wa_test_'
-
     def __init__(self, device, **kwargs):
         super(Multiapp, self).__init__(device, **kwargs)
         self.output_file = os.path.join(self.device.working_directory, self.instrumentation_log)
@@ -106,14 +122,21 @@ class Multiapp(AndroidUiAutoBenchmark):
         self.uiauto_params['output_file'] = self.output_file
 
     def initialize(self, context):
-
         super(Multiapp, self).initialize(context)
 
-        for entry in os.listdir(self.dependencies_directory):
-            wa_file = ''.join([self.file_prefix, entry])
-            if entry.endswith(".jpg"):
+        if not self.device.is_wifi_connected():
+            raise DeviceError('Wifi is not connected for device {}'.format(self.device.name))
+
+        # Check for workload dependencies before proceeding
+        jpeg_files = [entry for entry in os.listdir(self.dependencies_directory) if entry.endswith(".jpg")]
+
+        if len(jpeg_files) < 4:
+            raise NotFoundError("This workload requires a minimum of four {} files in {}".format('jpg',
+                                self.dependencies_directory))
+        else:
+            for entry in jpeg_files:
                 self.device.push_file(os.path.join(self.dependencies_directory, entry),
-                                      os.path.join(self.device.working_directory, wa_file),
+                                      os.path.join(self.device.working_directory, entry),
                                       timeout=300)
 
         # Force a re-index of the mediaserver cache to pick up new files
@@ -127,14 +150,14 @@ class Multiapp(AndroidUiAutoBenchmark):
         # Use superclass for setup of gmail dependency
         self.version = 'Gmail'
         self.package = self.gmail_package
-        self.logger.info('Installing dependency Gmail')
+        self.logger.info('Checking dependency Gmail')
         super(Multiapp, self).init_resources(context)
         super(Multiapp, self).setup(context)
 
         # Use superclass for setup of skype dependency
         self.version = 'Skype'
         self.package = self.skype_package
-        self.logger.info('Installing dependency Skype')
+        self.logger.info('Checking dependency Skype')
         super(Multiapp, self).init_resources(context)
         super(Multiapp, self).setup(context)
 
@@ -175,17 +198,17 @@ class Multiapp(AndroidUiAutoBenchmark):
         # Restore default package
         self.package = self.googlephotos_package
 
-        for file in self.device.listdir(self.device.working_directory):
-            if file.endswith(".log"):
-                self.device.pull_file(os.path.join(self.device.working_directory, file), context.output_directory)
-                self.device.delete_file(os.path.join(self.device.working_directory, file))
+        for entry in self.device.listdir(self.device.working_directory):
+            if entry.endswith(".log"):
+                self.device.pull_file(os.path.join(self.device.working_directory, entry), context.output_directory)
+                self.device.delete_file(os.path.join(self.device.working_directory, entry))
 
     def finalize(self, context):
         super(Multiapp, self).finalize(context)
 
         for entry in self.device.listdir(self.device.working_directory):
-            if entry.startswith(self.file_prefix) and entry.endswith(".jpg"):
+            if entry.endswith(".jpg"):
                 self.device.delete_file(os.path.join(self.device.working_directory, entry))
 
-        # Force a re-index of the mediaserver cache to removed cached files
+        # Force a re-index of the mediaserver cache to remove cached files
         self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
