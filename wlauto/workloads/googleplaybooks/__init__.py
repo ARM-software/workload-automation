@@ -88,6 +88,9 @@ class Googleplaybooks(AndroidUiAutoBenchmark):
     def initialize(self, context):
         super(Googleplaybooks, self).initialize(context)
 
+        if not self.device.is_network_connected():
+            raise DeviceError('Network is not connected for device {}'.format(self.device.name))
+
     def update_result(self, context):
         super(Googleplaybooks, self).update_result(context)
 

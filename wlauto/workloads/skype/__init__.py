@@ -96,6 +96,9 @@ class Skype(AndroidUiAutoBenchmark):
     def initialize(self, context):
         super(Skype, self).initialize(context)
 
+        if not self.device.is_network_connected():
+            raise DeviceError('Network is not connected for device {}'.format(self.device.name))
+
     def setup(self, context):
         self.logger.info('===== setup() ======')
         super(Skype, self).setup(context)

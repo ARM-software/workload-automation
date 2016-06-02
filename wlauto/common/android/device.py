@@ -649,9 +649,18 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         except KeyError:
             return None
 
-    def is_wifi_connected(self):
-        self.logger.debug('Checking for wi-fi connectivity.')
-        return self.execute('dumpsys wifi| grep curState=ConnectedState')
+    def is_network_connected(self):
+        network_host = 'www.google.com'
+        self.logger.debug('Checking for internet connectivity.')
+        output = adb_shell(self.adb_name, 'ping -q -w 1 -c 1 {}'.format(network_host),
+                           timeout=self.default_timeout)
+
+        if not 'unknown host' in output:
+            self.logger.debug('Found network host {}'.format(network_host))
+            return True
+        else:
+            self.logger.debug('Cannot find network host {}'.format(network_host))
+            return False
 
     # Internal methods: do not use outside of the class.
 
