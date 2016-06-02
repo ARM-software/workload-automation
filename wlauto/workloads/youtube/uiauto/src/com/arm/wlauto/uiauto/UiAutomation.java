@@ -28,12 +28,10 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final int WAIT_FOR_EXISTS_TIMEOUT = 1000;
     public static final int WAIT_OBJECT_TIMEOUT = 4; // in seconds
     public static final int VIDEO_SLEEP_SECONDS = 4;
-    public static final int SOURCE_MY_VIDEOS = 1;
-    public static final int SOURCE_SEARCH = 2;
-    public static final int SOURCE_TRENDING = 3;
-
-    protected long networkTimeout =  TimeUnit.SECONDS.toMillis(20);
-    protected String[] streamQuality = {
+    public static final String SOURCE_MY_VIDEOS = "my_videos";
+    public static final String SOURCE_SEARCH = "search";
+    public static final String SOURCE_TRENDING = "trending";
+    public static final String[] STREAM_QUALITY = {
         "Auto", "144p", "240p", "360p", "480p", "720p", "1080p"
     };
 
@@ -42,26 +40,14 @@ public class UiAutomation extends UxPerfUiAutomation {
     protected boolean dumpsysEnabled;
     protected String outputDir;
     protected String packageID;
-    protected int videoSource;
 
     public void runUiAutomation() throws Exception {
         parameters = getParams();
         packageID = parameters.getString("package") + ":id/";
-        videoSource = parseVideoSource(parameters.getString("video_source"));
         clearFirstRunDialogues();
-        testPlayVideo(videoSource);
+        testPlayVideo(parameters.getString("video_source"), STREAM_QUALITY[1]);
         if (false) {
             writeResultsToFile(results, parameters.getString("output_file"));
-        }
-    }
-
-    public int parseVideoSource(String source) throws Exception {
-        if ("my_videos".equalsIgnoreCase(source)) {
-            return SOURCE_MY_VIDEOS;
-        } else if ("search".equalsIgnoreCase(source)) {
-            return SOURCE_SEARCH;
-        } else {
-            return SOURCE_TRENDING;
         }
     }
 
@@ -84,12 +70,12 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
     }
 
-    public void testPlayVideo(int source) throws Exception {
-        if (source == SOURCE_MY_VIDEOS) {
+    public void testPlayVideo(String source, String quality) throws Exception {
+        if (SOURCE_MY_VIDEOS.equalsIgnoreCase(source)) {
             clickUiObject(BY_DESC, "Account");
             clickUiObject(BY_TEXT, "My Videos", true);
             clickUiObject(BY_ID, packageID + "thumbnail", true);
-        } else if (source == SOURCE_SEARCH) {
+        } else if (SOURCE_SEARCH.equalsIgnoreCase(source)) {
             clickUiObject(BY_DESC, "Search");
             UiObject textField = getUiObjectByResourceId(packageID + "search_edit_text");
             textField.setText("ARM Cortex");
@@ -100,8 +86,8 @@ public class UiAutomation extends UxPerfUiAutomation {
             clickUiObject(BY_ID, packageID + "thumbnail", true);
         }
         seekForward();
+        changeQuality(quality);
         makeFullscreen();
-        // changeQuality(streamQuality[1]);
     }
 
     public void seekForward() throws Exception {
@@ -109,7 +95,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickUiObject(BY_ID, packageID + "time_bar");
         sleep(VIDEO_SLEEP_SECONDS);
         // timebar.swipeRight(20);
-        // sleep(2);
+        // sleep(VIDEO_SLEEP_SECONDS);
     }
 
     public void makeFullscreen() throws Exception {
@@ -119,61 +105,16 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void changeQuality(String quality) throws Exception {
-        UiObject viewGroup =  getUiObjectByResourceId(packageID + "player_fragment", "android.widget.FrameLayout");
-        viewGroup.click();
-        UiObject moreOptions =  getUiObjectByResourceId(packageID + "player_overflow_button", "android.widget.ImageView");
-        UiObject miniPlayerViewGroup =  getUiObjectByResourceId(packageID + "watch_player", "android.view.ViewGroup");
-        UiObject miniPlayerViewLayout =  getUiObjectByResourceId(packageID + "watch_player", "android.widget.FrameLayout");
-
-        // UiObject qualityButton =  getUiObjectByResourceId(packageID + "quality_button_text", "android.widget.TextView");
-
-        // UiObject qualityButton =  new UiObject(new UiSelector().resourceId(packageID + "watch_player")
-        //                                              .className("android.view.ViewGroup")
-        //                                                 .childSelector(new UiSelector()
-        //                                                 .index(1).className("android.widget.FrameLayout")
-        //                                                 .childSelector(new UiSelector()
-        //                                                 .index(0).className("android.widget.FrameLayout")
-        //                                                 .childSelector(new UiSelector()
-        //                                                 .index(0).className("android.widget.RelativeLayout")
-        //                                                 .childSelector(new UiSelector()
-        //                                                 .index(1).className("android.widget.RelativeLayout")
-        //                                                 .childSelector(new UiSelector()
-        //                                                 .index(1).className("android.widget.ImageView")))))));
-
-        UiObject qualityButton =  new UiObject(new UiSelector().descriptionContains("Show video quality menu"));
-        UiObject qualitySetting =  getUiObjectByResourceId(quality, "android.widget.CheckedTextView");
-        Log.v(TAG, String.format("MADE IT HERE"));
-        waitObject(moreOptions, WAIT_OBJECT_TIMEOUT);
-        moreOptions.click();
-
-        if (miniPlayerViewGroup.exists()) {
-            // MATE 8
-            // miniPlayerViewGroup.click();
-            UiObject frameLayout =  miniPlayerViewGroup.getChild(new UiSelector()
-                                                            .index(1).className("android.widget.FrameLayout")
-                                                            .childSelector(new UiSelector()));
-        } else {
-            // ZENFONE
-            if (qualityButton.exists()) {
-                qualityButton.click();
-            }
-            UiObject frameLayout =  miniPlayerViewLayout.getChild(new UiSelector()
-                                                            .index(1).className("android.widget.FrameLayout")
-                                                            .childSelector(new UiSelector()));
-            int count = frameLayout.getChildCount();
-            Log.v(TAG, String.format("ChildCount: %s", count));
-            for (int i = 0; i < count ; i++) {
-                String className = frameLayout.getChild(new UiSelector().index(i)).getClassName();
-                String description = frameLayout.getChild(new UiSelector().index(i)).getContentDescription();
-                Log.v(TAG, String.format("Child %s ClassName: %s %s", i, className, description));
-            }
-            throw new UiObjectNotFoundException(String.format("child count: %s", count));
-        }
-        // waitObject(qualityButton, WAIT_OBJECT_TIMEOUT);
-        // qualityButton.click();
-        // waitObject(qualitySetting, WAIT_OBJECT_TIMEOUT);
-        // qualitySetting.click();
-        // seekForward();
+        clickUiObject(BY_ID, packageID + "player_fragment", "android.widget.FrameLayout");
+        clickUiObject(BY_DESC, "More options");
+        // clickUiObject(BY_TEXT, "Quality");
+        // clickUiObject(BY_DESC, "video quality");
+        clickUiObject(BY_ID, packageID + "quality_button", true);
+        clickUiObject(BY_TEXT, "240p");
+        sleep(VIDEO_SLEEP_SECONDS);
+        // UiCollection qualityList = new UiCollection(new UiSelector().resourceId(packageID + "select_dialog_listview"));
+        // UiSelector qualitySelector = new UiSelector().className("android.widget.CheckedTextView").enabled(true);
+        // qualityList.getChildByText(qualitySelector, quality);
     }
 
 }
