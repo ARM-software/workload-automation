@@ -1,3 +1,4 @@
 *.yaml
 *.apk
 *.json
+.classpath

@@ -1,7 +1,13 @@
 package com.arm.wlauto.uiauto.youtube;
 
+import java.io.File;
+import java.util.concurrent.TimeUnit;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.util.Log;
 
 // Import the uiautomator libraries
 import com.android.uiautomator.core.UiObject;
@@ -10,23 +16,19 @@ import com.android.uiautomator.core.UiScrollable;
 import com.android.uiautomator.core.UiSelector;
 import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
-import android.util.Log;
-
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.util.concurrent.TimeUnit;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Map.Entry;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
 
 public class UiAutomation extends UxPerfUiAutomation {
 
     public static final String TAG = "youtube";
     public static final int WAIT_FOR_EXISTS_TIMEOUT = 1000;
     public static final int WAIT_OBJECT_TIMEOUT = 4; // in seconds
+    public static final int TRENDING_VIDEOS = 1;
+    public static final int MY_VIDEOS = 2;
 
     protected long networkTimeout =  TimeUnit.SECONDS.toMillis(20);
     protected String[] streamQuality = {
@@ -43,7 +45,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         parameters = getParams();
         packageID = parameters.getString("package") + ":id/";
         clearFirstRunDialogues();
-        selectFirstVideo();
+        testPlayVideo(TRENDING_VIDEOS);
+        testSearchVideo();
         seekForward();
         // changeQuality(streamQuality[1]);
         makeFullscreen();
@@ -69,6 +72,20 @@ public class UiAutomation extends UxPerfUiAutomation {
         if (gotItButton.waitForExists(WAIT_FOR_EXISTS_TIMEOUT)) {
             gotItButton.click();
         }
+    }
+
+    public void testPlayVideo(int type) throws Exception {
+        if (type == MY_VIDEOS) {
+            // my videos
+            clickUiObject(BY_DESC, "Account");
+        } else {
+            // trending videos
+        }
+        selectFirstVideo();
+    }
+
+    public void testSearchVideo() throws Exception {
+
     }
 
     public void selectFirstVideo() throws Exception {
