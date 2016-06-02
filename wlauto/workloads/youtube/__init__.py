@@ -25,6 +25,13 @@ class Youtube(AndroidUiAutoBenchmark):
                   test run.  The output is piped to log files which are then
                   pulled from the phone.
                   '''),
+        Parameter('video_source', kind=str, default='trending',
+                  allowed_values=['my_videos', 'search', 'trending'],
+                  description='''
+                  Determines where to play the video from. This can either be in
+                  from the 'my videos' section in the YouTube account, or from the
+                  top trending videos on the homepage, or one found in search.
+                  '''),
     ]
 
     instrumentation_log = '{}_instrumentation.log'.format(name)
@@ -36,6 +43,7 @@ class Youtube(AndroidUiAutoBenchmark):
         self.uiauto_params['output_dir'] = self.device.working_directory
         self.uiauto_params['output_file'] = self.output_file
         self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
+        self.uiauto_params['video_source'] = self.video_source
 
     def update_result(self, context):
         super(Youtube, self).update_result(context)

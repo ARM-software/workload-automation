@@ -27,8 +27,9 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final String TAG = "youtube";
     public static final int WAIT_FOR_EXISTS_TIMEOUT = 1000;
     public static final int WAIT_OBJECT_TIMEOUT = 4; // in seconds
-    public static final int TRENDING_VIDEOS = 1;
-    public static final int MY_VIDEOS = 2;
+    public static final int SOURCE_MY_VIDEOS = 1;
+    public static final int SOURCE_SEARCH = 2;
+    public static final int SOURCE_TRENDING = 3;
 
     protected long networkTimeout =  TimeUnit.SECONDS.toMillis(20);
     protected String[] streamQuality = {
@@ -40,18 +41,29 @@ public class UiAutomation extends UxPerfUiAutomation {
     protected boolean dumpsysEnabled;
     protected String outputDir;
     protected String packageID;
+    protected int videoSource;
 
     public void runUiAutomation() throws Exception {
         parameters = getParams();
         packageID = parameters.getString("package") + ":id/";
+        videoSource = parseVideoSource(parameters.getString("video_source"));
         clearFirstRunDialogues();
-        testPlayVideo(TRENDING_VIDEOS);
-        testSearchVideo();
+        testPlayVideo(videoSource);
         seekForward();
-        // changeQuality(streamQuality[1]);
         makeFullscreen();
+        // changeQuality(streamQuality[1]);
         if (false) {
             writeResultsToFile(results, parameters.getString("output_file"));
+        }
+    }
+
+    public int parseVideoSource(String source) throws Exception {
+        if ("my_videos".equalsIgnoreCase(source)) {
+            return SOURCE_MY_VIDEOS;
+        } else if ("search".equalsIgnoreCase(source)) {
+            return SOURCE_SEARCH;
+        } else {
+            return SOURCE_TRENDING;
         }
     }
 
@@ -74,46 +86,19 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
     }
 
-    public void testPlayVideo(int type) throws Exception {
-        if (type == MY_VIDEOS) {
-            // my videos
+    public void testPlayVideo(int source) throws Exception {
+        if (source == SOURCE_MY_VIDEOS) {
             clickUiObject(BY_DESC, "Account");
-        } else {
-            // trending videos
+        } else if (source == SOURCE_SEARCH) {
+            clickUiObject(BY_DESC, "Search");
+            UiObject textField = getUiObjectByResourceId(packageID + "search_edit_text");
+            textField.setText("ARM Cortex");
+            getUiDevice().pressEnter();
+            clickUiObject(BY_ID, packageID + "thumbnail", true);
+        } else { // trending videos
+            clickUiObject(BY_DESC, "Trending");
+            clickUiObject(BY_ID, packageID + "thumbnail", true);
         }
-        selectFirstVideo();
-    }
-
-    public void testSearchVideo() throws Exception {
-
-    }
-
-    public void selectFirstVideo() throws Exception {
-        UiObject navigateUpButton = new UiObject(new UiSelector().descriptionMatches("Navigate|navigation")
-                                                                 .className("android.widget.ImageButton"));
-        UiObject myAccount = getUiObjectByDescription("Account");
-        if (navigateUpButton.exists()) {
-            navigateUpButton.click();
-            UiObject uploads = getUiObjectByText("Uploads", "android.widget.TextView");
-            waitObject(uploads, WAIT_OBJECT_TIMEOUT);
-            uploads.click();
-            UiObject firstEntry = new UiObject(new UiSelector().resourceId(packageID + "paged_list")
-                                                                .className("android.widget.ListView")
-                                                                .childSelector(new UiSelector()
-                                                                .index(0).className("android.widget.LinearLayout")));
-            waitObject(firstEntry, WAIT_OBJECT_TIMEOUT);
-            firstEntry.click();
-        } else {
-            waitObject(myAccount, WAIT_OBJECT_TIMEOUT);
-            myAccount.click();
-            UiObject myVideos = getUiObjectByText("My videos", "android.widget.TextView");
-            waitObject(myVideos, WAIT_OBJECT_TIMEOUT);
-            myVideos.click();
-            UiObject firstEntry = getUiObjectByResourceId(packageID + "compact_video_item", "android.widget.LinearLayout");
-            waitObject(firstEntry, WAIT_OBJECT_TIMEOUT);
-            firstEntry.click();
-        }
-        sleep(4);
     }
 
     public void makeFullscreen() throws Exception {
