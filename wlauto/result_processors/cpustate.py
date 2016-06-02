@@ -19,7 +19,7 @@ from collections import OrderedDict
 
 from wlauto import ResultProcessor, Parameter
 from wlauto.core import signal
-from wlauto.exceptions import ConfigError
+from wlauto.exceptions import ConfigError, DeviceError
 from wlauto.instrumentation import instrument_is_installed
 from wlauto.utils.power import report_power_stats
 from wlauto.utils.misc import unique
@@ -169,7 +169,10 @@ class CpuStatesProcessor(ResultProcessor):
         self.logger.debug('Nudging all cores awake...')
         for i in xrange(len(device.core_names)):
             command = device.busybox + ' taskset 0x{:x} {}'
-            device.execute(command.format(1 << i, 'ls'))
+            try:
+                device.execute(command.format(1 << i, 'ls'))
+            except DeviceError:
+                self.logger.warning("Failed to nudge CPU %s, has it been hot plugged out?", i)
 
     def process_iteration_result(self, result, context):
         trace = context.get_artifact('txttrace')
