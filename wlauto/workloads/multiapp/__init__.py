@@ -124,9 +124,6 @@ class Multiapp(AndroidUiAutoBenchmark):
     def initialize(self, context):
         super(Multiapp, self).initialize(context)
 
-        if not self.device.is_wifi_connected():
-            raise DeviceError('Wifi is not connected for device {}'.format(self.device.name))
-
         # Check for workload dependencies before proceeding
         jpeg_files = [entry for entry in os.listdir(self.dependencies_directory) if entry.endswith(".jpg")]
 

@@ -102,9 +102,6 @@ class Reader(AndroidUiAutoBenchmark):
     def initialize(self, context):
         super(Reader, self).initialize(context)
 
-        if not self.device.is_wifi_connected():
-            raise DeviceError('Wifi is not connected for device {}'.format(self.device.name))
-
         self.reader_local_dir = self.device.path.join(self.device.external_storage_directory,
                                                       'Android/data/com.adobe.reader/files/')
 

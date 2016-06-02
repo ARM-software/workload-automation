@@ -37,7 +37,7 @@ class Skype(AndroidUiAutoBenchmark):
     call.
 
     Test description:
-    
+
     1. Open Skype application
     2. Log in to a pre-defined account
     3. Select a recipient from the Contacts list
@@ -95,9 +95,6 @@ class Skype(AndroidUiAutoBenchmark):
 
     def initialize(self, context):
         super(Skype, self).initialize(context)
-
-        if not self.device.is_wifi_connected():
-            raise DeviceError('Wifi is not connected for device {}'.format(self.device.name))
 
     def setup(self, context):
         self.logger.info('===== setup() ======')
