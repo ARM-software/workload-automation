@@ -25,9 +25,14 @@ import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
 public class UiAutomation extends UxPerfUiAutomation {
 
     public static final String TAG = "youtube";
+    public static final String CLASS_BUTTON = "android.widget.Button";
+    public static final String CLASS_FRAME_LAYOUT = "android.widget.FrameLayout";
+    public static final String CLASS_TEXT_VIEW = "android.widget.TextView";
+    public static final String CLASS_VIEW_GROUP = "android.view.ViewGroup";
+
     public static final int WAIT_POPUP_TIMEOUT_MS = 1000;
     public static final int VIDEO_SLEEP_SECONDS = 5;
-    public static final int LIST_SWIPE_COUNT = 1;
+    public static final int LIST_SWIPE_COUNT = 5;
     public static final String SOURCE_MY_VIDEOS = "my_videos";
     public static final String SOURCE_SEARCH = "search";
     public static final String SOURCE_TRENDING = "trending";
@@ -55,30 +60,30 @@ public class UiAutomation extends UxPerfUiAutomation {
             searchTerm = searchTerm.replaceAll("_", " ");
         }
         clearFirstRunDialogues();
-        testPlayVideo(parameters.getString("video_source"), STREAM_QUALITY[0], searchTerm);
+        testPlayVideo(parameters.getString("video_source"), searchTerm);
         writeResultsToFile(results, parameters.getString("output_file"));
     }
 
     public void clearFirstRunDialogues() throws Exception {
-        UiObject laterButton = new UiObject(new UiSelector().textContains("Later").className("android.widget.TextView"));
+        UiObject laterButton = new UiObject(new UiSelector().textContains("Later").className(CLASS_TEXT_VIEW));
         if (laterButton.waitForExists(WAIT_POPUP_TIMEOUT_MS)) {
            laterButton.click();
         }
-        UiObject cancelButton = new UiObject(new UiSelector().textContains("Cancel").className("android.widget.Button"));
+        UiObject cancelButton = new UiObject(new UiSelector().textContains("Cancel").className(CLASS_BUTTON));
         if (cancelButton.waitForExists(WAIT_POPUP_TIMEOUT_MS)) {
             cancelButton.click();
         }
-        UiObject skipButton = new UiObject(new UiSelector().textContains("Skip").className("android.widget.TextView"));
+        UiObject skipButton = new UiObject(new UiSelector().textContains("Skip").className(CLASS_TEXT_VIEW));
         if (skipButton.waitForExists(WAIT_POPUP_TIMEOUT_MS)) {
             skipButton.click();
         }
-        UiObject gotItButton = new UiObject(new UiSelector().textContains("Got it").className("android.widget.Button"));
+        UiObject gotItButton = new UiObject(new UiSelector().textContains("Got it").className(CLASS_BUTTON));
         if (gotItButton.waitForExists(WAIT_POPUP_TIMEOUT_MS)) {
             gotItButton.click();
         }
     }
 
-    public void testPlayVideo(String source, String quality, String searchTerm) throws Exception {
+    public void testPlayVideo(String source, String searchTerm) throws Exception {
         if (SOURCE_MY_VIDEOS.equalsIgnoreCase(source)) {
             startMeasurements();
             clickUiObject(BY_DESC, "Account");
@@ -113,9 +118,9 @@ public class UiAutomation extends UxPerfUiAutomation {
             clickUiObject(BY_ID, packageID + "thumbnail", true);
             endMeasurements("player_home");
         }
-        checkVideoInfo();
         seekForward();
-        changeQuality(quality);
+        changeQuality();
+        checkVideoInfo();
         makeFullscreen();
     }
 
@@ -149,7 +154,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void seekForward() throws Exception {
         startMeasurements();
-        clickUiObject(BY_ID, packageID + "player_fragment", "android.widget.FrameLayout");
+        clickUiObject(BY_ID, packageID + "watch_player", CLASS_VIEW_GROUP);
         UiObject timebar = clickUiObject(BY_ID, packageID + "time_bar");
         endMeasurements("seekbar_touch");
         sleep(VIDEO_SLEEP_SECONDS);
@@ -157,7 +162,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void makeFullscreen() throws Exception {
         startMeasurements();
-        clickUiObject(BY_ID, packageID + "player_fragment", "android.widget.FrameLayout");
+        clickUiObject(BY_ID, packageID + "watch_player", CLASS_VIEW_GROUP);
         clickUiObject(BY_ID, packageID + "fullscreen_button", true);
         endMeasurements("fullscreen_toggle");
         startDumpsys();
@@ -165,12 +170,12 @@ public class UiAutomation extends UxPerfUiAutomation {
         endDumpsys("fullscreen_player");
     }
 
-    public void changeQuality(String quality) throws Exception {
-        UiObject player = clickUiObject(BY_ID, packageID + "player_fragment", "android.widget.FrameLayout");
+    public void changeQuality() throws Exception {
+        UiObject player = clickUiObject(BY_ID, packageID + "watch_player", CLASS_VIEW_GROUP);
         clickUiObject(BY_DESC, "More options");
         getUiDevice().waitForIdle();
-        clickUiObject(BY_ID, packageID + "quality_button", true);
-        clickUiObject(BY_TEXT, quality);
+        clickUiObject(BY_TEXT, "Quality", CLASS_TEXT_VIEW, true);
+        clickUiObject(BY_TEXT, STREAM_QUALITY[0]);
         sleep(VIDEO_SLEEP_SECONDS);
     }
 
