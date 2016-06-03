@@ -87,17 +87,17 @@ public class UiAutomation extends UxPerfUiAutomation {
         if (SOURCE_MY_VIDEOS.equalsIgnoreCase(source)) {
             startMeasurements();
             clickUiObject(BY_DESC, "Account");
-            endMeasurements("tab_account");
+            endMeasurements("goto_account");
             startMeasurements();
             clickUiObject(BY_TEXT, "My Videos", true);
-            endMeasurements("tab_my_videos");
+            endMeasurements("goto_my_videos");
             startMeasurements();
             clickUiObject(BY_ID, packageID + "thumbnail", true);
-            endMeasurements("player_my_videos");
+            endMeasurements("play_from_my_videos");
         } else if (SOURCE_SEARCH.equalsIgnoreCase(source)) {
             startMeasurements();
             clickUiObject(BY_DESC, "Search");
-            endMeasurements("tab_search");
+            endMeasurements("goto_search");
             startTimer();
             UiObject textField = getUiObjectByResourceId(packageID + "search_edit_text");
             textField.setText(searchTerm);
@@ -105,40 +105,45 @@ public class UiAutomation extends UxPerfUiAutomation {
             getUiDevice().pressEnter();
             startMeasurements();
             clickUiObject(BY_ID, packageID + "thumbnail", true);
-            endMeasurements("player_search");
+            endMeasurements("play_from_search");
         } else if (SOURCE_TRENDING.equalsIgnoreCase(source)) {
             startMeasurements();
             clickUiObject(BY_DESC, "Trending");
-            endMeasurements("tab_trending");
+            endMeasurements("goto_trending");
             startMeasurements();
             clickUiObject(BY_ID, packageID + "thumbnail", true);
-            endMeasurements("player_trending");
+            endMeasurements("play_from_trending");
         } else { // homepage videos
             startMeasurements();
             clickUiObject(BY_ID, packageID + "thumbnail", true);
-            endMeasurements("player_home");
+            endMeasurements("play_from_home");
         }
         seekForward();
         changeQuality();
         checkVideoInfo();
+        scrollRelated();
         minimiseVideo();
         makeFullscreen();
     }
 
     public void seekForward() throws Exception {
-        startMeasurements();
         clickUiObject(BY_ID, packageID + "watch_player", CLASS_VIEW_GROUP);
+        startMeasurements();
         UiObject timebar = clickUiObject(BY_ID, packageID + "time_bar");
-        endMeasurements("seekbar_touch");
+        endMeasurements("player_seekbar_touch");
         sleep(VIDEO_SLEEP_SECONDS);
     }
 
     public void changeQuality() throws Exception {
         UiObject player = clickUiObject(BY_ID, packageID + "watch_player", CLASS_VIEW_GROUP);
+        startMeasurements();
         clickUiObject(BY_DESC, "More options");
+        endMeasurements("player_more_options");
         getUiDevice().waitForIdle();
+        startTimer();
         clickUiObject(BY_TEXT, "Quality", CLASS_TEXT_VIEW, true);
         clickUiObject(BY_TEXT, STREAM_QUALITY[0]);
+        endTimer("player_change_quality");
         sleep(VIDEO_SLEEP_SECONDS);
     }
 
@@ -146,16 +151,21 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Expand video info
         startTimer();
         clickUiObject(BY_ID, packageID + "expand_button");
-        endTimer("expand_info_card");
+        endTimer("info_card_expand");
         SystemClock.sleep(500); // short delay to simulate user action
+        startTimer();
         clickUiObject(BY_ID, packageID + "expand_button");
+        endTimer("info_card_collapse");
         // Display share menu
         startTimer();
         clickUiObject(BY_ID, packageID + "share_button", true);
-        endTimer("show_share_menu");
+        endTimer("info_card_share_menu");
         SystemClock.sleep(500); // short delay to simulate user action
         getUiDevice().pressBack();
-        // Scroll down the list of related videos and comments
+    }
+
+    public void scrollRelated() throws Exception {
+        // ListView of related videos and (maybe) comments
         UiScrollable list = new UiScrollable(new UiSelector().resourceId(packageID + "watch_list"));
         if (list.isScrollable()) {
             startMeasurements();
@@ -170,14 +180,24 @@ public class UiAutomation extends UxPerfUiAutomation {
         sleep(3);
     }
 
-    public void makeFullscreen() throws Exception {
+    public void minimiseVideo() throws Exception {
+        clickUiObject(BY_ID, packageID + "watch_player", CLASS_VIEW_GROUP);
+        startMeasurements();
+        clickUiObject(BY_ID, packageID + "player_collapse_button");
+        endMeasurements("player_video_collapse");
+        sleep(1); // short delay to simulate user action
         startMeasurements();
         clickUiObject(BY_ID, packageID + "watch_player", CLASS_VIEW_GROUP);
+        endMeasurements("player_video_expand");
+    }
+
+    public void makeFullscreen() throws Exception {
+        startMeasurements();
         clickUiObject(BY_ID, packageID + "fullscreen_button", true);
-        endMeasurements("fullscreen_toggle");
+        endMeasurements("player_fullscreen_toggle");
         startDumpsys();
         sleep(VIDEO_SLEEP_SECONDS);
-        endDumpsys("fullscreen_player");
+        endDumpsys("player_fullscreen_play");
     }
 
     protected void startDumpsys() throws Exception {
