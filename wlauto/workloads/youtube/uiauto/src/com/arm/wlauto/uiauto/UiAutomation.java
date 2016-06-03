@@ -25,9 +25,9 @@ import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
 public class UiAutomation extends UxPerfUiAutomation {
 
     public static final String TAG = "youtube";
-    public static final int WAIT_FOR_EXISTS_TIMEOUT = 1000;
-    public static final int WAIT_OBJECT_TIMEOUT = 4; // in seconds
-    public static final int VIDEO_SLEEP_SECONDS = 4;
+    public static final int WAIT_POPUP_TIMEOUT_MS = 1000;
+    public static final int VIDEO_SLEEP_SECONDS = 5;
+    public static final int SCROLL_SWIPE_COUNT = 5;
     public static final String SOURCE_MY_VIDEOS = "my_videos";
     public static final String SOURCE_SEARCH = "search";
     public static final String SOURCE_TRENDING = "trending";
@@ -36,41 +36,43 @@ public class UiAutomation extends UxPerfUiAutomation {
     };
 
     protected LinkedHashMap<String, Timer> results = new LinkedHashMap<String, Timer>();
+    protected Timer timer = new Timer();
     protected Bundle parameters;
     protected boolean dumpsysEnabled;
     protected String outputDir;
+    protected String packageName;
     protected String packageID;
     protected String searchTerm;
 
     public void runUiAutomation() throws Exception {
         parameters = getParams();
-        packageID = parameters.getString("package") + ":id/";
+        dumpsysEnabled = Boolean.parseBoolean(parameters.getString("dumpsys_enabled"));
+        packageName = parameters.getString("package");
+        packageID = packageName + ":id/";
         searchTerm = parameters.getString("search_term");
         if (searchTerm != null) {
             searchTerm = searchTerm.replaceAll("_", " ");
         }
         clearFirstRunDialogues();
         testPlayVideo(parameters.getString("video_source"), STREAM_QUALITY[1], searchTerm);
-        if (false) {
-            writeResultsToFile(results, parameters.getString("output_file"));
-        }
+        writeResultsToFile(results, parameters.getString("output_file"));
     }
 
     public void clearFirstRunDialogues() throws Exception {
         UiObject laterButton = new UiObject(new UiSelector().textContains("Later").className("android.widget.TextView"));
-        if (laterButton.waitForExists(WAIT_FOR_EXISTS_TIMEOUT)) {
+        if (laterButton.waitForExists(WAIT_POPUP_TIMEOUT_MS)) {
            laterButton.click();
         }
         UiObject cancelButton = new UiObject(new UiSelector().textContains("Cancel").className("android.widget.Button"));
-        if (cancelButton.waitForExists(WAIT_FOR_EXISTS_TIMEOUT)) {
+        if (cancelButton.waitForExists(WAIT_POPUP_TIMEOUT_MS)) {
             cancelButton.click();
         }
         UiObject skipButton = new UiObject(new UiSelector().textContains("Skip").className("android.widget.TextView"));
-        if (skipButton.waitForExists(WAIT_FOR_EXISTS_TIMEOUT)) {
+        if (skipButton.waitForExists(WAIT_POPUP_TIMEOUT_MS)) {
             skipButton.click();
         }
         UiObject gotItButton = new UiObject(new UiSelector().textContains("Got it").className("android.widget.Button"));
-        if (gotItButton.waitForExists(WAIT_FOR_EXISTS_TIMEOUT)) {
+        if (gotItButton.waitForExists(WAIT_POPUP_TIMEOUT_MS)) {
             gotItButton.click();
         }
     }
@@ -78,40 +80,78 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void testPlayVideo(String source, String quality, String searchTerm) throws Exception {
         if (SOURCE_MY_VIDEOS.equalsIgnoreCase(source)) {
             clickUiObject(BY_DESC, "Account");
+            startDumpsys();
             clickUiObject(BY_TEXT, "My Videos", true);
+            endDumpsys("tab_my_videos");
+            startDumpsys();
             clickUiObject(BY_ID, packageID + "thumbnail", true);
+            endDumpsys("player_my_videos");
         } else if (SOURCE_SEARCH.equalsIgnoreCase(source)) {
+            startDumpsys();
             clickUiObject(BY_DESC, "Search");
+            endDumpsys("tab_search");
             UiObject textField = getUiObjectByResourceId(packageID + "search_edit_text");
             textField.setText(searchTerm);
             getUiDevice().pressEnter();
+            startDumpsys();
             clickUiObject(BY_ID, packageID + "thumbnail", true);
-        } else { // trending videos
+            endDumpsys("player_search");
+        } else if (SOURCE_TRENDING.equalsIgnoreCase(source)) {
+            startDumpsys();
             clickUiObject(BY_DESC, "Trending");
+            endDumpsys("tab_trending");
+            startDumpsys();
             clickUiObject(BY_ID, packageID + "thumbnail", true);
+            endDumpsys("player_trending");
+        } else { // homepage videos
+            startDumpsys();
+            clickUiObject(BY_ID, packageID + "thumbnail", true);
+            endDumpsys("player_home");
         }
-        seekForward();
+        // checkVideoInfo();
+        // seekForward();
         changeQuality(quality);
         makeFullscreen();
     }
 
+    public void checkVideoInfo() throws Exception {
+        clickUiObject(BY_ID, packageID + "expand_button");
+        sleep(1);
+        clickUiObject(BY_ID, packageID + "expand_button");
+        clickUiObject(BY_ID, packageID + "share_button", true);
+        getUiDevice().pressBack();
+        UiScrollable list = new UiScrollable(new UiSelector().resourceId(packageID + "watch_list"));
+        if (list.isScrollable()) {
+            list.scrollToEnd(SCROLL_SWIPE_COUNT);
+            list.scrollToBeginning(SCROLL_SWIPE_COUNT);
+        }
+    }
+
     public void seekForward() throws Exception {
+        startDumpsys();
         clickUiObject(BY_ID, packageID + "player_fragment", "android.widget.FrameLayout");
         clickUiObject(BY_ID, packageID + "time_bar");
+        endDumpsys("seekbar_touch");
         sleep(VIDEO_SLEEP_SECONDS);
         // timebar.swipeRight(20);
         // sleep(VIDEO_SLEEP_SECONDS);
     }
 
     public void makeFullscreen() throws Exception {
+        startDumpsys();
         clickUiObject(BY_ID, packageID + "player_fragment", "android.widget.FrameLayout");
         clickUiObject(BY_ID, packageID + "fullscreen_button", true);
+        endDumpsys("fullscreen_toggle");
+        startDumpsys();
         sleep(VIDEO_SLEEP_SECONDS);
     }
 
     public void changeQuality(String quality) throws Exception {
-        clickUiObject(BY_ID, packageID + "player_fragment", "android.widget.FrameLayout");
+        UiObject player = clickUiObject(BY_ID, packageID + "player_fragment", "android.widget.FrameLayout");
         clickUiObject(BY_DESC, "More options");
+        getUiDevice().waitForIdle();
+        // clickUiObject(BY_DESC, "video quality", true);
+        // clickUiObject(BY_TEXT, "Quality", "android.widget.TextView", true);
         clickUiObject(BY_ID, packageID + "quality_button", true);
         clickUiObject(BY_TEXT, "Auto");
         sleep(VIDEO_SLEEP_SECONDS);
@@ -120,4 +160,18 @@ public class UiAutomation extends UxPerfUiAutomation {
         // qualityList.getChildByText(qualitySelector, quality);
     }
 
+    public void startDumpsys() throws Exception {
+        if (dumpsysEnabled) {
+            initDumpsysSurfaceFlinger(packageName);
+            initDumpsysGfxInfo(packageName);
+        }
+    }
+
+    public void endDumpsys(String testTag) throws Exception {
+        if (dumpsysEnabled) {
+            String dumpsysTag = TAG + "_" + testTag;
+            exitDumpsysSurfaceFlinger(packageName, new File(outputDir, dumpsysTag + "_surfFlinger.log"));
+            exitDumpsysGfxInfo(packageName, new File(outputDir, dumpsysTag + "_gfxInfo.log"));
+        }
+    }
 }

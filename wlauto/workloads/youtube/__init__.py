@@ -25,12 +25,11 @@ class Youtube(AndroidUiAutoBenchmark):
                   test run.  The output is piped to log files which are then
                   pulled from the phone.
                   '''),
-        Parameter('video_source', kind=str, default='trending',
-                  allowed_values=['my_videos', 'search', 'trending'],
+        Parameter('video_source', kind=str, default='home',
+                  allowed_values=['home', 'my_videos', 'search', 'trending'],
                   description='''
-                  Determines where to play the video from. This can either be in
-                  from the 'my videos' section in the YouTube account, or from the
-                  top trending videos on the homepage, or one found in search.
+                  Determines where to play the video from. This can either be from the
+                  YouTube home, my videos section, trending videos or found in search.
                   '''),
         Parameter('search_term', kind=str, default='YouTube',
                   description='''
@@ -38,6 +37,8 @@ class Youtube(AndroidUiAutoBenchmark):
                   Not applicable otherwise.
                   '''),
     ]
+
+    view = package + '/com.google.android.apps.youtube.app.WatchWhileActivity'
 
     instrumentation_log = '{}_instrumentation.log'.format(name)
 
@@ -80,8 +81,9 @@ class Youtube(AndroidUiAutoBenchmark):
 
     def teardown(self, context):
         super(Youtube, self).teardown(context)
-
-        for file in self.device.listdir(self.device.working_directory):
-            if file.startswith (self.name) and file.endswith(".log"):
-                self.device.pull_file(os.path.join(self.device.working_directory, file), context.output_directory)
-                self.device.delete_file(os.path.join(self.device.working_directory, file))
+        self.logger.info('============ teardown ===========')
+        for entry in self.device.listdir(self.device.working_directory):
+            if entry.startswith (self.name) and entry.endswith(".log"):
+                self.logger.info("Pulling file '{}'".format(entry))
+                self.device.pull_file(os.path.join(self.device.working_directory, entry), context.output_directory)
+                self.device.delete_file(os.path.join(self.device.working_directory, entry))
