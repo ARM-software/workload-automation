@@ -27,7 +27,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final String TAG = "youtube";
     public static final int WAIT_POPUP_TIMEOUT_MS = 1000;
     public static final int VIDEO_SLEEP_SECONDS = 5;
-    public static final int SCROLL_SWIPE_COUNT = 5;
+    public static final int SCROLL_SWIPE_COUNT = 3;
     public static final String SOURCE_MY_VIDEOS = "my_videos";
     public static final String SOURCE_SEARCH = "search";
     public static final String SOURCE_TRENDING = "trending";
@@ -108,8 +108,8 @@ public class UiAutomation extends UxPerfUiAutomation {
             clickUiObject(BY_ID, packageID + "thumbnail", true);
             endDumpsys("player_home");
         }
-        // checkVideoInfo();
-        // seekForward();
+        checkVideoInfo();
+        seekForward();
         changeQuality(quality);
         makeFullscreen();
     }
@@ -122,15 +122,17 @@ public class UiAutomation extends UxPerfUiAutomation {
         getUiDevice().pressBack();
         UiScrollable list = new UiScrollable(new UiSelector().resourceId(packageID + "watch_list"));
         if (list.isScrollable()) {
-            list.scrollToEnd(SCROLL_SWIPE_COUNT);
-            list.scrollToBeginning(SCROLL_SWIPE_COUNT);
+            list.flingToEnd(SCROLL_SWIPE_COUNT);
+            list.flingToBeginning(SCROLL_SWIPE_COUNT);
         }
+        getUiDevice().waitForIdle();
+        sleep(1);
     }
 
     public void seekForward() throws Exception {
         startDumpsys();
         clickUiObject(BY_ID, packageID + "player_fragment", "android.widget.FrameLayout");
-        clickUiObject(BY_ID, packageID + "time_bar");
+        UiObject timebar = clickUiObject(BY_ID, packageID + "time_bar");
         endDumpsys("seekbar_touch");
         sleep(VIDEO_SLEEP_SECONDS);
         // timebar.swipeRight(20);
