@@ -73,17 +73,16 @@ class Youtube(AndroidUiAutoBenchmark):
                     match = regex.search(line)
                     if match:
                         context.result.add_metric((match.group('key') + "_start"),
-                                                  match.group('value1'))
+                                                  match.group('value1'), units='ms')
                         context.result.add_metric((match.group('key') + "_finish"),
-                                                  match.group('value2'))
+                                                  match.group('value2'), units='ms')
                         context.result.add_metric((match.group('key') + "_duration"),
-                                                  match.group('value3'))
+                                                  match.group('value3'), units='ms')
 
     def teardown(self, context):
         super(Youtube, self).teardown(context)
-        self.logger.info('============ teardown ===========')
         for entry in self.device.listdir(self.device.working_directory):
-            if entry.startswith (self.name) and entry.endswith(".log"):
+            if entry.startswith(self.name) and entry.endswith(".log"):
                 self.logger.info("Pulling file '{}'".format(entry))
                 self.device.pull_file(os.path.join(self.device.working_directory, entry), context.output_directory)
                 self.device.delete_file(os.path.join(self.device.working_directory, entry))
