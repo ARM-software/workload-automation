@@ -41,9 +41,38 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
 
     private Logger logger = Logger.getLogger(UxPerfUiAutomation.class.getName());
 
-    public enum Direction { UP, DOWN, LEFT, RIGHT, NULL };
     public enum GestureType { UIDEVICE_SWIPE, UIOBJECT_SWIPE, PINCH };
-    public enum PinchType { IN, OUT, NULL };
+
+    public class SurfaceLogger {
+
+        private Bundle parameters;
+        private String gfxInfologName;
+        private String surfFlingerlogName;
+        private Timer result;
+
+        public SurfaceLogger(String testTag, Bundle parameters) {
+            this.parameters = parameters;
+            this.gfxInfologName = String.format(testTag + "_gfxInfo.log");
+            this.surfFlingerlogName = String.format(testTag + "_surfFlinger.log");
+            this.result = new Timer();
+        }
+
+        public void start() {
+            startDumpsysGfxInfo(parameters);
+            startDumpsysSurfaceFlinger(parameters);
+            result.start();
+        }
+
+        public void stop() throws Exception {
+            stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
+            stopDumpsysGfxInfo(parameters, gfxInfologName);
+            result.end();
+        }
+
+        public Timer result() {
+            return result;
+        }
+    }
 
     public static class Timer {
         private long startTime = 0;
@@ -224,82 +253,6 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
                 }
             }
         }
-    }
-
-    public Timer uiDeviceSwipeTest(Direction direction, int steps) throws Exception {
-        Timer results = new Timer();
-        results.start();
-        switch (direction) {
-            case UP:
-                uiDeviceSwipeUp(steps);
-                break;
-            case DOWN:
-                uiDeviceSwipeDown(steps);
-                break;
-            case LEFT:
-                uiDeviceSwipeLeft(steps);
-                break;
-            case RIGHT:
-                uiDeviceSwipeRight(steps);
-                break;
-            case NULL:
-                throw new Exception("No direction specified");
-            default:
-                break;
-        }
-        results.end();
-        return results;
-    }
-
-    public Timer uiObjectSwipeTest(UiObject view, Direction direction, int steps) throws Exception {
-        Timer results = new Timer();
-        results.start();
-        switch (direction) {
-            case UP:
-                view.swipeUp(steps);
-                break;
-            case DOWN:
-                view.swipeDown(steps);
-                break;
-            case LEFT:
-                view.swipeLeft(steps);
-                break;
-            case RIGHT:
-                view.swipeRight(steps);
-                break;
-            case NULL:
-                throw new Exception("No direction specified");
-            default:
-                break;
-        }
-        results.end();
-        return results;
-    }
-
-    public Timer uiObjectPinchTest(UiObject view, PinchType direction, int steps,
-                                   int percent) throws Exception {
-        Timer results = new Timer();
-        results.start();
-        if (direction.equals(PinchType.IN)) {
-            view.pinchIn(percent, steps);
-        } else if (direction.equals(PinchType.OUT)) {
-            view.pinchOut(percent, steps);
-        }
-        results.end();
-        return results;
-    }
-
-    public Timer uiObjectVertPinchTest(UiObject view, PinchType direction,
-                                       int steps, int percent) throws Exception {
-        Timer results = new Timer();
-        results.start();
-        if (direction.equals(PinchType.IN)) {
-            uiDeviceVertPinchIn(view, steps, percent);
-        } else if (direction.equals(PinchType.OUT)) {
-            uiDeviceVertPinchOut(view, steps, percent);
-        }
-        results.end();
-        return results;
     }
 
     public static class GestureTestParams {

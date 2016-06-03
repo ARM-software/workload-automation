@@ -127,39 +127,32 @@ public class UiAutomation extends UxPerfUiAutomation {
             int steps = pair.getValue().steps;
             int percent = pair.getValue().percent;
 
-            String runName = String.format(testTag + "_" + pair.getKey());
-            String gfxInfologName =  String.format(runName + "_gfxInfo.log");
-            String surfFlingerlogName =  String.format(runName + "_surfFlinger.log");
-
             UiObject view = new UiObject(new UiSelector().enabled(true));
 
             if (!view.waitForExists(viewTimeout)) {
                 throw new UiObjectNotFoundException("Could not find \"photo view\".");
             }
 
-            startDumpsysGfxInfo(parameters);
-            startDumpsysSurfaceFlinger(parameters);
-
-            Timer result = new Timer();
+            String runName = String.format(testTag + "_" + pair.getKey());
+            SurfaceLogger logger = new SurfaceLogger(runName, parameters);
+            logger.start();
 
             switch (type) {
                 case UIDEVICE_SWIPE:
-                    result = uiDeviceSwipeTest(dir, steps);
+                    uiDeviceSwipe(dir, steps);
                     break;
                 case UIOBJECT_SWIPE:
-                    result = uiObjectSwipeTest(view, dir, steps);
+                    uiObjectSwipe(view, dir, steps);
                     break;
                 case PINCH:
-                    result = uiObjectVertPinchTest(view, pinch, steps, percent);
+                    uiObjectVertPinch(view, pinch, steps, percent);
                     break;
                 default:
                     break;
             }
 
-            stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
-            stopDumpsysGfxInfo(parameters, gfxInfologName);
-
-            timingResults.put(runName, result);
+            logger.stop();
+            timingResults.put(runName, logger.result());
         }
 
         UiObject navigateUpButton =
@@ -222,19 +215,13 @@ public class UiAutomation extends UxPerfUiAutomation {
             int percent = pair.getValue().percent;
 
             String runName = String.format(testTag + "_" + pair.getKey());
-            String gfxInfologName =  String.format(runName + "_gfxInfo.log");
-            String surfFlingerlogName =  String.format(runName + "_surfFlinger.log");
+            SurfaceLogger logger = new SurfaceLogger(runName, parameters);
 
-            startDumpsysGfxInfo(parameters);
-            startDumpsysSurfaceFlinger(parameters);
+            logger.start();
+            seekBarTest(seekBar, pos, steps);
+            logger.stop();
 
-            Timer result = new Timer();
-            result = seekBarTest(seekBar, pos, steps);
-
-            stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
-            stopDumpsysGfxInfo(parameters, gfxInfologName);
-
-            timingResults.put(runName, result);
+            timingResults.put(runName, logger.result());
         }
 
         saveAndReturn();
@@ -272,19 +259,13 @@ public class UiAutomation extends UxPerfUiAutomation {
             Position pos = pair.getValue();
 
             String runName = String.format(testTag + "_" + pair.getKey());
-            String gfxInfologName =  String.format(runName + "_gfxInfo.log");
-            String surfFlingerlogName =  String.format(runName + "_surfFlinger.log");
+            SurfaceLogger logger = new SurfaceLogger(runName, parameters);
 
-            startDumpsysGfxInfo(parameters);
-            startDumpsysSurfaceFlinger(parameters);
+            logger.start();
+            slideBarTest(straightenSlider, pos, steps);
+            logger.stop();
 
-            Timer result = new Timer();
-            result = slideBarTest(straightenSlider, pos, steps);
-
-            stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
-            stopDumpsysGfxInfo(parameters, gfxInfologName);
-
-            timingResults.put(runName, result);
+            timingResults.put(runName, logger.result());
         }
 
         saveAndReturn();
@@ -310,33 +291,22 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         for (String subTest : subTests) {
             String runName = String.format(testTag + "_" + subTest);
-            String gfxInfologName =  String.format(runName + "_gfxInfo.log");
-            String surfFlingerlogName =  String.format(runName + "_surfFlinger.log");
+            SurfaceLogger logger = new SurfaceLogger(runName, parameters);
 
-            startDumpsysGfxInfo(parameters);
-            startDumpsysSurfaceFlinger(parameters);
-
-            Timer result = new Timer();
-            result.start();
+            logger.start();
             rotate.click();
-            result.end();
+            logger.stop();
 
-            stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
-            stopDumpsysGfxInfo(parameters, gfxInfologName);
-
-            timingResults.put(runName, result);
+            timingResults.put(runName, logger.result());
         }
 
         saveAndReturn();
     }
 
     // Helper to slide the seekbar during photo edit.
-    private Timer seekBarTest(final UiObject view, final Position pos, final int steps) throws Exception {
+    private void seekBarTest(final UiObject view, final Position pos, final int steps) throws Exception {
         final int SWIPE_MARGIN_LIMIT = 5;
         Rect rect = view.getVisibleBounds();
-
-        Timer result = new Timer();
-        result.start();
 
         switch (pos) {
             case LEFT:
@@ -351,18 +321,12 @@ public class UiAutomation extends UxPerfUiAutomation {
             default:
                 break;
         }
-
-        result.end();
-        return result;
     }
 
     // Helper to slide the slidebar during photo edit.
-    private Timer slideBarTest(final UiObject view, final Position pos, final int steps) throws Exception {
+    private void slideBarTest(final UiObject view, final Position pos, final int steps) throws Exception {
         final int SWIPE_MARGIN_LIMIT = 5;
         Rect rect = view.getBounds();
-
-        Timer result = new Timer();
-        result.start();
 
         switch (pos) {
             case LEFT:
@@ -378,9 +342,6 @@ public class UiAutomation extends UxPerfUiAutomation {
             default:
                 break;
         }
-
-        result.end();
-        return result;
     }
 
     // Helper to click on the wa-working gallery.

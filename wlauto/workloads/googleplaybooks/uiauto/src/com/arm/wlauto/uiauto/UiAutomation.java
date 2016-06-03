@@ -164,8 +164,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             int percent = pair.getValue().percent;
 
             String runName = String.format(testTag + "_" + pair.getKey());
-            String gfxInfologName =  String.format(runName + "_gfxInfo.log");
-            String surfFlingerlogName =  String.format(runName + "_surfFlinger.log");
+            SurfaceLogger logger = new SurfaceLogger(runName, parameters);
 
             UiObject pageView = getPageView();
 
@@ -173,29 +172,24 @@ public class UiAutomation extends UxPerfUiAutomation {
                 throw new UiObjectNotFoundException("Could not find \"page view\".");
             }
 
-            startDumpsysGfxInfo(parameters);
-            startDumpsysSurfaceFlinger(parameters);
-
-            Timer result = new Timer();
+            logger.start();
 
             switch (type) {
                 case UIDEVICE_SWIPE:
-                    result = uiDeviceSwipeTest(dir, steps);
+                    uiDeviceSwipe(dir, steps);
                     break;
                 case UIOBJECT_SWIPE:
-                    result = uiObjectSwipeTest(pageView, dir, steps);
+                    uiObjectSwipe(pageView, dir, steps);
                     break;
                 case PINCH:
-                    result = uiObjectVertPinchTest(pageView, pinch, steps, percent);
+                    uiObjectVertPinch(pageView, pinch, steps, percent);
                     break;
                 default:
                     break;
             }
 
-            stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
-            stopDumpsysGfxInfo(parameters, gfxInfologName);
-
-            timingResults.put(runName, result);
+            logger.stop();
+            timingResults.put(runName, logger.result());
         }
 
         if (!getPageView().waitForExists(viewTimeout)) {
@@ -205,13 +199,10 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     private void selectRandomChapter() throws Exception {
         String testTag = "select_random_chapter";
-        String gfxInfologName =  String.format(testTag + "_gfxInfo.log");
-        String surfFlingerlogName =  String.format(testTag + "_surfFlinger.log");
+        SurfaceLogger logger = new SurfaceLogger(testTag, parameters);
 
         getDropdownMenu();
 
-        Timer result = new Timer();
-        result.start();
         UiObject contents = getUiObjectByResourceId("com.google.android.apps.books:id/menu_reader_toc",
                                                     "android.widget.TextView");
         contents.clickAndWaitForNewWindow(timeout);
@@ -219,18 +210,14 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject toChapterView = getUiObjectByResourceId("com.google.android.apps.books:id/toc_list_view",
                                                          "android.widget.ExpandableListView");
 
-        startDumpsysGfxInfo(parameters);
-        startDumpsysSurfaceFlinger(parameters);
+        logger.start();
         toChapterView.swipeUp(100);
         tapDisplayCentre();
-
-        stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
-        stopDumpsysGfxInfo(parameters, gfxInfologName);
+        logger.stop();
 
         waitForPage();
 
-        result.end();
-        timingResults.put(testTag, result);
+        timingResults.put(testTag, logger.result());
     }
 
     private void addNote(final String text) throws Exception {
@@ -321,7 +308,6 @@ public class UiAutomation extends UxPerfUiAutomation {
     private void switchPageStyles() throws Exception {
 
         String testTag = "switch_page_style";
-        String gfxInfologName =  String.format(testTag + "_gfxInfo.log");
 
         getDropdownMenu();
         UiObject readerSettings = getUiObjectByResourceId("com.google.android.apps.books:id/menu_reader_settings",
@@ -338,18 +324,15 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         String[] styles = {"Night", "Sepia", "Day"};
 
-        startDumpsysGfxInfo(parameters);
-
         for (String style : styles) {
-            Timer result = new Timer();
-            result.start();
+            SurfaceLogger logger = new SurfaceLogger(testTag + "_" + style, parameters);
+            logger.start();
             UiObject pageStyle = new UiObject(new UiSelector().description(style));
             pageStyle.clickAndWaitForNewWindow(viewTimeout);
-            result.end();
-            timingResults.put(String.format(testTag + "_" + style), result);
+            logger.stop();
+            timingResults.put(String.format(testTag + "_" + style), logger.result());
         }
 
-        stopDumpsysGfxInfo(parameters, gfxInfologName);
         pressBack();
     }
 

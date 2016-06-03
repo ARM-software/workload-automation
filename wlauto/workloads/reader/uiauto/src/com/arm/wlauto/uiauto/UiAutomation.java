@@ -245,35 +245,27 @@ public class UiAutomation extends UxPerfUiAutomation {
             int steps = pair.getValue().steps;
             int percent = pair.getValue().percent;
 
-            String runName = String.format(TestTag + "_" + pair.getKey());
-            String gfxInfologName =  String.format(runName + "_gfxInfo.log");
-            String surfFlingerlogName =  String.format(runName + "_surfFlinger.log");
-
             UiObject view = new UiObject(new UiSelector().resourceId("com.adobe.reader:id/viewPager"));
 
-            startDumpsysGfxInfo(parameters);
-            startDumpsysSurfaceFlinger(parameters);
-
-            Timer results = new Timer();
+            String runName = String.format(TestTag + "_" + pair.getKey());
+            SurfaceLogger logger = new SurfaceLogger(runName, parameters);
 
             switch (type) {
                 case UIDEVICE_SWIPE:
-                    results = uiDeviceSwipeTest(dir, steps);
+                    uiDeviceSwipe(dir, steps);
                     break;
                 case UIOBJECT_SWIPE:
-                    results = uiObjectSwipeTest(view, dir, steps);
+                    uiObjectSwipe(view, dir, steps);
                     break;
                 case PINCH:
-                    results = uiObjectPinchTest(view, pinch, steps, percent);
+                    uiObjectPinch(view, pinch, steps, percent);
                     break;
                 default:
                     break;
             }
 
-            stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
-            stopDumpsysGfxInfo(parameters, gfxInfologName);
-
-            timingResults.put(runName, results);
+            logger.stop();
+            timingResults.put(runName, logger.result());
         }
 
         exitDocument();
