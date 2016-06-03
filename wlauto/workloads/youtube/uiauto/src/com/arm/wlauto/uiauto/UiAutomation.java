@@ -121,7 +121,25 @@ public class UiAutomation extends UxPerfUiAutomation {
         seekForward();
         changeQuality();
         checkVideoInfo();
+        minimiseVideo();
         makeFullscreen();
+    }
+
+    public void seekForward() throws Exception {
+        startMeasurements();
+        clickUiObject(BY_ID, packageID + "watch_player", CLASS_VIEW_GROUP);
+        UiObject timebar = clickUiObject(BY_ID, packageID + "time_bar");
+        endMeasurements("seekbar_touch");
+        sleep(VIDEO_SLEEP_SECONDS);
+    }
+
+    public void changeQuality() throws Exception {
+        UiObject player = clickUiObject(BY_ID, packageID + "watch_player", CLASS_VIEW_GROUP);
+        clickUiObject(BY_DESC, "More options");
+        getUiDevice().waitForIdle();
+        clickUiObject(BY_TEXT, "Quality", CLASS_TEXT_VIEW, true);
+        clickUiObject(BY_TEXT, STREAM_QUALITY[0]);
+        sleep(VIDEO_SLEEP_SECONDS);
     }
 
     public void checkVideoInfo() throws Exception {
@@ -152,14 +170,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         sleep(3);
     }
 
-    public void seekForward() throws Exception {
-        startMeasurements();
-        clickUiObject(BY_ID, packageID + "watch_player", CLASS_VIEW_GROUP);
-        UiObject timebar = clickUiObject(BY_ID, packageID + "time_bar");
-        endMeasurements("seekbar_touch");
-        sleep(VIDEO_SLEEP_SECONDS);
-    }
-
     public void makeFullscreen() throws Exception {
         startMeasurements();
         clickUiObject(BY_ID, packageID + "watch_player", CLASS_VIEW_GROUP);
@@ -168,15 +178,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         startDumpsys();
         sleep(VIDEO_SLEEP_SECONDS);
         endDumpsys("fullscreen_player");
-    }
-
-    public void changeQuality() throws Exception {
-        UiObject player = clickUiObject(BY_ID, packageID + "watch_player", CLASS_VIEW_GROUP);
-        clickUiObject(BY_DESC, "More options");
-        getUiDevice().waitForIdle();
-        clickUiObject(BY_TEXT, "Quality", CLASS_TEXT_VIEW, true);
-        clickUiObject(BY_TEXT, STREAM_QUALITY[0]);
-        sleep(VIDEO_SLEEP_SECONDS);
     }
 
     protected void startDumpsys() throws Exception {
