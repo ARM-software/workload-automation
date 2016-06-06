@@ -17,7 +17,7 @@ import re
 import logging
 from itertools import chain
 
-from wlauto.utils.misc import isiterable
+from wlauto.utils.misc import isiterable, memoized
 from wlauto.utils.types import numeric
 
 
@@ -215,37 +215,38 @@ EMPTY_CPU_REGEX = re.compile(r'CPU \d+ is empty')
 
 class TraceCmdTrace(object):
 
-    def __init__(self, filter_markers=True):
-        self.filter_markers = filter_markers
+    @property
+    @memoized
+    def has_start_marker(self):
+        with open(self.file_path) as fh:
+            for line in fh:
+                if TRACE_MARKER_START in line:
+                    return True
+            return False
 
-    def parse(self, filepath, names=None, check_for_markers=True):  # pylint: disable=too-many-branches,too-many-locals
+    def __init__(self, file_path, names=None, filter_markers=True):
+        self.filter_markers = filter_markers
+        self.file_path = file_path
+        self.names = names or []
+
+    def parse(self):  # pylint: disable=too-many-branches,too-many-locals
         """
         This is a generator for the trace event stream.
 
         """
-        inside_maked_region = False
-        filters = [re.compile('^{}$'.format(n)) for n in names or []]
-        if check_for_markers:
-            with open(filepath) as fh:
-                for line in fh:
-                    if TRACE_MARKER_START in line:
-                        break
-                else:
-                    # maker not found force filtering by marker to False
-                    self.filter_markers = False
-
-        with open(filepath) as fh:
+        inside_marked_region = False
+        filters = [re.compile('^{}$'.format(n)) for n in self.names or []]
+        with open(self.file_path) as fh:
             for line in fh:
                 # if processing trace markers, skip marker lines as well as all
                 # lines outside marked region
                 if self.filter_markers:
-                    if not inside_maked_region:
+                    if not inside_marked_region:
                         if TRACE_MARKER_START in line:
-                            inside_maked_region = True
+                            inside_marked_region = True
                         continue
                     elif TRACE_MARKER_STOP in line:
-                        inside_maked_region = False
-                        continue
+                        break
 
                 match = DROPPED_EVENTS_REGEX.search(line)
                 if match:
@@ -282,4 +283,7 @@ class TraceCmdTrace(object):
                 if isinstance(body_parser, basestring) or isinstance(body_parser, re._pattern_type):  # pylint: disable=protected-access
                     body_parser = regex_body_parser(body_parser)
                 yield TraceCmdEvent(parser=body_parser, **match.groupdict())
+            else:
+                if self.filter_markers and inside_marked_region:
+                    logger.warning('Did not encounter a stop marker in trace')
 
