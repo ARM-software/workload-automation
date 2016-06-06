@@ -25,6 +25,7 @@ import android.os.SystemClock;
 import android.util.Log;
 
 // Import the uiautomator libraries
+import com.android.uiautomator.core.UiDevice;
 import com.android.uiautomator.core.UiObject;
 import com.android.uiautomator.core.UiObjectNotFoundException;
 import com.android.uiautomator.core.UiScrollable;
@@ -156,7 +157,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         endMeasurements("player_more_options");
         getUiDevice().waitForIdle();
         startTimer();
-        clickUiObject(BY_TEXT, "Quality", CLASS_TEXT_VIEW, true);
+        try {
+            clickUiObject(BY_TEXT, "Quality", CLASS_TEXT_VIEW, true);
+        } catch (UiObjectNotFoundException e) {
+            dumpViews("change_quality");
+            // Try again for reliability
+            clickUiObject(BY_TEXT, "Quality", CLASS_TEXT_VIEW, true);
+        }
         clickUiObject(BY_TEXT, STREAM_QUALITY[0]);
         endTimer("player_change_quality");
         sleep(VIDEO_SLEEP_SECONDS);
@@ -190,8 +197,8 @@ public class UiAutomation extends UxPerfUiAutomation {
             list.flingToBeginning(LIST_SWIPE_COUNT);
             endMeasurements("watch_list_fling_up");
         }
-        // Give the window enough time to settle down before the next
-        // step, or else complains about views not being found in time
+        // After flinging, give the window enough time to settle down before
+        // the next step, or else UiAutomator fails to find views in time
         sleep(3);
     }
 
@@ -248,5 +255,12 @@ public class UiAutomation extends UxPerfUiAutomation {
     protected void endMeasurements(String testTag) throws Exception {
         endTimer(testTag);
         endDumpsys(testTag);
+    }
+
+    protected void dumpViews(String tag) throws Exception {
+        String fileName = TAG + "_view_hierarchy_" + tag + ".log";
+        String filePath = new File(outputDir, fileName).toString();
+        // String filePath = outputDir + File.separator + fileName;
+        UiDevice.getInstance().dumpWindowHierarchy(filePath);
     }
 }

@@ -31,6 +31,26 @@ class Youtube(AndroidUiAutoBenchmark):
 
     The workload plays a pre-defined video from the Watch Later playlist in different video
     quality bitrates.  It also seeks to a pre-defined position, pauses and restarts playback.
+
+    This workload requires a stable internet connection, preferably Wi-Fi.
+
+    Test description:
+    1. The workload has 4 test scenarios, determined by the ``video_source`` parameter in
+       the agenda file. These are ``home``, ``my_videos``, ``search``, and ``trending``.
+       - A. home - The first video from the youtube home page is played
+       - B. my_videos - A video is played from the user's account page. The user must have at
+            least one uploaded video for this to work.
+       - C. search - A search for a specific term is performed in the app. The first video in
+            the search results is played. A parameter ``search_term`` must also be provided
+            in the agenda for this to work.
+       - D. trending - The first video in the trending videos list is played
+    2. For each scenario, the following actions are performed:
+       - seeking forward in the video
+       - changing the video quality
+       - checking the info card (that shows video metadata)
+       - scrolling the list of related videos and/or comments
+       - minimising the player, then expanding it again
+       - playing the video in full screen
     '''
 
     parameters = [
