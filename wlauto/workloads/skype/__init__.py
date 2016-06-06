@@ -53,7 +53,7 @@ class Skype(AndroidUiAutoBenchmark):
             package+'/com.skype.android.app.signin.UnifiedLandingPageActivity']
     activity = ''
     # Skype has no default 'main' activity
-    launch_main = False # overrides extended class
+    launch_main = False  # overrides extended class
 
     instrumentation_log = '{}_instrumentation.log'.format(name)
 
@@ -100,18 +100,15 @@ class Skype(AndroidUiAutoBenchmark):
             raise DeviceError('Network is not connected for device {}'.format(self.device.name))
 
     def setup(self, context):
-        self.logger.info('===== setup() ======')
         super(Skype, self).setup(context)
         self.device.execute('am force-stop {}'.format(self.package))
         self.device.execute('am start -W -a android.intent.action.VIEW -d skype:dummy?dummy')
         time.sleep(1)
 
     def run(self, context):
-        self.logger.info('===== run() ======')
         super(Skype, self).run(context)
 
     def update_result(self, context):
-        self.logger.info('===== update_result() ======')
         super(Skype, self).update_result(context)
 
         self.device.pull_file(self.output_file, context.output_directory)
@@ -136,7 +133,6 @@ class Skype(AndroidUiAutoBenchmark):
                                               match.group('value3'), units='ms')
 
     def teardown(self, context):
-        self.logger.info('===== teardown() ======')
         super(Skype, self).teardown(context)
         # Pull log files
         wd = self.device.working_directory
