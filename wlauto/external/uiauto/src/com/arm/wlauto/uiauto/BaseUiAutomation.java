@@ -267,7 +267,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         }
     }
 
-    public void uiDeviceVertPinchIn(UiObject view, int steps, int percent) throws Exception {
+    public void uiObjectVertPinchIn(UiObject view, int steps, int percent) throws Exception {
         final int FINGER_TOUCH_HALF_WIDTH = 20;
 
         // Make value between 1 and 100
@@ -293,7 +293,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         view.performTwoPointerGesture(startPoint1, startPoint2, endPoint1, endPoint2, steps);
     }
 
-    public void uiDeviceVertPinchOut(UiObject view, int steps, int percent) throws Exception {
+    public void uiObjectVertPinchOut(UiObject view, int steps, int percent) throws Exception {
         final int FINGER_TOUCH_HALF_WIDTH = 20;
 
         // Make value between 1 and 100
@@ -365,9 +365,9 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     public void uiObjectVertPinch(UiObject view, PinchType direction,
                                        int steps, int percent) throws Exception {
         if (direction.equals(PinchType.IN)) {
-            uiDeviceVertPinchIn(view, steps, percent);
+            uiObjectVertPinchIn(view, steps, percent);
         } else if (direction.equals(PinchType.OUT)) {
-            uiDeviceVertPinchOut(view, steps, percent);
+            uiObjectVertPinchOut(view, steps, percent);
         }
     }
 
