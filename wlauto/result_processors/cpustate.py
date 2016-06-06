@@ -19,7 +19,7 @@ from collections import OrderedDict
 
 from wlauto import ResultProcessor, Parameter
 from wlauto.core import signal
-from wlauto.exceptions import ConfigError
+from wlauto.exceptions import ConfigError, DeviceError
 from wlauto.instrumentation import instrument_is_installed
 from wlauto.utils.power import report_power_stats
 from wlauto.utils.misc import unique
@@ -109,6 +109,19 @@ class CpuStatesProcessor(ResultProcessor):
                   The values generated are floating point numbers, normalised based on the maximum
                   frequency of the cluster.
                   """),
+        Parameter('start_marker_handling', kind=str, default="try",
+                  allowed_values=['ignore', 'try', 'error'],
+                  description="""
+
+                  The trace-cmd instrument inserts a marker into the trace to indicate the beginning
+                  of workload execution. In some cases, this marker may be missing in the final
+                  output (e.g. due to trace buffer overrun). This parameter specifies how a missing
+                  start marker will be handled:
+
+                  :`ignore`: The start marker will be ignored. All events in the trace will be used.
+                  :`error`: An error will be raised if the start marker is not found in the trace.
+                  :`try`: If the start marker is not found, all events in the trace will be used.
+                  """)
     ]
 
     def validate(self):
@@ -169,7 +182,10 @@ class CpuStatesProcessor(ResultProcessor):
         self.logger.debug('Nudging all cores awake...')
         for i in xrange(len(device.core_names)):
             command = device.busybox + ' taskset 0x{:x} {}'
-            device.execute(command.format(1 << i, 'ls'))
+            try:
+                device.execute(command.format(1 << i, 'ls'))
+            except DeviceError:
+                self.logger.warning("Failed to nudge CPU %s, has it been hot plugged out?", i)
 
     def process_iteration_result(self, result, context):
         trace = context.get_artifact('txttrace')
@@ -198,10 +214,10 @@ class CpuStatesProcessor(ResultProcessor):
             timeline_csv_file=timeline_csv_file,
             cpu_utilisation=cpu_utilisation,
             max_freq_list=self.max_freq_list,
+            start_marker_handling=self.start_marker_handling,
         )
         parallel_report = reports.pop(0)
         powerstate_report = reports.pop(0)
-
         if parallel_report is None:
             self.logger.warning('No power state reports generated; are power '
                                 'events enabled in the trace?')

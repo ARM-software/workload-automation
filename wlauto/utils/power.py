@@ -24,6 +24,7 @@ from collections import defaultdict
 import argparse
 
 from wlauto.utils.trace_cmd import TraceCmdTrace, TRACE_MARKER_START, TRACE_MARKER_STOP
+from wlauto.exceptions import DeviceError
 
 
 logger = logging.getLogger('power')
@@ -157,6 +158,8 @@ class PowerStateProcessor(object):
         self.requested_states = defaultdict(lambda: -1)  # cpu_id -> requeseted state
         self.wait_for_start_marker = wait_for_start_marker
         self._saw_start_marker = False
+        self._saw_stop_marker = False
+        self.exceptions = []
 
         idle_state_domains = build_idle_domains(core_clusters,
                                                 num_states=num_idle_states,
@@ -173,9 +176,17 @@ class PowerStateProcessor(object):
 
     def process(self, event_stream):
         for event in event_stream:
-            next_state = self.update_power_state(event)
-            if self._saw_start_marker or not self.wait_for_start_marker:
-                yield next_state
+            try:
+                next_state = self.update_power_state(event)
+                if self._saw_start_marker or not self.wait_for_start_marker:
+                    yield next_state
+                if self._saw_stop_marker:
+                    break
+            except Exception as e:  # pylint: disable=broad-except
+                self.exceptions.append(e)
+        else:
+            if self.wait_for_start_marker:
+                logger.warning("Did not see a STOP marker in the trace")
 
     def update_power_state(self, event):
         """
@@ -191,7 +202,7 @@ class PowerStateProcessor(object):
             if event.name == 'START':
                 self._saw_start_marker = True
             elif event.name == 'STOP':
-                self._saw_start_marker = False
+                self._saw_stop_marker = True
         else:
             raise ValueError('Unexpected event type: {}'.format(event.kind))
         return self.power_state.copy()
@@ -610,15 +621,29 @@ def build_idle_domains(core_clusters,   # NOQA
 def report_power_stats(trace_file, idle_state_names, core_names, core_clusters,
                        num_idle_states, first_cluster_state=sys.maxint,
                        first_system_state=sys.maxint, use_ratios=False,
-                       timeline_csv_file=None, filter_trace=False,
-                       cpu_utilisation=None, max_freq_list=None):
-    # pylint: disable=too-many-locals
-    trace = TraceCmdTrace(filter_markers=filter_trace)
+                       timeline_csv_file=None, cpu_utilisation=None,
+                       max_freq_list=None, start_marker_handling='error'):
+    # pylint: disable=too-many-locals,too-many-branches
+    trace = TraceCmdTrace(trace_file,
+                          filter_markers=False,
+                          names=['cpu_idle', 'cpu_frequency', 'print'])
+
+    wait_for_start_marker = True
+    if start_marker_handling == "error" and not trace.has_start_marker:
+        raise DeviceError("Start marker was not found in the trace")
+    elif start_marker_handling == "try":
+        wait_for_start_marker = trace.has_start_marker
+        if not wait_for_start_marker:
+            logger.warning("Did not see a START marker in the trace, "
+                           "state residency and parallelism statistics may be inaccurate.")
+    elif start_marker_handling == "ignore":
+        wait_for_start_marker = False
+
     ps_processor = PowerStateProcessor(core_clusters,
                                        num_idle_states=num_idle_states,
                                        first_cluster_state=first_cluster_state,
                                        first_system_state=first_system_state,
-                                       wait_for_start_marker=not filter_trace)
+                                       wait_for_start_marker=wait_for_start_marker)
     reporters = [
         ParallelStats(core_clusters, use_ratios),
         PowerStateStats(core_names, idle_state_names, use_ratios)
@@ -632,7 +657,7 @@ def report_power_stats(trace_file, idle_state_names, core_names, core_clusters,
         else:
             logger.warning('Maximum frequencies not found. Cannot normalise. Skipping CPU Utilisation Timeline')
 
-    event_stream = trace.parse(trace_file, names=['cpu_idle', 'cpu_frequency', 'print'])
+    event_stream = trace.parse()
     transition_stream = stream_cpu_power_transitions(event_stream)
     power_state_stream = ps_processor.process(transition_stream)
     core_state_stream = gather_core_states(power_state_stream)
@@ -640,6 +665,11 @@ def report_power_stats(trace_file, idle_state_names, core_names, core_clusters,
     for timestamp, states in core_state_stream:
         for reporter in reporters:
             reporter.update(timestamp, states)
+
+    if ps_processor.exceptions:
+        logger.warning('There were errors while processing trace:')
+        for e in ps_processor.exceptions:
+            logger.warning(str(e))
 
     reports = []
     for reporter in reporters:
@@ -650,6 +680,7 @@ def report_power_stats(trace_file, idle_state_names, core_names, core_clusters,
 
 def main():
     # pylint: disable=unbalanced-tuple-unpacking
+    logging.basicConfig(level=logging.INFO)
     args = parse_arguments()
     parallel_report, powerstate_report = report_power_stats(
         trace_file=args.infile,
@@ -661,9 +692,9 @@ def main():
         first_system_state=args.first_system_state,
         use_ratios=args.ratios,
         timeline_csv_file=args.timeline_file,
-        filter_trace=(not args.no_trace_filter),
         cpu_utilisation=args.cpu_utilisation,
         max_freq_list=args.max_freq_list,
+        start_marker_handling=args.start_marker_handling,
     )
     parallel_report.write(os.path.join(args.output_directory, 'parallel.csv'))
     powerstate_report.write(os.path.join(args.output_directory, 'cpustate.csv'))
@@ -692,11 +723,6 @@ def parse_arguments():  # NOQA
     parser.add_argument('-d', '--output-directory', default='.',
                         help='''
                         Output directory where reports will be placed.
-                        ''')
-    parser.add_argument('-F', '--no-trace-filter', action='store_true', default=False,
-                        help='''
-                        Normally, only the trace between begin and end marker is used. This disables
-                        the filtering so the entire trace file is considered.
                         ''')
     parser.add_argument('-c', '--core-names', action=SplitListAction,
                         help='''
@@ -749,6 +775,18 @@ def parse_arguments():  # NOQA
                         the trace was collected.
                         Only required if --cpu-utilisation is set.
                         This is used to normalise the frequencies to obtain percentage utilisation.
+                        ''')
+    parser.add_argument('-M', '--start-marker-handling', metavar='HANDLING', default="try",
+                        choices=["error", "try", "ignore"],
+                        help='''
+                        The trace-cmd instrument inserts a marker into the trace to indicate the beginning
+                        of workload execution. In some cases, this marker may be missing in the final
+                        output (e.g. due to trace buffer overrun). This parameter specifies how a missing
+                        start marker will be handled:
+
+                         ignore:  The start marker will be ignored. All events in the trace will be used.
+                         error:   An error will be raised if the start marker is not found in the trace.
+                         try:     If the start marker is not found, all events in the trace will be used.
                         ''')
 
     args = parser.parse_args()

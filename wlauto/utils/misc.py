@@ -823,3 +823,21 @@ def sha256(path, chunk=2048):
 
 def urljoin(*parts):
     return '/'.join(p.rstrip('/') for p in parts)
+
+
+__memo_cache = {}
+
+
+def memoized(func):
+    """A decorator for memoizing functions and methods."""
+    func_id = repr(func)
+
+    def memoize_wrapper(*args, **kwargs):
+        id_string = func_id + ','.join([str(id(a)) for a in args])
+        id_string += ','.join('{}={}'.format(k, v)
+                              for k, v in kwargs.iteritems())
+        if id_string not in __memo_cache:
+            __memo_cache[id_string] = func(*args, **kwargs)
+        return __memo_cache[id_string]
+
+    return memoize_wrapper
