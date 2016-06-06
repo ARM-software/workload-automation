@@ -1,0 +1,10 @@
+# video_source = [ home, my_videos, search, trending ]
+global:
+    iterations: 1
+workloads:
+    -   id: {{workload_id}}
+        name: youtube
+        params:
+            dumpsys_enabled: {{dumpsys_enabled}}
+            video_source: {{video_source}}
+            search_term: {{search_term}}
