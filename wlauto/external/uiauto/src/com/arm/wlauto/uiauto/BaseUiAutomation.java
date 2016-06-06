@@ -31,11 +31,13 @@ import android.graphics.Rect;
 import com.android.uiautomator.core.UiObject;
 import com.android.uiautomator.core.UiObjectNotFoundException;
 import com.android.uiautomator.core.UiSelector;
+import com.android.uiautomator.core.UiDevice;
 import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
 public class BaseUiAutomation extends UiAutomatorTestCase {
 
-    public long waitTimeout = TimeUnit.SECONDS.toMillis(4);
+    public long timeout = TimeUnit.SECONDS.toMillis(4);
+
     public enum ScreenOrientation { RIGHT, NATURAL, LEFT };
 
     public static final int CLICK_REPEAT_INTERVAL_MINIMUM = 5;
@@ -52,11 +54,11 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
     public boolean takeScreenshot(String name) {
         Bundle params = getParams();
-        String png_dir = params.getString("workdir");
+        String pngDir = params.getString("workdir");
 
         try {
-            return getUiDevice().takeScreenshot(new File(png_dir, name + ".png"));
-        } catch(NoSuchMethodError e) {
+            return getUiDevice().takeScreenshot(new File(pngDir, name + ".png"));
+        } catch (NoSuchMethodError e) {
             return true;
         }
     }
@@ -67,9 +69,9 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
     public void waitText(String text, int second) throws UiObjectNotFoundException {
         UiSelector selector = new UiSelector();
-        UiObject text_obj = new UiObject(selector.text(text)
+        UiObject textObj = new UiObject(selector.text(text)
                                        .className("android.widget.TextView"));
-        waitObject(text_obj, second);
+        waitObject(textObj, second);
     }
 
     public void waitObject(UiObject obj) throws UiObjectNotFoundException {
@@ -77,7 +79,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     }
 
     public void waitObject(UiObject obj, int second) throws UiObjectNotFoundException {
-        if (! obj.waitForExists(second * 1000)){
+        if (!obj.waitForExists(second * 1000)) {
             throw new UiObjectNotFoundException("UiObject is not found: "
                     + obj.getSelector().toString());
         }
@@ -99,10 +101,10 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
         long currentTime = System.currentTimeMillis();
         boolean found = false;
-        while ((currentTime - startTime) < timeout){
+        while ((currentTime - startTime) < timeout) {
             sleep(2);  // poll every two seconds
 
-            while((line=reader.readLine())!=null) {
+            while ((line = reader.readLine()) != null) {
                 if (line.contains(searchText)) {
                     found = true;
                     break;
@@ -118,74 +120,75 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         process.destroy();
 
         if ((currentTime - startTime) >= timeout) {
-            throw new TimeoutException("Timed out waiting for Logcat text \"%s\"".format(searchText));
+            throw new TimeoutException(String.format("Timed out waiting for Logcat text \"%s\"",
+                                                     searchText));
         }
     }
 
     public UiObject getUiObjectByResourceId(String resourceId, String className) throws Exception {
         UiObject object = new UiObject(new UiSelector().resourceId(resourceId)
                                                        .className(className));
-        if (!object.waitForExists(waitTimeout)) {
+        if (!object.waitForExists(timeout)) {
            throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
                                                               resourceId, className));
-        };
+        }
         return object;
     }
 
     public UiObject getUiObjectByDescription(String description, String className) throws Exception {
         UiObject object = new UiObject(new UiSelector().descriptionContains(description)
                                                        .className(className));
-        if (!object.waitForExists(waitTimeout)) {
+        if (!object.waitForExists(timeout)) {
             throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
                                                               description, className));
-        };
+        }
         return object;
     }
 
     public UiObject getUiObjectByText(String text, String className) throws Exception {
         UiObject object = new UiObject(new UiSelector().textContains(text)
-                                                      .className(className));
-        if (!object.waitForExists(waitTimeout)) {
+                                                       .className(className));
+        if (!object.waitForExists(timeout)) {
             throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
                                                               text, className));
-        };
+        }
         return object;
     }
 
     public void pressEnter() {
-        getUiDevice().getInstance().pressEnter();
+        UiDevice.getInstance().pressEnter();
     }
 
     public void pressBack() {
-        getUiDevice().getInstance().pressBack();
+        UiDevice.getInstance().pressBack();
     }
 
-    public int getDisplayHeight () {
-        return getUiDevice().getInstance().getDisplayHeight();
+    public int getDisplayHeight() {
+        return UiDevice.getInstance().getDisplayHeight();
     }
 
-    public int getDisplayWidth () {
-        return getUiDevice().getInstance().getDisplayWidth();
+    public int getDisplayWidth() {
+        return UiDevice.getInstance().getDisplayWidth();
     }
 
-    public int getDisplayCentreWidth () {
+    public int getDisplayCentreWidth() {
         return getDisplayWidth() / 2;
     }
 
-    public int getDisplayCentreHeight () {
+    public int getDisplayCentreHeight() {
         return getDisplayHeight() / 2;
     }
 
-    public void tapDisplayCentre () {
+    public void tapDisplayCentre() {
         tapDisplay(getDisplayCentreWidth(),  getDisplayCentreHeight());
     }
 
-    public void tapDisplay (int x, int y) {
-        getUiDevice().getInstance().click(x, y);
+    public void tapDisplay(int x, int y) {
+        UiDevice.getInstance().click(x, y);
     }
 
-    public void uiDeviceSwipeUp (int steps) {
-        getUiDevice().getInstance().swipe(
+    public void uiDeviceSwipeUp(int steps) {
+        UiDevice.getInstance().swipe(
             getDisplayCentreWidth(),
             (getDisplayCentreHeight() / 2),
             getDisplayCentreWidth(),
@@ -193,8 +196,8 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
             steps);
     }
 
-    public void uiDeviceSwipeDown (int steps) {
-        getUiDevice().getInstance().swipe(
+    public void uiDeviceSwipeDown(int steps) {
+        UiDevice.getInstance().swipe(
             getDisplayCentreWidth(),
             (getDisplayCentreHeight() + (getDisplayCentreHeight() / 2)),
             getDisplayCentreWidth(),
@@ -202,8 +205,8 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
             steps);
     }
 
-    public void uiDeviceSwipeLeft (int steps) {
-        getUiDevice().getInstance().swipe(
+    public void uiDeviceSwipeLeft(int steps) {
+        UiDevice.getInstance().swipe(
             (getDisplayCentreWidth() + (getDisplayCentreWidth() / 2)),
             getDisplayCentreHeight(),
             (getDisplayCentreWidth() / 2),
@@ -211,8 +214,8 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
             steps);
     }
 
-    public void uiDeviceSwipeRight (int steps) {
-        getUiDevice().getInstance().swipe(
+    public void uiDeviceSwipeRight(int steps) {
+        UiDevice.getInstance().swipe(
             (getDisplayCentreWidth() / 2),
             getDisplayCentreHeight(),
             (getDisplayCentreWidth() + (getDisplayCentreWidth() / 2)),
@@ -224,16 +227,20 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         final int FINGER_TOUCH_HALF_WIDTH = 20;
 
         // Make value between 1 and 100
-        percent = (percent < 0) ? 1 : (percent > 100) ? 100 : percent;
-        float percentage = percent / 100f;
+        int nPercent = (percent < 0) ? 1 : (percent > 100) ? 100 : percent;
+        float percentage = nPercent / 100f;
 
         Rect rect = view.getVisibleBounds();
-        if (rect.width() <= FINGER_TOUCH_HALF_WIDTH * 2)
+
+        if (rect.width() <= FINGER_TOUCH_HALF_WIDTH * 2) {
             throw new IllegalStateException("Object width is too small for operation");
+        }
 
         // Start at the top-center and bottom-center of the control
-        Point startPoint1 = new Point(rect.centerX(), rect.centerY() + (int) ((rect.height() / 2) * percentage));
-        Point startPoint2 = new Point(rect.centerX(), rect.centerY() - (int) ((rect.height() / 2) * percentage));
+        Point startPoint1 = new Point(rect.centerX(), rect.centerY()
+                          + (int) ((rect.height() / 2) * percentage));
+        Point startPoint2 = new Point(rect.centerX(), rect.centerY()
+                          - (int) ((rect.height() / 2) * percentage));
 
         // End at the same point at the center of the control
         Point endPoint1 = new Point(rect.centerX(), rect.centerY() + FINGER_TOUCH_HALF_WIDTH);
@@ -246,20 +253,24 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         final int FINGER_TOUCH_HALF_WIDTH = 20;
 
         // Make value between 1 and 100
-        percent = (percent < 0) ? 1 : (percent > 100) ? 100 : percent;
-        float percentage = percent / 100f;
+        int nPercent = (percent < 0) ? 1 : (percent > 100) ? 100 : percent;
+        float percentage = nPercent / 100f;
 
         Rect rect = view.getVisibleBounds();
-        if (rect.width() <= FINGER_TOUCH_HALF_WIDTH * 2)
+
+        if (rect.width() <= FINGER_TOUCH_HALF_WIDTH * 2) {
             throw new IllegalStateException("Object width is too small for operation");
+        }
 
         // Start from the same point at the center of the control
         Point startPoint1 = new Point(rect.centerX(), rect.centerY() + FINGER_TOUCH_HALF_WIDTH);
         Point startPoint2 = new Point(rect.centerX(), rect.centerY() - FINGER_TOUCH_HALF_WIDTH);
 
         // End at the top-center and bottom-center of the control
-        Point endPoint1 = new Point(rect.centerX(), rect.centerY() + (int) ((rect.height() / 2) * percentage));
-        Point endPoint2 = new Point(rect.centerX(), rect.centerY() - (int) ((rect.height() / 2) * percentage));
+        Point endPoint1 = new Point(rect.centerX(), rect.centerY()
+                        + (int) ((rect.height() / 2) * percentage));
+        Point endPoint2 = new Point(rect.centerX(), rect.centerY()
+                        - (int) ((rect.height() / 2) * percentage));
 
         view.performTwoPointerGesture(startPoint1, startPoint2, endPoint1, endPoint2, steps);
     }
@@ -286,7 +297,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
    public void uiDevicePerformLongClick(UiObject view, int steps) throws Exception {
         Rect rect = view.getBounds();
-        getUiDevice().getInstance().swipe(rect.centerX(), rect.centerY(),
+        UiDevice.getInstance().swipe(rect.centerX(), rect.centerY(),
                                           rect.centerX(), rect.centerY(), steps);
     }
 
@@ -299,11 +310,13 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     }
 
     public void repeatClickUiObject(UiObject view, int repeatCount, int intervalInMillis) throws Exception {
-        int repeatInterval = intervalInMillis > CLICK_REPEAT_INTERVAL_MINIMUM ? intervalInMillis : CLICK_REPEAT_INTERVAL_DEFAULT;
+        int repeatInterval = intervalInMillis > CLICK_REPEAT_INTERVAL_MINIMUM
+                           ? intervalInMillis : CLICK_REPEAT_INTERVAL_DEFAULT;
         if (repeatCount < 1 || !view.isClickable()) {
             return;
         }
-        while (repeatCount-- > 0) {
+
+        for (int i = 0; i < repeatCount; ++i) {
             view.click();
             SystemClock.sleep(repeatInterval); // in order to register as separate click
         }
@@ -323,18 +336,23 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
     public UiObject clickUiObject(FindByCriteria criteria, String matching, String clazz, boolean wait) throws Exception {
         UiObject view;
+
         switch (criteria) {
             case BY_ID:
-                view =  clazz == null ? getUiObjectByResourceId(matching) : getUiObjectByResourceId(matching, clazz);
+                view = (clazz == null)
+                     ? getUiObjectByResourceId(matching) : getUiObjectByResourceId(matching, clazz);
                 break;
             case BY_DESC:
-                view =  clazz == null ? getUiObjectByDescription(matching) : getUiObjectByDescription(matching, clazz);
+                view = (clazz == null)
+                     ? getUiObjectByDescription(matching) : getUiObjectByDescription(matching, clazz);
                 break;
             case BY_TEXT:
             default:
-                view = clazz == null ? getUiObjectByText(matching) : getUiObjectByText(matching, clazz);
+                view = (clazz == null)
+                     ? getUiObjectByText(matching) : getUiObjectByText(matching, clazz);
                 break;
         }
+
         if (wait) {
             view.clickAndWaitForNewWindow();
         } else {
@@ -345,26 +363,28 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
     public UiObject getUiObjectByText(String text) throws Exception {
         UiObject object = new UiObject(new UiSelector().textContains(text));
-        if (!object.waitForExists(waitTimeout)) {
+
+        if (!object.waitForExists(timeout)) {
            throw new UiObjectNotFoundException("Could not find view with text: " + text);
-        };
+        }
         return object;
     }
 
     public UiObject getUiObjectByDescription(String desc) throws Exception {
         UiObject object = new UiObject(new UiSelector().descriptionContains(desc));
-        if (!object.waitForExists(waitTimeout)) {
+
+        if (!object.waitForExists(timeout)) {
            throw new UiObjectNotFoundException("Could not find view with description: " + desc);
-        };
+        }
         return object;
     }
 
     public UiObject getUiObjectByResourceId(String id) throws Exception {
         UiObject object = new UiObject(new UiSelector().resourceId(id));
-        if (!object.waitForExists(waitTimeout)) {
+
+        if (!object.waitForExists(timeout)) {
            throw new UiObjectNotFoundException("Could not find view with resource ID: " + id);
-        };
+        }
         return object;
     }
-
 }
