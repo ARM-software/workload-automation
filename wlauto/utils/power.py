@@ -157,6 +157,7 @@ class PowerStateProcessor(object):
         self.requested_states = defaultdict(lambda: -1)  # cpu_id -> requeseted state
         self.wait_for_start_marker = wait_for_start_marker
         self._saw_start_marker = False
+        self.exceptions = []
 
         idle_state_domains = build_idle_domains(core_clusters,
                                                 num_states=num_idle_states,
@@ -173,9 +174,12 @@ class PowerStateProcessor(object):
 
     def process(self, event_stream):
         for event in event_stream:
-            next_state = self.update_power_state(event)
-            if self._saw_start_marker or not self.wait_for_start_marker:
-                yield next_state
+            try:
+                next_state = self.update_power_state(event)
+                if self._saw_start_marker or not self.wait_for_start_marker:
+                    yield next_state
+            except Exception as e:  # pylint: disable=broad-except
+                self.exceptions.append(e)
 
     def update_power_state(self, event):
         """
@@ -641,6 +645,11 @@ def report_power_stats(trace_file, idle_state_names, core_names, core_clusters,
         for reporter in reporters:
             reporter.update(timestamp, states)
 
+    if ps_processor.exceptions:
+        logger.warning('There were errors while processing trace:')
+        for e in ps_processor.exceptions:
+            logger.warning(str(e))
+
     reports = []
     for reporter in reporters:
         report = reporter.report()
@@ -650,6 +659,7 @@ def report_power_stats(trace_file, idle_state_names, core_names, core_clusters,
 
 def main():
     # pylint: disable=unbalanced-tuple-unpacking
+    logging.basicConfig(level=logging.INFO)
     args = parse_arguments()
     parallel_report, powerstate_report = report_power_stats(
         trace_file=args.infile,
