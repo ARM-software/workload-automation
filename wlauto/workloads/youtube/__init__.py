@@ -32,8 +32,6 @@ class Youtube(AndroidUiAutoBenchmark):
     The workload plays a pre-defined video from the Watch Later playlist in different video
     quality bitrates.  It also seeks to a pre-defined position, pauses and restarts playback.
 
-    This workload requires a stable internet connection, preferably Wi-Fi.
-
     Test description:
     1. The workload has 4 test scenarios, determined by the ``video_source`` parameter in
        the agenda file. These are ``home``, ``my_videos``, ``search``, and ``trending``.
@@ -118,6 +116,6 @@ class Youtube(AndroidUiAutoBenchmark):
         super(Youtube, self).teardown(context)
         for entry in self.device.listdir(self.device.working_directory):
             if entry.startswith(self.name) and entry.endswith(".log"):
-                self.logger.info("Pulling file '{}'".format(entry))
+                self.logger.debug("Pulling file '{}'".format(entry))
                 self.device.pull_file(os.path.join(self.device.working_directory, entry), context.output_directory)
                 self.device.delete_file(os.path.join(self.device.working_directory, entry))

@@ -46,8 +46,9 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final String CLASS_TEXT_VIEW = "android.widget.TextView";
     public static final String CLASS_VIEW_GROUP = "android.view.ViewGroup";
 
-    public static final int WAIT_POPUP_TIMEOUT_MS = 1000;
-    public static final int VIDEO_SLEEP_SECONDS = 5;
+    public static final int WAIT_TIMEOUT_1MS = 1000;
+    public static final int WAIT_TIMEOUT_5MS = 5000;
+    public static final int VIDEO_SLEEP_SECONDS = 2;
     public static final int LIST_SWIPE_COUNT = 5;
     public static final String SOURCE_MY_VIDEOS = "my_videos";
     public static final String SOURCE_SEARCH = "search";
@@ -76,27 +77,41 @@ public class UiAutomation extends UxPerfUiAutomation {
             searchTerm = searchTerm.replaceAll("_", " ");
         }
         clearFirstRunDialogues();
+        disableAutoplay();
         testPlayVideo(parameters.getString("video_source"), searchTerm);
         writeResultsToFile(results, parameters.getString("output_file"));
     }
 
     public void clearFirstRunDialogues() throws Exception {
         UiObject laterButton = new UiObject(new UiSelector().textContains("Later").className(CLASS_TEXT_VIEW));
-        if (laterButton.waitForExists(WAIT_POPUP_TIMEOUT_MS)) {
+        if (laterButton.waitForExists(WAIT_TIMEOUT_1MS)) {
            laterButton.click();
         }
         UiObject cancelButton = new UiObject(new UiSelector().textContains("Cancel").className(CLASS_BUTTON));
-        if (cancelButton.waitForExists(WAIT_POPUP_TIMEOUT_MS)) {
+        if (cancelButton.waitForExists(WAIT_TIMEOUT_1MS)) {
             cancelButton.click();
         }
         UiObject skipButton = new UiObject(new UiSelector().textContains("Skip").className(CLASS_TEXT_VIEW));
-        if (skipButton.waitForExists(WAIT_POPUP_TIMEOUT_MS)) {
+        if (skipButton.waitForExists(WAIT_TIMEOUT_1MS)) {
             skipButton.click();
         }
         UiObject gotItButton = new UiObject(new UiSelector().textContains("Got it").className(CLASS_BUTTON));
-        if (gotItButton.waitForExists(WAIT_POPUP_TIMEOUT_MS)) {
+        if (gotItButton.waitForExists(WAIT_TIMEOUT_1MS)) {
             gotItButton.click();
         }
+    }
+
+    public void disableAutoplay() throws Exception {
+        clickUiObject(BY_DESC, "More options");
+        startMeasurements();
+        clickUiObject(BY_TEXT, "Settings", true);
+        endMeasurements("goto_settings");
+        startMeasurements();
+        clickUiObject(BY_TEXT, "General", true);
+        endMeasurements("goto_settings_general");
+        clickUiObject(BY_TEXT, "Autoplay");
+        getUiDevice().pressBack();
+        getUiDevice().pressBack();
     }
 
     public void testPlayVideo(String source, String searchTerm) throws Exception {
@@ -130,10 +145,15 @@ public class UiAutomation extends UxPerfUiAutomation {
             clickUiObject(BY_ID, packageID + "thumbnail", true);
             endMeasurements("play_from_trending");
         } else { // homepage videos
+            UiScrollable list = new UiScrollable(new UiSelector().resourceId(packageID + "results"));
+            if (list.exists()) {
+                list.scrollForward();
+            }
             startMeasurements();
             clickUiObject(BY_ID, packageID + "thumbnail", true);
             endMeasurements("play_from_home");
         }
+        dismissAdvert();
         seekForward();
         changeQuality();
         checkVideoInfo();
@@ -142,27 +162,55 @@ public class UiAutomation extends UxPerfUiAutomation {
         makeFullscreen();
     }
 
+    public void dismissAdvert() throws Exception {
+        UiObject advert = new UiObject(new UiSelector().textContains("Visit advertiser"));
+        if (advert.exists()) {
+            UiObject skip = new UiObject(new UiSelector().textContains("Skip ad"));
+            if (skip.waitForExists(WAIT_TIMEOUT_5MS)) {
+                skip.click();
+                sleep(VIDEO_SLEEP_SECONDS);
+            }
+        }
+    }
+
     public void seekForward() throws Exception {
-        clickUiObject(BY_ID, packageID + "watch_player", CLASS_VIEW_GROUP);
+        UiObject player = getUiObjectByResourceId(packageID + "player_fragment_container", CLASS_FRAME_LAYOUT);
+        repeatClickUiObject(player, 2, 100);
         startMeasurements();
         UiObject timebar = clickUiObject(BY_ID, packageID + "time_bar");
         endMeasurements("player_seekbar_touch");
+        player.click();
         sleep(VIDEO_SLEEP_SECONDS);
     }
 
     public void changeQuality() throws Exception {
-        UiObject player = clickUiObject(BY_ID, packageID + "watch_player", CLASS_VIEW_GROUP);
+        UiObject teaserInfo = new UiObject(new UiSelector().resourceId(packageID + "info_card_teaser_wrapper"));
+        if (teaserInfo.exists()) {
+            teaserInfo.waitUntilGone(WAIT_TIMEOUT_5MS);
+        }
+        UiObject player = clickUiObject(BY_ID, packageID + "player_fragment_container", CLASS_FRAME_LAYOUT);
         startMeasurements();
         clickUiObject(BY_DESC, "More options");
         endMeasurements("player_more_options");
         getUiDevice().waitForIdle();
+        // Some adverts masquerade as videos, but we can tell the diffence by checking whether
+        // the "more options" contains a "share" action - normal videos should not have this
+        UiObject advertShare = new UiObject(new UiSelector().textContains("Share"));
+        if (advertShare.exists()) {
+            getUiDevice().pressBack();
+            getUiDevice().pressBack();
+        }
+        UiObject overflow = new UiObject(new UiSelector().resourceId(packageID + "overflow_layout"));
+        overflow.waitForExists(WAIT_TIMEOUT_1MS);
         startTimer();
         try {
+            // 1. try by icon text
             clickUiObject(BY_TEXT, "Quality", CLASS_TEXT_VIEW, true);
         } catch (UiObjectNotFoundException e) {
             dumpViews("change_quality");
-            // Try again for reliability
-            clickUiObject(BY_TEXT, "Quality", CLASS_TEXT_VIEW, true);
+            // 2. or by position in screen (40% of the width, from the left edge)
+            int qualityIconPosition = (int)(player.getBounds().width() * 0.4);
+            getUiDevice().click(qualityIconPosition, player.getBounds().centerY());
         }
         clickUiObject(BY_TEXT, STREAM_QUALITY[0]);
         endTimer("player_change_quality");
@@ -199,24 +247,34 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
         // After flinging, give the window enough time to settle down before
         // the next step, or else UiAutomator fails to find views in time
-        sleep(3);
+        sleep(VIDEO_SLEEP_SECONDS);
     }
 
     public void minimiseVideo() throws Exception {
-        clickUiObject(BY_ID, packageID + "watch_player", CLASS_VIEW_GROUP);
+        UiObject player = clickUiObject(BY_ID, packageID + "player_fragment_container", CLASS_FRAME_LAYOUT);
         startMeasurements();
-        clickUiObject(BY_ID, packageID + "player_collapse_button");
+        try {
+            clickUiObject(BY_ID, packageID + "player_collapse_button");
+        } catch (UiObjectNotFoundException e) {
+            player.click();
+            UiObject controls = new UiObject(new UiSelector().resourceId(packageID + "controls_layout"));
+            controls.waitForExists(WAIT_TIMEOUT_1MS);
+            controls.clickTopLeft();
+        }
         endMeasurements("player_video_collapse");
         sleep(1); // short delay to simulate user action
         startMeasurements();
-        clickUiObject(BY_ID, packageID + "watch_player", CLASS_VIEW_GROUP);
+        clickUiObject(BY_ID, packageID + "player_fragment_container", CLASS_FRAME_LAYOUT);
         endMeasurements("player_video_expand");
+        sleep(VIDEO_SLEEP_SECONDS);
     }
 
     public void makeFullscreen() throws Exception {
+        UiObject player = clickUiObject(BY_ID, packageID + "player_fragment_container", CLASS_FRAME_LAYOUT);
         startMeasurements();
         clickUiObject(BY_ID, packageID + "fullscreen_button", true);
         endMeasurements("player_fullscreen_toggle");
+        player.click();
         startDumpsys();
         sleep(VIDEO_SLEEP_SECONDS);
         endDumpsys("player_fullscreen_play");
