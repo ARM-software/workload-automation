@@ -318,6 +318,10 @@ class Device(Extension):
         """Captures the current device screen into the specified file in a PNG format."""
         raise NotImplementedError()
 
+    def capture_view_hierachy(self, filepath):
+        """Captures the current view hierarchy into the specified file in a XML format."""
+        raise NotImplementedError()
+
     def get_properties(self, output_path):
         """Captures and saves the device configuration properties version and
          any other relevant information. Return them in a dict"""

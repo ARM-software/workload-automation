@@ -882,6 +882,9 @@ class LinuxDevice(BaseLinuxDevice):
             message = e.message.split('OUTPUT:', 1)[1].strip()
             self.logger.debug('Could not take screenshot: {}'.format(message))
 
+    def capture_view_hierachy(self, filepath):
+        pass  # TODO
+
     def is_screen_on(self):
         pass  # TODO
 
