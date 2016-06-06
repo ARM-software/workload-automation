@@ -157,6 +157,7 @@ class PowerStateProcessor(object):
         self.requested_states = defaultdict(lambda: -1)  # cpu_id -> requeseted state
         self.wait_for_start_marker = wait_for_start_marker
         self._saw_start_marker = False
+        self._saw_stop_marker = False
         self.exceptions = []
 
         idle_state_domains = build_idle_domains(core_clusters,
@@ -178,8 +179,13 @@ class PowerStateProcessor(object):
                 next_state = self.update_power_state(event)
                 if self._saw_start_marker or not self.wait_for_start_marker:
                     yield next_state
+                if self._saw_stop_marker:
+                    break
             except Exception as e:  # pylint: disable=broad-except
                 self.exceptions.append(e)
+        else:
+            if self.wait_for_start_marker:
+                logger.warning("Did not see a STOP marker in the trace")
 
     def update_power_state(self, event):
         """
@@ -195,7 +201,7 @@ class PowerStateProcessor(object):
             if event.name == 'START':
                 self._saw_start_marker = True
             elif event.name == 'STOP':
-                self._saw_start_marker = False
+                self._saw_stop_marker = True
         else:
             raise ValueError('Unexpected event type: {}'.format(event.kind))
         return self.power_state.copy()
