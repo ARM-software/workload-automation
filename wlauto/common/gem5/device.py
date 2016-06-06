@@ -494,6 +494,9 @@ class BaseGem5Device(object):
                 pass
         return False
 
+    def capture_view_hierachy(self, filepath):
+        pass  # TODO
+
     # pylint: disable=W0613
     def execute(self, command, timeout=1000, check_exit_code=True, background=False,
                 as_root=False, busybox=False, **kwargs):
