@@ -39,6 +39,8 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     public long timeout = TimeUnit.SECONDS.toMillis(4);
 
     public enum ScreenOrientation { RIGHT, NATURAL, LEFT };
+    public enum Direction { UP, DOWN, LEFT, RIGHT, NULL };
+    public enum PinchType { IN, OUT, NULL };
 
     public static final int CLICK_REPEAT_INTERVAL_MINIMUM = 5;
     public static final int CLICK_REPEAT_INTERVAL_DEFAULT = 50;
@@ -223,7 +225,49 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
             steps);
     }
 
-    public void uiDeviceVertPinchIn(UiObject view, int steps, int percent) throws Exception {
+    public void uiDeviceSwipe(Direction direction, int steps) throws Exception {
+        switch (direction) {
+            case UP:
+                uiDeviceSwipeUp(steps);
+                break;
+            case DOWN:
+                uiDeviceSwipeDown(steps);
+                break;
+            case LEFT:
+                uiDeviceSwipeLeft(steps);
+                break;
+            case RIGHT:
+                uiDeviceSwipeRight(steps);
+                break;
+            case NULL:
+                throw new Exception("No direction specified");
+            default:
+                break;
+        }
+    }
+
+    public void uiObjectSwipe(UiObject view, Direction direction, int steps) throws Exception {
+        switch (direction) {
+            case UP:
+                view.swipeUp(steps);
+                break;
+            case DOWN:
+                view.swipeDown(steps);
+                break;
+            case LEFT:
+                view.swipeLeft(steps);
+                break;
+            case RIGHT:
+                view.swipeRight(steps);
+                break;
+            case NULL:
+                throw new Exception("No direction specified");
+            default:
+                break;
+        }
+    }
+
+    public void uiObjectVertPinchIn(UiObject view, int steps, int percent) throws Exception {
         final int FINGER_TOUCH_HALF_WIDTH = 20;
 
         // Make value between 1 and 100
@@ -249,7 +293,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         view.performTwoPointerGesture(startPoint1, startPoint2, endPoint1, endPoint2, steps);
     }
 
-    public void uiDeviceVertPinchOut(UiObject view, int steps, int percent) throws Exception {
+    public void uiObjectVertPinchOut(UiObject view, int steps, int percent) throws Exception {
         final int FINGER_TOUCH_HALF_WIDTH = 20;
 
         // Make value between 1 and 100
@@ -307,6 +351,24 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
     public void uiDeviceSwipeHorizontal(int startX, int endX, int yCoordinate, int steps) {
         getUiDevice().swipe(startX, yCoordinate, endX, yCoordinate, steps);
+    }
+
+    public void uiObjectPinch(UiObject view, PinchType direction, int steps,
+                                  int percent) throws Exception {
+        if (direction.equals(PinchType.IN)) {
+            view.pinchIn(percent, steps);
+        } else if (direction.equals(PinchType.OUT)) {
+            view.pinchOut(percent, steps);
+        }
+    }
+
+    public void uiObjectVertPinch(UiObject view, PinchType direction,
+                                       int steps, int percent) throws Exception {
+        if (direction.equals(PinchType.IN)) {
+            uiObjectVertPinchIn(view, steps, percent);
+        } else if (direction.equals(PinchType.OUT)) {
+            uiObjectVertPinchOut(view, steps, percent);
+        }
     }
 
     public void repeatClickUiObject(UiObject view, int repeatCount, int intervalInMillis) throws Exception {

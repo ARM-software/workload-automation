@@ -88,23 +88,14 @@ public class UiAutomation extends UxPerfUiAutomation {
             throw new UiObjectNotFoundException("Could not find \"conversationView\".");
         }
 
-        Timer result = new Timer();
         UiObject newMailButton = getUiObjectByDescription("Compose", "android.widget.ImageButton");
 
-        String gfxInfologName =  String.format(testTag + "_gfxInfo.log");
-        String surfFlingerlogName =  String.format(testTag + "_surfFlinger.log");
-
-        result.start();
-        startDumpsysGfxInfo(parameters);
-        startDumpsysSurfaceFlinger(parameters);
-
+        SurfaceLogger logger = new SurfaceLogger(testTag, parameters);
+        logger.start();
         newMailButton.clickAndWaitForNewWindow(timeout);
+        logger.stop();
 
-        stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
-        stopDumpsysGfxInfo(parameters, gfxInfologName);
-        result.end();
-
-        timingResults.put("Create_newMail", result);
+        timingResults.put("Create_newMail", logger.result());
     }
 
     public boolean hasComposeView() throws Exception {
@@ -167,14 +158,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         String[] imageFiles = {"1.jpg", "2.jpg", "3.jpg", "4.jpg", "5.jpg"};
 
         for ( int i = 0; i < imageFiles.length; i++) {
-            Timer result = new Timer();
-            result.start();
 
-            String gfxInfologName =  String.format(testTag + "_" + (i + 1) + "_gfxInfo.log");
-            String surfFlingerlogName =  String.format(testTag + "_" + (i + 1) + "_surfFlinger.log");
-
-            startDumpsysGfxInfo(parameters);
-            startDumpsysSurfaceFlinger(parameters);
+            SurfaceLogger logger = new SurfaceLogger(testTag + "_" + (i + 1), parameters);
+            logger.start();
 
             attachIcon.click();
             UiObject attachFile = getUiObjectByText("Attach file", "android.widget.TextView");
@@ -226,14 +212,11 @@ public class UiAutomation extends UxPerfUiAutomation {
             imageFileButton.click();
             imageFileButton.waitUntilGone(timeout);
 
-            stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
-            stopDumpsysGfxInfo(parameters, gfxInfologName);
-
-            result.end();
+            logger.stop();
 
             // Replace whitespace and full stops within the filename
             String file = imageFiles[i].replaceAll("\\.", "_").replaceAll("\\s+", "_");
-            timingResults.put(String.format("AttachFiles" + "_" + file), result);
+            timingResults.put(String.format("AttachFiles" + "_" + file), logger.result());
         }
     }
 }
