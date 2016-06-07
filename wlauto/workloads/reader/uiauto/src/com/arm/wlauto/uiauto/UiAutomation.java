@@ -50,7 +50,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         setScreenOrientation(ScreenOrientation.NATURAL);
 
         dismissWelcomeView();
-        signInOnline(parameters);
 
         confirmAccess();
 
@@ -63,110 +62,40 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void dismissWelcomeView() throws Exception {
-        UiObject welcomeView;
-        try {
-            welcomeView = getUiObjectByDescription("Acrobat - First Time Experience",
-                                                   "android.webkit.WebView");
-        } catch (UiObjectNotFoundException e) {
-            welcomeView = new UiObject(new UiSelector().className("android.webkit.WebView"));
+        UiObject welcomeView = getUiObjectByResourceId("android:id/content",
+                                                   "android.widget.FrameLayout");
+        welcomeView.swipeLeft(10);
+        welcomeView.swipeLeft(10);
+
+        UiObject continueButton = getUiObjectByResourceId("com.adobe.reader:id/onboarding_finish_button",
+                                                   "android.widget.Button");
+        continueButton.click();
+
+        // Deal with the annoying promotional Dropbox CoachMark popup
+        UiObject dropBoxcoachMark = getUiObjectByDescription("CoachMark", "android.widget.LinearLayout");
+        if (dropBoxcoachMark.exists()) {
+            tapDisplayCentre();
         }
 
-        // Click through the first two pages and wait for pages to transition.
-        // These pages are webkit views so clickAndWaitForNewWindow or waitForExists cannot be used
-        tapDisplayCentre();
-        sleep(1);
-        tapDisplayCentre();
-        sleep(1);
-
-        // Get the box coords for the webView window
-        Rect webViewCoords = welcomeView.getBounds();
-
-        // Iterate up from the bottom of the webView until we hit the continue
-        // button and change view
-        int i = 0;
-        do {
-            i += 10;
-            tapDisplay(webViewCoords.centerX(), webViewCoords.bottom - i);
-        } while (welcomeView.exists() && i < webViewCoords.top);
-    }
-
-    private void signInOnline(Bundle parameters) throws Exception {
-        String email = parameters.getString("email");
-        String password = parameters.getString("password");
-
-        UiObject homeButton = getUiObjectByResourceId("android:id/home", "android.widget.ImageView");
-        homeButton.clickAndWaitForNewWindow();
-
-        UiObject firstSignInButton = getUiObjectByResourceId("com.adobe.reader:id/user_info_title",
-                                                             "android.widget.TextView");
-        firstSignInButton.clickAndWaitForNewWindow();
-
-        // resourceId cannot be trusted  across different devices in this view so use description
-        // and indexes instead
-        UiObject secondSignInButton = getUiObjectByDescription("Sign In", "android.view.View");
-        secondSignInButton.clickAndWaitForNewWindow();
-
-        UiObject emailBox = new UiObject(new UiSelector().className("android.webkit.WebView")
-                                                .description("Sign in - Adobe ID")
-                                                .childSelector(new UiSelector()
-                                                .index(0).className("android.view.View")
-                                                .childSelector(new UiSelector()
-                                                .index(1).className("android.view.View")
-                                                .childSelector(new UiSelector()
-                                                .index(0).className("android.view.View")
-                                                .childSelector(new UiSelector()
-                                                .index(0).className("android.widget.EditText"))))));
-        emailBox.setText(email);
-        UiObject passwordBox = new UiObject(new UiSelector().className("android.webkit.WebView")
-                                                .description("Sign in - Adobe ID")
-                                                .childSelector(new UiSelector()
-                                                .index(0).className("android.view.View")
-                                                .childSelector(new UiSelector()
-                                                .index(1).className("android.view.View")
-                                                .childSelector(new UiSelector()
-                                                .index(1).className("android.view.View")
-                                                .childSelector(new UiSelector()
-                                                .index(0).className("android.widget.EditText"))))));
-        passwordBox.setText(password);
-        UiObject lastSignInButton = new UiObject(new UiSelector().className("android.webkit.WebView")
-                                                .description("Sign in - Adobe ID")
-                                                .childSelector(new UiSelector()
-                                                .index(0).className("android.view.View")
-                                                .childSelector(new UiSelector()
-                                                .index(1).className("android.view.View")
-                                                .childSelector(new UiSelector()
-                                                .index(3).className("android.view.View")
-                                                .childSelector(new UiSelector()
-                                                .index(0).className("android.widget.Button"))))));
-        lastSignInButton.clickAndWaitForNewWindow();
-
-        UiObject upButton = new UiObject(new UiSelector().resourceId("android:id/up")
-                                                         .className("android.widget.ImageView"));
-        if (upButton.waitForExists(TimeUnit.SECONDS.toMillis(networkTimeout))) {
-            upButton.clickAndWaitForNewWindow();
-        }
+        UiObject actionBarTitle = getUiObjectByDescription("My Documents",
+                                                     "android.widget.LinearLayout");
+        actionBarTitle.waitForExists(timeout);
     }
 
     private void openFile(final String filename) throws Exception {
 
-        String TestTag = "openfile";
+        String testTag = "openfile";
 
         // Replace whitespace and full stops within the filename
         String file = filename.replaceAll("\\.", "_").replaceAll("\\s+", "_");
 
-        timingResults.put(String.format(TestTag + "_" + "selectLocalFilesList" + "_" + file), selectLocalFilesList());
+        timingResults.put(String.format(testTag + "_" + "selectLocalFilesList" + "_" + file), selectLocalFilesList());
 
         // On some devices permissions to access local files occurs here rather than the earlier step
         confirmAccess();
-        timingResults.put(String.format(TestTag + "_" + "selectSearchDuration" + "_" + file), selectSearchFileButton());
-        timingResults.put(String.format(TestTag + "_" + "searchFileList" + "_" + file), searchFileList(filename));
-        timingResults.put(String.format(TestTag + "_" + "openFileFromList" + "_" + file), openFileFromList(filename));
-
-        // Cludge to get rid of the first time run help dialogue boxes
-        tapDisplayCentre();
-        sleep(1);
-        tapDisplayCentre();
-        sleep(1);
+        timingResults.put(String.format(testTag + "_" + "selectSearchDuration" + "_" + file), selectSearchFileButton());
+        timingResults.put(String.format(testTag + "_" + "searchFileList" + "_" + file), searchFileList(filename));
+        timingResults.put(String.format(testTag + "_" + "openFileFromList" + "_" + file), openFileFromList(filename));
     }
 
     private Timer selectLocalFilesList() throws Exception {
@@ -222,20 +151,22 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     private void gesturesTest(final String filename) throws Exception {
 
-        String TestTag = "gestures";
+        String testTag = "gestures";
 
         // Perform a range of swipe tests at different speeds and on different views
         LinkedHashMap<String, GestureTestParams> testParams = new LinkedHashMap<String, GestureTestParams>();
-        testParams.put("1", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.DOWN, 100));
-        testParams.put("2", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.UP, 100));
+        testParams.put("1", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.DOWN, 200));
+        testParams.put("2", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.UP, 200));
         testParams.put("3", new GestureTestParams(GestureType.UIOBJECT_SWIPE, Direction.RIGHT, 50));
         testParams.put("4", new GestureTestParams(GestureType.UIOBJECT_SWIPE, Direction.LEFT, 50));
-        testParams.put("5", new GestureTestParams(GestureType.PINCH, PinchType.OUT, 100, 200));
+        testParams.put("5", new GestureTestParams(GestureType.PINCH, PinchType.OUT, 100, 50));
         testParams.put("6", new GestureTestParams(GestureType.PINCH, PinchType.IN, 100, 50));
 
         Iterator<Entry<String, GestureTestParams>> it = testParams.entrySet().iterator();
 
         openFile(filename);
+
+        tapDisplayCentre();
 
         while (it.hasNext()) {
             Map.Entry<String, GestureTestParams> pair = it.next();
@@ -247,8 +178,9 @@ public class UiAutomation extends UxPerfUiAutomation {
 
             UiObject view = new UiObject(new UiSelector().resourceId("com.adobe.reader:id/viewPager"));
 
-            String runName = String.format(TestTag + "_" + pair.getKey());
+            String runName = String.format(testTag + "_" + pair.getKey());
             SurfaceLogger logger = new SurfaceLogger(runName, parameters);
+            logger.start();
 
             switch (type) {
                 case UIDEVICE_SWIPE:
@@ -258,7 +190,7 @@ public class UiAutomation extends UxPerfUiAutomation {
                     uiObjectSwipe(view, dir, steps);
                     break;
                 case PINCH:
-                    uiObjectPinch(view, pinch, steps, percent);
+                    uiObjectVertPinch(view, pinch, steps, percent);
                     break;
                 default:
                     break;
@@ -273,7 +205,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     private void searchPdfTest(final String filename, final String[] searchStrings) throws Exception {
 
-        String TestTag = "search";
+        String testTag = "search";
 
         openFile(filename);
 
@@ -281,7 +213,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject pageView = getUiObjectByResourceId("com.adobe.reader:id/pageView",
                                                     "android.widget.RelativeLayout");
         for (int i = 0; i < searchStrings.length; i++) {
-            timingResults.put(String.format(TestTag + "_" + i),
+            timingResults.put(String.format(testTag + "_" + i),
                                             searchTest(searchStrings[i]));
         }
 
