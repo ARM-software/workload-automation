@@ -61,14 +61,16 @@ class Multiapp(AndroidUiAutoBenchmark):
     For reliable testing, this workload requires a good and stable internet connection,
     preferably on Wi-Fi.
 
-    NOTE: This workload requires two jpeg files to be placed in the
-    dependencies directory to run.
-
-    WARNING: This workload timings are dependent on the time it takes to sync the Gmail.
-
     Although this workload attempts to be network independent it requires a
     network connection (ideally, wifi) to run. This is because the welcome
     screen UI is dependent on an existing connection.
+
+    SETUP: This workload requires the Google Photos apk to be placed in the
+    dependencies directory and the Gmail and Skype apks to be placed in the
+    directory of this file.
+
+    In addition, this workload requires four jpeg files to be placed in the
+    dependencies directory to run.
 
     Test description:
      1. Two images are copied to the device
