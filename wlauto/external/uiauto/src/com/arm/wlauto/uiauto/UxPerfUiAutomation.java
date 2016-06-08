@@ -303,7 +303,7 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
         if (allowButton.exists()) {
             // Some devices request multiple permisson rights so clear them all here
             do {
-                allowButton.clickAndWaitForNewWindow(timeout);
+                allowButton.clickAndWaitForNewWindow(uiAutoTimeout);
             } while (allowButton.waitForExists(TimeUnit.SECONDS.toMillis(1)));
         }
     }

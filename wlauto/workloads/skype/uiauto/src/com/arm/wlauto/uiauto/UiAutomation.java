@@ -49,7 +49,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void runUiAutomation() throws Exception {
         // Override superclass value
-        this.timeout = TimeUnit.SECONDS.toMillis(10);
+        this.uiAutoTimeout = TimeUnit.SECONDS.toMillis(10);
 
         // Get Params
         Bundle parameters = getParams();
@@ -133,7 +133,7 @@ public class UiAutomation extends UxPerfUiAutomation {
                                          .childSelector(new UiSelector()
                                          .index(0)
                                          .clickable(true)));
-        peopleItem.waitForExists(timeout);
+        peopleItem.waitForExists(uiAutoTimeout);
         peopleItem.click();
         UiObject confirm =
             new UiObject(new UiSelector().resourceId("com.skype.raider:id/fab"));

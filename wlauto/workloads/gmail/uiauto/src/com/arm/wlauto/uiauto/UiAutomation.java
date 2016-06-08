@@ -58,12 +58,12 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject gotItBox = new UiObject(new UiSelector().resourceId("com.google.android.gm:id/welcome_tour_got_it")
                                                          .className("android.widget.TextView"));
         if (gotItBox.exists()) {
-            gotItBox.clickAndWaitForNewWindow(timeout);
+            gotItBox.clickAndWaitForNewWindow(uiAutoTimeout);
         }
         UiObject takeMeToBox = new UiObject(new UiSelector().textContains("Take me to Gmail")
                                                             .className("android.widget.TextView"));
         if (takeMeToBox.exists()) {
-            takeMeToBox.clickAndWaitForNewWindow(timeout);
+            takeMeToBox.clickAndWaitForNewWindow(uiAutoTimeout);
         }
 
         UiObject syncNowButton = new UiObject(new UiSelector().textContains("Sync now")
@@ -72,7 +72,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         // On some devices we need to wait for a sync to occur after clearing the data
         // We also need to sleep here since waiting for a new window is not enough
         if (syncNowButton.exists()) {
-            syncNowButton.clickAndWaitForNewWindow(timeout);
+            syncNowButton.clickAndWaitForNewWindow(uiAutoTimeout);
             sleep(10);
         }
     }
@@ -92,7 +92,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         SurfaceLogger logger = new SurfaceLogger(testTag, parameters);
         logger.start();
-        newMailButton.clickAndWaitForNewWindow(timeout);
+        newMailButton.clickAndWaitForNewWindow(uiAutoTimeout);
         logger.stop();
 
         timingResults.put("Create_newMail", logger.result());
@@ -101,7 +101,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     public boolean hasComposeView() throws Exception {
         UiObject composeView = new UiObject(new UiSelector().resourceId("com.google.android.gm:id/compose"));
 
-        return composeView.waitForExists(timeout);
+        return composeView.waitForExists(uiAutoTimeout);
     }
 
     public void setToField(final Bundle parameters) throws Exception {
@@ -141,7 +141,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         Timer result = new Timer();
         UiObject sendButton = getUiObjectByDescription("Send", "android.widget.TextView");
         result.start();
-        sendButton.clickAndWaitForNewWindow(timeout);
+        sendButton.clickAndWaitForNewWindow(uiAutoTimeout);
         result.end();
         timingResults.put("Create_Send", result);
 
@@ -164,7 +164,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
             attachIcon.click();
             UiObject attachFile = getUiObjectByText("Attach file", "android.widget.TextView");
-            attachFile.clickAndWaitForNewWindow(timeout);
+            attachFile.clickAndWaitForNewWindow(uiAutoTimeout);
 
             UiObject titleIsWaWorking = new UiObject(new UiSelector()
                                                 .className("android.widget.TextView")
@@ -199,6 +199,7 @@ public class UiAutomation extends UxPerfUiAutomation {
                     }
                     imagesEntry.click();
                     waitObject(titleIsImages, 4);
+                    waitObject(waFolder, 10);
                     waFolder.click();
                     waitObject(titleIsWaWorking, 4);
                 }
@@ -210,7 +211,7 @@ public class UiAutomation extends UxPerfUiAutomation {
                                                 .childSelector(new UiSelector()
                                                 .index(i).className("android.widget.FrameLayout")));
             imageFileButton.click();
-            imageFileButton.waitUntilGone(timeout);
+            imageFileButton.waitUntilGone(uiAutoTimeout);
 
             logger.stop();
 
