@@ -117,6 +117,10 @@ class ServoPowerMonitor(Instrument):
         self.poller = None
         self.data = None
         self.stopped = True
+
+        if self.device.platform != "chromeos":
+            raise InstrumentError("servo_power instrument only supports Chrome OS devices.")
+
         if not self.labels:
             self.labels = ["PORT_{}".format(channel) for channel, _ in enumerate(self.power_domains)]
 
