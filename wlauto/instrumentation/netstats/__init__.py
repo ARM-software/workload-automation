@@ -9,7 +9,7 @@ from itertools import izip_longest
 
 from wlauto import Instrument, Parameter
 from wlauto import ApkFile
-from wlauto.exceptions import DeviceError, HostError
+from wlauto.exceptions import InstrumentError, HostError
 from wlauto.utils.android import ApkInfo
 from wlauto.utils.types import list_of_strings
 
@@ -160,7 +160,7 @@ class NetstatsInstrument(Instrument):
 
     def initialize(self, context):
         if self.device.platform != 'android':
-            raise DeviceError('nestats instrument only supports on Android devices.')
+            raise InstrumentError('nestats instrument is only supported on Android devices.')
         apk = context.resolver.get(ApkFile(self))
         self.collector = NetstatsCollector(self.device, apk)  # pylint: disable=attribute-defined-outside-init
         self.collector.setup(force=self.force_reinstall)
