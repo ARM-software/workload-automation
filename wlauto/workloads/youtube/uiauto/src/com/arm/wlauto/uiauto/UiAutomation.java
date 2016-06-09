@@ -48,7 +48,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public static final int WAIT_TIMEOUT_1MS = 1000;
     public static final int WAIT_TIMEOUT_5MS = 5000;
-    public static final int VIDEO_SLEEP_SECONDS = 2;
+    public static final int VIDEO_SLEEP_SECONDS = 3;
     public static final int LIST_SWIPE_COUNT = 5;
     public static final String SOURCE_MY_VIDEOS = "my_videos";
     public static final String SOURCE_SEARCH = "search";
@@ -76,10 +76,15 @@ public class UiAutomation extends UxPerfUiAutomation {
         if (searchTerm != null) {
             searchTerm = searchTerm.replaceAll("_", " ");
         }
+
+        setScreenOrientation(ScreenOrientation.NATURAL);
+
         clearFirstRunDialogues();
         disableAutoplay();
         testPlayVideo(parameters.getString("video_source"), searchTerm);
         writeResultsToFile(results, parameters.getString("output_file"));
+
+        unsetScreenOrientation();
     }
 
     public void clearFirstRunDialogues() throws Exception {
@@ -111,7 +116,12 @@ public class UiAutomation extends UxPerfUiAutomation {
         endMeasurements("goto_settings_general");
         clickUiObject(BY_TEXT, "Autoplay");
         getUiDevice().pressBack();
-        getUiDevice().pressBack();
+        // Tablet devices use a split with General in the left pane and Autoplay in the right so no
+        // need to click back twice
+        UiObject generalButton = new UiObject(new UiSelector().textContains("General").className(CLASS_TEXT_VIEW));
+        if (generalButton.exists()) {
+            getUiDevice().pressBack();
+        }
     }
 
     public void testPlayVideo(String source, String searchTerm) throws Exception {
@@ -155,11 +165,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
         dismissAdvert();
         seekForward();
-        changeQuality();
         checkVideoInfo();
         scrollRelated();
-        minimiseVideo();
-        makeFullscreen();
     }
 
     public void dismissAdvert() throws Exception {
@@ -180,41 +187,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject timebar = clickUiObject(BY_ID, packageID + "time_bar");
         endMeasurements("player_seekbar_touch");
         player.click();
+        startDumpsys();
         sleep(VIDEO_SLEEP_SECONDS);
-    }
-
-    public void changeQuality() throws Exception {
-        UiObject teaserInfo = new UiObject(new UiSelector().resourceId(packageID + "info_card_teaser_wrapper"));
-        if (teaserInfo.exists()) {
-            teaserInfo.waitUntilGone(WAIT_TIMEOUT_5MS);
-        }
-        UiObject player = clickUiObject(BY_ID, packageID + "player_fragment_container", CLASS_FRAME_LAYOUT);
-        startMeasurements();
-        clickUiObject(BY_DESC, "More options");
-        endMeasurements("player_more_options");
-        getUiDevice().waitForIdle();
-        // Some adverts masquerade as videos, but we can tell the diffence by checking whether
-        // the "more options" contains a "share" action - normal videos should not have this
-        UiObject advertShare = new UiObject(new UiSelector().textContains("Share"));
-        if (advertShare.exists()) {
-            getUiDevice().pressBack();
-            getUiDevice().pressBack();
-        }
-        UiObject overflow = new UiObject(new UiSelector().resourceId(packageID + "overflow_layout"));
-        overflow.waitForExists(WAIT_TIMEOUT_1MS);
-        startTimer();
-        try {
-            // 1. try by icon text
-            clickUiObject(BY_TEXT, "Quality", CLASS_TEXT_VIEW, true);
-        } catch (UiObjectNotFoundException e) {
-            dumpViews("change_quality");
-            // 2. or by position in screen (40% of the width, from the left edge)
-            int qualityIconPosition = (int)(player.getBounds().width() * 0.4);
-            getUiDevice().click(qualityIconPosition, player.getBounds().centerY());
-        }
-        clickUiObject(BY_TEXT, STREAM_QUALITY[0]);
-        endTimer("player_change_quality");
-        sleep(VIDEO_SLEEP_SECONDS);
+        endDumpsys("player_video_windowed");
     }
 
     public void checkVideoInfo() throws Exception {
@@ -248,36 +223,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         // After flinging, give the window enough time to settle down before
         // the next step, or else UiAutomator fails to find views in time
         sleep(VIDEO_SLEEP_SECONDS);
-    }
-
-    public void minimiseVideo() throws Exception {
-        UiObject player = clickUiObject(BY_ID, packageID + "player_fragment_container", CLASS_FRAME_LAYOUT);
-        startMeasurements();
-        try {
-            clickUiObject(BY_ID, packageID + "player_collapse_button");
-        } catch (UiObjectNotFoundException e) {
-            player.click();
-            UiObject controls = new UiObject(new UiSelector().resourceId(packageID + "controls_layout"));
-            controls.waitForExists(WAIT_TIMEOUT_1MS);
-            controls.clickTopLeft();
-        }
-        endMeasurements("player_video_collapse");
-        sleep(1); // short delay to simulate user action
-        startMeasurements();
-        clickUiObject(BY_ID, packageID + "player_fragment_container", CLASS_FRAME_LAYOUT);
-        endMeasurements("player_video_expand");
-        sleep(VIDEO_SLEEP_SECONDS);
-    }
-
-    public void makeFullscreen() throws Exception {
-        UiObject player = clickUiObject(BY_ID, packageID + "player_fragment_container", CLASS_FRAME_LAYOUT);
-        startMeasurements();
-        clickUiObject(BY_ID, packageID + "fullscreen_button", true);
-        endMeasurements("player_fullscreen_toggle");
-        player.click();
-        startDumpsys();
-        sleep(VIDEO_SLEEP_SECONDS);
-        endDumpsys("player_fullscreen_play");
     }
 
     protected void startDumpsys() throws Exception {
