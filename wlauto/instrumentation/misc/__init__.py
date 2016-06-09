@@ -227,35 +227,6 @@ class ExecutionTimeInstrument(Instrument):
         context.result.add_metric('execution_time', execution_time, 'seconds')
 
 
-class ApkVersion(Instrument):
-
-    name = 'apk_version'
-    description = """
-    (DEPRECATED) Extracts APK versions for workloads that have them.
-
-    This instrument is deprecated and should not be used. It will be removed in
-    future versions of Workload Automation.
-
-    Versions of Android packages are now automatically attached to the results as
-    "apk_version" classfiers.
-
-    """
-
-    def __init__(self, device, **kwargs):
-        super(ApkVersion, self).__init__(device, **kwargs)
-        self.apk_info = None
-
-    def setup(self, context):
-        if hasattr(context.workload, 'apk_file'):
-            self.apk_info = ApkInfo(context.workload.apk_file)
-        else:
-            self.apk_info = None
-
-    def update_result(self, context):
-        if self.apk_info:
-            context.result.add_metric(self.name, self.apk_info.version_name)
-
-
 class InterruptStatsInstrument(Instrument):
 
     name = 'interrupts'
