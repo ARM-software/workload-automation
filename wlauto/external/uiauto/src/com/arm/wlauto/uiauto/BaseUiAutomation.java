@@ -36,7 +36,7 @@ import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
 public class BaseUiAutomation extends UiAutomatorTestCase {
 
-    public long timeout = TimeUnit.SECONDS.toMillis(4);
+    public long uiAutoTimeout = TimeUnit.SECONDS.toMillis(4);
 
     public enum ScreenOrientation { RIGHT, NATURAL, LEFT };
     public enum Direction { UP, DOWN, LEFT, RIGHT, NULL };
@@ -125,36 +125,6 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
             throw new TimeoutException(String.format("Timed out waiting for Logcat text \"%s\"",
                                                      searchText));
         }
-    }
-
-    public UiObject getUiObjectByResourceId(String resourceId, String className) throws Exception {
-        UiObject object = new UiObject(new UiSelector().resourceId(resourceId)
-                                                       .className(className));
-        if (!object.waitForExists(timeout)) {
-           throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
-                                                              resourceId, className));
-        }
-        return object;
-    }
-
-    public UiObject getUiObjectByDescription(String description, String className) throws Exception {
-        UiObject object = new UiObject(new UiSelector().descriptionContains(description)
-                                                       .className(className));
-        if (!object.waitForExists(timeout)) {
-            throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
-                                                              description, className));
-        }
-        return object;
-    }
-
-    public UiObject getUiObjectByText(String text, String className) throws Exception {
-        UiObject object = new UiObject(new UiSelector().textContains(text)
-                                                       .className(className));
-        if (!object.waitForExists(timeout)) {
-            throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
-                                                              text, className));
-        }
-        return object;
     }
 
     public void pressEnter() {
@@ -423,20 +393,16 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         return view;
     }
 
-    public UiObject getUiObjectByText(String text) throws Exception {
-        UiObject object = new UiObject(new UiSelector().textContains(text));
-
-        if (!object.waitForExists(timeout)) {
-           throw new UiObjectNotFoundException("Could not find view with text: " + text);
-        }
-        return object;
+    public UiObject getUiObjectByResourceId(String resourceId, String className) throws Exception {
+        return getUiObjectByResourceId(resourceId, className, uiAutoTimeout);
     }
 
-    public UiObject getUiObjectByDescription(String desc) throws Exception {
-        UiObject object = new UiObject(new UiSelector().descriptionContains(desc));
-
+    public UiObject getUiObjectByResourceId(String resourceId, String className, long timeout) throws Exception {
+        UiObject object = new UiObject(new UiSelector().resourceId(resourceId)
+                                                       .className(className));
         if (!object.waitForExists(timeout)) {
-           throw new UiObjectNotFoundException("Could not find view with description: " + desc);
+           throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
+                                                              resourceId, className));
         }
         return object;
     }
@@ -444,8 +410,54 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     public UiObject getUiObjectByResourceId(String id) throws Exception {
         UiObject object = new UiObject(new UiSelector().resourceId(id));
 
-        if (!object.waitForExists(timeout)) {
+        if (!object.waitForExists(uiAutoTimeout)) {
            throw new UiObjectNotFoundException("Could not find view with resource ID: " + id);
+        }
+        return object;
+    }
+
+    public UiObject getUiObjectByDescription(String description, String className) throws Exception {
+        return getUiObjectByDescription(description, className, uiAutoTimeout);
+    }
+
+    public UiObject getUiObjectByDescription(String description, String className, long timeout) throws Exception {
+        UiObject object = new UiObject(new UiSelector().descriptionContains(description)
+                                                       .className(className));
+        if (!object.waitForExists(timeout)) {
+            throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
+                                                              description, className));
+        }
+        return object;
+    }
+
+    public UiObject getUiObjectByDescription(String desc) throws Exception {
+        UiObject object = new UiObject(new UiSelector().descriptionContains(desc));
+
+        if (!object.waitForExists(uiAutoTimeout)) {
+           throw new UiObjectNotFoundException("Could not find view with description: " + desc);
+        }
+        return object;
+    }
+
+    public UiObject getUiObjectByText(String text, String className) throws Exception {
+        return getUiObjectByText(text, className, uiAutoTimeout);
+    }
+
+    public UiObject getUiObjectByText(String text, String className, long timeout) throws Exception {
+        UiObject object = new UiObject(new UiSelector().textContains(text)
+                                                       .className(className));
+        if (!object.waitForExists(timeout)) {
+            throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
+                                                              text, className));
+        }
+        return object;
+    }
+
+    public UiObject getUiObjectByText(String text) throws Exception {
+        UiObject object = new UiObject(new UiSelector().textContains(text));
+
+        if (!object.waitForExists(uiAutoTimeout)) {
+           throw new UiObjectNotFoundException("Could not find view with text: " + text);
         }
         return object;
     }

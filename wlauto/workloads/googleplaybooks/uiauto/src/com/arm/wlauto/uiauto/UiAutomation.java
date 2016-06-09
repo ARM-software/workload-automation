@@ -40,7 +40,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     private LinkedHashMap<String, Timer> timingResults = new LinkedHashMap<String, Timer>();
 
     public void runUiAutomation() throws Exception {
-        this.timeout = TimeUnit.SECONDS.toMillis(8);
+        this.uiAutoTimeout = TimeUnit.SECONDS.toMillis(8);
 
         parameters = getParams();
 
@@ -111,7 +111,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject myLibrary =
             new UiObject(new UiSelector().className("android.widget.TextView")
                                          .text("My library").index(3));
-        myLibrary.clickAndWaitForNewWindow(timeout);
+        myLibrary.clickAndWaitForNewWindow(uiAutoTimeout);
 
         result.end();
 
@@ -205,7 +205,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         UiObject contents = getUiObjectByResourceId("com.google.android.apps.books:id/menu_reader_toc",
                                                     "android.widget.TextView");
-        contents.clickAndWaitForNewWindow(timeout);
+        contents.clickAndWaitForNewWindow(uiAutoTimeout);
 
         UiObject toChapterView = getUiObjectByResourceId("com.google.android.apps.books:id/toc_list_view",
                                                          "android.widget.ExpandableListView");
@@ -345,7 +345,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         moreOptions.click();
 
         UiObject bookInfo = getUiObjectByText("About this book", "android.widget.TextView");
-        bookInfo.clickAndWaitForNewWindow(timeout);
+        bookInfo.clickAndWaitForNewWindow(uiAutoTimeout);
 
         UiObject detailsPanel =
             new UiObject(new UiSelector().resourceId("com.android.vending:id/item_details_panel"));

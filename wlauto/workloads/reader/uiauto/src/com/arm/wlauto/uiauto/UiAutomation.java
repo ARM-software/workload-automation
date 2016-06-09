@@ -79,7 +79,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         UiObject actionBarTitle = getUiObjectByDescription("My Documents",
                                                      "android.widget.LinearLayout");
-        actionBarTitle.waitForExists(timeout);
+        actionBarTitle.waitForExists(uiAutoTimeout);
     }
 
     private void openFile(final String filename) throws Exception {
@@ -112,7 +112,9 @@ public class UiAutomation extends UxPerfUiAutomation {
     private Timer selectSearchFileButton() throws Exception {
         // Click the button to search from the present file list view
         UiObject searchButton = getUiObjectByResourceId("com.adobe.reader:id/split_pane_search",
-                                                        "android.widget.TextView");
+                                                        "android.widget.TextView",
+                                                        TimeUnit.SECONDS.toMillis(10));
+
         Timer result = new Timer();
         result.start();
         searchButton.click();
@@ -138,12 +140,12 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject fileObject = getUiObjectByText(file, "android.widget.TextView");
         Timer result = new Timer();
         result.start();
-        fileObject.clickAndWaitForNewWindow(timeout);
+        fileObject.clickAndWaitForNewWindow(uiAutoTimeout);
         result.end();
 
         // Wait for the doc to open by waiting for the viewPager UiObject to exist
         UiObject viewPager = new UiObject(new UiSelector().resourceId("com.adobe.reader:id/viewPager"));
-        if (!viewPager.waitForExists(timeout)) {
+        if (!viewPager.waitForExists(uiAutoTimeout)) {
             throw new UiObjectNotFoundException("Could not find \"viewPager\".");
         };
         return result;
@@ -244,7 +246,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Check the progress bar icon.  When this disappears the search is complete.
         UiObject progressBar = new UiObject(new UiSelector().resourceId("com.adobe.reader:id/searchProgress")
                                                             .className("android.widget.ProgressBar"));
-        progressBar.waitForExists(timeout);
+        progressBar.waitForExists(uiAutoTimeout);
         progressBar.waitUntilGone(searchTimeout);
         result.end();
 
@@ -261,7 +263,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Return from the document view to the file list view by pressing home and my documents.
         UiObject homeButton = new UiObject(new UiSelector().resourceId("android:id/home")
                                                           .className("android.widget.ImageView"));
-        if (!homeButton.waitForExists(timeout)) {
+        if (!homeButton.waitForExists(uiAutoTimeout)) {
             tapDisplayCentre();
         }
         homeButton.clickAndWaitForNewWindow();
