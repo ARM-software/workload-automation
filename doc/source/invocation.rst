@@ -5,7 +5,7 @@ Commands
 ========
 
 Installing the wlauto package will add ``wa`` command to your system,
-which you can run from anywhere. This has a number of sub-commands, which can 
+which you can run from anywhere. This has a number of sub-commands, which can
 be viewed by executing ::
 
         wa -h
@@ -131,5 +131,63 @@ will produce something like ::
         - Results displayed in Iterations per second
         - Detailed log file for comprehensive engineering analysis
 
+.. _record-command:
 
+record
+------
 
+This command simplifies the process of recording an revent file. It
+will automatically deploy revent and even has the option of automatically
+opening apps. WA uses two parts to the names of revent recordings in the
+format, {device_name}.{suffix}.revent. - device_name can either be specified
+manually with the ``-d`` argument or it can be automatically determined. On
+Android device it will be obtained from ``build.prop``, on Linux devices it is
+obtained from ``/proc/device-tree/model``. - suffix is used by WA to determine
+which part of the app execution the recording is for, currently these are
+either ``setup`` or ``run``. This should be specified with the ``-s``
+argument. The full set of options for this command are::
+
+    usage: wa record [-h] [-c CONFIG] [-v] [--debug] [--version] [-d DEVICE]
+                 [-s SUFFIX] [-o OUTPUT] [-p PACKAGE] [-C]
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -c CONFIG, --config CONFIG
+                            specify an additional config.py
+      -v, --verbose         The scripts will produce verbose output.
+      --debug               Enable debug mode. Note: this implies --verbose.
+      --version             show program's version number and exit
+      -d DEVICE, --device DEVICE
+                            The name of the device
+      -s SUFFIX, --suffix SUFFIX
+                            The suffix of the revent file, e.g. ``setup``
+      -o OUTPUT, --output OUTPUT
+                            Directory to save the recording in
+      -p PACKAGE, --package PACKAGE
+                            Package to launch before recording
+      -C, --clear           Clear app cache before launching it
+
+.. _replay-command:
+
+replay
+------
+
+Along side ``record`` wa also has a command to playback recorded revent files.
+It behaves very similar to the ``record`` command taking many of the same options::
+
+    usage: wa replay [-h] [-c CONFIG] [-v] [--debug] [--version] [-p PACKAGE] [-C]
+                 revent
+
+    positional arguments:
+      revent                The name of the file to replay
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -c CONFIG, --config CONFIG
+                            specify an additional config.py
+      -v, --verbose         The scripts will produce verbose output.
+      --debug               Enable debug mode. Note: this implies --verbose.
+      --version             show program's version number and exit
+      -p PACKAGE, --package PACKAGE
+                            Package to launch before recording
+      -C, --clear           Clear app cache before launching it

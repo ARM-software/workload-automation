@@ -32,7 +32,7 @@ class Recentfling(Workload):
 
     For this workload to work, ``recentfling.sh`` and ``defs.sh`` must be placed
     in ``~/.workload_automation/dependencies/recentfling/``. These can be found
-    in the [AOSP Git repository](https://android.googlesource.com/platform/system/extras/+/master/tests/).
+    in the `AOSP Git repository <https://android.googlesource.com/platform/system/extras/+/master/tests/>`_.
 
     To change the apps that are opened at the start of the workload you will need
     to modify the ``defs.sh`` file. You will need to add your app to ``dfltAppList``
