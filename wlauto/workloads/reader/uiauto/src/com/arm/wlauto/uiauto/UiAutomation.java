@@ -89,13 +89,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Replace whitespace and full stops within the filename
         String file = filename.replaceAll("\\.", "_").replaceAll("\\s+", "_");
 
-        timingResults.put(String.format(testTag + "_" + "selectLocalFilesList" + "_" + file), selectLocalFilesList());
+        timingResults.put(String.format(testTag + "_" + "1" + "_" + file), selectLocalFilesList());
 
         // On some devices permissions to access local files occurs here rather than the earlier step
         confirmAccess();
-        timingResults.put(String.format(testTag + "_" + "selectSearchDuration" + "_" + file), selectSearchFileButton());
-        timingResults.put(String.format(testTag + "_" + "searchFileList" + "_" + file), searchFileList(filename));
-        timingResults.put(String.format(testTag + "_" + "openFileFromList" + "_" + file), openFileFromList(filename));
+        timingResults.put(String.format(testTag + "_" + "2" + "_" + file), selectSearchFileButton());
+        timingResults.put(String.format(testTag + "_" + "3" + "_" + file), searchFileList(filename));
+        timingResults.put(String.format(testTag + "_" + "4" + "_" + file), openFileFromList(filename));
     }
 
     private Timer selectLocalFilesList() throws Exception {
