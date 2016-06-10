@@ -37,9 +37,9 @@ class Facebook(AndroidUiAutoBenchmark):
         Find friends.
         Update the facebook status
 
-    [NOTE:  This workload starts disableUpdate workload as a part of setup to
-    disable online updates, which helps to tackle problem of uncertain
-    behavier during facebook workload run.]
+    .. note::  This workload starts disableUpdate workload as a part of setup to
+               disable online updates, which helps to tackle problem of uncertain
+               behavier during facebook workload run.]
 
     """
     package = 'com.facebook.katana'
@@ -79,4 +79,3 @@ class Facebook(AndroidUiAutoBenchmark):
 
     def teardown(self, context):
         pass
-

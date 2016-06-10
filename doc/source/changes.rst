@@ -1,6 +1,232 @@
 =================================
 What's New in Workload Automation
 =================================
+
+-------------
+Version 2.5.0
+-------------
+
+Additions:
+##########
+
+Instruments
+~~~~~~~~~~~
+- ``servo_power``: Added support for chromebook servo boards.
+- ``file_poller``: polls files and outputs a CSV of their values over time.
+- ``systrace``: The Systrace tool helps analyze the performance of your
+  application by capturing and displaying execution times of your applications
+  processes and other Android system processes.
+
+Workloads
+~~~~~~~~~
+- ``blogbench``: Blogbench is a portable filesystem benchmark that tries to
+  reproduce the load of a real-world busy file server.
+- ``stress-ng``: Designed to exercise various physical subsystems of a computer
+  as well as the various operating system kernel interfaces.
+- ``hwuitest``: Uses hwuitest from AOSP to test rendering latency on Android
+  devices.
+- ``recentfling``: Tests UI jank on android devices.
+- ``apklaunch``: installs and runs an arbitrary apk file.
+- ``googlemap``: Launches Google Maps and replays previously recorded
+  interactions.
+
+Framework
+~~~~~~~~~
+- ``wlauto.utils.misc``: Added ``memoised`` function decorator that allows
+  caching of previous function/method call results.
+- Added new ``Device`` APIs:
+   - ``lsmod``: lists kernel modules
+   - ``insmod``: inserts a kernel module from a ``.ko`` file on the host.
+   - ``get_binary_path``: Checks ``binary_directory`` for the wanted binary,
+     if it is not found there it will try to use ``which``
+   - ``install_if_needed``: Will only install a binary if it is not already
+     on the target.
+   - ``get_device_model``: Gets the model of the device.
+- ``wlauto.core.execution.ExecutionContext``:
+   - ``add_classfiers``: Allows adding a classfier to all metrics for the
+     current result.
+
+Other
+~~~~~
+- Commands:
+   - ``record``: Simplifies recording revent files.
+   - ``replay``: Plays back revent files.
+
+Fixes/Improvements:
+###################
+
+Devices
+~~~~~~~
+- ``juno``:
+   - Fixed ``bootargs`` parameter not being passed  to ``_boot_via_uboot``.
+   - Removed default ``bootargs``
+- ``gem5_linux``:
+   - Added ``login_prompt`` and ``login_password_prompt`` parameters.
+- ``generic_linux``: ABI is now read from the target device.
+
+Instruments
+~~~~~~~~~~~
+- ``trace-cmd``:
+   - Added the ability to report the binary trace on the target device,
+     removing the need for ``trace-cmd`` binary to be present on the host.
+   - Updated to handle messages that the trace for a CPU is empty.
+   - Made timeout for pulling trace 1 minute at minimum.
+- ``perf``: per-cpu statistics now get added as metrics to the results (with a
+   classifier used to identify the cpu).
+- ``daq``:
+   - Fixed bug where an exception would be raised if ``merge_channels=False``
+   - No longer allows duplicate channel labels
+- ``juno_energy``:
+   - Summary metrics are now calculated from the contents of ``energy.csv`` and
+     added to the overall results.
+   - Added a ``strict`` parameter. When this is set to ``False`` the device
+     check during validation is omitted.
+- ``sysfs_extractor``: tar and gzip are now performed separately to solve
+  permission issues.
+- ``fps``:
+   - Now only checks for crashed content if ``crash_check`` is ``True``.
+   - Can now process multiple ``view`` attributes.
+- ``hwmon``: Sensor naming fixed, they are also now added as result classifiers
+
+Resource Getters
+~~~~~~~~~~~~~~~~
+- ``extension_asset``: Now picks up the path to the mounted filer from the
+  ``remote_assets_path`` global setting.
+
+Result Processors
+~~~~~~~~~~~~~~~~~
+- ``cpustates``:
+   - Added the ability to configure how a missing ``START`` marker in the trace
+     is handled.
+   - Now raises a warning when there is a ``START`` marker in the trace but no
+     ``STOP`` marker.
+   - Exceptions in PowerStateProcessor no longer stop the processing of the
+     rest of the trace.
+   - Now ensures a known initial state by nudging each CPU to bring it out of
+     idle and writing starting CPU frequencies to the trace.
+   - Added the ability to create a CPU utilisation timeline.
+   - Fixed issues with getting frequencies of hotplugged CPUs
+- ``csv``: Zero-value classifieres are no longer converted to an empty entry.
+- ``ipynb_exporter``: Default template no longer shows a blank plot for
+  workloads without ``summary_metrics``
+
+Workloads
+~~~~~~~~~
+- ``vellamo``:
+   - Added support for v3.2.4.
+   - Fixed getting values from logcat.
+- ``cameracapture``: Updated to work with Android M+.
+- ``camerarecord``: Updated to work with Android M+.
+- ``lmbench``:
+   - Added the output file as an artifact.
+   - Added taskset support
+- ``antutu`` - Added support for v6.0.1
+- ``ebizzy``: Fixed use of ``os.path`` to ``self.device.path``.
+- ``bbench``: Fixed browser crashes & permissions issues on android M+.
+- ``geekbench``:
+   - Added check whether device is rooted.
+- ``manual``: Now only uses logcat on Android devices.
+- ``applaunch``:
+   - Fixed ``cleanup`` not getting forwarded to script.
+   - Added the ability to stress IO during app launch.
+- ``dhrystone``: Now uses WA's resource resolution to find it's binary so it
+  uses the correct ABI.
+- ``glbench``: Updated for new logcat formatting.
+
+Framework
+~~~~~~~~~
+- ``ReventWorkload``:
+   - Now kills all revent instances on teardown.
+   - Device model name is now used when searching for revent files, falling back
+     to WA device name.
+- ``BaseLinuxDevice``:
+   - ``killall`` will now run as root by default if the device
+     is rooted.
+   - ``list_file_systems`` now handles blank lines.
+   - All binaries are now installed into ``binaries_directory`` this allows..
+   - Busybox is now deployed on non-root devices.
+   - gzipped property files are no zcat'ed
+- ``LinuxDevice``:
+   - ``kick_off`` no longer requires root.
+   - ``kick_off`` will now run as root by default if the device is rooted.
+   - No longer raises an exception if a connection was dropped during a reboot.
+   - Added a delay before polling for a connection to avoid re-connecting to a
+     device that is still in the process of rebooting.
+- ``wlauto.utils.types``: ``list_or_string`` now ensures that elements of a list
+  are strings.
+- ``AndroidDevice``:
+   - ``kick_off`` no longer requires root.
+   - Build props are now gathered via ``getprop`` rather than trying to parse
+     build.prop directly.
+   - WA now pushes its own ``sqlite3`` binary.
+   - Now uses ``content`` instead of ``settings`` to get ``ANDROID_ID``
+   - ``swipe_to_unlock`` parameter is now actually used. It has been changed to
+      take a direction to accomodate various devices.
+   - ``ensure_screen_is_on`` will now also unlock the screen if swipe_to_unlock
+     is set.
+   - Fixed use of variables in as_root=True commands.
+   - ``get_pids_of`` now used ``busybox grep`` since as of Android M+ ps cannot
+     filter by process name anymore.
+   - Fixed installing APK files with whitespace in their path/name.
+- ``adb_shell``:
+   - Fixed handling of line breaks at the end of command output.
+   - Newline separator is now detected from the target.
+   - As of ADB v1.0.35, ADB returns the return code of the command run. WA now
+     handles this correctly.
+- ``ApkWorkload``:
+   - Now attempts to grant all runtime permissions for devices on Android M+.
+   - Can now launch packages that don't have a launch activity defined.
+   - Package version is now added to results as a classifier.
+   - Now clears app data if an uninstall failed to ensure it starts from a known
+     state.
+- ``wlauto.utils.ipython``: Updated to work with ipython v5.
+- ``Gem5Device``:
+   - Added support for deploying the ``m5`` binary.
+   - No longer waits for the boot animation to finish if it has been disabled.
+   - Fixed runtime error caused by lack of kwargs.
+   - No longer depends on ``busybox``.
+   - Split out commands to resize shell to ``resize_shell``.
+   - Now tries to connect to the shell up to 10 times.
+   - No longer renames gzipped files.
+- Agendas:
+  - Now errors when an agenda key is empty.
+- ``wlauto.core.execution.RunInfo``: ``run_name`` will now default to
+  ``{output_folder}_{date}_{time}``.
+- Extensions:
+   - Two different parameters can now have the same global alias as long as they
+     their types match.
+   - You can no longer ``override`` parameters that are defined at the same
+     level.
+- ``wlauto.core.entry_point``: Now gives a better error when a config file
+  doesn't exist.
+- ``wlauto.utils.misc``: Added ``aarch64`` to list for arm64 ABI.
+- ``wlauto.core.resolver``: Now shows what version was being search for when a
+  resource is not found.
+- Will no longer start instruments ect. if a run has no workload specs.
+- ``wlauto.utils.uboot``: Now detects uboot version to use correct line endings.
+- ``wlauto.utils.trace_cmd``: Added a parser for sched_switch events.
+
+Other
+~~~~~
+- Updated to pylint v1.5.1
+- Rebuilt ``busybox`` binaries to prefer built-in applets over system binaries.
+- ``BaseUiAutomation``: Added functions for checking version strings.
+
+Incompatible changes
+####################
+
+Instruments
+~~~~~~~~~~~
+- ``apk_version``: Removed, use result classifiers instead.
+
+Framework
+~~~~~~~~~
+- ``BaseLinuxDevice``: Removed ``is_installed`` use ``install_if_needed`` and
+  ``get_binary_path`` instead.
+- ``LinuxDevice``: Removed ``has_root`` method, use ``is_rooted`` instead.
+- ``AndroidDevice``: ``swipe_to_unlock`` method replaced with
+  ``perform_unlock_swipe``.
+
 -------------
 Version 2.4.0
 -------------

@@ -59,6 +59,11 @@ usually the best bet.
 Optionally (but recommended), you should also set ``ANDROID_HOME`` to point to
 the install location of the SDK (i.e. ``<path_to_android_sdk>/sdk``).
 
+.. note:: You may need to install 32-bit compatibility libararies for the SDK
+          to work properly. On Ubuntu you need to run::
+
+                  sudo apt-get install lib32stdc++6 lib32z1
+
 
 Python
 ------
@@ -87,7 +92,7 @@ similar distributions, this may be done with APT::
           If you do run  into this issue after already installing some packages,
           you can resolve it by running ::
 
-                  sudo chmod -R a+r /usr/local/lib/python2.7/dist-packagessudo 
+                  sudo chmod -R a+r /usr/local/lib/python2.7/dist-packagessudo
                   find /usr/local/lib/python2.7/dist-packages -type d -exec chmod a+x {} \;
 
           (The paths above will work for Ubuntu; they may need to be adjusted
@@ -307,7 +312,7 @@ that location.
 
 If you have installed Workload Automation via ``pip`` and wish to remove it, run this command to
 uninstall it::
-    
+
     sudo -H pip uninstall wlauto
 
 .. Note:: This will *not* remove any user configuration (e.g. the ~/.workload_automation directory)
@@ -317,5 +322,5 @@ uninstall it::
 ====================
 
 To upgrade Workload Automation to the latest version via ``pip``, run::
-    
+
     sudo -H pip install --upgrade --no-deps wlauto
