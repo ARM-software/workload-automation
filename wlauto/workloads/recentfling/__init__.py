@@ -21,7 +21,7 @@ from collections import defaultdict
 
 from wlauto import Workload, Parameter, File
 from wlauto.utils.types import caseless_string
-from wlauto.exceptions import WorkloadError
+from wlauto.exceptions import WorkloadError, DeviceError
 
 
 class Recentfling(Workload):
@@ -32,7 +32,7 @@ class Recentfling(Workload):
 
     For this workload to work, ``recentfling.sh`` and ``defs.sh`` must be placed
     in ``~/.workload_automation/dependencies/recentfling/``. These can be found
-    in the `AOSP Git repository <https://android.googlesource.com/platform/system/extras/+/master/tests/>`_.
+    in the `AOSP Git repository <https://android.googlesource.com/platform/system/extras/+/master/tests/workloads>`_.
 
     To change the apps that are opened at the start of the workload you will need
     to modify the ``defs.sh`` file. You will need to add your app to ``dfltAppList``
@@ -47,6 +47,12 @@ class Recentfling(Workload):
     parameters = [
         Parameter('loops', kind=int, default=3,
                   description="The number of test iterations."),
+        Parameter('start_apps', kind=bool, default=True,
+                  description="""
+                  If set to ``False``,no apps will be started before flinging
+                  through the recent apps list (in which the assumption is
+                  there are already recently started apps in the list.
+                  """),
     ]
 
     def initialise(self, context):  # pylint: disable=no-self-use
@@ -56,15 +62,18 @@ class Recentfling(Workload):
 
     def setup(self, context):
         self.defs_host = context.resolver.get(File(self, "defs.sh"))
+        self.defs_target = self.device.install(self.defs_host)
         self.recentfling_host = context.resolver.get(File(self, "recentfling.sh"))
-        self.device.push_file(self.recentfling_host, self.device.working_directory)
-        self.device.push_file(self.defs_host, self.device.working_directory)
+        self.recentfling_target = self.device.install(self.recentfling_host)
         self._kill_recentfling()
         self.device.ensure_screen_is_on()
 
     def run(self, context):
-        cmd = "echo $$>{dir}/pidfile; exec {dir}/recentfling.sh -i {}; rm {dir}/pidfile"
-        cmd = cmd.format(self.loops, dir=self.device.working_directory)
+        args = '-i {} '.format(self.loops)
+        if not self.start_apps:
+            args += '-N '
+        cmd = "echo $$>{dir}/pidfile; cd {bindir}; exec ./recentfling.sh {args}; rm {dir}/pidfile"
+        cmd = cmd.format(args=args, dir=self.device.working_directory, bindir=self.device.binaries_directory)
         try:
             self.output = self.device.execute(cmd, timeout=120)
         except KeyboardInterrupt:
@@ -89,12 +98,14 @@ class Recentfling(Workload):
                                               classifiers={"loop": count or "Average"})
 
     def teardown(self, context):
-        self.device.delete_file(self.device.path.join(self.device.working_directory,
-                                                      "recentfling.sh"))
-        self.device.delete_file(self.device.path.join(self.device.working_directory,
-                                                      "defs.sh"))
+        self.device.uninstall(self.recentfling_target)
+        self.device.uninstall(self.defs_target)
 
     def _kill_recentfling(self):
-        pid = self.device.execute('cat {}/pidfile'.format(self.device.working_directory))
-        if pid:
-            self.device.kill(pid.strip(), signal='SIGKILL')
+        command = 'cat {}/pidfile'.format(self.device.working_directory)
+        try:
+            pid = self.device.execute(command)
+            if pid.strip():
+                self.device.kill(pid.strip(), signal='SIGKILL')
+        except DeviceError:
+            pass  # may have already been deleted
