@@ -192,10 +192,28 @@ version $version".
 Some WA extensions have additional dependencies that need to be
 statisfied before they can be used. Not all of these can be provided with WA and
 so will need to be supplied by the user. They should be placed into
-``~/.workload_uatomation/dependencies/<extenion name>`` so that WA can find
+``~/.workload_automation/dependencies/<extenion name>`` so that WA can find
 them (you may need to create the directory if it doesn't already exist). You
 only need to provide the dependencies for workloads you want to use.
 
+Binary Files
+------------
+
+Some workloads require native binaries to work. Different binaries will be required
+for different ABIs. WA may not include the required binary for a workload due to 
+licensing/distribution issues, or may not have a binary compiled for your device's 
+ABI. In such cases, you will have to supply the missing binaries. 
+
+Executable binaries for a workload should be placed inside 
+``~/.workload_automation/dependencies/<extension name>/bin/<ABI>`` directory.
+This directory may not already exist, in which case you would have to create it.
+
+Binaries placed in that location will take precidence over any already inclueded with
+WA. For example, if you have your own ``drystone`` binary compiled for ``arm64``, 
+and you want WA to pick it up, you can do the following on WA host machine ::
+
+    mkdir -p ~/.workload_automation/dependencies/dhrystone/bin/arm64/
+    cp /path/to/your/dhrystone ~/.workload_automation/dependencies/dhrystone/bin/arm64/
 
 APK Files
 ---------
