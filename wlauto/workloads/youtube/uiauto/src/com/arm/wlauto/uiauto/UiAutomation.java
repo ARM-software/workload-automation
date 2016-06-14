@@ -201,12 +201,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         startTimer();
         clickUiObject(BY_ID, packageID + "expand_button");
         endTimer("info_card_collapse");
-        // Display share menu
-        startTimer();
-        clickUiObject(BY_ID, packageID + "share_button", true);
-        endTimer("info_card_share_menu");
-        SystemClock.sleep(500); // short delay to simulate user action
-        getUiDevice().pressBack();
     }
 
     public void scrollRelated() throws Exception {
