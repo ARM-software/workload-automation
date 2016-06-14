@@ -24,7 +24,7 @@ import re
 from collections import defaultdict
 
 from wlauto import settings, Workload, Parameter, Alias, Executable
-from wlauto.exceptions import ConfigError
+from wlauto.exceptions import ConfigError, WorkloadError
 from wlauto.utils.types import boolean
 
 DEFAULT_BBENCH_FILE = "http://bbench.eecs.umich.edu/bbench/bbench_2.0.tgz"
@@ -158,6 +158,9 @@ class BBench(Workload):
         metrics = _parse_metrics(os.path.join(context.output_directory, 'browser_bbench_logcat.txt'),
                                  os.path.join(context.output_directory, 'index_noinput.html'),
                                  context.output_directory)
+        if not metrics:
+            raise WorkloadError('No BBench metrics extracted from Logcat')
+
         for key, values in metrics:
             for i, value in enumerate(values):
                 metric = '{}_{}'.format(key, i) if i else key
@@ -217,6 +220,7 @@ def _parse_metrics(logfile, indexfile, output_directory):  # pylint: disable=R09
                 settings_dict['iterations'], settings_dict['scrollDelay'], settings_dict['scrollSize'] = match.group(1).split(',')
     with open(logfile) as fh:
         results_dict = defaultdict(list)
+        results_list = []
         for line in fh:
             if 'metrics:Mean' in line:
                 results_list = regex_bbscore.findall(line)
@@ -241,4 +245,4 @@ def _parse_metrics(logfile, indexfile, output_directory):  # pylint: disable=R09
         with open(os.path.join(output_directory, 'settings.json'), 'w') as wfh:
             json.dump(settings_dict, wfh)
 
-    return sorted_results
+    return list(sorted_results)
