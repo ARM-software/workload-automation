@@ -235,13 +235,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         Timer result = new Timer();
         result.start();
 
-        // Deal with the Yoga Tab 3 special case which does not handle Enter keys in search boxes
-        String productName = getUiDevice().getProductName();
-        if (productName.equals("YT3_10_row_wifi")) {
-            tapDisplay(2370, 1100);
-        } else {
-            getUiDevice().getInstance().pressEnter();
-        }
+        pressEnter();
 
         // Check the progress bar icon.  When this disappears the search is complete.
         UiObject progressBar = new UiObject(new UiSelector().resourceId("com.adobe.reader:id/searchProgress")
