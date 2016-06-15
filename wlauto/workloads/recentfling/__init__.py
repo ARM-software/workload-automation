@@ -98,8 +98,8 @@ class Recentfling(Workload):
                                               classifiers={"loop": count or "Average"})
 
     def teardown(self, context):
-        self.device.uninstall(self.recentfling_target)
-        self.device.uninstall(self.defs_target)
+        self.device.uninstall_executable(self.recentfling_target)
+        self.device.uninstall_executable(self.defs_target)
 
     def _kill_recentfling(self):
         command = 'cat {}/pidfile'.format(self.device.working_directory)
