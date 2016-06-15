@@ -64,9 +64,9 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
         }
 
         public void stop() throws Exception {
+            result.end();
             stopDumpsysSurfaceFlinger(parameters, surfFlingerlogName);
             stopDumpsysGfxInfo(parameters, gfxInfologName);
-            result.end();
         }
 
         public Timer result() {
@@ -318,19 +318,19 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
         if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
             File outFile = new File(parameters.getString("output_dir"), filename);
             exitDumpsysSurfaceFlinger(parameters.getString("package"), outFile);
-          }
+        }
     }
 
     public void startDumpsysGfxInfo(Bundle parameters) {
         if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
             initDumpsysGfxInfo(parameters.getString("package"));
-          }
+        }
     }
 
     public void stopDumpsysGfxInfo(Bundle parameters, String filename) throws Exception {
-      if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
+        if (Boolean.parseBoolean(parameters.getString("dumpsys_enabled"))) {
             File outFile = new File(parameters.getString("output_dir"), filename);
             exitDumpsysGfxInfo(parameters.getString("package"), outFile);
-          }
+        }
     }
 }
