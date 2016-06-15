@@ -28,13 +28,18 @@ class Powerpoint(AndroidUiAutoBenchmark):
     name = 'powerpoint'
     package = 'com.microsoft.office.powerpoint'
     activity = 'com.microsoft.office.apphost.LaunchActivity'
+    view = [package + '/com.microsoft.office.apphost.LaunchActivity',
+            package + '/.PPTActivity']
     description = """
     A workload to perform standard productivity tasks with Microsoft PowerPoint.
-    This workloads prepares a very basic presentation consisting of a simple title slide
+    There are two test types for this workload:
+
+    --- create ---
+    Prepares a basic presentation consisting of a simple title slide
     and a single image slide. The presentation is then presented in a slide show.
 
     Test description:
-    1. Open Microsoft Powerpoint application
+    1. Open Microsoft PowerPoint application
     2. Dismisses sign step and uses the app without an account.
     3. Creates a new presentation
     4. Specifies storage location when saving presentation
@@ -43,6 +48,18 @@ class Powerpoint(AndroidUiAutoBenchmark):
     7. Selects a blank layout and creates a new slide
     8. Adds an image to the blank slide from the local storage
     9. Starts a slide show and presents the slides
+
+    --- load ---
+    Loads a presentation from file and sets a transition effect for the slides.
+    The presentation is then presented in a slide show. The .pptx file to use
+    should be placed in the dependencies directory.
+
+    Test description:
+    1. Open Microsoft PowerPoint application
+    2. Dismisses sign step and uses the app without an account.
+    3. Loads a presentation from file
+    4. Selects a transition effect type
+    5. Starts a slide show and presents the slides
 
     NOTE: This workload requires a network connection (ideally, wifi) to run.
     """
@@ -54,15 +71,32 @@ class Powerpoint(AndroidUiAutoBenchmark):
                   test run.  The output is piped to log files which are then
                   pulled from the phone.
                   """),
+        Parameter('test_type', kind=str, mandatory=True, allowed_values=['create', 'load'],
+                  description="""
+                  The test type to run for this workload. When set to "create" the test
+                  prepares a very basic presentation consisting of a simple title slide
+                  and a single image slide. When set to "load" the test loads a .pptx file
+                  to the device and performs a slide show using transition effects.
+                  """),
         Parameter('slide_template', kind=str, mandatory=False, default='Crop',
                   description="""
                   The slide template name to use when creating a new presentation.
-                  Note: spaces must be replaced with underscores in the book title.
+                  Note: spaces must be replaced with underscores in the slide template.
                   """),
         Parameter('title_name', kind=str, mandatory=False, default='Test_Title',
                   description="""
                   The title to use when creating a new presentation.
-                  Note: spaces must be replaced with underscores in the book title.
+                  Note: spaces must be replaced with underscores in the title name.
+                  """),
+        Parameter('transition_effect', kind=str, mandatory=False, default='None',
+                  description="""
+                  The transition animation to use when moving between slides.
+                  Note: Accepts single words only.
+                  """),
+        Parameter('number_of_slides', kind=int, mandatory=False, default=3,
+                  constraint=lambda x: x > 0 and x <= 100, description="""
+                  The number of slides to view when performing a slide show.
+                  Note: Must be a number larger than 0 and smaller than one hundred.
                   """),
     ]
 
@@ -78,8 +112,24 @@ class Powerpoint(AndroidUiAutoBenchmark):
         self.uiauto_params['output_dir'] = self.device.working_directory
         self.uiauto_params['output_file'] = self.output_file
         self.uiauto_params['dumpsys_enabled'] = self.dumpsys_enabled
+        self.uiauto_params['test_type'] = self.test_type
         self.uiauto_params['slide_template'] = self.slide_template
         self.uiauto_params['title_name'] = self.title_name
+        self.uiauto_params['transition_effect'] = self.transition_effect
+        self.uiauto_params['number_of_slides'] = self.number_of_slides
+
+    def push_file(self, extension):
+        entrys = [entry for entry in os.listdir(self.dependencies_directory) if entry.endswith(extension)]
+
+        # Check for workload dependencies before proceeding
+        if len(entrys) != 1:
+            raise NotFoundError("This workload requires one {} file in {}".format(extension,
+                                self.dependencies_directory))
+        else:
+            for entry in entrys:
+                self.device.push_file(os.path.join(self.dependencies_directory, entry),
+                                      os.path.join(self.device.working_directory, entry),
+                                      timeout=300)
 
     def initialize(self, context):
         super(Powerpoint, self).initialize(context)
@@ -87,17 +137,14 @@ class Powerpoint(AndroidUiAutoBenchmark):
         if not self.device.is_network_connected():
             raise DeviceError('Network is not connected for device {}'.format(self.device.name))
 
-        # Check for workload dependencies before proceeding
-        jpeg_files = [entry for entry in os.listdir(self.dependencies_directory) if entry.endswith(".jpg")]
+    def setup(self, context):
+        super(Powerpoint, self).setup(context)
 
-        if len(jpeg_files) < 1:
-            raise NotFoundError("This workload requires a minimum of one {} file in {}".format('jpg',
-                                self.dependencies_directory))
-        else:
-            for entry in jpeg_files:
-                self.device.push_file(os.path.join(self.dependencies_directory, entry),
-                                      os.path.join(self.device.working_directory, entry),
-                                      timeout=300)
+        if self.test_type == "create":
+            self.push_file(".jpg")
+
+        if self.test_type == "load":
+            self.push_file(".pptx")
 
         # Force a re-index of the mediaserver cache to pick up new files
         self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
@@ -130,8 +177,8 @@ class Powerpoint(AndroidUiAutoBenchmark):
                                       context.output_directory)
                 self.device.delete_file(os.path.join(self.device.working_directory, entry))
 
-            # Clean up powerpoint files on each iteration
-            if entry.endswith(".pptx"):
+            # Clean up powerpoint file from 'create' test on each iteration
+            if entry == "Presentation.pptx":
                 self.device.delete_file(os.path.join(self.device.working_directory, entry))
 
         self.device.execute('am broadcast -a android.intent.action.MEDIA_MOUNTED -d file:///sdcard')
@@ -140,7 +187,7 @@ class Powerpoint(AndroidUiAutoBenchmark):
         super(Powerpoint, self).finalize(context)
 
         for entry in self.device.listdir(self.device.working_directory):
-            if entry.endswith(".jpg"):
+            if entry.endswith(".jpg") or entry.endswith(".pptx"):
                 self.device.delete_file(os.path.join(self.device.working_directory, entry))
 
         # Force a re-index of the mediaserver cache to removed cached files
