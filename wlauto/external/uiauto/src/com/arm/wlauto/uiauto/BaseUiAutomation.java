@@ -135,6 +135,22 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         UiDevice.getInstance().pressBack();
     }
 
+    public void pressDPadUp() {
+        UiDevice.getInstance().pressDPadUp();
+    }
+
+    public void pressDPadDown() {
+        UiDevice.getInstance().pressDPadDown();
+    }
+
+    public void pressDPadLeft() {
+        UiDevice.getInstance().pressDPadLeft();
+    }
+
+    public void pressDPadRight() {
+        UiDevice.getInstance().pressDPadRight();
+    }
+
     public int getDisplayHeight() {
         return UiDevice.getInstance().getDisplayHeight();
     }
