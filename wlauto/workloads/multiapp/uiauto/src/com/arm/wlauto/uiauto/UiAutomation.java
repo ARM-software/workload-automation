@@ -26,17 +26,22 @@ public class UiAutomation extends UxPerfUiAutomation {
         com.arm.wlauto.uiauto.googlephotos.UiAutomation googlephotos =
             new com.arm.wlauto.uiauto.googlephotos.UiAutomation();
 
+        // ----------------------------------------------------------------
+        // Share using Gmail
+        // ----------------------------------------------------------------
         googlephotos.pauseForSplashScreen();
         setScreenOrientation(ScreenOrientation.NATURAL);
         confirmAccess();
         googlephotos.dismissWelcomeView();
+        googlephotos.closePromotionPopUp();
         googlephotos.selectWorkingGallery();
 
-        // select the first photo
         googlephotos.tagPhoto(1);
         sendToGmail();
 
-        // select the second photo
+        // ----------------------------------------------------------------
+        // Share using Skype
+        // ----------------------------------------------------------------
         googlephotos.tagPhoto(1);
         logIntoSkype();
 
@@ -44,7 +49,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         // once more from googlephotos
         pressBack();
         pressBack();
-        googlephotos.tagPhoto(2);
+        googlephotos.tagPhoto(1);
 
         sendToSkype();
 

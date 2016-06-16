@@ -22,6 +22,7 @@ import android.graphics.Rect;
 import com.android.uiautomator.core.UiObject;
 import com.android.uiautomator.core.UiObjectNotFoundException;
 import com.android.uiautomator.core.UiSelector;
+import com.android.uiautomator.core.UiScrollable;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
@@ -47,6 +48,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         setScreenOrientation(ScreenOrientation.NATURAL);
         confirmAccess();
         dismissWelcomeView();
+        closePromotionPopUp();
         selectWorkingGallery();
         gesturesTest();
         editPhotoColorTest();
@@ -344,9 +346,26 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
     }
 
+    public void closePromotionPopUp() throws Exception {
+        UiObject promoCloseButton =
+            new UiObject(new UiSelector().resourceId("com.google.android.apps.photos:id/promo_close_button"));
+
+        if (promoCloseButton.exists()) {
+            promoCloseButton.click();
+        }
+    }
+
     // Helper to click on the wa-working gallery.
     public void selectWorkingGallery() throws Exception {
-        UiObject workdir = getUiObjectByText("wa-working", "android.widget.TextView");
+        UiObject workdir = new UiObject(new UiSelector().text("wa-working")
+                                                        .className("android.widget.TextView"));
+
+        UiScrollable scrollView = new UiScrollable(new UiSelector().scrollable(true));
+
+        while (!workdir.exists()) {
+            scrollView.scrollForward();
+        }
+
         workdir.clickAndWaitForNewWindow();
     }
 
@@ -356,7 +375,18 @@ public class UiAutomation extends UxPerfUiAutomation {
             new UiObject(new UiSelector().resourceId("com.google.android.apps.photos:id/recycler_view")
                                          .childSelector(new UiSelector()
                                          .index(index)));
-        photo.click();
+
+        // On some versions of the app a non-zero index is used for the
+        // photographs position while on other versions a zero index is used.
+        // Try both possiblities before throwing an exception.
+        if (photo.exists()) {
+            photo.click();
+        } else {
+            photo = new UiObject(new UiSelector().resourceId("com.google.android.apps.photos:id/recycler_view")
+                                                 .childSelector(new UiSelector()
+                                                 .index(index - 1)));
+            photo.click();
+        }
     }
 
     // Helper that accepts, saves and navigates back to application home screen after an edit operation
@@ -384,7 +414,17 @@ public class UiAutomation extends UxPerfUiAutomation {
             new UiObject(new UiSelector().resourceId("com.google.android.apps.photos:id/recycler_view")
                                          .childSelector(new UiSelector()
                                          .index(index)));
-        photo.waitForExists(viewTimeout);
-        uiDevicePerformLongClick(photo, 100);
+
+        // On some versions of the app a non-zero index is used for the
+        // photographs position while on other versions a zero index is used.
+        // Try both possiblities before throwing an exception.
+        if (photo.exists()) {
+            uiDevicePerformLongClick(photo, 100);
+        } else {
+            photo = new UiObject(new UiSelector().resourceId("com.google.android.apps.photos:id/recycler_view")
+                                                 .childSelector(new UiSelector()
+                                                 .index(index - 1)));
+            uiDevicePerformLongClick(photo, 100);
+        }
     }
 }

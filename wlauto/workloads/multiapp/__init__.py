@@ -69,8 +69,7 @@ class Multiapp(AndroidUiAutoBenchmark):
     dependencies directory and the Gmail and Skype apks to be placed in the
     directory of this file.
 
-    In addition, this workload requires four jpeg files to be placed in the
-    dependencies directory to run.
+    Additionally, this workload requires a JPEG file to present in the dependencies directory.
 
     Test description:
      1. Two images are copied to the device
@@ -132,8 +131,8 @@ class Multiapp(AndroidUiAutoBenchmark):
         # Check for workload dependencies before proceeding
         jpeg_files = [entry for entry in os.listdir(self.dependencies_directory) if entry.endswith(".jpg")]
 
-        if len(jpeg_files) < 4:
-            raise NotFoundError("This workload requires a minimum of four {} files in {}".format('jpg',
+        if len(jpeg_files) < 1:
+            raise NotFoundError("This workload requires a minimum of one {} file in {}".format('jpg',
                                 self.dependencies_directory))
         else:
             for entry in jpeg_files:
