@@ -55,10 +55,10 @@ class HWUITest(Workload):
         host_exe = context.resolver.get(Executable(self,
                                                    self.device.abi,
                                                    BINARY))
-        self.device.install(host_exe)
+        self.target_exe = self.device.install(host_exe)
 
     def run(self, context):
-        self.output = self.device.execute("{} {} {} {}".format(BINARY,
+        self.output = self.device.execute("{} {} {} {}".format(self.target_exe,
                                                                self.test.lower(),
                                                                self.loops,
                                                                self.frames))
