@@ -157,8 +157,8 @@ class SysfsExtractor(Instrument):
                                                               self.tmpfs_mount_point),
                                 as_root=True)
             self.device.execute('chmod 0777 {}'.format(on_device_tarball), as_root=True)
-            self.device.execute('{} gzip {}'.format(self.device.busybox,
-                                                    on_device_tarball))
+            self.device.execute('{} gzip -f {}'.format(self.device.busybox,
+                                                       on_device_tarball))
             self.device.pull_file(on_device_tarball + ".gz", on_host_tarball)
             with tarfile.open(on_host_tarball, 'r:gz') as tf:
                 tf.extractall(context.output_directory)
