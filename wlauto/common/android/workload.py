@@ -155,8 +155,8 @@ class ApkWorkload(Workload):
                   '''),
         Parameter('force_install', kind=boolean, default=False,
                   description='''
-                  Always re-install the APK, even if matching version is found
-                  on already installed on the device.
+                  Always re-install the APK, even if matching version is found already installed
+                  on the device. Runs ``adb install -r`` to ensure existing APK is replaced.
                   '''),
         Parameter('uninstall_apk', kind=boolean, default=False,
                   description='If ``True``, will uninstall workload\'s APK as part of teardown.'),
@@ -194,7 +194,7 @@ class ApkWorkload(Workload):
             self.initialize_with_host_apk(context, installed_version)
         else:
             if not installed_version:
-                message = '''{} not found found on the device and check_apk is set to "False"
+                message = '''{} not found on the device and check_apk is set to "False"
                              so host version was not checked.'''
                 raise WorkloadError(message.format(self.package))
             message = 'Version {} installed on device; skipping host APK check.'
@@ -222,8 +222,8 @@ class ApkWorkload(Workload):
         if self.force_install:
             if installed_version:
                 self.device.uninstall(self.package)
-            # It's possible that that the uninstall above fails, which will result in
-            # install failing and a warning, hower execution would the proceed, so need
+            # It's possible that the uninstall above fails, which might result in a warning
+            # and/or failure during installation. Hower execution should proceed, so need
             # to make sure that the right apk_vesion is reported in the end.
             if self.install_apk(context):
                 self.apk_version = host_version
@@ -249,12 +249,13 @@ class ApkWorkload(Workload):
 
         # As of android API level 23, apps can request permissions at runtime,
         # this will grant all of them so requests do not pop up when running the app
+        # This can also be done less "manually" during adb install using the -g flag
         if self.device.get_sdk_version() >= 23:
             self._grant_requested_permissions()
 
     def install_apk(self, context):
         success = False
-        output = self.device.install(self.apk_file, self.install_timeout)
+        output = self.device.install(self.apk_file, self.install_timeout, replace=self.force_install)
         if 'Failure' in output:
             if 'ALREADY_EXISTS' in output:
                 self.logger.warn('Using already installed APK (did not unistall properly?)')
@@ -288,7 +289,7 @@ class ApkWorkload(Workload):
                 self.device.execute("pm grant {} {}".format(self.package, permission))
 
     def do_post_install(self, context):
-        """ May be overwritten by dervied classes."""
+        """ May be overwritten by derived classes."""
         pass
 
     def run(self, context):
