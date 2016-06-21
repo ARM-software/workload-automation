@@ -725,7 +725,8 @@ class EnergyModelInstrument(Instrument):
                 if not self.no_hotplug:
                     spec.runtime_parameters['{}_cores'.format(core)] = num_cpus
                 spec.runtime_parameters['{}_frequency'.format(core)] = min_frequency
-                spec.runtime_parameters['ui'] = 'off'
+                if self.device.platform == 'chromeos':
+                    spec.runtime_parameters['ui'] = 'off'
                 spec.cluster = cluster
                 spec.num_cpus = num_cpus
                 spec.id = '{}_idle_{}_{}'.format(cluster, state.id, num_cpus)
