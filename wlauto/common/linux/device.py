@@ -92,6 +92,12 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
                   '''),
         Parameter('binaries_directory',
                   description='Location of executable binaries on this device (must be in PATH).'),
+        Parameter('working_directory',
+                  description='''
+                  Working directory to be used by WA. This must be in a location where the specified user
+                  has write permissions. This will default to /home/<username>/wa (or to /root/wa, if
+                  username is 'root').
+                  '''),
 
     ]
 
@@ -588,13 +594,6 @@ class LinuxDevice(BaseLinuxDevice):
                   description='Optionally, telnet may be used instead of ssh, though this is discouraged.'),
         Parameter('boot_timeout', kind=int, default=120,
                   description='How long to try to connect to the device after a reboot.'),
-
-        Parameter('working_directory', default=None,
-                  description='''
-                  Working directory to be used by WA. This must be in a location where the specified user
-                  has write permissions. This will default to /home/<username>/wa (or to /root/wa, if
-                  username is 'root').
-                  '''),
     ]
 
     @property
