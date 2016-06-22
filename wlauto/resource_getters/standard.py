@@ -30,6 +30,7 @@ import requests
 
 from wlauto import ResourceGetter, GetterPriority, Parameter, NO_ONE, settings, __file__ as __base_filepath
 from wlauto.exceptions import ResourceError
+from wlauto.utils.android import ApkInfo
 from wlauto.utils.misc import ensure_directory_exists as _d, ensure_file_directory_exists as _f, sha256, urljoin
 from wlauto.utils.types import boolean
 
@@ -61,9 +62,11 @@ class PackageFileGetter(ResourceGetter):
 class EnvironmentFileGetter(ResourceGetter):
 
     name = 'environment_file'
-    description = """Looks for exactly one file with the specified extension in the owner's directory. If a version
+    description = """
+    Looks for exactly one file with the specified extension in the owner's directory. If a version
     is specified on invocation of get, it will filter the discovered file based on that version.
-    Versions are treated as case-insensitive."""
+    Versions are treated as case-insensitive.
+    """
 
     extension = None
 
@@ -102,6 +105,22 @@ class PackageApkGetter(PackageFileGetter):
     name = 'package_apk'
     extension = 'apk'
 
+    description = """
+    Uses the same dependency resolution mechanism as ``PackageFileGetter`` with one addition.
+    If an ABI is specified in the resource request, then the getter will try to locate the file in
+    the ABI-specific folder in the form ``<root>/apk/<abi>/<apk_name>``. Where ``root`` is the base
+    resource location e.g. ``~/.workload_automation/dependencies/<extension_name>`` and ``<abi>``
+    is the ABI for which the APK has been compiled, as returned by ``resource.platform``.
+    """
+
+    def get(self, resource, **kwargs):
+        resource_dir = os.path.dirname(sys.modules[resource.owner.__module__].__file__)
+        version = kwargs.get('version')
+        variant = kwargs.get('variant_name')
+        if kwargs.get('check_abi', False):
+            resource_dir = os.path.join(resource_dir, self.extension, resource.platform)
+        return get_from_location_by_extension(resource, resource_dir, self.extension, version, variant=variant)
+
 
 class PackageJarGetter(PackageFileGetter):
     name = 'package_jar'
@@ -119,6 +138,22 @@ class PackageReventGetter(ReventGetter):
 class EnvironmentApkGetter(EnvironmentFileGetter):
     name = 'environment_apk'
     extension = 'apk'
+
+    description = """
+    Uses the same dependency resolution mechanism as ``EnvironmentFileGetter`` with one addition.
+    If an ABI is specified in the resource request, then the getter will try to locate the file in
+    the ABI-specific folder in the form ``<root>/apk/<abi>/<apk_name>``. Where ``root`` is the base
+    resource location e.g. ``~/.workload_automation/dependencies/<extension_name>`` and ``<abi>``
+    is the ABI for which the APK has been compiled, as returned by ``resource.platform``.
+    """
+
+    def get(self, resource, **kwargs):
+        resource_dir = resource.owner.dependencies_directory
+        version = kwargs.get('version')
+        variant = kwargs.get('variant_name')
+        if kwargs.get('check_abi', False):
+            resource_dir = os.path.join(resource_dir, self.extension, resource.platform)
+        return get_from_location_by_extension(resource, resource_dir, self.extension, version, variant=variant)
 
 
 class EnvironmentJarGetter(EnvironmentFileGetter):
@@ -427,6 +462,10 @@ class RemoteFilerGetter(ResourceGetter):
         if resource.owner:
             remote_path = os.path.join(self.remote_path, resource.owner.name)
             local_path = os.path.join(settings.environment_root, '__filer', resource.owner.dependencies_directory)
+            if resource.name == 'apk' and kwargs.get('check_abi', False):
+                local_path = os.path.join(local_path, 'apk', resource.platform)
+            message = 'resource={}, version={}, remote_path={}, local_path={}'
+            self.logger.debug(message.format(resource, version, remote_path, local_path))
             return self.try_get_resource(resource, version, remote_path, local_path)
         else:
             result = None
@@ -489,24 +528,28 @@ class RemoteFilerGetter(ResourceGetter):
 
 # Utility functions
 
-def get_from_location_by_extension(resource, location, extension, version=None):
+def get_from_location_by_extension(resource, location, extension, version=None, variant=None):
     try:
         found_files = [os.path.join(location, f) for f in os.listdir(location)]
     except OSError:
         return None
     try:
-        return get_from_list_by_extension(resource, found_files, extension, version)
+        return get_from_list_by_extension(resource, found_files, extension, version, variant=variant)
     except ResourceError:
         raise ResourceError('More than one .{} found in {} for {}.'.format(extension,
                                                                            location,
                                                                            resource.owner.name))
 
 
-def get_from_list_by_extension(resource, filelist, extension, version=None):
-    filelist = [ff for ff in filelist
-                if os.path.splitext(ff)[1].lower().endswith(extension)]
+def get_from_list_by_extension(resource, filelist, extension, version=None, variant=None):
+    filelist = [ff for ff in filelist if os.path.splitext(ff)[1].lower().endswith(extension)]
+    if variant:
+        filelist = [ff for ff in filelist if variant.lower() in os.path.basename(ff).lower()]
     if version:
-        filelist = [ff for ff in filelist if version.lower() in os.path.basename(ff).lower()]
+        if extension == 'apk':
+            filelist = [ff for ff in filelist if version.lower() in ApkInfo(ff).version_name.lower()]
+        else:
+            filelist = [ff for ff in filelist if version.lower() in os.path.basename(ff).lower()]
     if len(filelist) == 1:
         return filelist[0]
     elif not filelist:

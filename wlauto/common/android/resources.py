@@ -34,3 +34,10 @@ class JarFile(FileResource):
 class ApkFile(FileResource):
 
     name = 'apk'
+
+    def __init__(self, owner, platform=None):
+        super(ApkFile, self).__init__(owner)
+        self.platform = platform
+
+    def __str__(self):
+        return '<{}\'s {} APK>'.format(self.owner, self.platform)

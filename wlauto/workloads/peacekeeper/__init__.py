@@ -63,7 +63,7 @@ class Peacekeeper(AndroidUiAutoBenchmark):
 
     def __init__(self, device, **kwargs):
         super(Peacekeeper, self).__init__(device, **kwargs)
-        self.version = self.browser
+        self.variant_name = self.browser
 
     def update_result(self, context):
         super(Peacekeeper, self).update_result(context)

@@ -20,6 +20,7 @@ import time
 from wlauto.core.extension import Parameter
 from wlauto.core.workload import Workload
 from wlauto.core.resource import NO_ONE
+from wlauto.common.android.resources import ApkFile
 from wlauto.common.resources import ExtensionAsset, Executable
 from wlauto.exceptions import WorkloadError, ResourceError, ConfigError
 from wlauto.utils.android import ApkInfo, ANDROID_NORMAL_PERMISSIONS
@@ -160,6 +161,11 @@ class ApkWorkload(Workload):
                   '''),
         Parameter('uninstall_apk', kind=boolean, default=False,
                   description='If ``True``, will uninstall workload\'s APK as part of teardown.'),
+        Parameter('check_abi', kind=bool, default=False,
+                  description='''
+                  If ``True``, workload will check that the APK matches the target
+                  device ABI, otherwise any APK found will be used.
+                  '''),
     ]
 
     def __init__(self, device, _call_super=True, **kwargs):
@@ -169,12 +175,14 @@ class ApkWorkload(Workload):
         self.apk_version = None
         self.logcat_log = None
 
-    def init_resources(self, context):
-        self.apk_file = context.resolver.get(wlauto.common.android.resources.ApkFile(self),
+    def initialize(self, context):
+        # Get APK for the correct version and device ABI
+        self.apk_file = context.resolver.get(ApkFile(self, self.device.abi),
                                              version=getattr(self, 'version', None),
+                                             check_abi=getattr(self, 'check_abi', False),
+                                             variant_name=getattr(self, 'variant_name', None),
                                              strict=self.check_apk)
-
-    def validate(self):
+        # Validate the APK
         if self.check_apk:
             if not self.apk_file:
                 raise WorkloadError('No APK file found for workload {}.'.format(self.name))
@@ -223,7 +231,7 @@ class ApkWorkload(Workload):
             if installed_version:
                 self.device.uninstall(self.package)
             # It's possible that the uninstall above fails, which might result in a warning
-            # and/or failure during installation. Hower execution should proceed, so need
+            # and/or failure during installation. However execution should proceed, so need
             # to make sure that the right apk_vesion is reported in the end.
             if self.install_apk(context):
                 self.apk_version = host_version

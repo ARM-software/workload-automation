@@ -362,9 +362,9 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         if ext == '.apk':
             flags = []
             if replace:
-                flags.append('-r') # Replace existing APK
+                flags.append('-r')  # Replace existing APK
             if self.get_sdk_version() >= 23:
-                flags.append('-g') # Grant all runtime permissions
+                flags.append('-g')  # Grant all runtime permissions
             self.logger.debug("Replace APK = {}, ADB flags = '{}'".format(replace, ' '.join(flags)))
             return adb_command(self.adb_name, "install {} '{}'".format(' '.join(flags), filepath), timeout=timeout)
         else:
