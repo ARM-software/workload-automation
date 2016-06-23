@@ -325,7 +325,6 @@ def adb_shell(device, command, timeout=None, check_exit_code=False, as_root=Fals
             output, _ = check_output(full_command, timeout, shell=True)
         except CalledProcessErrorWithStderr as e:
             output = e.output
-            error = e.error
             exit_code = e.returncode
             if e.returncode == 1:
                 logger.debug("Got Exit code 1, could be either the return code of the command or mean ADB failed")
