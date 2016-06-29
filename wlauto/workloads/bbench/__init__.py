@@ -124,8 +124,8 @@ class BBench(Workload):
 
         #On android 6+ the web browser requires permissions to access the sd card
         if self.device.get_sdk_version() >= 23:
-            self.device.execute("pm grant com.android.browser android.permission.READ_EXTERNAL_STORAGE")
-            self.device.execute("pm grant com.android.browser android.permission.WRITE_EXTERNAL_STORAGE")
+            self.device.execute("pm grant {} android.permission.READ_EXTERNAL_STORAGE".format(self.browser_package))
+            self.device.execute("pm grant {} android.permission.WRITE_EXTERNAL_STORAGE".format(self.browser_package))
 
         # Launch the background music
         if self.with_audio:
