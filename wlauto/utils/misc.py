@@ -88,6 +88,12 @@ class CalledProcessErrorWithStderr(CalledProcessError):
         self.error = kwargs.pop("error")
         super(CalledProcessErrorWithStderr, self).__init__(*args, **kwargs)
 
+    def __str__(self):
+        return '{}\nSTDOUT: {}\nSTDERR:{}'.format(CalledProcessError.__str__(self),
+                                                  self.output, self.error)
+
+    __repr__ = __str__
+
 
 def check_output(command, timeout=None, ignore=None, **kwargs):
     """This is a version of subprocess.check_output that adds a timeout parameter to kill

@@ -26,8 +26,8 @@ import shutil
 from pexpect import EOF, TIMEOUT, spawn, pxssh
 
 from wlauto.exceptions import HostError, DeviceError, TimeoutError, ConfigError
-from wlauto.utils.misc import which, strip_bash_colors, escape_single_quotes, check_output
-
+from wlauto.utils.misc import (which, strip_bash_colors, escape_single_quotes, check_output,
+                               CalledProcessErrorWithStderr)
 
 ssh = None
 scp = None
@@ -243,7 +243,9 @@ class SshShell(object):
         try:
             check_output(command, timeout=timeout, shell=True)
         except subprocess.CalledProcessError as e:
-            raise subprocess.CalledProcessError(e.returncode, e.cmd.replace(pass_string, ''), e.output)
+            raise CalledProcessErrorWithStderr(e.returncode,
+                                               e.cmd.replace(pass_string, ''),
+                                               e.output, getattr(e, 'error', ''))
         except TimeoutError as e:
             raise TimeoutError(e.command.replace(pass_string, ''), e.output)
 
