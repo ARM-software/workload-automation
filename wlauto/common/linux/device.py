@@ -598,6 +598,7 @@ class LinuxDevice(BaseLinuxDevice):
 
     @property
     def is_rooted(self):
+        self._check_ready()
         if self._is_rooted is None:
             # First check if the user is root
             try:

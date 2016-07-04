@@ -48,12 +48,12 @@ class FilePoller(Instrument):
     ]
 
     def validate(self):
-        if not self.device.is_rooted and self.as_root:
-            raise ConfigError('The device is not rooted, cannot run poller as root.')
         if self.labels and any(['*' in f for f in self.files]):
             raise ConfigError('You cannot used manual labels with `*` wildcards')
 
     def initialize(self, context):
+        if not self.device.is_rooted and self.as_root:
+            raise ConfigError('The device is not rooted, cannot run poller as root.')
         host_poller = context.resolver.get(Executable(self, self.device.abi,
                                                       "poller"))
         target_poller = self.device.install_if_needed(host_poller)
