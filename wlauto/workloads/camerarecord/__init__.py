@@ -51,8 +51,22 @@ class Camerarecord(UiAutomatorWorkload):
 
     def setup(self, context):
         super(Camerarecord, self).setup(context)
+        # Start camera activity
         self.device.execute('am start -n {}/{}'.format(self.package, self.activity))
+        # Reset framestats collection
+        self.device.execute('dumpsys gfxinfo {} reset'.format(self.package))
 
     def teardown(self, context):
+        # Collect framestats
+        framestats_file = self.device.path.join(self.device.working_directory,
+                                                'framestats.txt')
+        self.device.execute('dumpsys gfxinfo {} > {}'\
+                            .format(self.package, framestats_file))
+        self.device.pull_file(framestats_file,
+                              context.output_directory,
+                              as_root=True)
+        self.device.delete_file(framestats_file)
+
+        # Stop the activity
         self.device.execute('am force-stop {}'.format(self.package))
         super(Camerarecord, self).teardown(context)
