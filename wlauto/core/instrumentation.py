@@ -241,7 +241,7 @@ class ManagedCallback(object):
             except (KeyboardInterrupt, DeviceNotRespondingError, TimeoutError):  # pylint: disable=W0703
                 raise
             except Exception as e:  # pylint: disable=W0703
-                logger.error('Error in insturment {}'.format(self.instrument.name))
+                logger.error('Error in instrument {}'.format(self.instrument.name))
                 global failures_detected  # pylint: disable=W0603
                 failures_detected = True
                 if isinstance(e, WAError):

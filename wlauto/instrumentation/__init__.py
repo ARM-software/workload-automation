@@ -18,14 +18,14 @@ from wlauto.core import instrumentation
 
 def instrument_is_installed(instrument):
     """Returns ``True`` if the specified instrument is installed, and ``False``
-    other wise. The insturment maybe specified either as a name or a subclass (or
+    other wise. The instrument maybe specified either as a name or a subclass (or
     instance of subclass) of :class:`wlauto.core.Instrument`."""
     return instrumentation.is_installed(instrument)
 
 
 def instrument_is_enabled(instrument):
     """Returns ``True`` if the specified instrument is installed and is currently
-    enabled, and ``False`` other wise. The insturment maybe specified either
+    enabled, and ``False`` other wise. The instrument maybe specified either
     as a name or a subclass (or instance of subclass) of
     :class:`wlauto.core.Instrument`."""
     return instrumentation.is_enabled(instrument)
