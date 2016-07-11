@@ -112,10 +112,10 @@ class Daq(Instrument):
         Parameter('server_host', kind=str, default='localhost',
                   global_alias='daq_server_host',
                   description='The host address of the machine that runs the daq Server which the '
-                              'insturment communicates with.'),
+                              'instrument communicates with.'),
         Parameter('server_port', kind=int, default=45677,
                   global_alias='daq_server_port',
-                  description='The port number for daq Server in which daq insturment communicates '
+                  description='The port number for daq Server in which daq instrument communicates '
                               'with.'),
         Parameter('device_id', kind=str, default='Dev1',
                   global_alias='daq_device_id',

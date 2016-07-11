@@ -348,7 +348,7 @@ class EnergyModelInstrument(Instrument):
     desicription = """
     Generates a power mode for the device based on specified workload.
 
-    This insturment will execute the workload specified by the agenda (currently, only ``sysbench`` is
+    This instrument will execute the workload specified by the agenda (currently, only ``sysbench`` is
     supported) and will use the resulting performance and power measurments to generate a power mode for
     the device.
 

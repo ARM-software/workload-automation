@@ -189,7 +189,7 @@ logging = {
 ####################################################################################################
 #################################### Instruments Configuration #####################################
 ####################################################################################################
-# Instrumention Configuration is related to specific insturment's settings. Some of the            #
+# Instrumention Configuration is related to specific instrument's settings. Some of the            #
 # instrumentations require specific settings in order for them to work. These settings are         #
 # specified here.                                                                                  #
 # Note that these settings only take effect if the corresponding instrument is
@@ -222,10 +222,10 @@ logging = {
 ####################################################################################################
 ######################################### DAQ configuration ########################################
 
-# The host address of the machine that runs the daq Server which the insturment communicates with
+# The host address of the machine that runs the daq Server which the instrument communicates with
 #daq_server_host = '10.1.17.56'
 
-# The port number for daq Server in which daq insturment communicates with
+# The port number for daq Server in which daq instrument communicates with
 #daq_server_port = 56788
 
 # The values of resistors 1 and 2 (in Ohms) across which the voltages are measured
