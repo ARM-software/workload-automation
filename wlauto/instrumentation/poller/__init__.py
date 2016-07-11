@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # pylint: disable=access-member-before-definition,attribute-defined-outside-init,unused-argument
+import os
 
 from wlauto import Instrument, Parameter, Executable
-from wlauto.exceptions import ConfigError
+from wlauto.exceptions import ConfigError, InstrumentError
 from wlauto.utils.types import list_or_string
 
 
@@ -27,8 +28,8 @@ class FilePoller(Instrument):
     This file will contain a timestamp column which will be in uS, the rest of the columns
     will be the contents of the polled files at that time.
 
-    This instrument can poll any file whos contents do not contain a new line since this
-    breaks the CSV formatting.
+    This instrument will strip any commas or new lines for the files' values
+    before writing them.
     """
 
     parameters = [
@@ -56,7 +57,7 @@ class FilePoller(Instrument):
             raise ConfigError('The device is not rooted, cannot run poller as root.')
         host_poller = context.resolver.get(Executable(self, self.device.abi,
                                                       "poller"))
-        target_poller = self.device.install_if_needed(host_poller)
+        target_poller = self.device.install(host_poller)
 
         expanded_paths = []
         for path in self.files:
@@ -70,11 +71,13 @@ class FilePoller(Instrument):
             self.labels = self._generate_labels()
 
         self.target_output_path = self.device.path.join(self.device.working_directory, 'poller.csv')
-        self.command = '{} -t {} -l {} {} > {}'.format(target_poller,
-                                                       self.sample_interval * 1000,
-                                                       ','.join(self.labels),
-                                                       ' '.join(self.files),
-                                                       self.target_output_path)
+        self.target_log_path = self.device.path.join(self.device.working_directory, 'poller.log')
+        self.command = '{} -t {} -l {} {} > {} 2>{}'.format(target_poller,
+                                                            self.sample_interval * 1000,
+                                                            ','.join(self.labels),
+                                                            ' '.join(self.files),
+                                                            self.target_output_path,
+                                                            self.target_log_path)
 
     def start(self, context):
         self.device.kick_off(self.command, as_root=self.as_root)
@@ -83,10 +86,23 @@ class FilePoller(Instrument):
         self.device.killall('poller', signal='TERM', as_root=self.as_root)
 
     def update_result(self, context):
-        self.device.pull_file(self.target_output_path, context.output_directory)
+        host_output_file = os.path.join(context.output_directory, 'poller.csv')
+        self.device.pull_file(self.target_output_path, host_output_file)
+        context.add_artifact('poller_output', host_output_file, kind='data')
+        host_log_file = os.path.join(context.output_directory, 'poller.log')
+        self.device.pull_file(self.target_log_path, host_log_file)
+        context.add_artifact('poller_log', host_log_file, kind='log')
+
+        with open(host_log_file) as fh:
+            for line in fh:
+                if 'ERROR' in line:
+                    raise InstrumentError(line.strip())
+                if 'WARNING' in line:
+                    self.logger.warning(line.strip())
 
     def teardown(self, context):
         self.device.delete_file(self.target_output_path)
+        self.device.delete_file(self.target_log_path)
 
     def _generate_labels(self):
         # Split paths into their parts
