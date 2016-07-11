@@ -14,8 +14,21 @@ void term(int signum)
     done = 1;
 }
 
+// From: http://stackoverflow.com/questions/1515195/how-to-remove-n-or-t-from-a-given-string-in-c
+void strip(char *s) {
+    char *stripped_s = s;
+    while(*s != '\0') {
+        if(*s != ',' && *s != '\n') {
+            *stripped_s++ = *s++;
+        } else {
+            ++s;
+        }
+    }
+    *stripped_s = '\0';
+}
+
 int main(int argc, char ** argv) {
-    
+
     extern char *optarg;
     extern int optind;
     int c = 0;
@@ -37,8 +50,8 @@ int main(int argc, char ** argv) {
                           "           Defaults to 1000000 (1 second)\n"
                           "    -l     Comma separated list of labels to use in the CSV\n"
                           "           output. This should match the number of files\n";
-    
-    
+
+
     //Handling command line arguments
     while ((c = getopt(argc, argv, "ht:l:")) != -1)
     {
@@ -69,7 +82,7 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "%s: missiing file path(s)\n", argv[0]);
         fprintf(stderr, usage, argv[0]);
         exit(1);
-    } 
+    }
 
     if (labelCount && labelCount != argc-optind)
     {
@@ -79,8 +92,8 @@ int main(int argc, char ** argv) {
         fprintf(stderr, usage, argv[0]);
         exit(1);
     }
-      
-    //Print headers and open files to poll  
+
+    //Print headers and open files to poll
     printf("time");
     if(labelCount)
     {
@@ -94,7 +107,7 @@ int main(int argc, char ** argv) {
             printf(",%s", argv[optind + i]);
         }
     }
-    printf("\n");    
+    printf("\n");
 
     //Setup SIGTERM handler
     struct sigaction action;
@@ -102,27 +115,23 @@ int main(int argc, char ** argv) {
     action.sa_handler = term;
     sigaction(SIGTERM, &action, NULL);
 
-    //Poll files 
+    //Poll files
     while (!done) {
-        gettimeofday(&current_time, NULL); 
+        gettimeofday(&current_time, NULL);
         time_float = (double)current_time.tv_sec;
         time_float += ((double)current_time.tv_usec)/1000/1000;
         printf("%f", time_float);
         for (i = 0; i < (argc - optind); i++) {
             read(files_to_poll[i], buf, 1024);
             lseek(files_to_poll[i], 0, SEEK_SET);
-
-            //Removes trailing "\n"
-            int new_line = strlen(buf) -1;
-            if (buf[new_line] == '\n')
-                buf[new_line] = '\0';
-
+            strip(buf);
             printf(",%s", buf);
+            buf[0] = '\0'; // "Empty" buffer
         }
         printf("\n");
         usleep(interval);
     }
-    
+
     //Close files
     for (i = 0; i < (argc - optind); i++)
     {
