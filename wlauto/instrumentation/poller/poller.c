@@ -14,7 +14,6 @@ void term(int signum)
     done = 1;
 }
 
-// From: http://stackoverflow.com/questions/1515195/how-to-remove-n-or-t-from-a-given-string-in-c
 void strip(char *s) {
     char *stripped_s = s;
     while(*s != '\0') {
@@ -27,6 +26,11 @@ void strip(char *s) {
     *stripped_s = '\0';
 }
 
+typedef struct {
+        int fd;
+        char *path;
+} poll_source_t;
+
 int main(int argc, char ** argv) {
 
     extern char *optarg;
@@ -38,9 +42,9 @@ int main(int argc, char ** argv) {
     memset(buf, 0, sizeof(buf));
     struct timeval current_time;
     double time_float;
-    int files_to_poll[argc-optind];
     char *labels;
     int labelCount = 0;
+
     static char usage[] = "usage: %s [-h] [-t INTERVAL] FILE [FILE ...]\n"
                           "polls FILE(s) every INTERVAL microseconds and outputs\n"
                           "the results in CSV format including a timestamp to STDOUT\n"
@@ -79,16 +83,18 @@ int main(int argc, char ** argv) {
     }
 
     if (optind >= argc) {
-        fprintf(stderr, "%s: missiing file path(s)\n", argv[0]);
+        fprintf(stderr, "ERROR: %s: missing file path(s)\n", argv[0]);
         fprintf(stderr, usage, argv[0]);
         exit(1);
     }
 
-    if (labelCount && labelCount != argc-optind)
+    int num_files = argc - optind;
+    poll_source_t files_to_poll[num_files];
+
+    if (labelCount && labelCount != num_files)
     {
-        fprintf(stderr, "%s: %d labels specified but %d files specified\n", argv[0],
-                                                                            labelCount,
-                                                                            argc-optind);
+        fprintf(stderr, "ERROR: %s: %d labels specified but %d files specified\n",
+                argv[0], labelCount, num_files);
         fprintf(stderr, usage, argv[0]);
         exit(1);
     }
@@ -100,9 +106,16 @@ int main(int argc, char ** argv) {
         printf(",%s", labels);
     }
     int i;
-    for (i = 0; i < (argc - optind); i++)
+    for (i = 0; i < num_files; i++)
     {
-        files_to_poll[i] = open(argv[optind + i], O_RDONLY);
+        files_to_poll[i].path = argv[optind + i];
+        files_to_poll[i].fd = open(files_to_poll[i].path, O_RDONLY);
+        if (files_to_poll[i].fd == -1) {
+            fprintf(stderr, "ERROR: Could not open \"%s\", got: %s\n",
+                    files_to_poll[i].path, strerror(errno));
+            exit(2);
+        }
+
         if(!labelCount) {
             printf(",%s", argv[optind + i]);
         }
@@ -115,15 +128,24 @@ int main(int argc, char ** argv) {
     action.sa_handler = term;
     sigaction(SIGTERM, &action, NULL);
 
-    //Poll files
+    //Poll files 
+    int bytes_read = 0;
     while (!done) {
         gettimeofday(&current_time, NULL);
         time_float = (double)current_time.tv_sec;
         time_float += ((double)current_time.tv_usec)/1000/1000;
         printf("%f", time_float);
-        for (i = 0; i < (argc - optind); i++) {
-            read(files_to_poll[i], buf, 1024);
-            lseek(files_to_poll[i], 0, SEEK_SET);
+        for (i = 0; i < num_files; i++) {
+            lseek(files_to_poll[i].fd, 0, SEEK_SET);
+            bytes_read = read(files_to_poll[i].fd, buf, 1024);
+
+            if (bytes_read < 0) {
+                fprintf(stderr, "WARNING: Read nothing from \"%s\"\n",
+                        files_to_poll[i].path);
+                printf(",");
+                continue;
+            }
+
             strip(buf);
             printf(",%s", buf);
             buf[0] = '\0'; // "Empty" buffer
@@ -133,9 +155,9 @@ int main(int argc, char ** argv) {
     }
 
     //Close files
-    for (i = 0; i < (argc - optind); i++)
+    for (i = 0; i < num_files; i++)
     {
-        files_to_poll[i] = open(argv[optind + i], O_RDONLY);
+        close(files_to_poll[i].fd);
     }
     exit(0);
 }
