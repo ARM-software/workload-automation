@@ -122,8 +122,8 @@ class Geekbench(AndroidUiAutoBenchmark):
 
     def update_result_3(self, context):
         outfile_glob = self.device.path.join(self.device.package_data_directory, self.package, 'files', '*gb3')
-        on_device_output_files = [f.strip() for f in
-                                  self.device.execute('ls {}'.format(outfile_glob), as_root=True).split('\n')]
+        on_device_output_files = [f.strip() for f in self.device.execute('ls {}'.format(outfile_glob),
+                                                                         as_root=True).split('\n') if f]
         for i, on_device_output_file in enumerate(on_device_output_files):
             host_temp_file = tempfile.mktemp()
             self.device.pull_file(on_device_output_file, host_temp_file)
