@@ -53,7 +53,8 @@ class Dex2oatBenchmark(Workload):
     def init_resources(self, context):
         # TODO: find a better APK to use for this.
         peacekeeper = ExtensionLoader().get_workload('peacekeeper', self.device)
-        self.apk_file = context.resolver.get(wlauto.common.android.resources.ApkFile(peacekeeper), version='chrome')
+        self.apk_file = context.resolver.get(wlauto.common.android.resources.ApkFile(peacekeeper),
+                                             variant_name='chrome')
         self.package = ApkInfo(self.apk_file).package
 
     def setup(self, context):
@@ -119,4 +120,3 @@ class Dex2oatBenchmark(Workload):
 
     def teardown(self, context):
         self.device.delete_file(self.on_device_oat)
-
