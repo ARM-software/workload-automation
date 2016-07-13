@@ -38,6 +38,7 @@ public class UiAutomation extends BaseUiAutomation {
     int timeout = 4;
     int sleepTime = 2;
     int recordingTime = 0;
+    String recordingMode = "normal";
     int api = 0;
     Integer[] version = {0,0,0};
 
@@ -46,6 +47,7 @@ public class UiAutomation extends BaseUiAutomation {
         if (parameters.size() > 0) {
            recordingTime = Integer.parseInt(parameters
                              .getString("recording_time"));
+           recordingMode = parameters.getString("recording_mode");
            api = Integer.parseInt(parameters.getString("api_level"));
            String versionString = parameters.getString("version");
            version = splitVersion(versionString);
@@ -95,8 +97,18 @@ public class UiAutomation extends BaseUiAutomation {
         UiObject viewFinder = new UiObject(new UiSelector().resourceId("com.android.camera2:id/viewfinder_frame"));
         viewFinder.swipeLeft(5);
 
+        String captureButtonId = "com.android.camera2:id/photo_video_button";
+        // Enable slow motion if requested
+        if (recordingMode.equals("slow_motion")) {
+            getUiDevice().pressMenu();
+            UiObject slowMoButton = new UiObject(new UiSelector().text("Slow Motion").className("android.widget.TextView"));
+            slowMoButton.waitForExists(TimeUnit.SECONDS.toMillis(5));
+            slowMoButton.click();
+            captureButtonId = "com.android.camera2:id/video_hfr_shutter_button";
+        }
+
         // click to capture photos
-        UiObject clickCaptureButton = new UiObject(new UiSelector().resourceId("com.android.camera2:id/photo_video_button"));
+        UiObject clickCaptureButton = new UiObject(new UiSelector().resourceId(captureButtonId));
         clickCaptureButton.longClick();
         sleep(recordingTime);
 

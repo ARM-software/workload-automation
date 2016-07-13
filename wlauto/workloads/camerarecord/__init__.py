@@ -15,6 +15,7 @@
 
 from wlauto import UiAutomatorWorkload, Parameter
 from wlauto.utils.types import range_dict
+from wlauto.exceptions import WorkloadError
 
 
 class Camerarecord(UiAutomatorWorkload):
@@ -28,6 +29,7 @@ class Camerarecord(UiAutomatorWorkload):
     package = 'com.google.android.gallery3d'
     activity = 'com.android.camera.CameraActivity'
     run_timeout = 0
+    camera_modes = ['normal', 'slow_motion']
 
     api_packages = range_dict()
     api_packages[1] = 'com.google.android.gallery3d'
@@ -36,6 +38,8 @@ class Camerarecord(UiAutomatorWorkload):
     parameters = [
         Parameter('recording_time', kind=int, default=60,
                   description='The video recording time in seconds.'),
+        Parameter('recording_mode', kind=str, allowed_values=camera_modes,
+                  default='normal', description='The video recording mode.'),
     ]
 
     def initialize(self, context):
@@ -48,8 +52,15 @@ class Camerarecord(UiAutomatorWorkload):
         version = self.device.get_installed_package_version(self.package)
         version = version.replace(' ', '_')
         self.uiauto_params['version'] = version
+        self.uiauto_params['recording_mode'] = self.recording_mode
 
     def setup(self, context):
+        if self.recording_mode != 'normal':
+            if self.device.get_sdk_version() < 23:
+                raise WorkloadError('{} recording mode only supported by '
+                                    'Android version M onwards'
+                                    .format(self.recording_mode))
+
         super(Camerarecord, self).setup(context)
         # Start camera activity
         self.device.execute('am start -n {}/{}'.format(self.package, self.activity))
