@@ -37,6 +37,7 @@ from wlauto.instrumentation import instrument_is_installed
 from wlauto.exceptions import (InstrumentError, WorkerThreadError, ConfigError,
                                DeviceNotRespondingError, TimeoutError)
 from wlauto.utils.types import boolean, numeric
+from wlauto.utils.fps import FpsProcessor
 
 
 VSYNC_INTERVAL = 16666667
@@ -154,15 +155,18 @@ class FpsInstrument(Instrument):
         if self.is_enabled:
             data = pd.read_csv(self.outfile)
             if not data.empty:  # pylint: disable=maybe-no-member
-                per_frame_fps = self._update_stats(context, data)
+                fp = FpsProcessor(data)
+                per_frame_fps, metrics = fp.process(self.collector.refresh_period, self.drop_threshold)
+                fps, frame_count, janks, not_at_vsync = metrics
+
+                context.result.add_metric('FPS', fps)
+                context.result.add_metric('frame_count', frame_count)
+                context.result.add_metric('janks', janks)
+                context.result.add_metric('not_at_vsync', not_at_vsync)
+
                 if self.generate_csv:
                     per_frame_fps.to_csv(self.fps_outfile, index=False, header=True)
                     context.add_artifact('fps', path='fps.csv', kind='data')
-            else:
-                context.result.add_metric('FPS', float('nan'))
-                context.result.add_metric('frame_count', 0)
-                context.result.add_metric('janks', 0)
-                context.result.add_metric('not_at_vsync', 0)
 
     def slow_update_result(self, context):
         result = context.result
@@ -179,44 +183,6 @@ class FpsInstrument(Instrument):
                     self.logger.error('Content for {} appears to have crashed.'.format(context.spec.label))
                     result.status = IterationResult.FAILED
                     result.add_event('Content crash detected (actual/expected frames: {:.2}).'.format(ratio))
-
-    def _update_stats(self, context, data):  # pylint: disable=too-many-locals
-        vsync_interval = self.collector.refresh_period
-        # fiter out bogus frames.
-        actual_present_times = data.actual_present_time[data.actual_present_time != 0x7fffffffffffffff]
-        actual_present_time_deltas = (actual_present_times - actual_present_times.shift()).drop(0)  # pylint: disable=E1103
-        vsyncs_to_compose = (actual_present_time_deltas / vsync_interval).apply(lambda x: int(round(x, 0)))
-        # drop values lower than drop_threshold FPS as real in-game frame
-        # rate is unlikely to drop below that (except on loading screens
-        # etc, which should not be factored in frame rate calculation).
-        per_frame_fps = (1.0 / (vsyncs_to_compose * (vsync_interval / 1e9)))
-        keep_filter = per_frame_fps > self.drop_threshold
-        filtered_vsyncs_to_compose = vsyncs_to_compose[keep_filter]
-        if not filtered_vsyncs_to_compose.empty:
-            total_vsyncs = filtered_vsyncs_to_compose.sum()
-            if total_vsyncs:
-                frame_count = filtered_vsyncs_to_compose.size
-                fps = 1e9 * frame_count / (vsync_interval * total_vsyncs)
-                context.result.add_metric('FPS', fps)
-                context.result.add_metric('frame_count', frame_count)
-            else:
-                context.result.add_metric('FPS', float('nan'))
-                context.result.add_metric('frame_count', 0)
-
-            vtc_deltas = filtered_vsyncs_to_compose - filtered_vsyncs_to_compose.shift()
-            vtc_deltas.index = range(0, vtc_deltas.size)
-            vtc_deltas = vtc_deltas.drop(0).abs()
-            janks = vtc_deltas.apply(lambda x: (PAUSE_LATENCY > x > 1.5) and 1 or 0).sum()
-            not_at_vsync = vsyncs_to_compose.apply(lambda x: (abs(x - 1.0) > EPSYLON) and 1 or 0).sum()
-            context.result.add_metric('janks', janks)
-            context.result.add_metric('not_at_vsync', not_at_vsync)
-        else:  # no filtered_vsyncs_to_compose
-            context.result.add_metric('FPS', float('nan'))
-            context.result.add_metric('frame_count', 0)
-            context.result.add_metric('janks', 0)
-            context.result.add_metric('not_at_vsync', 0)
-        per_frame_fps.name = 'fps'
-        return per_frame_fps
 
 
 class LatencyCollector(threading.Thread):
