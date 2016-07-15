@@ -235,8 +235,8 @@ class DependencyFileGetter(ResourceGetter):
         remote_path = os.path.join(self.mount_point, self.relative_path, resource.path)
         local_path = os.path.join(resource.owner.dependencies_directory, os.path.basename(resource.path))
 
-        if not os.path.isfile(local_path) or force:
-            if not os.path.isfile(remote_path):
+        if not os.path.exists(local_path) or force:
+            if not os.path.exists(remote_path):
                 return None
             self.logger.debug('Copying {} to {}'.format(remote_path, local_path))
             shutil.copy(remote_path, local_path)
@@ -384,7 +384,7 @@ class HttpGetter(ResourceGetter):
         url = urljoin(self.url, owner_name, asset['path'])
         local_path = _f(os.path.join(settings.dependencies_directory, '__remote',
                                      owner_name, asset['path'].replace('/', os.sep)))
-        if os.path.isfile(local_path) and not self.always_fetch:
+        if os.path.exists(local_path) and not self.always_fetch:
             local_sha = sha256(local_path)
             if local_sha == asset['sha256']:
                 self.logger.debug('Local SHA256 matches; not re-downloading')
