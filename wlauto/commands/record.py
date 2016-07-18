@@ -15,6 +15,7 @@
 
 import os
 import sys
+import signal
 
 from wlauto import ExtensionLoader, Command, settings
 from wlauto.common.resources import Executable
@@ -114,13 +115,15 @@ class RecordCommand(Command):
 
         self.logger.info("Press Enter when you are ready to record...")
         raw_input("")
-        command = "{} record -t 100000 -s {}".format(self.target_binary, revent_file)
+        command = "{} record -s {}".format(self.target_binary, revent_file)
         self.device.kick_off(command)
 
         self.logger.info("Press Enter when you have finished recording...")
         raw_input("")
-        self.device.killall("revent")
-
+        self.device.killall("revent", signal.SIGTERM)
+        self.logger.info("Waiting for revent to finish")
+        while self.device.get_pids_of("revent"):
+            pass
         self.logger.info("Pulling files from device")
         self.device.pull_file(revent_file, args.output or os.getcwdu())
 
@@ -154,6 +157,7 @@ class ReplayCommand(RecordCommand):
             self.logger.info("Starting {}".format(args.package))
             self.device.execute('monkey -p {} -c android.intent.category.LAUNCHER 1'.format(args.package))
 
+        self.logger.info("Replaying recording")
         command = "{} replay {}".format(self.target_binary, revent_file)
         self.device.execute(command)
         self.logger.info("Finished replay")

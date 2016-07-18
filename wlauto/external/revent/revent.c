@@ -110,6 +110,56 @@ bool_t is_numeric(char *string)
     return TRUE;
 }
 
+// Has to be done this explicitly to maintain compatibility between
+// 32-bit and 64-bit devices
+int read_replay_event(int fdin, replay_event_t* ev)
+{
+    size_t rb;
+
+    rb = read(fdin, &(ev->dev_idx), sizeof(int32_t));
+    if (rb < (int)sizeof(int32_t)) return -1;
+
+    rb = read(fdin, &(ev->_padding), sizeof(int32_t));
+    if (rb < (int)sizeof(int32_t)) return -1;
+
+    struct timeval time;
+    uint64_t temp_time;
+    rb = read(fdin, &temp_time, sizeof(uint64_t));
+    if (rb < (int)sizeof(uint64_t)) return -1;
+    time.tv_sec = (time_t)temp_time;
+
+    rb = read(fdin, &temp_time, sizeof(uint64_t));
+    if (rb < (int)sizeof(uint64_t)) return -1;
+    time.tv_usec = (suseconds_t)temp_time;
+
+    ev->event.time = time;
+
+    rb = read(fdin, &(ev->event.type), sizeof(uint16_t));
+    if (rb < (int)sizeof(uint16_t)) return -1;
+
+    rb = read(fdin, &(ev->event.code), sizeof(uint16_t));
+    if (rb < (int)sizeof(uint16_t)) return -1;
+
+    rb = read(fdin, &(ev->event.value), sizeof(int32_t));
+    if (rb < (int)sizeof(int32_t)) return -1;
+
+    return 0;
+}
+
+void write_input_event(FILE * fdout, struct input_event* ev)
+{
+    uint64_t time;
+    time = (uint64_t)ev->time.tv_sec;
+    fwrite(&time, sizeof(uint64_t), 1, fdout);
+    time = (uint64_t)ev->time.tv_usec;
+    fwrite(&time, sizeof(uint64_t), 1, fdout);
+    fwrite(&(ev->type), sizeof(uint16_t), 1, fdout);
+    fwrite(&(ev->code), sizeof(uint16_t), 1, fdout);
+    fwrite(&(ev->value), sizeof(int32_t), 1, fdout);
+
+}
+
+
 off_t get_file_size(const char *filename) {
     struct stat st;
 
@@ -191,7 +241,7 @@ void dump(const char *logfile)
     int fdin = open(logfile, O_RDONLY);
     if (fdin < 0) die("Could not open eventlog %s\n", logfile);
 
-    int nfds;
+    int32_t nfds;
     size_t rb = read(fdin, &nfds, sizeof(nfds));
     if (rb != sizeof(nfds)) die("problems reading eventlog\n");
     int *fds = malloc(sizeof(int)*nfds);
@@ -202,30 +252,28 @@ void dump(const char *logfile)
     char buf[INPDEV_MAX_PATH];
 
     inpdev_t *inpdev = malloc(sizeof(inpdev_t));
-    inpdev->id_pathc = 0;
+    inpdev->id_pathc = nfds;
     for (i=0; i<nfds; i++) {
         memset(buf, 0, sizeof(buf));
         rb = read(fdin, &len, sizeof(len));
         if (rb != sizeof(len)) die("problems reading eventlog\n");
+        if (len >= INPDEV_MAX_PATH) die("path length too long, file corrupt");
         rb = read(fdin, &buf[0], len);
         if (rb != len) die("problems reading eventlog\n");
         strlcpy(inpdev->id_pathv[inpdev->id_pathc], buf, INPDEV_MAX_PATH);
-        inpdev->id_pathv[inpdev->id_pathc][INPDEV_MAX_PATH-1] = '\0';
-        inpdev->id_pathc++;
     }
 
+    replay_event_t rep_ev;
     struct input_event ev;
     int count = 0;
     while(1) {
-        int32_t idx;
-        rb = read(fdin, &idx, sizeof(idx));
-        if (rb != sizeof(idx)) break;
-        rb = read(fdin, &ev, sizeof(ev));
-        if (rb < (int)sizeof(ev)) break;
+        if (read_replay_event(fdin, &rep_ev) == -1)
+            break;
+        ev = rep_ev.event;
 
         printf("%10u.%-6u %30s type %2d code %3d value %4d\n",
                 (unsigned int)ev.time.tv_sec, (unsigned int)ev.time.tv_usec,
-                inpdev->id_pathv[idx], ev.type, ev.code, ev.value);
+                inpdev->id_pathv[rep_ev.dev_idx], ev.type, ev.code, ev.value);
         count++;
     }
 
@@ -256,12 +304,14 @@ int replay_buffer_init(replay_buffer_t **buffer, const char *logfile)
         die("out of memory\n");
 
     int32_t len, i;
-    char path_buff[256]; // should be more than enough
+    char path_buff[INPDEV_MAX_PATH];
     for (i = 0; i < buff->num_fds; i++) {
         memset(path_buff, 0, sizeof(path_buff));
         rb = read(fdin, &len, sizeof(len));
         if (rb!=sizeof(len))
             die("problems reading eventlog\n");
+        if (len >= INPDEV_MAX_PATH)
+            die("path length too long, file corrupt");
         rb = read(fdin, &path_buff[0], len);
         if (rb != len)
             die("problems reading eventlog\n");
@@ -275,8 +325,7 @@ int replay_buffer_init(replay_buffer_t **buffer, const char *logfile)
     replay_event_t rep_ev;
     i = 0;
     while(1) {
-        rb = read(fdin, &rep_ev, sizeof(rep_ev));
-        if (rb < (int)sizeof(rep_ev))
+        if (read_replay_event(fdin, &rep_ev) == -1)
             break;
 
         if (i == 0) {
@@ -369,6 +418,8 @@ void usage()
            "                -d DEVICE  the number of the input device form which\n"
            "                           events will be recoreded. If not specified, \n"
            "                           all available inputs will be used.\n"
+           "                -s         Recording will not be stopped if there is \n"
+           "                           input on STDIN.\n"
            "\n"
            "        replay FILE\n"
            "            replays previously recorded events from the specified file.\n"
@@ -488,19 +539,7 @@ int count;
 
 void term_handler(int signum)
 {
-    int32_t i;
-    for (i=0; i < inpdev->id_pathc; i++)
-    {
-        close(fds[i]);
-    }
-
-    fclose(fdout);
-    free(fds);
-    dprintf("Recorded %d events\n", count);
-
-    inpdev_close(inpdev);
-    revent_args_close(rargs);
-    exit(0);
+    (void)signum;
 }
 
 void record(inpdev_t *inpdev, int delay, const char *logfile)
@@ -539,8 +578,14 @@ void record(inpdev_t *inpdev, int delay, const char *logfile)
         if (fds[i]<0) die("could not open \%s\n", inpdev->id_pathv[i]);
     }
 
+    //Block SIGTERM
+    sigset_t sigset, oldset;
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGTERM);
+    sigprocmask(SIG_BLOCK, &sigset, &oldset);
+
     count = 0;
-    struct timeval tout;
+    struct timespec tout;
     while(1)
     {
         FD_ZERO(&readfds);
@@ -552,10 +597,13 @@ void record(inpdev_t *inpdev, int delay, const char *logfile)
             FD_SET(fds[i], &readfds);
         /* wait for input */
         tout.tv_sec = delay;
-        tout.tv_usec = 0;
-        int32_t r = select(maxfd+1, &readfds, NULL, NULL, &tout);
+        tout.tv_nsec = 0;
+        int32_t r = pselect(maxfd+1, &readfds, NULL, NULL, &tout, &oldset);
+        if (errno == EINTR)
+            break;
         /* dprintf("got %d (err %d)\n", r, errno); */
-        if (!r) break;
+        if (!r)
+            break;
         if (wait_for_stdin && FD_ISSET(STDIN_FILENO, &readfds)) {
             // in this case the key down for the return key will be recorded
             // so we need to up the key up
@@ -566,12 +614,12 @@ void record(inpdev_t *inpdev, int delay, const char *logfile)
             gettimeofday(&ev.time, NULL);
             fwrite(&keydev, sizeof(keydev), 1, fdout);
             fwrite(&_padding, sizeof(_padding), 1, fdout);
-            fwrite(&ev, sizeof(ev), 1, fdout);
+            write_input_event(fdout, &ev);
             memset(&ev, 0, sizeof(ev)); // SYN
             gettimeofday(&ev.time, NULL);
             fwrite(&keydev, sizeof(keydev), 1, fdout);
             fwrite(&_padding, sizeof(_padding), 1, fdout);
-            fwrite(&ev, sizeof(ev), 1, fdout);
+            write_input_event(fdout, &ev);
             dprintf("added fake return exiting...\n");
             break;
         }
@@ -589,7 +637,7 @@ void record(inpdev_t *inpdev, int delay, const char *logfile)
                     keydev = i;
                 fwrite(&i, sizeof(i), 1, fdout);
                 fwrite(&_padding, sizeof(_padding), 1, fdout);
-                fwrite(&ev, sizeof(ev), 1, fdout);
+                write_input_event(fdout, &ev);
                 count++;
             }
         }
