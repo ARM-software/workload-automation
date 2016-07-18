@@ -86,11 +86,11 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
     public boolean takeScreenshot(String name) {
         Bundle params = getParams();
-	String png_dir = params.getString("workdir");
+        String pngDir = params.getString("workdir");
 
         try {
-            return getUiDevice().takeScreenshot(new File(png_dir, name + ".png"));
-        } catch(NoSuchMethodError e) {
+            return getUiDevice().takeScreenshot(new File(pngDir, name + ".png"));
+        } catch (NoSuchMethodError e) {
             return true;
         }
     }
@@ -101,9 +101,9 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
     public void waitText(String text, int second) throws UiObjectNotFoundException {
         UiSelector selector = new UiSelector();
-        UiObject text_obj = new UiObject(selector.text(text)
+        UiObject textObj = new UiObject(selector.text(text)
                                        .className("android.widget.TextView"));
-        waitObject(text_obj, second);
+        waitObject(textObj, second);
     }
 
     public void waitObject(UiObject obj) throws UiObjectNotFoundException {
@@ -111,7 +111,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     }
 
     public void waitObject(UiObject obj, int second) throws UiObjectNotFoundException {
-        if (! obj.waitForExists(second * 1000)){
+        if (!obj.waitForExists(second * 1000)) {
             throw new UiObjectNotFoundException("UiObject is not found: "
                     + obj.getSelector().toString());
         }
@@ -133,10 +133,10 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
         long currentTime = System.currentTimeMillis();
         boolean found = false;
-        while ((currentTime - startTime) < timeout){ 
+        while ((currentTime - startTime) < timeout) {
             sleep(2);  // poll every two seconds
 
-            while((line=reader.readLine())!=null) {
+            while ((line = reader.readLine()) != null) {
                 if (line.contains(searchText)) {
                     found = true;
                     break;
@@ -152,7 +152,8 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         process.destroy();
 
         if ((currentTime - startTime) >= timeout) {
-            throw new TimeoutException("Timed out waiting for Logcat text \"%s\"".format(searchText));
+            throw new TimeoutException(String.format("Timed out waiting for Logcat text \"%s\"",
+                                                     searchText));
         }
     }
 
