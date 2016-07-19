@@ -33,6 +33,7 @@ from wlauto.exceptions import ResourceError
 from wlauto.utils.android import ApkInfo
 from wlauto.utils.misc import ensure_directory_exists as _d, ensure_file_directory_exists as _f, sha256, urljoin
 from wlauto.utils.types import boolean
+from wlauto.utils.revent import ReventParser
 
 
 logging.getLogger("requests").setLevel(logging.WARNING)
@@ -98,7 +99,12 @@ class ReventGetter(ResourceGetter):
             location = _d(os.path.join(self.get_base_location(resource), 'revent_files'))
             for candidate in os.listdir(location):
                 if candidate.lower() == filename.lower():
-                    return os.path.join(location, candidate)
+                    path = os.path.join(location, candidate)
+                    try:
+                        ReventParser.check_revent_file(path)
+                        return path
+                    except ValueError as e:
+                        self.logger.warning(e.message)
 
 
 class PackageApkGetter(PackageFileGetter):
@@ -430,7 +436,11 @@ class HttpGetter(ResourceGetter):
                 for asset in assets:
                     pathname = os.path.basename(asset['path']).lower()
                     if pathname == filename:
-                        return asset
+                        try:
+                            ReventParser.check_revent_file(asset['path'])
+                            return asset
+                        except ValueError as e:
+                            self.logger.warning(e.message)
         else:  # file
             for asset in assets:
                 if asset['path'].lower() == resource.path.lower():
@@ -514,14 +524,22 @@ class RemoteFilerGetter(ResourceGetter):
                 # There tends to be some confusion as to where revent files should
                 # be placed. This looks both in the extension's directory, and in
                 # 'revent_files' subdirectory under it, if it exists.
+                path = None
                 if os.path.isdir(alternate_location):
                     for candidate in os.listdir(alternate_location):
                         if candidate.lower() == filename.lower():
-                            return os.path.join(alternate_location, candidate)
+                            path = os.path.join(alternate_location, candidate)
                 if os.path.isdir(location):
                     for candidate in os.listdir(location):
                         if candidate.lower() == filename.lower():
-                            return os.path.join(location, candidate)
+                            path = os.path.join(location, candidate)
+                if path:
+                    try:
+                        ReventParser.check_revent_file(path)
+                        return path
+                    except ValueError as e:
+                        self.logger.warning(e.message)
+
         else:
             raise ValueError('Unexpected resource type: {}'.format(resource.name))
 
