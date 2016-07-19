@@ -16,6 +16,12 @@
 
 
 
+# Build and return appropriate exit code if failed
 ant build
+exit_code=$?
+if [ $exit_code -ne 0 ]; then
+    echo "ERROR: 'ant build' exited with code $exit_code"
+    exit $exit_code
+fi
 
-cp bin/classes/com/arm/wlauto/uiauto/BaseUiAutomation.class ../../common/android
+cp bin/classes/com/arm/wlauto/uiauto/*.class ../../common/android
