@@ -42,7 +42,10 @@
 
 #define INPDEV_MAX_DEVICES  16
 #define INPDEV_MAX_PATH     30
+const char magic[] = "REVENT";
 
+//This should be incremented if any changes are made to the file format
+uint16_t file_version = 1;
 
 #ifndef ANDROID
 int strlcpy(char *dest, char *source,  size_t size)
@@ -241,15 +244,28 @@ void dump(const char *logfile)
     int fdin = open(logfile, O_RDONLY);
     if (fdin < 0) die("Could not open eventlog %s\n", logfile);
 
-    int32_t nfds;
-    size_t rb = read(fdin, &nfds, sizeof(nfds));
-    if (rb != sizeof(nfds)) die("problems reading eventlog\n");
-    int *fds = malloc(sizeof(int)*nfds);
-    if (!fds) die("out of memory\n");
-
     int32_t len;
     int32_t i;
     char buf[INPDEV_MAX_PATH];
+
+    //Read magic
+    len = strlen(magic);
+    size_t rb = read(fdin, &buf[0], len);
+    if (rb != len) die("problems reading eventlog\n");
+    if(strcmp(magic, buf) != 0)
+        die("File is not an revent recording, are you using an old recording?");
+
+    //Read file format version
+    uint16_t version;
+    rb = read(fdin, &version, sizeof(version));
+    if (rb != sizeof(version)) die("problems reading eventlog\n");
+    printf("File format version: %i\n", version);
+
+    int32_t nfds;
+    rb = read(fdin, &nfds, sizeof(nfds));
+    if (rb != sizeof(nfds)) die("problems reading eventlog\n");
+    int *fds = malloc(sizeof(int)*nfds);
+    if (!fds) die("out of memory\n");
 
     inpdev_t *inpdev = malloc(sizeof(inpdev_t));
     inpdev->id_pathc = nfds;
@@ -295,7 +311,22 @@ int replay_buffer_init(replay_buffer_t **buffer, const char *logfile)
     if (fdin < 0)
         die("Could not open eventlog %s\n", logfile);
 
-    size_t rb = read(fdin, &(buff->num_fds), sizeof(buff->num_fds));
+    int32_t len, i;
+
+    //Read magic
+    char buf[7];
+    len = strlen(magic);
+    size_t rb = read(fdin, &buf[0], len);
+    if (rb != len) die("problems reading eventlog\n");
+    if(strcmp(magic, buf) != 0)
+        die("File is not an revent recording, are you using an old recording?");
+
+    //Read file format version
+    uint16_t version;
+    rb = read(fdin, &version, sizeof(version));
+    if (rb != sizeof(version)) die("problems reading eventlog\n");
+
+    rb = read(fdin, &(buff->num_fds), sizeof(buff->num_fds));
     if (rb!=sizeof(buff->num_fds))
         die("problems reading eventlog\n");
 
@@ -303,7 +334,7 @@ int replay_buffer_init(replay_buffer_t **buffer, const char *logfile)
     if (!buff->fds)
         die("out of memory\n");
 
-    int32_t len, i;
+
     char path_buff[INPDEV_MAX_PATH];
     for (i = 0; i < buff->num_fds; i++) {
         memset(path_buff, 0, sizeof(path_buff));
@@ -563,6 +594,11 @@ void record(inpdev_t *inpdev, int delay, const char *logfile)
     fdout = fopen(logfile, "wb");
     if (!fdout) die("Could not open eventlog %s\n", logfile);
 
+    //Write magic & file format version
+    fwrite(&magic, strlen(magic), 1, fdout);
+    fwrite(&file_version, sizeof(file_version), 1, fdout);
+
+    //Write device paths
     fwrite(&inpdev->id_pathc, sizeof(inpdev->id_pathc), 1, fdout);
     for (i=0; i<inpdev->id_pathc; i++) {
         int32_t len = strlen(inpdev->id_pathv[i]);
@@ -575,7 +611,7 @@ void record(inpdev_t *inpdev, int delay, const char *logfile)
         fds[i] = open(inpdev->id_pathv[i], O_RDONLY);
         if (fds[i]>maxfd) maxfd = fds[i];
         dprintf("opened %s with %d\n", inpdev->id_pathv[i], fds[i]);
-        if (fds[i]<0) die("could not open \%s\n", inpdev->id_pathv[i]);
+        if (fds[i]<0) die("could not open %s\n", inpdev->id_pathv[i]);
     }
 
     //Block SIGTERM
