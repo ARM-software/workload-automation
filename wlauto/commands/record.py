@@ -16,6 +16,7 @@
 import os
 import sys
 import signal
+from math import ceil
 
 from wlauto import ExtensionLoader, Command, settings
 from wlauto.common.resources import Executable
@@ -23,6 +24,7 @@ from wlauto.core.resource import NO_ONE
 from wlauto.core.resolver import ResourceResolver
 from wlauto.core.configuration import RunConfiguration
 from wlauto.core.agenda import Agenda
+from wlauto.utils.revent import ReventParser
 
 
 class RecordCommand(Command):
@@ -159,7 +161,8 @@ class ReplayCommand(RecordCommand):
 
         self.logger.info("Replaying recording")
         command = "{} replay {}".format(self.target_binary, revent_file)
-        self.device.execute(command)
+        timeout = ceil(ReventParser.get_revent_duration(args.revent)) + 30
+        self.device.execute(command, timeout=timeout)
         self.logger.info("Finished replay")
 
 

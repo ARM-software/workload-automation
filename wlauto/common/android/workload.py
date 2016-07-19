@@ -16,6 +16,7 @@
 import os
 import sys
 import time
+from math import ceil
 
 from wlauto.core.extension import Parameter
 from wlauto.core.workload import Workload
@@ -25,6 +26,7 @@ from wlauto.common.resources import ExtensionAsset, Executable
 from wlauto.exceptions import WorkloadError, ResourceError, ConfigError
 from wlauto.utils.android import ApkInfo, ANDROID_NORMAL_PERMISSIONS
 from wlauto.utils.types import boolean
+from wlauto.utils.revent import ReventParser
 import wlauto.common.android.resources
 
 
@@ -322,16 +324,13 @@ AndroidBenchmark = ApkWorkload  # backward compatibility
 
 class ReventWorkload(Workload):
 
-    default_setup_timeout = 5 * 60  # in seconds
-    default_run_timeout = 10 * 60  # in seconds
-
     def __init__(self, device, _call_super=True, **kwargs):
         if _call_super:
             super(ReventWorkload, self).__init__(device, **kwargs)
         devpath = self.device.path
         self.on_device_revent_binary = devpath.join(self.device.binaries_directory, 'revent')
-        self.setup_timeout = kwargs.get('setup_timeout', self.default_setup_timeout)
-        self.run_timeout = kwargs.get('run_timeout', self.default_run_timeout)
+        self.setup_timeout = kwargs.get('setup_timeout', None)
+        self.run_timeout = kwargs.get('run_timeout', None)
         self.revent_setup_file = None
         self.revent_run_file = None
         self.on_device_setup_revent = None
@@ -346,6 +345,10 @@ class ReventWorkload(Workload):
         self.on_device_run_revent = devpath.join(self.device.working_directory,
                                                  os.path.split(self.revent_run_file)[-1])
         self._check_revent_files(context)
+        default_setup_timeout = ceil(ReventParser.get_revent_duration(self.revent_setup_file)) + 30
+        default_run_timeout = ceil(ReventParser.get_revent_duration(self.revent_run_file)) + 30
+        self.setup_timeout = self.setup_timeout or default_setup_timeout
+        self.run_timeout = self.run_timeout or default_run_timeout
 
     def setup(self, context):
         self.device.killall('revent')
