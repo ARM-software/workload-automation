@@ -106,3 +106,107 @@ where as UI Automator only works for Android UI elements (such as text boxes or
 radio buttons), which makes the latter useless for things like games. Recording
 revent sequence is also faster than writing automation code (on the other hand,
 one would need maintain a different revent log for each screen resolution).
+
+
+File format of revent
+=====================
+
+.. note:: All values below are little endian
+
+Recording structure of revent
+-----------------------------
+
+revent recordings are made of of five parts:
+
+ * A "magic" string of `REVENT` to help identify revent recordings.
+ * A unsigned integer representing the revent file format version.
+ * A signed integer that gives the number of devices in this recording.
+ * A series of device paths, the number of which is given in the previous field.
+   For more detail see `Device path structure`_ below.
+ * An unlimited number of recorded events. For more detail see `Event Structure`_
+   below.
+
+::
+
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                             MAGIC                             |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |          MAGIC cont.          |            Version            |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                       Number of devices                       |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                                                               |
+    |             Device paths              +-+-+-+-+-+-+-+-+-+-+-+-+
+    |                                       |                       |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                       |
+    |                                                               |
+    |                             Events                            |
+    |                                                               |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+Device path structure
+----------------------
+
+This part of an revent recording is used to store the paths to input devices used in the
+recording. It consists of:
+
+ * A signed integer giving the size of the following string.
+ * A string, with a maximum length of 30, containing the path of an input device.
+
+::
+
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                     Length of device path                     |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                                                               |
+    |                          Device path                          |
+    |                                                               |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+Event structure
+---------------
+
+The majority of an revent recording will be made up of the input events that were
+recorded. There and be an unlimited number of these events in an revent file and they
+are structured as follows:
+
+ * A signed integer representing which device from the list of device paths
+   this event is for (zero indexed). E.g. Device ID = 3 would be the 4th
+   device in the list of device paths.
+ * 32 bits of padding
+ * A signed integer representing the number of seconds since "epoch" when the
+   event was recorded.
+ * A signed integer representing the microseconds part of the timestamp.
+ * An unsigned integer representing the event type
+ * An unsigned integer representing the event code
+ * An unsigned integer representing the event value
+
+For more information about the event type, code and value please read:
+https://www.kernel.org/doc/Documentation/input/event-codes.txt
+
+::
+
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           Device ID                           |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                            PADDING                            |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                       Timestamp Seconds                       |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                    Timestamp Seconds cont.                    |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                     Timestamp Micoseconds                     |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                  Timestamp Micoseconds cont.                  |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |          Event Type           |          Event Code           |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                          Event Value                          |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
