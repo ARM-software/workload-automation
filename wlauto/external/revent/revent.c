@@ -251,6 +251,7 @@ void dump(const char *logfile)
     //Read magic
     len = strlen(magic);
     size_t rb = read(fdin, &buf[0], len);
+    buf[len] = '\0';
     if (rb != len) die("problems reading eventlog\n");
     if(strcmp(magic, buf) != 0)
         die("File is not an revent recording, are you using an old recording?");
@@ -317,6 +318,7 @@ int replay_buffer_init(replay_buffer_t **buffer, const char *logfile)
     char buf[7];
     len = strlen(magic);
     size_t rb = read(fdin, &buf[0], len);
+    buf[len] = '\0';
     if (rb != len) die("problems reading eventlog\n");
     if(strcmp(magic, buf) != 0)
         die("File is not an revent recording, are you using an old recording?");
