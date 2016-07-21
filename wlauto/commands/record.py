@@ -27,38 +27,7 @@ from wlauto.core.agenda import Agenda
 from wlauto.utils.revent import ReventParser
 
 
-class RecordCommand(Command):
-
-    name = 'record'
-    description = '''Performs a revent recording
-
-    This command helps making revent recordings. It will automatically
-    deploy revent and even has the option of automatically opening apps.
-
-    Revent allows you to record raw inputs such as screen swipes or button presses.
-    This can be useful for recording inputs for workloads such as games that don't
-    have XML UI layouts that can be used with UIAutomator. As a drawback from this,
-    revent recordings are specific to the device type they were recorded on.
-
-    WA uses two parts to the names of revent recordings in the format,
-    {device_name}.{suffix}.revent.
-
-     - device_name can either be specified manually with the ``-d`` argument or
-       it can be automatically determined. On Android device it will be obtained
-       from ``build.prop``, on Linux devices it is obtained from ``/proc/device-tree/model``.
-     - suffix is used by WA to determine which part of the app execution the
-       recording is for, currently these are either ``setup`` or ``run``. This
-       should be specified with the ``-s`` argument.
-    '''
-
-    def initialize(self, context):
-        self.context = context
-        self.parser.add_argument('-d', '--device', help='The name of the device')
-        self.parser.add_argument('-s', '--suffix', help='The suffix of the revent file, e.g. ``setup``')
-        self.parser.add_argument('-o', '--output', help='Directory to save the recording in')
-        self.parser.add_argument('-p', '--package', help='Package to launch before recording')
-        self.parser.add_argument('-C', '--clear', help='Clear app cache before launching it',
-                                 action="store_true")
+class ReventCommand(Command):
 
     # Validate command options
     def validate_args(self, args):
@@ -92,21 +61,58 @@ class RecordCommand(Command):
         self.device.initialize(context)
 
         host_binary = context.resolver.get(Executable(NO_ONE, self.device.abi, 'revent'))
-        self.target_binary = self.device.install_if_needed(host_binary)
+        self.target_binary = self.device.install_executable(host_binary)
 
         self.run(args)
 
     def run(self, args):
+        raise NotImplementedError()
+
+
+class RecordCommand(ReventCommand):
+
+    name = 'record'
+    description = '''Performs a revent recording
+
+    This command helps making revent recordings. It will automatically
+    deploy revent and even has the option of automatically opening apps.
+
+    Revent allows you to record raw inputs such as screen swipes or button presses.
+    This can be useful for recording inputs for workloads such as games that don't
+    have XML UI layouts that can be used with UIAutomator. As a drawback from this,
+    revent recordings are specific to the device type they were recorded on.
+
+    WA uses two parts to the names of revent recordings in the format,
+    {device_name}.{suffix}.revent.
+
+     - device_name can either be specified manually with the ``-d`` argument or
+       it can be automatically determined. On Android device it will be obtained
+       from ``build.prop``, on Linux devices it is obtained from ``/proc/device-tree/model``.
+     - suffix is used by WA to determine which part of the app execution the
+       recording is for, currently these are either ``setup`` or ``run``. This
+       should be specified with the ``-s`` argument.
+    '''
+
+    def initialize(self, context):
+        self.context = context
+        self.parser.add_argument('-d', '--device', help='The name of the device')
+        self.parser.add_argument('-s', '--suffix', help='The suffix of the revent file, e.g. ``setup``')
+        self.parser.add_argument('-o', '--output', help='Directory to save the recording in')
+        self.parser.add_argument('-p', '--package', help='Package to launch before recording')
+        self.parser.add_argument('-C', '--clear', help='Clear app cache before launching it',
+                                 action="store_true")
+
+    def run(self, args):
         if args.device:
-            self.device_name = args.device
+            device_name = args.device
         else:
-            self.device_name = self.device.get_device_model()
+            device_name = self.device.get_device_model()
 
         if args.suffix:
             args.suffix += "."
 
         revent_file = self.device.path.join(self.device.working_directory,
-                                            '{}.{}revent'.format(self.device_name, args.suffix or ""))
+                                            '{}.{}revent'.format(device_name, args.suffix or ""))
 
         if args.clear:
             self.device.execute("pm clear {}".format(args.package))
@@ -130,7 +136,7 @@ class RecordCommand(Command):
         self.device.pull_file(revent_file, args.output or os.getcwdu())
 
 
-class ReplayCommand(RecordCommand):
+class ReplayCommand(ReventCommand):
 
     name = 'replay'
     description = '''Replay a revent recording
