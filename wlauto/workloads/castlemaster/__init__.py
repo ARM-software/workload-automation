@@ -27,4 +27,3 @@ class CastleMaster(GameWorkload):
     package = 'com.alphacloud.castlemaster'
     activity = 'com.unity3d.player.UnityPlayerActivity'
     install_timeout = 500
-

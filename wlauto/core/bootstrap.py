@@ -211,4 +211,3 @@ if os.path.isfile(_packages_file):
 
 for config in _env_configs:
     settings.update(config)
-

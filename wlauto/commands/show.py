@@ -111,4 +111,3 @@ def format_extension_parameters(extension, out, width, shift=4):
         param_texts.append(indent(param_text, shift))
 
     out.write(format_column('\n'.join(param_texts), width))
-

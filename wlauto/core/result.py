@@ -327,4 +327,3 @@ class Metric(object):
         return '<{}>'.format(result)
 
     __repr__ = __str__
-

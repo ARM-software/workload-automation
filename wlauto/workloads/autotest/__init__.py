@@ -105,4 +105,3 @@ class ChromeAutotest(Workload):
         parts = [self.test_that, self.device.host, self.test]
         parts.append(str(self.test_that_args))
         return ' '.join(parts)
-

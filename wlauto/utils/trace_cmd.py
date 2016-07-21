@@ -286,4 +286,3 @@ class TraceCmdTrace(object):
             else:
                 if self.filter_markers and inside_marked_region:
                     logger.warning('Did not encounter a stop marker in trace')
-

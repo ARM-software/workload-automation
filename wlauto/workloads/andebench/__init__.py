@@ -92,4 +92,3 @@ class Andebench(AndroidUiAutoBenchmark):
                     results[data['key']] = data['value']
         for key, value in results.iteritems():
             context.result.add_metric(key, value)
-

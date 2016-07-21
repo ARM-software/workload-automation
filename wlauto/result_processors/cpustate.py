@@ -264,4 +264,3 @@ class CpuStatesProcessor(ResultProcessor):
                         for i, c in enumerate(powerstate_report.core_names)]
             writer.writerow(headers)
             writer.writerows(powerstate_rows)
-

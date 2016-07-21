@@ -97,4 +97,3 @@ class ChromeOsDevice(LinuxDevice):
         else:
             pass
         self.ui_status = None
-

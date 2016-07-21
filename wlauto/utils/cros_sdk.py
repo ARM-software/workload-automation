@@ -129,4 +129,3 @@ def _read_line_from_queue(queue, timeout=0, logger=None):
     if logger and line:
         logger.debug(line)
     return line
-

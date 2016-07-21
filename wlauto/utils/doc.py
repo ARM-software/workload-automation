@@ -304,4 +304,3 @@ def get_rst_from_extension(ext):
     if params_rst:
         text += underline('parameters', '~') + params_rst
     return text + '\n'
-

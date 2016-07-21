@@ -101,4 +101,3 @@ class Workload(Extension):
 
     def __str__(self):
         return '<Workload {}>'.format(self.name)
-

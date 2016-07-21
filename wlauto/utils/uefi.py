@@ -231,5 +231,3 @@ class UefiMenu(object):
         self.options = {}
         self.prompt = None
         self.empty_buffer()
-
-

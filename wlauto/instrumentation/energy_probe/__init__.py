@@ -144,4 +144,3 @@ class EnergyProbe(Instrument):
         writer = csv.DictWriter(f, self.attributes)
         writer.writeheader()
         writer.writerows(new_data)
-

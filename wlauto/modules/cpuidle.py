@@ -114,4 +114,3 @@ class Cpuidle(Module):
     def _on_device_init(self, context):  # pylint: disable=unused-argument
         if not self.device.file_exists(self.root_path):
             raise DeviceError('Device kernel does not appear to have cpuidle enabled.')
-

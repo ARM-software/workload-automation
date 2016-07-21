@@ -63,4 +63,3 @@ class Nenamark(AndroidBenchmark):
                     score = match.group(1)
                     context.result.add_metric('nenamark score', score)
                     break
-

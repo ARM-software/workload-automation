@@ -189,4 +189,3 @@ class NetstatsInstrument(Instrument):
     def finalize(self, context):
         if self.uninstall_on_completion:
             self.collector.teardown()
-

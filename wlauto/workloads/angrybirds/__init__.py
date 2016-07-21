@@ -27,4 +27,3 @@ class AngryBirds(GameWorkload):
     """
     package = 'com.rovio.angrybirds'
     activity = 'com.rovio.ka3d.App'
-

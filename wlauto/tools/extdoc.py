@@ -131,4 +131,3 @@ def _parse_lambda(text):
     func_text = re.sub(r'\b{}\b'.format(param), 'value', func_text)
 
     return func_text
-

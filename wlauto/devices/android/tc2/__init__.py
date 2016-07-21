@@ -847,4 +847,3 @@ def _slow_sendline(target, line):
         target.send(c)
         time.sleep(0.1)
     target.sendline('')
-

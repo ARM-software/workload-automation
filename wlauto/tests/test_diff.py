@@ -40,5 +40,3 @@ class InterruptDiffTest(TestCase):
         with open(expected_result_file) as fh:
             expected_diff = fh.read()
         assert_equal(output_diff, expected_diff)
-
-

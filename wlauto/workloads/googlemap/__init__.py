@@ -35,5 +35,3 @@ class GoogleMap(GameWorkload):
     package = 'com.google.android.apps.maps'
     activity = 'com.google.android.maps.MapsActivity'
     loading_time = 20
-
-

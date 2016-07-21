@@ -155,4 +155,3 @@ class Glb(AndroidUiAutoBenchmark):
                     metric = metric + '_' + str(match_count // 2)
                     context.result.add_metric(metric, value, units)
                     match_count += 1
-

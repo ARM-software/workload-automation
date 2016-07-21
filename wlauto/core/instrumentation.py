@@ -396,4 +396,3 @@ class Instrument(Extension):
 
     def __repr__(self):
         return 'Instrument({})'.format(self.name)
-

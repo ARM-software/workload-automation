@@ -233,4 +233,3 @@ class VellamoResultParser(HTMLParser):
                     self.benchmarks[-1].add_metric(data)
                 else:
                     self.failed = True
-

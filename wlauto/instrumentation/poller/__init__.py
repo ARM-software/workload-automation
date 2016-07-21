@@ -118,4 +118,3 @@ class FilePoller(Instrument):
             label_parts.append(pp[-1])  # always use file name even if same for all
             labels.append('-'.join(label_parts))
         return labels
-

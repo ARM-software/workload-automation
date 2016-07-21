@@ -45,4 +45,3 @@ class Sqlite(AndroidUiAutoBenchmark):
                 except ValueError:
                     self.logger.warn("Reported results do not match expected format (seconds)")
                 context.result.add_metric(metric, value, 'Seconds', lower_is_better=True)
-

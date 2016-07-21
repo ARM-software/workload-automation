@@ -31,5 +31,3 @@ class RealRacing3(GameWorkload):
     loading_time = 90
     asset_file = 'com.ea.games.r3_row.tar.gz'
     saved_state_file = 'rr3-save.tar.gz'
-
-

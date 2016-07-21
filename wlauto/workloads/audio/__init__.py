@@ -100,4 +100,3 @@ class Audio(Workload):
     def _download_audio_file(self):
         self.logger.debug('Downloading audio file from {}'.format(DEFAULT_AUDIO_FILE_URL))
         urllib.urlretrieve(DEFAULT_AUDIO_FILE_URL, self.audio_file)
-
