@@ -16,7 +16,6 @@
 import os
 import sys
 import time
-from math import ceil
 
 from wlauto.core.extension import Parameter
 from wlauto.core.workload import Workload
@@ -26,8 +25,10 @@ from wlauto.common.resources import ExtensionAsset, Executable
 from wlauto.exceptions import WorkloadError, ResourceError, ConfigError
 from wlauto.utils.android import ApkInfo, ANDROID_NORMAL_PERMISSIONS
 from wlauto.utils.types import boolean
-from wlauto.utils.revent import ReventParser
 import wlauto.common.android.resources
+from wlauto import File
+
+import wlauto.utils.statedetect as stateDetector
 
 
 DELAY = 5
@@ -324,13 +325,16 @@ AndroidBenchmark = ApkWorkload  # backward compatibility
 
 class ReventWorkload(Workload):
 
+    default_setup_timeout = 5 * 60  # in seconds
+    default_run_timeout = 10 * 60  # in seconds
+
     def __init__(self, device, _call_super=True, **kwargs):
         if _call_super:
             super(ReventWorkload, self).__init__(device, **kwargs)
         devpath = self.device.path
         self.on_device_revent_binary = devpath.join(self.device.binaries_directory, 'revent')
-        self.setup_timeout = kwargs.get('setup_timeout', None)
-        self.run_timeout = kwargs.get('run_timeout', None)
+        self.setup_timeout = kwargs.get('setup_timeout', self.default_setup_timeout)
+        self.run_timeout = kwargs.get('run_timeout', self.default_run_timeout)
         self.revent_setup_file = None
         self.revent_run_file = None
         self.on_device_setup_revent = None
@@ -345,10 +349,6 @@ class ReventWorkload(Workload):
         self.on_device_run_revent = devpath.join(self.device.working_directory,
                                                  os.path.split(self.revent_run_file)[-1])
         self._check_revent_files(context)
-        default_setup_timeout = ceil(ReventParser.get_revent_duration(self.revent_setup_file)) + 30
-        default_run_timeout = ceil(ReventParser.get_revent_duration(self.revent_run_file)) + 30
-        self.setup_timeout = self.setup_timeout or default_setup_timeout
-        self.run_timeout = self.run_timeout or default_run_timeout
 
     def setup(self, context):
         self.device.killall('revent')
@@ -447,9 +447,12 @@ class GameWorkload(ApkWorkload, ReventWorkload):
     view = 'SurfaceView'
     loading_time = 10
     supported_platforms = ['android']
+    check_game_states = None
 
     parameters = [
         Parameter('install_timeout', default=500, override=True),
+	Parameter('check_states', kind=bool, default=False, global_alias='check_game_states',
+		  description='Use visual state detection to verify the state of the workload after setup and run'),
         Parameter('assets_push_timeout', kind=int, default=500,
                   description='Timeout used during deployment of the assets package (if there is one).'),
         Parameter('clear_data_on_reset', kind=bool, default=True,
@@ -476,6 +479,19 @@ class GameWorkload(ApkWorkload, ReventWorkload):
         time.sleep(self.loading_time)
         ReventWorkload.setup(self, context)
 
+	# state detection check if it's enabled in the config
+	if self.check_game_states:
+		try:
+			self.logger.info("\tChecking workload state...")
+			statedefs_dir = context.resolver.get(File(self, 'state_definitions'))
+			self.device.capture_screen(context.output_directory+"/aftersetup.png")
+			stateCheck = stateDetector.verify_state(context.output_directory+"/aftersetup.png", statedefs_dir, "setupComplete")
+			if not stateCheck: raise WorkloadError("Unexpected state after setup")
+		except ResourceError:
+			self.logger.warning("State definitions directory not found. Skipping state detection.")
+		except stateDetector.StateDefinitionError, errorMsg:
+			self.logger.warning("State definitions or template files missing or invalid (" + errorMsg + "). Skipping state detection.")
+
     def do_post_install(self, context):
         ApkWorkload.do_post_install(self, context)
         self._deploy_assets(context, self.assets_push_timeout)
@@ -493,6 +509,19 @@ class GameWorkload(ApkWorkload, ReventWorkload):
 
     def run(self, context):
         ReventWorkload.run(self, context)
+
+	# state detection check if it's enabled in the config
+	if self.check_game_states:
+		try:
+			self.logger.info("\tChecking workload state...")
+			statedefs_dir = context.resolver.get(File(self, 'state_definitions'))
+			self.device.capture_screen(context.output_directory+"/afterrun.png")
+			stateCheck = stateDetector.verify_state(context.output_directory+"/afterrun.png", statedefs_dir, "runComplete")
+			if not stateCheck: raise WorkloadError("Unexpected state after run")
+		except ResourceError:
+			self.logger.warning("State definitions directory not found. Skipping state detection.")
+		except stateDetector.StateDefinitionError, errorMsg:
+			self.logger.warning("State definitions or template files missing or invalid (" + errorMsg + "). Skipping state detection.")
 
     def teardown(self, context):
         if not self.saved_state_file:
