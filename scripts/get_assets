@@ -1,0 +1,103 @@
+#!/usr/bin/env python
+#    Copyright 2013-2016 ARM Limited
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+"""
+This module downloads external dependencies of assets used by Workload Automation.
+Works by first downloading a directory index of the assets, then iterating through
+it to get assets for the specified workloads.
+"""
+import sys
+import argparse
+import logging
+
+from wlauto import Workload
+from wlauto.common.resources import File
+from wlauto.resource_getters.standard import HttpGetter
+from wlauto.utils.log import init_logging
+
+__version__ = '0.1.0'
+
+# Get index.json from this URL
+ASSETS_REPO = 'https://github.com/jimboatarm/wa-assets/raw/master/workloads'
+
+logger = logging.getLogger('get_assets')
+
+
+class RemoteHttpGetter(HttpGetter):
+    def __init__(self, base_url, force_download, **kwargs):
+        super(RemoteHttpGetter, self).__init__(None, **kwargs)
+        self.url = base_url
+        self.always_fetch = force_download
+
+
+class NamedWorkload(Workload):
+    def __init__(self, name, **kwargs):
+        super(NamedWorkload, self).__init__(None, **kwargs)
+        self.name = name
+
+
+def _instantiate(cls, *args, **kwargs):
+    return cls(*args, **kwargs)
+
+
+def main(args):
+    log_level = 1 if args.verbose else 0
+    init_logging(log_level)
+    logger.debug('Program arguments: {}'.format(vars(args)))
+    if args.force:
+        logger.info('Force-download of assets requested')
+
+    # Get file index of assets
+    getter = _instantiate(RemoteHttpGetter, ASSETS_REPO, args.force)
+    getter.index = getter.fetch_index()
+    all_assets = dict()
+    for k, v in getter.index.iteritems():
+        all_assets[str(k)] = [str(asset['path']) for asset in v]
+
+    # Check provided workload arguments
+    assets_to_get = set()
+    if args.all:
+        assets_to_get = set(all_assets)
+    elif args.workloads:
+        assets_to_get = set(all_assets).intersection(args.workloads)
+
+    if not assets_to_get:
+        if args.workloads:
+            logger.error('Index does not contain assets for workloads: {}'.format(', '.join(args.workloads)))
+        else:
+            logger.error('No workloads specified. Provide at least one, or use --all to get them all')
+        sys.exit(1)
+
+    # Download files
+    for workload in assets_to_get:
+        owner = _instantiate(NamedWorkload, workload)
+        logger.info('Getting assets for: {}'.format(workload))
+        for asset in all_assets[workload]:
+            getter.get(File(owner, asset))
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='''
+        Download assets for the specified workloads from a remote server (currently a GitHub repo).
+        ''')
+    parser.add_argument('workloads', metavar='WORKLOAD', nargs='*',
+                        help='One or more workloads whose assets to download (ignored if --all is specified).')
+    parser.add_argument('-a', '--all', action='store_true',
+                        help='If specified, assets for all workloads found in the index file will be downloaded.')
+    parser.add_argument('-f', '--force', action='store_true',
+                        help='If specified, always fetch the assets, even if locally cached versions exist.')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose output')
+    sys.exit(main(parser.parse_args()))
