@@ -68,5 +68,3 @@ class Cfbench(AndroidUiAutoBenchmark):
                 else:
                     value = int(child.text)
                 context.result.add_metric(child.attrib['name'], value)
-
-

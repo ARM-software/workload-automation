@@ -233,4 +233,3 @@ class InstrumentationTest(TestCase):
 def _instantiate(cls):
     # Needed to get around Extension's __init__ checks
     return cls()
-

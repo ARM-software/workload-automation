@@ -245,4 +245,3 @@ def validate_image_bundle(bundle):
             except KeyError:
                 msg = 'Tarball {} does not appear to be a valid image bundle (did not see config.txt).'
                 raise ConfigError(msg.format(bundle))
-

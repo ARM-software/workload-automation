@@ -48,4 +48,3 @@ class ExtensionLoaderTest(TestCase):
         assert_equal(len(devices), 1)
         assert_equal(devices[0].name, 'test-device')
         assert_equal(len(loader.list_extensions()), 1)
-

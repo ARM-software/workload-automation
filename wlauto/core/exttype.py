@@ -32,4 +32,3 @@ def get_extension_type(ext):
         if isinstance(ext, cls):
             return name
     raise ValueError('Unknown extension type: {}'.format(ext.__class__.__name__))
-

@@ -196,4 +196,3 @@ class DelayInstrument(Instrument):
         if self.active_cooling and not self.device.has('active_cooling'):
             message = 'Your device does not support active cooling. Did you configure it with an approprite module?'
             raise InstrumentError(message)
-

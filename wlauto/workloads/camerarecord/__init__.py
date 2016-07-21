@@ -71,7 +71,7 @@ class Camerarecord(UiAutomatorWorkload):
         # Collect framestats
         framestats_file = self.device.path.join(self.device.working_directory,
                                                 'framestats.txt')
-        self.device.execute('dumpsys gfxinfo {} > {}'\
+        self.device.execute('dumpsys gfxinfo {} > {}'
                             .format(self.package, framestats_file))
         self.device.pull_file(framestats_file,
                               context.output_directory,

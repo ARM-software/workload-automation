@@ -109,4 +109,3 @@ class Quadrant(AndroidUiAutoBenchmark):
                                                       TYPE_UNITS[test_type])
                         context.result.add_metric(data['metric'] + '_score', data['score'])
                         break
-

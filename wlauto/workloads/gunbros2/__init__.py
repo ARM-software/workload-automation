@@ -39,4 +39,3 @@ class GunBros(GameWorkload):
     ondevice_asset_root = '/data'
     loading_time = 20
     install_timeout = 500
-

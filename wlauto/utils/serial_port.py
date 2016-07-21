@@ -20,7 +20,7 @@ from distutils.version import StrictVersion as V
 
 import serial
 
-# pylint: disable=ungrouped-imports
+# pylint: disable=ungrouped-imports, wrong-import-position
 import pexpect
 if V(pexpect.__version__) < V('4.0.0'):
     import fdpexpect  # pylint: disable=import-error

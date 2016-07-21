@@ -77,4 +77,3 @@ class ScreenOnInstrument(Instrument):
     def teardown(self, context):
         if self.polling_period:
             self.monitor.stop()
-

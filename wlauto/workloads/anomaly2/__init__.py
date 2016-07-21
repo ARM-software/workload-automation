@@ -60,4 +60,3 @@ class Anomaly2(GameWorkload):
 
     def teardown(self, context):
         self.device.execute('am force-stop {}'.format(self.package))
-

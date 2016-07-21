@@ -146,5 +146,3 @@ class SyegResult(object):
         if not match:
             raise AttributeError(name)
         return self.runs[int(match.group(1)) - 1]
-
-

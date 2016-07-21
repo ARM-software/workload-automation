@@ -88,4 +88,3 @@ class TestTypes(TestCase):
         assert_equal(arguments('--foo 7 --bar "fizz buzz"'),
                      ['--foo', '7', '--bar', 'fizz buzz'])
         assert_equal(arguments(['test', 42]), ['test', '42'])
-

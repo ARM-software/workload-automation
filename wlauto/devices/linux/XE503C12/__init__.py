@@ -33,4 +33,3 @@ class Xe503c12Chormebook(LinuxDevice):
     ]
 
     abi = 'armeabi'
-

@@ -119,4 +119,3 @@ class PowerLoadtest(Workload):
             parts.append('-b {}'.format(self.board))
         parts.append(str(self.test_that_args))
         return ' '.join(parts)
-

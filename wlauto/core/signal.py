@@ -186,4 +186,3 @@ def send(signal, sender, *args, **kwargs):
 
     """
     dispatcher.send(signal, sender, *args, **kwargs)
-

@@ -58,5 +58,3 @@ class DmesgInstrument(Instrument):
     def teardown(self, context):  # pylint: disable=unused-argument
         if self.loglevel:
             self.device.set_sysfile_value(self.loglevel_file, self.old_loglevel, verify=False)
-
-

@@ -106,4 +106,3 @@ class JunoEnergy(Instrument):
             if self.device.name.lower() != 'juno':
                 message = 'juno_energy instrument is only supported on juno devices; found {}'
                 raise InstrumentError(message.format(self.device.name))
-

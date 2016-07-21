@@ -32,4 +32,3 @@ class OdroidXU3LinuxDevice(LinuxDevice):
     ]
 
     abi = 'armeabi'
-

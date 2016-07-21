@@ -43,4 +43,3 @@ class TheChase(ApkWorkload):
 
     def run(self, context):
         time.sleep(self.duration)
-

@@ -55,4 +55,3 @@ logObserver.start()
 
 def start_logging(level, fmt='%(asctime)s %(levelname)-8s: %(message)s'):
     logging.basicConfig(level=getattr(logging, level), format=fmt)
-

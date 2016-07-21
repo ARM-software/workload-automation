@@ -218,4 +218,3 @@ class Juno(BigLittleDevice):
     def get_android_id(self):
         # Android ID currenlty not set properly in Juno Android builds.
         return 'abad1deadeadbeef'
-

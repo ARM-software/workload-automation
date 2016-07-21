@@ -24,4 +24,3 @@ def init_argument_parser(parser):
                         help='Enable debug mode. Note: this implies --verbose.')
     parser.add_argument('--version', action='version', version='%(prog)s {}'.format(get_wa_version()))
     return parser
-

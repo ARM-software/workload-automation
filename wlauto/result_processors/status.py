@@ -48,4 +48,3 @@ class StatusTxtReporter(ResultProcessor):
                             for ir in result.iteration_results]
             write_table(status_lines, wfh, align='<<>><')
         context.add_artifact('run_status_summary', 'status.txt', 'export')
-

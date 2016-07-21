@@ -123,4 +123,3 @@ class HwmonInstrument(Instrument):
             except ValueError, e:
                 self.logger.error('Could not collect all {} readings for {}'.format(sensor.kind, sensor.label))
                 self.logger.error('Got: {}'.format(e))
-

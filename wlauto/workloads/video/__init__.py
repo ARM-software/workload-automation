@@ -135,4 +135,3 @@ class VideoWorkload(Workload):
             for resolution in self.parameters['resolution'].allowed_values:
                 if resolution in filename:
                     self.video_files[resolution].append(os.path.join(self.video_directory, filename))
-

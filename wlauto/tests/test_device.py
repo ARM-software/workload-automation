@@ -96,4 +96,3 @@ class RuntimeParametersTest(TestCase):
 def _instantiate(cls, *args, **kwargs):
     # Needed to get around Extension's __init__ checks
     return cls(*args, **kwargs)
-

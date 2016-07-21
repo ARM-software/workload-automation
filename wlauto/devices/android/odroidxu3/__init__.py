@@ -35,4 +35,3 @@ class OdroidXU3(AndroidDevice):
                   description='Serial port on which the device is connected'),
         Parameter('baudrate', default=115200, kind=int, description='Serial connection baud rate'),
     ]
-
