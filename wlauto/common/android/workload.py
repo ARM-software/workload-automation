@@ -27,6 +27,8 @@ from wlauto.exceptions import WorkloadError, ResourceError, ConfigError
 from wlauto.utils.android import ApkInfo, ANDROID_NORMAL_PERMISSIONS
 from wlauto.utils.types import boolean
 from wlauto.utils.revent import ReventParser
+from wlauto import File
+import wlauto.utils.statedetect as state_detector
 import wlauto.common.android.resources
 
 
@@ -389,6 +391,24 @@ class ReventWorkload(Workload):
         self.device.push_file(self.revent_run_file, self.on_device_run_revent)
         self.device.push_file(self.revent_setup_file, self.on_device_setup_revent)
 
+    def _check_statedetection_files(self, context):
+        try:
+            self.statedefs_dir = context.resolver.get(File(self, 'state_definitions'))
+        except ResourceError:
+            self.logger.warning("State definitions directory not found. Disabling state detection.")
+            self.check_states = False
+
+    def check_state(self, context, phase):
+        try:
+            self.logger.info("\tChecking workload state...")
+            screenshotPath = os.path.join(context.output_directory, "screen.png")
+            self.device.capture_screen(screenshotPath)
+            stateCheck = state_detector.verify_state(screenshotPath, self.statedefs_dir, phase)
+            if not stateCheck:
+                raise WorkloadError("Unexpected state after setup")
+        except state_detector.StateDefinitionError as e:
+            msg = "State definitions or template files missing or invalid ({}). Skipping state detection."
+            self.logger.warning(msg.format(e.message))
 
 class AndroidUiAutoBenchmark(UiAutomatorWorkload, AndroidBenchmark):
 
@@ -450,6 +470,9 @@ class GameWorkload(ApkWorkload, ReventWorkload):
 
     parameters = [
         Parameter('install_timeout', default=500, override=True),
+        Parameter('check_states', kind=bool, default=False, global_alias='check_game_states',
+                  description="""Use visual state detection to verify the state of the workload
+                  after setup and run"""),
         Parameter('assets_push_timeout', kind=int, default=500,
                   description='Timeout used during deployment of the assets package (if there is one).'),
         Parameter('clear_data_on_reset', kind=bool, default=True,
@@ -469,12 +492,18 @@ class GameWorkload(ApkWorkload, ReventWorkload):
     def init_resources(self, context):
         ApkWorkload.init_resources(self, context)
         ReventWorkload.init_resources(self, context)
+        if self.check_states:        
+            self._check_statedetection_files(self, context)
 
     def setup(self, context):
         ApkWorkload.setup(self, context)
         self.logger.debug('Waiting for the game to load...')
         time.sleep(self.loading_time)
         ReventWorkload.setup(self, context)
+
+        # state detection check if it's enabled in the config
+        if self.check_states:
+            self.check_state(self, context, "setup_complete")
 
     def do_post_install(self, context):
         ApkWorkload.do_post_install(self, context)
@@ -495,6 +524,10 @@ class GameWorkload(ApkWorkload, ReventWorkload):
         ReventWorkload.run(self, context)
 
     def teardown(self, context):
+        # state detection check if it's enabled in the config
+        if self.check_states:
+            self.check_state(self, context, "run_complete")
+
         if not self.saved_state_file:
             ApkWorkload.teardown(self, context)
         else:

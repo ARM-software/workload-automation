@@ -210,3 +210,100 @@ https://www.kernel.org/doc/Documentation/input/event-codes.txt
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     |                          Event Value                          |
     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+Using state detection with revent
+=================================
+
+State detection can be used to verify that a workload is executing as expected.
+This utility, if enabled, and if state definitions are available for the
+particular workload, takes a screenshot after the setup and the run revent
+sequence, matches the screenshot to a state and compares with the expected
+state. A WorkloadError is raised if an unexpected state is encountered.
+
+To enable state detection, make sure a valid state definition file and
+templates exist for your workload and set the check_states parameter to True.
+
+State definition directory
+--------------------------
+
+State and phase definitions should be placed in a directory of the following
+structure inside the dependencies directory of each workload (along with
+revent files etc):
+
+   dependencies/
+      <workload_name>/
+         state_definitions/
+            definition.yaml
+            templates/
+               <oneTemplate>.png
+               <anotherTemplate>.png
+               ...
+
+definition.yaml file
+--------------------
+
+This defines each state of the workload and lists which templates are expected
+to be found and how many are required to be detected for a conclusive match. It
+also defines the expected state in each workload phase where a state detection
+is run (currently those are setupComplete and runComplete).
+
+Templates are picture elements to be matched in a screenshot. Each template
+mentioned in the definition file should be placed as a file with the same name
+and a .png extension inside the templates folder. Creating template png files
+is as simple as taking a screenshot of the workload in a given state, cropping
+out the relevant templates (eg. a button, label or other unique element that is
+present in that state) and storing them in PNG format.
+
+Please see the definition file for Angry Birds below as an example to
+understand the format. Note that more than just two states (for the afterSetup
+and afterRun phase) can be defined and this helps track the cause of errors in
+case an unexpected state is encountered.
+
+.. code-block:: python
+
+    workload_name: angrybirds
+
+    workload_states:
+      - state_name: titleScreen
+        templates:
+          - play_button
+          - logo
+        matches: 2
+      - state_name: worldSelection
+        templates:
+          - first_world_thumb
+          - second_world_thumb
+          - third_world_thumb
+          - fourth_world_thumb
+        matches: 3
+      - state_name: level_selection
+        templates:
+          - locked_level
+          - first_level
+        matches: 2
+      - state_name: gameplay
+        templates:
+          - pause_button
+          - score_label_text
+        matches: 2
+      - state_name: pause_screen
+        templates:
+          - replay_button
+          - menu_button
+          - resume_button
+          - help_button
+        matches: 4
+      - state_name: level_cleared_screen
+        templates:
+          - level_cleared_text
+          - menu_button
+          - replay_button
+          - fast_forward_button
+        matches: 4
+
+    workload_phases:
+      - phase_name: setup_complete
+        expected_state: gameplay
+      - phase_name: run_complete
+        expected_state: level_cleared_screen
