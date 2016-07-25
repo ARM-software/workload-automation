@@ -16,10 +16,10 @@
 
 class FpsProcessor(object):
     """
-    Provide common object for processing surfaceFlinger output for frame
+    Provides common object for processing surfaceFlinger output for frame
     statistics.
 
-    This processor adds four metrics to the results:
+    This processor returns the four frame statistics below:
 
         :FPS: Frames Per Second. This is the frame rate of the workload.
         :frames: The total number of frames rendered during the execution of
@@ -72,11 +72,12 @@ class FpsProcessor(object):
             total_vsyncs = filtered_vsyncs_to_compose.sum()
             frame_count = filtered_vsyncs_to_compose.size
 
-        if total_vsyncs:
-            fps = 1e9 * frame_count / (vsync_interval * total_vsyncs)
+            if total_vsyncs:
+                fps = 1e9 * frame_count / (vsync_interval * total_vsyncs)
 
-        janks = self._calc_janks(filtered_vsyncs_to_compose)
-        not_at_vsync = self._calc_not_at_vsync(vsyncs_to_compose)
+            janks = self._calc_janks(filtered_vsyncs_to_compose)
+            not_at_vsync = self._calc_not_at_vsync(vsyncs_to_compose)
+
         metrics = (fps, frame_count, janks, not_at_vsync)
 
         return per_frame_fps, metrics
