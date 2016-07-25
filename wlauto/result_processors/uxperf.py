@@ -40,7 +40,7 @@ class UxPerfResultProcessor(ResultProcessor):
     An action represents a series of UI interactions to capture.
 
     NOTE: The UX_PERF markers are turned off by default and must be enabled in
-    a agenda file by setting dumpsys_enabled for the workload to true.
+    a agenda file by setting ``markers_enabled`` for the workload to ``True``.
     '''
 
     parameters = [
