@@ -318,6 +318,26 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
 
             please see: https://pythonhosted.org/wlauto/writing_extensions.html""")
 
+    def is_network_connected(self, ip_address='8.8.8.8'):
+        """
+        Checks for internet connectivity on the device
+        by pinging IP address provided.
+
+        :param ip_address: the IP address to ping
+                           (default - google-public-dns-a.google.com)
+
+        """
+        self.logger.debug('Checking for internet connectivity.')
+        output = self.execute('ping -q -w 1 -c 1 {}'.format(ip_address),
+                              check_exit_code=False)
+
+        if 'network is unreachable' not in output.lower():
+            self.logger.debug('Found IP address {}'.format(ip_address))
+            return True
+        else:
+            self.logger.debug('Cannot find IP address {}'.format(ip_address))
+            return False
+
     def get_binary_path(self, name, search_system_binaries=True):
         """
         Searches the devices ``binary_directory`` for the given binary,
