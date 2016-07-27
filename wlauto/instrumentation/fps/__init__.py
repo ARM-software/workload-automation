@@ -111,6 +111,18 @@ class FpsInstrument(Instrument):
                   a content crash. E.g. a value of ``0.75`` means the number of actual frames counted is a
                   quarter lower than expected, it will treated as a content crash.
                   """),
+        Parameter('dumpsys_period', kind=float, default=2, constraint=lambda x: x > 0,
+                  description="""
+                  Specifies the time period between calls to ``dumpsys SurfaceFlinger --latency`` in
+                  seconds when collecting frame data. Using a lower value improves the granularity
+                  of timings when recording actions that take a short time to complete. Note, this
+                  will produce duplicate frame data in the raw dumpsys output, however, this is
+                  filtered out in frames.csv. It may also affect the overall load on the system.
+
+                  The default value of 2 seconds corresponds with the NUM_FRAME_RECORDS in
+                  android/services/surfaceflinger/FrameTracker.h (as of the time of writing
+                  currently 128) and a frame rate of 60 fps that is applicable to most devices.
+                  """),
     ]
 
     clear_command = 'dumpsys SurfaceFlinger --latency-clear '
@@ -135,7 +147,8 @@ class FpsInstrument(Instrument):
         if hasattr(workload, 'view'):
             self.fps_outfile = os.path.join(context.output_directory, 'fps.csv')
             self.outfile = os.path.join(context.output_directory, 'frames.csv')
-            self.collector = LatencyCollector(self.outfile, self.device, workload.view or '', self.keep_raw, self.logger)
+            self.collector = LatencyCollector(self.outfile, self.device, workload.view or '',
+                                              self.keep_raw, self.logger, self.dumpsys_period)
             self.device.execute(self.clear_command)
         else:
             self.logger.debug('Workload does not contain a view; disabling...')
@@ -153,20 +166,21 @@ class FpsInstrument(Instrument):
 
     def update_result(self, context):
         if self.is_enabled:
+            fps, frame_count, janks, not_at_vsync = float('nan'), 0, 0, 0
             data = pd.read_csv(self.outfile)
             if not data.empty:  # pylint: disable=maybe-no-member
                 fp = FpsProcessor(data)
                 per_frame_fps, metrics = fp.process(self.collector.refresh_period, self.drop_threshold)
                 fps, frame_count, janks, not_at_vsync = metrics
 
-                context.result.add_metric('FPS', fps)
-                context.result.add_metric('frame_count', frame_count)
-                context.result.add_metric('janks', janks)
-                context.result.add_metric('not_at_vsync', not_at_vsync)
-
                 if self.generate_csv:
                     per_frame_fps.to_csv(self.fps_outfile, index=False, header=True)
                     context.add_artifact('fps', path='fps.csv', kind='data')
+
+            context.result.add_metric('FPS', fps)
+            context.result.add_metric('frame_count', frame_count)
+            context.result.add_metric('janks', janks)
+            context.result.add_metric('not_at_vsync', not_at_vsync)
 
     def slow_update_result(self, context):
         result = context.result
@@ -192,16 +206,17 @@ class LatencyCollector(threading.Thread):
     #       At the time of writing, this was hard-coded to 128. So at 60 fps
     #       (and there is no reason to go above that, as it matches vsync rate
     #       on pretty much all phones), there is just over 2 seconds' worth of
-    #       frames in there. Hence the sleep time of 2 seconds between dumps.
+    #       frames in there. Hence the default sleep time of 2 seconds between dumps.
     #command_template = 'while (true); do dumpsys SurfaceFlinger --latency {}; sleep 2; done'
     command_template = 'dumpsys SurfaceFlinger --latency {}'
 
-    def __init__(self, outfile, device, activities, keep_raw, logger):
+    def __init__(self, outfile, device, activities, keep_raw, logger, dumpsys_period):
         super(LatencyCollector, self).__init__()
         self.outfile = outfile
         self.device = device
         self.keep_raw = keep_raw
         self.logger = logger
+        self.dumpsys_period = dumpsys_period
         self.stop_signal = threading.Event()
         self.frames = []
         self.last_ready_time = 0
@@ -226,7 +241,7 @@ class LatencyCollector(threading.Thread):
                     for activity in self.activities:
                         if activity in view_list:
                             wfh.write(self.device.execute(self.command_template.format(activity)))
-                    time.sleep(2)
+                    time.sleep(self.dumpsys_period)
             finally:
                 wfh.close()
             # TODO: this can happen after the run during results processing

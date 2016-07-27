@@ -15,6 +15,7 @@
 
 import os
 import re
+import logging
 
 from collections import defaultdict
 from distutils.version import LooseVersion
@@ -86,12 +87,15 @@ class UxPerfResultProcessor(ResultProcessor):
         logfile = os.path.join(context.output_directory, 'logcat.log')
         framelog = os.path.join(context.output_directory, 'frames.csv')
 
+        self.logger.debug('Parsing logcat.log for UX_PERF markers')
         parser.parse(logfile)
 
         if self.add_timings:
+            self.logger.debug('Adding per-action timings')
             parser.add_action_timings()
 
         if self.add_frames:
+            self.logger.debug('Adding per-action frame metrics')
             parser.add_action_frames(framelog, self.drop_threshold, self.generate_csv)
 
 
@@ -116,6 +120,7 @@ class UxPerfParser(object):
     def __init__(self, context):
         self.context = context
         self.actions = defaultdict(list)
+        self.logger = logging.getLogger('UxPerfParser')
 
         # regex for matching logcat message format:
         # date time PID-TID/package priority/tag: message
@@ -146,16 +151,25 @@ class UxPerfParser(object):
         refresh_period = self._parse_refresh_peroid()
 
         for action in self.actions:
+            # default values
+            fps = float('nan')
+            frame_count, janks, not_at_vsync = 0, 0, 0
+            metrics = fps, frame_count, janks, not_at_vsync
+
             df = self._create_data_dict(action, frames)
             fp = FpsProcessor(pd.DataFrame(df), action=action)
-            per_frame_fps, metrics = fp.process(refresh_period, drop_threshold)
+            try:
+                per_frame_fps, metrics = fp.process(refresh_period, drop_threshold)
 
-            if generate_csv:
-                name = action + '_fps'
-                filename = name + '.csv'
-                fps_outfile = os.path.join(self.context.output_directory, filename)
-                per_frame_fps.to_csv(fps_outfile, index=False, header=True)
-                self.context.add_artifact(name, path=filename, kind='data')
+                if generate_csv:
+                    name = action + '_fps'
+                    filename = name + '.csv'
+                    fps_outfile = os.path.join(self.context.output_directory, filename)
+                    per_frame_fps.to_csv(fps_outfile, index=False, header=True)
+                    self.context.add_artifact(name, path=filename, kind='data')
+            except AttributeError:
+                self.logger.warning('Non-matched timestamps in dumpsys output: action={}'
+                                    .format(action))
 
             fps, frame_count, janks, not_at_vsync = metrics
             result = self.context.result
@@ -232,14 +246,16 @@ class UxPerfParser(object):
 
         return d
 
-    @staticmethod
-    def _read(log):
+    def _read(self, log):
         '''
         Opens a file a yields the lines with whitespace stripped.
         '''
-        with open(log, 'r') as rfh:
-            for line in rfh:
-                yield line.strip()
+        try:
+            with open(log, 'r') as rfh:
+                for line in rfh:
+                    yield line.strip()
+        except IOError:
+            self.logger.error('Could not open {}'.format(log))
 
     @staticmethod
     def _matched_rows(rows, timestamps):
