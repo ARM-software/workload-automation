@@ -23,7 +23,7 @@ from wlauto.core.workload import Workload
 from wlauto.core.resource import NO_ONE
 from wlauto.common.android.resources import ApkFile
 from wlauto.common.resources import ExtensionAsset, Executable
-from wlauto.exceptions import WorkloadError, ResourceError, ConfigError
+from wlauto.exceptions import WorkloadError, ResourceError, ConfigError, DeviceError
 from wlauto.utils.android import ApkInfo, ANDROID_NORMAL_PERMISSIONS
 from wlauto.utils.types import boolean
 from wlauto.utils.revent import ReventParser
@@ -289,14 +289,24 @@ class ApkWorkload(Workload):
         for line in lines:
             if "android.permission." in line:
                 permissions.append(line.split(":")[0].strip())
-            else:
+            # Matching either of these means the end of requested permissions section
+            elif "install permissions:" in line or "runtime permissions:" in line:
                 break
 
-        for permission in permissions:
+        for permission in set(permissions):
             # "Normal" Permisions are automatically granted and cannot be changed
             permission_name = permission.rsplit('.', 1)[1]
             if permission_name not in ANDROID_NORMAL_PERMISSIONS:
-                self.device.execute("pm grant {} {}".format(self.package, permission))
+                # On some API 23+ devices, this may fail with a SecurityException
+                # on previously granted permissions. In that case, just skip as it
+                # is not fatal to the workload execution
+                try:
+                    self.device.execute("pm grant {} {}".format(self.package, permission))
+                except DeviceError as e:
+                    if "not a changeable permission" in e.message:
+                        self.logger.debug(e)
+                    else:
+                        raise e
 
     def do_post_install(self, context):
         """ May be overwritten by derived classes."""
