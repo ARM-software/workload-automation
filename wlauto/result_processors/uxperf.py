@@ -123,14 +123,7 @@ class UxPerfParser(object):
         self.logger = logging.getLogger('UxPerfParser')
 
         # regex for matching logcat message format:
-        # date time PID-TID/package priority/tag: message
-        self.regex = re.compile(r'(?P<date>\d{2}-\d{2})\s+'
-                                '(?P<time>\d{2}:\d{2}:\d{2}\.\d{3})\s+'
-                                '(?P<PID>\d+)\s+'
-                                '(?P<TID>\d+)\s+'
-                                '(?P<priority>\w)\s+'
-                                '(?P<tag>\w+)\s+:\s+'
-                                '(?P<message>.*$)')
+        self.regex = re.compile(r'UX_PERF.*?:\s*(?P<message>.*\d+$)')
 
     def parse(self, log):
         '''
@@ -200,14 +193,13 @@ class UxPerfParser(object):
         Yields tuple containing action and timestamp.
         '''
         for line in lines:
-            match = self.regex.match(line)
+            match = self.regex.search(line)
 
             if match:
-                if match.group('tag') == 'UX_PERF':
-                    message = match.group('message')
-                    action_with_suffix, timestamp = message.rsplit(' ', 1)
-                    action, _ = action_with_suffix.rsplit('_', 1)
-                    yield action, timestamp
+                message = match.group('message')
+                action_with_suffix, timestamp = message.rsplit(' ', 1)
+                action, _ = action_with_suffix.rsplit('_', 1)
+                yield action, timestamp
 
     def _group_timestamps(self, markers):
         '''
