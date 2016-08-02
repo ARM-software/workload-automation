@@ -22,6 +22,7 @@ import tempfile
 import shutil
 import threading
 import json
+import xml.dom.minidom
 from subprocess import CalledProcessError
 
 from wlauto.core.extension import Parameter
@@ -615,6 +616,17 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         self.execute('screencap -p  {}'.format(on_device_file))
         self.pull_file(on_device_file, filepath)
         self.delete_file(on_device_file)
+
+    def capture_view_hierachy(self, filepath):
+        """Captures the current view hierarchy into the specified file in a XML format."""
+        on_device_file = self.path.join(self.working_directory, 'screen_capture.xml')
+        self.execute('uiautomator dump {}'.format(on_device_file))
+        self.pull_file(on_device_file, filepath)
+        self.delete_file(on_device_file)
+
+        parsed_xml = xml.dom.minidom.parse(filepath)
+        with open(filepath, 'w') as f:
+            f.write(parsed_xml.toprettyxml())
 
     def is_screen_on(self):
         """Returns ``True`` if the device screen is currently on, ``False`` otherwise."""
