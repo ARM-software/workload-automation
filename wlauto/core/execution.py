@@ -731,6 +731,13 @@ class Runner(object):
             filepath = os.path.join(settings.output_directory, filename)
         self.device.capture_screen(filepath)
 
+    def _take_uiautomator_dump(self, filename):
+        if self.context.output_directory:
+            filepath = os.path.join(self.context.output_directory, filename)
+        else:
+            filepath = os.path.join(settings.output_directory, filename)
+        self.device.capture_view_hierachy(filepath)
+
     @contextmanager
     def _handle_errors(self, action, on_error_status=IterationResult.FAILED):
         try:
@@ -746,6 +753,8 @@ class Runner(object):
                 self.current_job.result.add_event(str(we))
             try:
                 self._take_screenshot('error.png')
+                if self.device.platform == 'android':
+                    self._take_uiautomator_dump('error.xml')
             except Exception, e:  # pylint: disable=W0703
                 # We're already in error state, so the fact that taking a
                 # screenshot failed is not surprising...
