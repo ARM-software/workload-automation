@@ -757,7 +757,7 @@ class RunConfiguration(object):
         if spec.match_selectors(selectors):
             instrumentation_config = self._raw_config['instrumentation']
             for instname in spec.instrumentation:
-                if instname not in instrumentation_config:
+                if instname not in instrumentation_config and not instname.startswith('~'):
                     instrumentation_config.append(instname)
             self.workload_specs.append(spec)
 
