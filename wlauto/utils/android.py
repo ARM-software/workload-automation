@@ -100,6 +100,16 @@ ANDROID_NORMAL_PERMISSIONS = [
     'UNINSTALL_SHORTCUT',
 ]
 
+# Package versions that are known to have problems with AndroidUiAutoBenchmark workloads.
+# NOTE: ABI versions are not included.
+UNSUPPORTED_PACKAGES = {
+    # Google Keyboard:
+    # For some versions of the Google Keyboard package device key presses are
+    # not registered correctly when running UiAutomator Workloads.
+    'com.google.android.inputmethod.latin': ['5.0.25.122319759']
+}
+
+
 # TODO: these are set to their actual values near the bottom of the file. There
 # is some HACKery  involved to ensure that ANDROID_HOME does not need to be set
 # or adb added to path for root when installing as root, and the whole
