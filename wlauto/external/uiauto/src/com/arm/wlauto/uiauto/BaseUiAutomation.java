@@ -84,7 +84,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
         public ActionLogger(String testTag, Bundle parameters) {
             this.testTag = testTag;
-            this.enabled = Boolean.parseBoolean(parameters.getString("dumpsys_enabled"));
+            this.enabled = Boolean.parseBoolean(parameters.getString("markers_enabled"));
         }
 
         public void start() {

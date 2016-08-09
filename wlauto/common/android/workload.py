@@ -24,7 +24,7 @@ from wlauto.core.resource import NO_ONE
 from wlauto.common.android.resources import ApkFile
 from wlauto.common.resources import ExtensionAsset, Executable
 from wlauto.exceptions import WorkloadError, ResourceError, ConfigError, DeviceError
-from wlauto.utils.android import ApkInfo, ANDROID_NORMAL_PERMISSIONS
+from wlauto.utils.android import ApkInfo, ANDROID_NORMAL_PERMISSIONS, UNSUPPORTED_PACKAGES
 from wlauto.utils.types import boolean
 from wlauto.utils.revent import ReventParser
 from wlauto import File
@@ -428,6 +428,11 @@ class AndroidUiAutoBenchmark(UiAutomatorWorkload, AndroidBenchmark):
         UiAutomatorWorkload.__init__(self, device, **kwargs)
         AndroidBenchmark.__init__(self, device, _call_super=False, **kwargs)
 
+    def initialize(self, context):
+        UiAutomatorWorkload.initialize(self, context)
+        AndroidBenchmark.initialize(self, context)
+        self._check_unsupported_packages()
+
     def init_resources(self, context):
         UiAutomatorWorkload.init_resources(self, context)
         AndroidBenchmark.init_resources(self, context)
@@ -443,6 +448,24 @@ class AndroidUiAutoBenchmark(UiAutomatorWorkload, AndroidBenchmark):
     def teardown(self, context):
         UiAutomatorWorkload.teardown(self, context)
         AndroidBenchmark.teardown(self, context)
+
+    def _check_unsupported_packages(self):
+        """
+        Check for any unsupported package versions and raise an
+        exception if detected.
+
+        """
+        for package in UNSUPPORTED_PACKAGES:
+            version = self.device.get_installed_package_version(package)
+            if version is None:
+                continue
+
+            if '-' in version:
+                version = version.split('-')[0]  # ignore abi version
+
+            if version in UNSUPPORTED_PACKAGES[package]:
+                message = 'This workload does not support version "{}" of package "{}"'
+                raise WorkloadError(message.format(version, package))
 
 
 class GameWorkload(ApkWorkload, ReventWorkload):
