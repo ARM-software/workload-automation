@@ -115,6 +115,17 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         }
     }
 
+    public void waitResourceId(String text, String className) throws UiObjectNotFoundException {
+        waitResourceId(text, 600, className);
+    }
+
+    public void waitResourceId(String text, int second, String className) throws UiObjectNotFoundException {
+        UiSelector selector = new UiSelector();
+        UiObject resourceObj = new UiObject(selector.resourceId(text)
+                                       .className(className));
+        waitObject(resourceObj, second);
+    }
+
     public void waitText(String text) throws UiObjectNotFoundException {
         waitText(text, 600);
     }
