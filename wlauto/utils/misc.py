@@ -85,6 +85,7 @@ class TimeoutError(Exception):
 class CalledProcessErrorWithStderr(CalledProcessError):
 
     def __init__(self, *args, **kwargs):
+        self.output = kwargs.pop("output")
         self.error = kwargs.pop("error")
         super(CalledProcessErrorWithStderr, self).__init__(*args, **kwargs)
 

@@ -245,7 +245,8 @@ class SshShell(object):
         except subprocess.CalledProcessError as e:
             raise CalledProcessErrorWithStderr(e.returncode,
                                                e.cmd.replace(pass_string, ''),
-                                               e.output, getattr(e, 'error', ''))
+                                               output=e.output,
+                                               error=getattr(e, 'error', ''))
         except TimeoutError as e:
             raise TimeoutError(e.command.replace(pass_string, ''), e.output)
 
