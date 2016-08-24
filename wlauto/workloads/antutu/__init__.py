@@ -17,6 +17,7 @@ import os
 from collections import defaultdict, OrderedDict
 
 from wlauto import AndroidUiAutoBenchmark, Parameter, File
+from wlauto.exceptions import DeviceError
 from wlauto.utils.android import ApkInfo
 
 
@@ -47,7 +48,7 @@ class Antutu(AndroidUiAutoBenchmark):
     activity = ".ABenchMarkStart"
     summary_metrics = ['score', 'Overall_Score']
 
-    valid_versions = ['3.3.2', '4.0.3', '5.3.0', '6.0.1']
+    valid_versions = ['3.3.2', '4.0.3', '5.3', '6.0.1']
 
     device_prefs_directory = '/data/data/com.antutu.ABenchMark/shared_prefs'
     device_prefs_file = '/'.join([device_prefs_directory, 'com.antutu.ABenchMark_preferences.xml'])
@@ -80,8 +81,12 @@ class Antutu(AndroidUiAutoBenchmark):
             info = ApkInfo(antutu_3d)
             if not context.device.is_installed(info.package):
                 self.device.install_apk(antutu_3d, timeout=120)
-            # Antutu doesnt seem to list this as one of its permissions, but it asks for it.
-            self.device.execute("pm grant com.antutu.ABenchMark android.permission.ACCESS_FINE_LOCATION")
+            if self.device.get_sdk_version() >= 23:
+                # Antutu doesnt seem to list this as one of its permissions, but on some devices it asks for it.
+                try:
+                    self.device.execute("pm grant com.antutu.ABenchMark android.permission.ACCESS_FINE_LOCATION")
+                except DeviceError:
+                    self.logger.debug("failed to grant ACCESS_FINE_LOCATION, continuing")
         super(Antutu, self).setup(context)
 
     def update_result(self, context):

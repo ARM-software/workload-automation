@@ -66,7 +66,7 @@ public class UiAutomation extends BaseUiAutomation {
             while (true) {
                     if(version.equals("6.0.1"))
                         hitTestButtonVersion5(TestButton6);
-                    else if (version.equals("5.3.0")) {
+                    else if (version.equals("5.3")) {
                         hitTestButton();
                         hitTestButtonVersion5(TestButton5);
                     }
@@ -308,7 +308,7 @@ public class UiAutomation extends BaseUiAutomation {
 
     public void returnToTestScreen(String version) throws Exception {
         getUiDevice().pressBack();
-        if (version.equals("5.3.0"))
+        if (version.equals("5.3"))
         {
             UiSelector selector = new UiSelector();
             UiObject detailsButton = new UiObject(new UiSelector().className("android.widget.Button")

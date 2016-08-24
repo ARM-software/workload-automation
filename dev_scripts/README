@@ -6,6 +6,11 @@ distributed as part of WA releases.
 Scripts
 -------
 
+:check_apk_versions: Compares WA workload versions with the versions listed in APK
+                     if there are any incistency it will highlight these. This 
+                     requires all APK files to be present for workloads with 
+                     versions.
+
 :clean_install: Performs a clean install of WA from source. This will remove any
                 existing WA install (regardless of whether it was made from
                 source or through a tarball with pip).

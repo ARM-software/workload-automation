@@ -1,0 +1,66 @@
+#!/usr/bin/env python
+import os
+from distutils.version import StrictVersion
+
+from wlauto.core.extension_loader import ExtensionLoader
+from wlauto.common.android.workload import ApkWorkload
+from wlauto.utils.android import ApkInfo
+
+el = ExtensionLoader()
+
+
+class fake_config(object):
+    def __init__(self, ext_loader):
+        self.ext_loader = ext_loader
+        self.get_extension = ext_loader.get_extension
+
+
+class fake_device(object):
+    platform = "android"
+
+config = fake_config(el)
+device = fake_device()
+
+if "WA_USER_DIRECTORY" in os.environ:
+    base_path = os.environ["WA_USER_DIRECTORY"]
+else:
+    base_path = "~/.workload_automation/dependencies/"
+
+apk_workloads = [e for e in el.list_workloads()
+                 if issubclass(el.get_extension_class(e.name), ApkWorkload)]
+
+for wl in apk_workloads:
+    # Get versions from workloads
+    workload_versions = []
+    for p in wl.parameters:
+        if p.name == "version" and p.allowed_values:
+            workload_versions = p.allowed_values
+            break
+    else:
+        continue
+
+    dep_path = os.path.join(os.path.expanduser(base_path), wl.name)
+    apks = [apk for apk in os.listdir(dep_path) if apk.endswith(".apk")]
+
+    # Get versions from APK files
+    apk_versions = []
+    for apk in apks:
+        # skip antutu 3d benchmark apk
+        if apk == "com.antutu.benchmark.full-1.apk":
+            continue
+        apk_versions.append(ApkInfo(os.path.join(dep_path, apk)).version_name)
+
+    # Output workload info
+    print "Workload:          {}".format(wl.name)
+    print "Workload Versions: {}".format(sorted(workload_versions, key=StrictVersion))
+    print "APK versions:      {}".format(sorted(apk_versions, key=StrictVersion))
+
+    # Check for bad/missing versions
+    error = False
+    for v in apk_versions:
+        if v not in workload_versions:
+            msg = "APK version '{}' not present in workload list of versions"
+            print msg.format(v)
+            error = True
+    if not error:
+        print "OK"
