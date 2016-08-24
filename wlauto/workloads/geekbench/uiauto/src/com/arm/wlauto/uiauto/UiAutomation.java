@@ -32,26 +32,26 @@ import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
 import com.arm.wlauto.uiauto.BaseUiAutomation;
 
-public class UiAutomation extends BaseUiAutomation {   
+public class UiAutomation extends BaseUiAutomation {
 
     public static String TAG = "geekbench";
 
     public void runUiAutomation() throws Exception {
         Bundle params = getParams();
-        int version = Integer.parseInt(params.getString("version"));
+        String version = params.getString("version");
         int times = Integer.parseInt(params.getString("times"));
 
         for (int i = 0; i < times; i++) {
                 runBenchmarks();
-                switch(version) {
-                case 2: 
+                if(version.equals("2.2.7")) {
                         // In version 2, we scroll through the results WebView to make sure
                         // all results appear on the screen, which causes them to be dumped into
                         // logcat by the Linaro hacks.
                         waitForResultsv2();
                         scrollThroughResults();
                         break;
-                case 3: 
+                }
+                else if(version.equals("3.0.0")) {
                         // Attempting to share the results will generate the .gb3 file with
                         // results that can then be pulled from the device. This is not possible
                         // in verison 2 of Geekbench (Share option was added later).

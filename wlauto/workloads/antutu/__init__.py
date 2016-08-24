@@ -47,7 +47,7 @@ class Antutu(AndroidUiAutoBenchmark):
     activity = ".ABenchMarkStart"
     summary_metrics = ['score', 'Overall_Score']
 
-    valid_versions = ['3.3.2', '4.0.3', '5.3.0', '6.0.1']
+    valid_versions = ['3.3.2', '4.0.3', '5.3', '6.0.1']
 
     device_prefs_directory = '/data/data/com.antutu.ABenchMark/shared_prefs'
     device_prefs_file = '/'.join([device_prefs_directory, 'com.antutu.ABenchMark_preferences.xml'])
