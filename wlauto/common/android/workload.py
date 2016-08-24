@@ -179,7 +179,7 @@ class ApkWorkload(Workload):
         self.apk_version = None
         self.logcat_log = None
 
-    def initialize(self, context):
+    def setup(self, context):
         # Get APK for the correct version and device ABI
         self.apk_file = context.resolver.get(ApkFile(self, self.device.abi),
                                              version=getattr(self, 'version', None),
@@ -194,7 +194,6 @@ class ApkWorkload(Workload):
             if self.force_install:
                 raise ConfigError('force_install cannot be "True" when check_apk is set to "False".')
 
-    def setup(self, context):
         self.initialize_package(context)
         self.launch_package()
         self.device.execute('am kill-all')  # kill all *background* activities
@@ -525,7 +524,7 @@ class GameWorkload(ApkWorkload, ReventWorkload):
     def init_resources(self, context):
         ApkWorkload.init_resources(self, context)
         ReventWorkload.init_resources(self, context)
-        if self.check_states:        
+        if self.check_states:
             self._check_statedetection_files(self, context)
 
     def setup(self, context):
