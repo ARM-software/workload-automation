@@ -34,9 +34,10 @@ import java.util.Map.Entry;
 
 public class UiAutomation extends UxPerfUiAutomation {
 
-    public static String TAG = "uxperf_googleplaybooks";
+    protected Bundle parameters;
+    protected String packageName;
+    protected String packageID;
 
-    public Bundle parameters;
     private int viewTimeoutSecs = 10;
     private long viewTimeout =  TimeUnit.SECONDS.toMillis(viewTimeoutSecs);
 
@@ -44,6 +45,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         this.uiAutoTimeout = TimeUnit.SECONDS.toMillis(8);
 
         parameters = getParams();
+        packageName = parameters.getString("package");
+        packageID = packageName + ":id/";
 
         String bookTitle = parameters.getString("book_title").replace("_", " ");
         String chapterPageNumber = parameters.getString("chapter_page_number");
@@ -120,7 +123,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     // pick a random sample book.
     private void clearFirstRunDialogues() throws Exception {
         UiObject startButton =
-            new UiObject(new UiSelector().resourceId("com.google.android.apps.books:id/start_button"));
+            new UiObject(new UiSelector().resourceId(packageID + "start_button"));
 
         // First try and skip the sample book selection
         if (startButton.exists()) {
@@ -128,7 +131,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
 
         UiObject endButton =
-            new UiObject(new UiSelector().resourceId("com.google.android.apps.books:id/end_button"));
+            new UiObject(new UiSelector().resourceId(packageID + "end_button"));
 
         // Click next button if it exists
         if (endButton.exists()) {
@@ -147,7 +150,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     // Searches for a "free" or "purchased" book title in Google play
     private void searchForBook(final String bookTitle) throws Exception {
         UiObject search =
-            new UiObject(new UiSelector().resourceId("com.google.android.apps.books:id/menu_search"));
+            new UiObject(new UiSelector().resourceId(packageID + "menu_search"));
         search.click();
 
         UiObject searchText = new UiObject(new UiSelector().textContains("Search")
@@ -186,7 +189,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             if (maxSwipes <= 0) {
                 throw new UiObjectNotFoundException("Could not find free or purchased book \"" + bookTitle + "\"");
             } else {
-                searchResultsList.swipeUp(10);
+                searchResultsList.swipeUp(100);
                 maxSwipes--;
             }
         }
@@ -244,7 +247,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     private void openBook(final String bookTitle) throws Exception {
 
         UiScrollable cardsGrid =
-            new UiScrollable(new UiSelector().resourceId("com.google.android.apps.books:id/cards_grid"));
+            new UiScrollable(new UiSelector().resourceId(packageID + "cards_grid"));
 
         UiSelector bookSelector = new UiSelector().text(bookTitle).className("android.widget.TextView");
         UiObject book = new UiObject(bookSelector);
@@ -253,7 +256,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         // can assume any newly downloaded books will be visible on the first
         // screen.
         UiObject menuSort =
-            getUiObjectByResourceId("com.google.android.apps.books:id/menu_sort", "android.widget.TextView");
+            getUiObjectByResourceId(packageID + "menu_sort", "android.widget.TextView");
         menuSort.click();
 
         UiObject sortByRecent = getUiObjectByText("Recent", "android.widget.TextView");
@@ -353,11 +356,11 @@ public class UiAutomation extends UxPerfUiAutomation {
     private void selectChapter(final String chapterPageNumber) throws Exception {
         getDropdownMenu();
 
-        UiObject contents = getUiObjectByResourceId("com.google.android.apps.books:id/menu_reader_toc",
+        UiObject contents = getUiObjectByResourceId(packageID + "menu_reader_toc",
                                                     "android.widget.TextView");
         contents.clickAndWaitForNewWindow(uiAutoTimeout);
 
-        UiObject toChapterView = getUiObjectByResourceId("com.google.android.apps.books:id/toc_list_view",
+        UiObject toChapterView = getUiObjectByResourceId(packageID + "toc_list_view",
                                                          "android.widget.ExpandableListView");
 
         // Navigate to top of chapter view
@@ -379,14 +382,14 @@ public class UiAutomation extends UxPerfUiAutomation {
         uiObjectPerformLongClick(clickable, 100);
 
         UiObject addNoteButton = new UiObject(
-                new UiSelector().resourceId("com.google.android.apps.books:id/add_note_button"));
+                new UiSelector().resourceId(packageID + "add_note_button"));
         addNoteButton.click();
 
-        UiObject noteEditText = getUiObjectByResourceId("com.google.android.apps.books:id/note_edit_text",
+        UiObject noteEditText = getUiObjectByResourceId(packageID + "note_edit_text",
                                                         "android.widget.EditText");
         noteEditText.setText(text);
 
-        UiObject noteMenuButton = getUiObjectByResourceId("com.google.android.apps.books:id/note_menu_button",
+        UiObject noteMenuButton = getUiObjectByResourceId(packageID + "note_menu_button",
                                                           "android.widget.ImageButton");
         noteMenuButton.click();
 
@@ -407,7 +410,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         uiObjectPerformLongClick(clickable, 100);
 
         UiObject removeButton = new UiObject(
-                new UiSelector().resourceId("com.google.android.apps.books:id/remove_highlight_button"));
+                new UiSelector().resourceId(packageID + "remove_highlight_button"));
         removeButton.click();
 
         UiObject confirmRemove = getUiObjectByText("Remove", "android.widget.Button");
@@ -425,16 +428,16 @@ public class UiAutomation extends UxPerfUiAutomation {
         getDropdownMenu();
         logger.start();
         UiObject search = new UiObject(
-                new UiSelector().resourceId("com.google.android.apps.books:id/menu_search"));
+                new UiSelector().resourceId(packageID + "menu_search"));
         search.click();
 
         UiObject searchText = new UiObject(
-                new UiSelector().resourceId("com.google.android.apps.books:id/search_src_text"));
+                new UiSelector().resourceId(packageID + "search_src_text"));
         searchText.setText(text);
         pressEnter();
 
         UiObject resultList = new UiObject(
-                new UiSelector().resourceId("com.google.android.apps.books:id/search_results_list"));
+                new UiSelector().resourceId(packageID + "search_results_list"));
 
         // Allow extra time for search queries involing high freqency words
         final long searchTimeout =  TimeUnit.SECONDS.toMillis(20);
@@ -459,13 +462,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         String testTag = "switch_page_style";
 
         getDropdownMenu();
-        UiObject readerSettings = getUiObjectByResourceId("com.google.android.apps.books:id/menu_reader_settings",
+        UiObject readerSettings = getUiObjectByResourceId(packageID + "menu_reader_settings",
                                                           "android.widget.TextView");
         readerSettings.click();
 
         // Check for lighting option button on newer versions
         UiObject lightingOptionsButton =
-            new UiObject(new UiSelector().resourceId("com.google.android.apps.books:id/lighting_options_button"));
+            new UiObject(new UiSelector().resourceId(packageID + "lighting_options_button"));
 
         if (lightingOptionsButton.exists()) {
             lightingOptionsButton.click();
@@ -518,7 +521,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         // existence and if not present try for a second time using a different
         // start point and step size
         UiObject actionBar =
-            new UiObject(new UiSelector().resourceId("com.google.android.apps.books:id/action_bar"));
+            new UiObject(new UiSelector().resourceId(packageID + "action_bar"));
 
         long actionBarTimeout =  TimeUnit.SECONDS.toMillis(3);
 
@@ -530,7 +533,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     // Helper for waiting on a page between actions
     private UiObject waitForPage() throws Exception {
         UiObject activityReader =
-            new UiObject(new UiSelector().resourceId("com.google.android.apps.books:id/activity_reader")
+            new UiObject(new UiSelector().resourceId(packageID + "activity_reader")
                                          .childSelector(new UiSelector().focusable(true)));
 
         // On some devices the object in the view hierarchy is found before it
