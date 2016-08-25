@@ -29,7 +29,7 @@ from wlauto.common.linux.device import LinuxDevice  # NOQA
 from wlauto.common.android.device import AndroidDevice, BigLittleDevice   # NOQA
 from wlauto.common.android.resources import ApkFile, JarFile
 from wlauto.common.android.workload import (UiAutomatorWorkload, ApkWorkload, AndroidBenchmark,  # NOQA
-                                    AndroidUiAutoBenchmark, GameWorkload)  # NOQA
+                                    AndroidUiAutoBenchmark, AndroidUxPerfWorkload, GameWorkload)  # NOQA
 
 from wlauto.core.version import get_wa_version
 
