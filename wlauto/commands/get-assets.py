@@ -14,7 +14,6 @@
 #
 
 import sys
-import logging
 import argparse
 
 from requests import ConnectionError, RequestException
@@ -24,6 +23,7 @@ from wlauto.core.extension import Extension
 
 
 REMOTE_ASSETS_URL = 'https://github.com/ARM-software/wa-assets/raw/master/dependencies'
+
 
 class GetAssetsCommand(Command):
     name = 'get-assets'
@@ -40,14 +40,14 @@ class GetAssetsCommand(Command):
     def initialize(self, context):
         self.parser.add_argument('-f', '--force', action='store_true',
                                  help='Always fetch the assets, even if matching versions exist in local cache.')
-        self.parser.add_argument('--url', metavar='URL', type=self.not_empty, default=self.assets_url,
+        self.parser.add_argument('--url', metavar='URL', type=not_empty, default=self.assets_url,
                                  help='''The location from which to download the files. If not provided,
                                  config setting ``remote_assets_url`` will be used if available, else
                                  uses the default REMOTE_ASSETS_URL parameter in the script.''')
         group = self.parser.add_mutually_exclusive_group(required=True)
         group.add_argument('-a', '--all', action='store_true',
                            help='Download assets for all extensions found in the index. Cannot be used with -e.')
-        group.add_argument('-e', dest='exts', metavar='EXT', nargs='+', type=self.not_empty,
+        group.add_argument('-e', dest='exts', metavar='EXT', nargs='+', type=not_empty,
                            help='One or more extensions whose assets to download. Cannot be used with --all.')
 
     def execute(self, args):
@@ -100,12 +100,6 @@ class GetAssetsCommand(Command):
             for asset in all_assets[ext_name]:
                 getter.get(File(owner, asset))  # Download the files
 
-    def not_empty(self, val):
-        if val:
-            return val
-        else:
-            raise argparse.ArgumentTypeError('Extension name cannot be blank')
-
     def exit_with_error(self, message, code=1):
         self.logger.error(message)
         sys.exit(code)
@@ -115,6 +109,13 @@ class NamedExtension(Extension):
     def __init__(self, name, **kwargs):
         super(NamedExtension, self).__init__(**kwargs)
         self.name = name
+
+
+def not_empty(val):
+    if val:
+        return val
+    else:
+        raise argparse.ArgumentTypeError('Extension name cannot be blank')
 
 
 def _instantiate(cls, *args, **kwargs):

@@ -42,8 +42,7 @@ except ImportError:
 
 
 class StateDefinitionError(RuntimeError):
-    def __init__(self, arg):
-        self.args = arg
+    pass
 
 
 def auto_canny(image, sigma=0.33):
@@ -59,9 +58,9 @@ def auto_canny(image, sigma=0.33):
     return edged
 
 
-def match_state(screenshot_file, defpath, state_definitions):
+def match_state(screenshot_file, defpath, state_definitions):  # pylint: disable=too-many-locals
     # check dependencies
-    if np == None or cv2 == None or imutils == None:
+    if np is None or cv2 is None or imutils is None:
         raise RuntimeError("State detection requires numpy, opencv (cv2) and imutils.")
 
     # check if file exists, then load screenshot into opencv and create edge map
@@ -78,15 +77,14 @@ def match_state(screenshot_file, defpath, state_definitions):
 
     # check all template PNGs exist
     for template_png in template_list:
-        if not os.path.isfile(os.path.join(defpath, 'templates', template_png+'.png')):
+        if not os.path.isfile(os.path.join(defpath, 'templates', template_png + '.png')):
             raise StateDefinitionError("Missing template PNG file: " + template_png + ".png")
 
     # try to match each PNG
     matched_templates = []
     for template_png in template_list:
-        template = cv2.imread(os.path.join(defpath, 'templates', template_png+'.png'), 0)
+        template = cv2.imread(os.path.join(defpath, 'templates', template_png + '.png'), 0)
         template_edge = auto_canny(template)
-        w, h = template.shape[::-1]
 
         res = cv2.matchTemplate(img_edge, template_edge, cv2.TM_CCOEFF_NORMED)
         threshold = 0.5
@@ -117,7 +115,7 @@ def verify_state(screenshot_file, state_defs_path, workload_phase):
     # load and parse state definition file
     statedefs_file = os.path.join(state_defs_path, 'definition.yaml')
     if not os.path.isfile(statedefs_file):
-        raise StateDefinitionError("Missing state definitions yaml file: "+statedefs_file)
+        raise StateDefinitionError("Missing state definitions yaml file: " + statedefs_file)
     with open(statedefs_file) as fh:
         state_definitions = yaml.load(fh)
 

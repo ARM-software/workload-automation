@@ -22,12 +22,11 @@ from wlauto.core.extension import Parameter
 from wlauto.core.workload import Workload
 from wlauto.core.resource import NO_ONE
 from wlauto.common.android.resources import ApkFile
-from wlauto.common.resources import ExtensionAsset, Executable
+from wlauto.common.resources import ExtensionAsset, Executable, File
 from wlauto.exceptions import WorkloadError, ResourceError, ConfigError, DeviceError
 from wlauto.utils.android import ApkInfo, ANDROID_NORMAL_PERMISSIONS, UNSUPPORTED_PACKAGES
 from wlauto.utils.types import boolean
 from wlauto.utils.revent import ReventParser
-from wlauto import File
 import wlauto.utils.statedetect as state_detector
 import wlauto.common.android.resources
 
@@ -346,6 +345,8 @@ class ReventWorkload(Workload):
         self.revent_run_file = None
         self.on_device_setup_revent = None
         self.on_device_run_revent = None
+        self.statedefs_dir = None
+        self.check_states = None
 
     def initialize(self, context):
         self.revent_setup_file = context.resolver.get(wlauto.common.android.resources.ReventFile(self, 'setup'))
@@ -418,6 +419,7 @@ class ReventWorkload(Workload):
         except state_detector.StateDefinitionError as e:
             msg = "State definitions or template files missing or invalid ({}). Skipping state detection."
             self.logger.warning(msg.format(e.message))
+
 
 class AndroidUiAutoBenchmark(UiAutomatorWorkload, AndroidBenchmark):
 
@@ -525,7 +527,7 @@ class GameWorkload(ApkWorkload, ReventWorkload):
         ApkWorkload.init_resources(self, context)
         ReventWorkload.init_resources(self, context)
         if self.check_states:
-            self._check_statedetection_files(self, context)
+            self._check_statedetection_files(context)
 
     def setup(self, context):
         ApkWorkload.setup(self, context)
@@ -535,7 +537,7 @@ class GameWorkload(ApkWorkload, ReventWorkload):
 
         # state detection check if it's enabled in the config
         if self.check_states:
-            self.check_state(self, context, "setup_complete")
+            self.check_state(context, "setup_complete")
 
     def do_post_install(self, context):
         ApkWorkload.do_post_install(self, context)
@@ -558,7 +560,7 @@ class GameWorkload(ApkWorkload, ReventWorkload):
     def teardown(self, context):
         # state detection check if it's enabled in the config
         if self.check_states:
-            self.check_state(self, context, "run_complete")
+            self.check_state(context, "run_complete")
 
         if not self.saved_state_file:
             ApkWorkload.teardown(self, context)
