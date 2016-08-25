@@ -171,36 +171,19 @@ public class UiAutomation extends UxPerfUiAutomation {
         // book that contains a "free" or "purchased" book identifier
         UiSelector bookSelector = new UiSelector().description(desc).className("android.widget.TextView");
 
-        UiObject freeLabel =
+        UiObject label =
             new UiObject(new UiSelector().fromParent(bookSelector)
                                          .resourceId("com.android.vending:id/li_label")
-                                         .description("Free"));
-
-        UiObject purchasedLabel =
-            new UiObject(new UiSelector().fromParent(bookSelector)
-                                         .resourceId("com.android.vending:id/li_label")
-                                         .description("Purchased"));
+                                         .descriptionMatches("^(Purchased|Free)$"));
 
         UiScrollable searchResultsList =
             new UiScrollable(new UiSelector().resourceId("com.android.vending:id/search_results_list"));
 
-        int maxSwipes = 10;
-        while (!freeLabel.exists() && !purchasedLabel.exists()) {
-            if (maxSwipes <= 0) {
-                throw new UiObjectNotFoundException("Could not find free or purchased book \"" + bookTitle + "\"");
-            } else {
-                searchResultsList.swipeUp(100);
-                maxSwipes--;
-            }
-        }
+        searchResultsList.scrollIntoView(label);
 
         // Click on either the first "free" or "purchased" book found that
         // matches the book title
-        try {
-            freeLabel.click();
-        } catch (UiObjectNotFoundException e) {
-            purchasedLabel.click();
-        }
+        label.click();
     }
 
     private void addToLibrary() throws Exception {
