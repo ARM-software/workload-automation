@@ -18,7 +18,7 @@ import sys
 import time
 from math import ceil
 
-from wlauto.core.extension import Parameter
+from wlauto.core.extension import Parameter, ExtensionMeta, ListCollection
 from wlauto.core.workload import Workload
 from wlauto.core.resource import NO_ONE
 from wlauto.common.android.resources import ApkFile
@@ -593,3 +593,63 @@ class GameWorkload(ApkWorkload, ReventWorkload):
                                                           self.device.busybox,
                                                           ondevice_cache)
         self.device.execute(deploy_command, timeout=timeout, as_root=True)
+
+
+class AndroidUxPerfWorkloadMeta(ExtensionMeta):
+    to_propagate = ExtensionMeta.to_propagate + [('deployable_assets', str, ListCollection)]
+
+
+class AndroidUxPerfWorkload(AndroidUiAutoBenchmark):
+    __metaclass__ = AndroidUxPerfWorkloadMeta
+
+    deployable_assets = []
+    parameters = [
+        Parameter('markers_enabled', kind=bool, default=False,
+                  description="""
+                  If ``True``, UX_PERF action markers will be emitted to logcat during
+                  the test run.
+                  """),
+        Parameter('cleanup_assets', kind=bool, default=False,
+                  description="""
+                  If ``True`` pushed assets will be deleted at the end of each iteration.
+                  """),
+        Parameter('force_push', kind=bool, default=False,
+                  description="""
+                  If ``False``, assets will only be pushed to the device when they are
+                  not already present on the device.
+                  """),
+    ]
+
+    # Methods to handle assests
+
+    def _path_on_device(self, fpath, dirname=None):
+        if dirname is None:
+            dirname = self.device.working_directory
+        fname = os.path.basename(fpath)
+        return self.device.path.join(dirname, fname)
+
+    def push_dependencies(self, context):
+        for f in self.deployable_assets:
+            fpath = context.resolver.get(File(self, f))
+            device_path = self._path_on_device(fpath)
+            if self.force_push or not self.device.file_exists(device_path):
+                self.device.push_file(fpath, device_path, timeout=300)
+
+    def delete_dependencies(self):
+        for f in self.deployable_assets:
+            self.device.delete_file(self._path_on_device(f))
+
+    # Framework
+
+    def __init__(self):
+        super(AndroidUxPerfWorkload, self).__init__()
+        # Turn class attribute into instance attribute
+        self.deployable_assets = list(self.deployable_assets)
+
+    def setup(self, context):
+        self.push_dependencies(context)
+        self.uiauto_params['markers_enabled'] = self.markers_enabled
+
+    def teardown(self, context):
+        if self.cleanup_assets:
+            self.delete_dependencies()
