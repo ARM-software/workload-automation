@@ -54,6 +54,9 @@ retry_on_status = ['FAILED', 'PARTIAL']
 # How many times a job will be re-run before giving up
 max_retries = 3
 
+# If WA should delete its files from the device after the run is completed
+clean_up = False
+
 ####################################################################################################
 ######################################### Device Settings ##########################################
 ####################################################################################################

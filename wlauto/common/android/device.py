@@ -342,7 +342,7 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
 
     def delete_file(self, filepath, as_root=False):  # pylint: disable=W0221
         self._check_ready()
-        adb_shell(self.adb_name, "rm '{}'".format(filepath), as_root=as_root, timeout=self.default_timeout)
+        adb_shell(self.adb_name, "rm -rf '{}'".format(filepath), as_root=as_root, timeout=self.default_timeout)
 
     def file_exists(self, filepath):
         self._check_ready()
