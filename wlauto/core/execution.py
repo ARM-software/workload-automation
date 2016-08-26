@@ -344,6 +344,11 @@ class Executor(object):
         runner = self._get_runner(result_manager)
         runner.init_queue(self.config.workload_specs)
         runner.run()
+
+        if getattr(self.config, "clean_up", False):
+            self.logger.info('Clearing WA files from device')
+            self.device.delete_file(self.device.binaries_directory)
+            self.device.delete_file(self.device.working_directory)
         self.execute_postamble()
 
     def execute_postamble(self):

@@ -481,6 +481,7 @@ class RunConfiguration(object):
         RunConfigurationItem('flashing_config', 'dict', 'replace'),
         RunConfigurationItem('retry_on_status', 'list', 'replace'),
         RunConfigurationItem('max_retries', 'scalar', 'replace'),
+        RunConfigurationItem('clean_up', 'scalar', 'replace'),
     ]
 
     # Configuration specified for each workload spec. "workload_parameters"
