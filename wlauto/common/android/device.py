@@ -682,6 +682,13 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         except KeyError:
             return None
 
+    def broadcast_media_mounted(self, dirpath):
+        """
+        Force a re-index of the mediaserver cache for the specified directory.
+        """
+        command = 'am broadcast -a android.intent.action.MEDIA_MOUNTED -d file://'
+        self.execute(command + dirpath)
+
     # Internal methods: do not use outside of the class.
 
     def _update_build_properties(self, props):
