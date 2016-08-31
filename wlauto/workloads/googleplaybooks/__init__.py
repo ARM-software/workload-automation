@@ -13,18 +13,15 @@
 # limitations under the License.
 #
 
-import os
-import re
-
-from wlauto import AndroidUiAutoBenchmark, Parameter
+from wlauto import AndroidUxPerfWorkload, Parameter
 from wlauto.exceptions import DeviceError
 
 
-class Googleplaybooks(AndroidUiAutoBenchmark):
+class Googleplaybooks(AndroidUxPerfWorkload):
 
     name = 'googleplaybooks'
     package = 'com.google.android.apps.books'
-    version = '3.8.15'  # apk version
+    min_apk_verson = '3.9.37'
     activity = 'com.google.android.apps.books.app.BooksActivity'
     view = [package + '/com.google.android.apps.books.app.HomeActivity',
             package + '/com.android.vending/com.google.android.finsky.activities.MainActivity',
@@ -71,24 +68,14 @@ class Googleplaybooks(AndroidUiAutoBenchmark):
                   The word to search for within a selected book.
                   Note: Accepts single words only.
                   """),
-        Parameter('markers_enabled', kind=bool, default=True,
-                  description="""
-                  If ``True``, UX_PERF action markers will be emitted to logcat during
-                  the test run.
-                  """),
     ]
 
     def validate(self):
         super(Googleplaybooks, self).validate()
-        self.uiauto_params['package'] = self.package
-        self.uiauto_params['markers_enabled'] = self.markers_enabled
         self.uiauto_params['book_title'] = self.search_book_title.replace(" ", "_")
         self.uiauto_params['chapter_page_number'] = self.select_chapter_page_number
         self.uiauto_params['search_word'] = self.search_word
 
-    def initialize(self, context):
-        super(Googleplaybooks, self).initialize(context)
-
-        # This workload relies on the internet so check that there is a working internet connection
-        if not self.device.is_network_connected():
-            raise DeviceError('Network is not connected for device {}'.format(self.device.name))
+    def setup(self, context):
+        super(Googleplaybooks, self).setup(context)
+        self.check_network_connected()
