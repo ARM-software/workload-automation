@@ -516,10 +516,13 @@ class AndroidUxPerfWorkload(AndroidUiAutoBenchmark):
         # Turn class attribute into instance attribute
         self.deployable_assets = list(self.deployable_assets)
 
+    def validate(self):
+        super(AndroidUxPerfWorkload, self).validate()
+        self.uiauto_params['markers_enabled'] = self.markers_enabled
+
     def setup(self, context):
         super(AndroidUxPerfWorkload, self).setup(context)
         self.push_assets(context)
-        self.uiauto_params['markers_enabled'] = self.markers_enabled
 
     def teardown(self, context):
         super(AndroidUxPerfWorkload, self).teardown(context)
