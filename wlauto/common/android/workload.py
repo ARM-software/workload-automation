@@ -518,6 +518,7 @@ class AndroidUxPerfWorkload(AndroidUiAutoBenchmark):
 
     def validate(self):
         super(AndroidUxPerfWorkload, self).validate()
+        self.uiauto_params['package'] = self.package
         self.uiauto_params['markers_enabled'] = self.markers_enabled
 
     def setup(self, context):
