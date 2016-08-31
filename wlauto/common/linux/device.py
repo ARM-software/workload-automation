@@ -39,6 +39,8 @@ FstabEntry = namedtuple('FstabEntry', ['device', 'mount_point', 'fs_type', 'opti
 PsEntry = namedtuple('PsEntry', 'user pid ppid vsize rss wchan pc state name')
 LsmodEntry = namedtuple('LsmodEntry', ['name', 'size', 'use_count', 'used_by'])
 
+GOOGLE_DNS_SERVER_ADDRESS = '8.8.8.8'
+
 
 class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
 
@@ -318,25 +320,28 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
 
             please see: https://pythonhosted.org/wlauto/writing_extensions.html""")
 
-    def is_network_connected(self, ip_address='8.8.8.8'):
+    def is_network_connected(self):
         """
-        Checks for internet connectivity on the device
-        by pinging IP address provided.
+        Checks for internet connectivity on the device by pinging IP address provided.
 
-        :param ip_address: the IP address to ping
-                           (default - google-public-dns-a.google.com)
+        :param ip_address: IP address to ping. Default is Google's public DNS server (8.8.8.8)
+
+        :returns: ``True`` if internet is available, ``False`` otherwise.
 
         """
-        self.logger.debug('Checking for internet connectivity.')
-        output = self.execute('ping -q -w 1 -c 1 {}'.format(ip_address),
+        self.logger.debug('Checking for internet connectivity...')
+        return self._ping_server(GOOGLE_DNS_SERVER_ADDRESS)
+
+    def _ping_server(self, ip_address, timeout=1, packet_count=1):
+        output = self.execute('ping -q -c {} -w {} {}'.format(packet_count, timeout, ip_address),
                               check_exit_code=False)
 
-        if 'network is unreachable' not in output.lower():
-            self.logger.debug('Found IP address {}'.format(ip_address))
-            return True
-        else:
+        if 'network is unreachable' in output.lower():
             self.logger.debug('Cannot find IP address {}'.format(ip_address))
             return False
+        else:
+            self.logger.debug('Found IP address {}'.format(ip_address))
+            return True
 
     def get_binary_path(self, name, search_system_binaries=True):
         """
