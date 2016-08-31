@@ -320,11 +320,11 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
 
     def is_network_connected(self, ip_address='8.8.8.8'):
         """
-        Checks for internet connectivity on the device
-        by pinging IP address provided.
+        Checks for internet connectivity on the device by pinging IP address provided.
 
-        :param ip_address: the IP address to ping
-                           (default - google-public-dns-a.google.com)
+        :param ip_address: IP address to ping. Default: Google's public DNS server (8.8.8.8)
+
+        :returns: ``True`` if internet is available, ``False`` otherwise.
 
         """
         self.logger.debug('Checking for internet connectivity.')
@@ -337,6 +337,16 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
         else:
             self.logger.debug('Cannot find IP address {}'.format(ip_address))
             return False
+
+    def check_network_connected(self):
+        """
+        Checks if the internet is available, as determined by ``is_network_connected``.
+
+        :raises DeviceError: If internet is not connected.
+
+        """
+        if not self.is_network_connected():
+            raise DeviceError('Device {} is not connected to the internet.'.format(self.name))
 
     def get_binary_path(self, name, search_system_binaries=True):
         """
