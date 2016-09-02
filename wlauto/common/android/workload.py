@@ -86,6 +86,7 @@ class UiAutomatorWorkload(Workload):
             self.uiauto_package = os.path.splitext(os.path.basename(self.uiauto_file))[0]
 
     def setup(self, context):
+        super(UiAutomatorWorkload, self).setup(context)
         method_string = '{}.{}#{}'.format(self.uiauto_package, self.uiauto_class, self.uiauto_method)
         params_dict = self.uiauto_params
         params_dict['workdir'] = self.device.working_directory
@@ -179,6 +180,7 @@ class ApkWorkload(Workload):
         self.logcat_log = None
 
     def setup(self, context):
+        super(ApkWorkload, self).setup(context)
         # Get APK for the correct version and device ABI
         self.apk_file = context.resolver.get(ApkFile(self, self.device.abi),
                                              version=getattr(self, 'version', None),
@@ -363,6 +365,7 @@ class ReventWorkload(Workload):
         self.run_timeout = self.run_timeout or default_run_timeout
 
     def setup(self, context):
+        super(ReventWorkload, self).setup(context)
         self.device.killall('revent')
         command = '{} replay {}'.format(self.on_device_revent_binary, self.on_device_setup_revent)
         self.device.execute(command, timeout=self.setup_timeout)

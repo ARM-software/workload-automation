@@ -426,6 +426,13 @@ class Device(Extension):
         """
         pass
 
+    def is_network_connected(self):
+        """
+        Checks if the device is connected to the internet
+
+        """
+        raise NotImplementedError()
+
     def __str__(self):
         return 'Device<{}>'.format(self.name)
 

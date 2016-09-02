@@ -37,6 +37,7 @@ class Workload(Extension):
     supported_devices = []
     supported_platforms = []
     summary_metrics = []
+    requires_network = False
 
     def __init__(self, device, **kwargs):
         """
@@ -69,7 +70,7 @@ class Workload(Extension):
         """
         pass
 
-    def setup(self, context):
+    def setup(self, context):  # pylint: disable=unused-argument
         """
         Perform the setup necessary to run the workload, such as copying the necessary files
         to the device, configuring the environments, etc.
@@ -78,7 +79,8 @@ class Workload(Extension):
         the workload.
 
         """
-        pass
+        if self.requires_network:
+            self.check_network_connected()
 
     def run(self, context):
         """Execute the workload. This is the method that performs the actual "work" of the"""
@@ -98,6 +100,11 @@ class Workload(Extension):
 
     def finalize(self, context):
         pass
+
+    def check_network_connected(self):
+        if not self.device.is_network_connected():
+            message = 'Workload "{}" requires internet. Device "{}" does not appear to be connected to the internet.'
+            raise WorkloadError(message.format(self.name, self.device.name))
 
     def __str__(self):
         return '<Workload {}>'.format(self.name)
