@@ -18,6 +18,8 @@ import sys
 import time
 from math import ceil
 
+from distutils.version import LooseVersion
+
 from wlauto.core.extension import Parameter, ExtensionMeta, ListCollection
 from wlauto.core.workload import Workload
 from wlauto.core.resource import NO_ONE
@@ -141,6 +143,9 @@ class ApkWorkload(Workload):
                                 so, as with all timeouts, so leeway must be included in
                                 the specified value.
 
+    :min_apk_version: The minimum supported apk version for this workload. May be ``None``.
+    :max_apk_version: The maximum supported apk version for this workload. May be ``None``.
+
     .. note:: Both package and activity for a workload may be obtained from the APK using
               the ``aapt`` tool that comes with the ADT  (Android Developemnt Tools) bundle.
 
@@ -148,6 +153,8 @@ class ApkWorkload(Workload):
     package = None
     activity = None
     view = None
+    min_apk_version = None
+    max_apk_version = None
     supported_platforms = ['android']
 
     parameters = [
@@ -196,6 +203,13 @@ class ApkWorkload(Workload):
                 raise ConfigError('force_install cannot be "True" when check_apk is set to "False".')
 
         self.initialize_package(context)
+
+        # Check the APK version against the min and max versions compatible
+        # with the workload before launching the package. Note: must be called
+        # after initialize_package() to get self.apk_version.
+        if self.check_apk:
+            self.check_apk_version()
+
         self.launch_package()
         self.device.execute('am kill-all')  # kill all *background* activities
         self.device.clear_logcat()
@@ -244,6 +258,17 @@ class ApkWorkload(Workload):
         else:
             self.apk_version = installed_version
             self.reset(context)
+
+    def check_apk_version(self):
+        if self.min_apk_version:
+            if LooseVersion(self.apk_version) < LooseVersion(self.min_apk_version):
+                message = "APK version not supported. Minimum version required: {}"
+                raise WorkloadError(message.format(self.min_apk_version))
+
+        if self.max_apk_version:
+            if LooseVersion(self.apk_version) > LooseVersion(self.max_apk_version):
+                message = "APK version not supported. Maximum version supported: {}"
+                raise WorkloadError(message.format(self.max_apk_version))
 
     def launch_package(self):
         if not self.activity:
