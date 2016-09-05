@@ -70,12 +70,10 @@ class Googleplaybooks(AndroidUxPerfWorkload):
                   """),
     ]
 
+    requires_network = True
+
     def validate(self):
         super(Googleplaybooks, self).validate()
         self.uiauto_params['book_title'] = self.search_book_title.replace(" ", "_")
         self.uiauto_params['chapter_page_number'] = self.select_chapter_page_number
         self.uiauto_params['search_word'] = self.search_word
-
-    def setup(self, context):
-        super(Googleplaybooks, self).setup(context)
-        self.check_network_connected()

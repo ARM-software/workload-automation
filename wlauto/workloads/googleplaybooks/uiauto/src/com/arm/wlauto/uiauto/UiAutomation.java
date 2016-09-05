@@ -29,6 +29,7 @@ import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 import java.util.concurrent.TimeUnit;
 import java.util.LinkedHashMap;
 import java.util.Iterator;
+import android.util.Log;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -179,7 +180,19 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiScrollable searchResultsList =
             new UiScrollable(new UiSelector().resourceId("com.android.vending:id/search_results_list"));
 
-        searchResultsList.scrollIntoView(label);
+        final int maxSearchTime = 30;
+        int searchTime = maxSearchTime;
+
+        while (!label.exists()) {
+            if (searchTime <= 0) {
+                throw new UiObjectNotFoundException(
+                        "Exceeded maximum search time (" + maxSearchTime  + " seconds) to find book \"" + bookTitle + "\"");
+            } else {
+                uiDeviceSwipeDown(100);
+                sleep(1);
+                searchTime--;
+            }
+        }
 
         // Click on either the first "free" or "purchased" book found that
         // matches the book title
@@ -251,16 +264,12 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject downloadComplete =
             new UiObject(new UiSelector().fromParent(bookSelector).description("100% downloaded"));
 
-        int maxDownloadTime = 120; // seconds
+        long maxWaitTimeSeconds = 120;
+        long maxWaitTime = TimeUnit.SECONDS.toMillis(maxWaitTimeSeconds);
 
-        while (!downloadComplete.exists()) {
-            if (maxDownloadTime <= 0) {
+        if (!downloadComplete.waitForExists(maxWaitTime)) {
                 throw new UiObjectNotFoundException(
-                        "Exceeded maximum wait time (" + maxDownloadTime  + " seconds) to download book \"" + bookTitle + "\"");
-            } else {
-                sleep(1);
-                maxDownloadTime--;
-            }
+                        "Exceeded maximum wait time (" + maxWaitTimeSeconds  + " seconds) to download book \"" + bookTitle + "\"");
         }
 
         book.click();
@@ -339,8 +348,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     private void selectChapter(final String chapterPageNumber) throws Exception {
         getDropdownMenu();
 
-        UiObject contents = getUiObjectByResourceId(packageID + "menu_reader_toc",
-                                                    "android.widget.TextView");
+        UiObject contents = getUiObjectByResourceId(packageID + "menu_reader_toc");
         contents.clickAndWaitForNewWindow(uiAutoTimeout);
 
         UiObject toChapterView = getUiObjectByResourceId(packageID + "toc_list_view",
@@ -360,6 +368,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         String testTag = "add_note";
         ActionLogger logger = new ActionLogger(testTag, parameters);
         logger.start();
+
+        hideDropDownMenu();
 
         UiObject clickable = new UiObject(new UiSelector().longClickable(true));
         uiObjectPerformLongClick(clickable, 100);
@@ -460,15 +470,22 @@ public class UiAutomation extends UxPerfUiAutomation {
         String[] styles = {"Night", "Sepia", "Day"};
 
         for (String style : styles) {
-            ActionLogger logger = new ActionLogger(testTag + "_" + style, parameters);
-            logger.start();
-            UiObject pageStyle = new UiObject(new UiSelector().description(style));
-            pageStyle.clickAndWaitForNewWindow(viewTimeout);
-            logger.stop();
+            try {
+                ActionLogger logger = new ActionLogger(testTag + "_" + style, parameters);
+                logger.start();
+                UiObject pageStyle = new UiObject(new UiSelector().description(style));
+                pageStyle.clickAndWaitForNewWindow(viewTimeout);
+                logger.stop();
+            } catch (UiObjectNotFoundException e) {
+                // On some devices the lighting options menu disappears
+                // between clicks. Searching for the menu again would affect
+                // the logger timings so log a message and continue
+                Log.e("GooglePlayBooks", "Could not find pageStyle \"" + style + "\"");
+            }
         }
 
         sleep(2);
-        tapDisplayCentre();
+        tapDisplayCentre(); // exit reader settings dialog
         waitForPage();
     }
 
@@ -495,21 +512,30 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     // Helper for accessing the drop down menu
     private void getDropdownMenu() throws Exception {
-        sleep(1); // Allow previous views to settle
-        int height = getDisplayHeight();
-        int width = getDisplayCentreWidth();
-        getUiDevice().swipe(width, 20, width, height / 10, 50);
-
-        // selecting the drop down menu can be unreliable so check for its
-        // existence and if not present try for a second time using a different
-        // start point and step size
         UiObject actionBar =
             new UiObject(new UiSelector().resourceId(packageID + "action_bar"));
 
-        long actionBarTimeout =  TimeUnit.SECONDS.toMillis(3);
+        if (!actionBar.exists()) {
+            tapDisplayCentre();
+            sleep(1); // Allow previous views to settle
+        }
 
-        if (!actionBar.waitForExists(actionBarTimeout)) {
-            getUiDevice().swipe(width, 5, width, height / 10, 20);
+        if (!actionBar.exists()) {
+            throw new UiObjectNotFoundException("Could not find \"action bar\".");
+        }
+    }
+
+    private void hideDropDownMenu() throws Exception {
+        UiObject actionBar =
+            new UiObject(new UiSelector().resourceId(packageID + "action_bar"));
+
+        if (actionBar.exists()) {
+            tapDisplayCentre();
+            sleep(1); // Allow previous views to settle
+        }
+
+        if (actionBar.exists()) {
+            throw new UiObjectNotFoundException("Could not close \"action bar\".");
         }
     }
 
