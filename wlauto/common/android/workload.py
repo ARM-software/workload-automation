@@ -35,6 +35,10 @@ import wlauto.common.android.resources
 
 DELAY = 5
 
+# Due to the way `super` works you have to call it at every level but WA executes some
+# methods conditionally and so has to do them directly via the class, this breaks super
+# and causes it to run things mutiple times ect. As a work around for this untill workloads
+# are reworked everything that subclasses workload calls parent methods explicitly
 
 class UiAutomatorWorkload(Workload):
     """
@@ -72,7 +76,7 @@ class UiAutomatorWorkload(Workload):
 
     def __init__(self, device, _call_super=True, **kwargs):  # pylint: disable=W0613
         if _call_super:
-            super(UiAutomatorWorkload, self).__init__(device, **kwargs)
+            Workload.__init__(self, device, **kwargs)
         self.uiauto_file = None
         self.device_uiauto_file = None
         self.command = None
@@ -88,7 +92,7 @@ class UiAutomatorWorkload(Workload):
             self.uiauto_package = os.path.splitext(os.path.basename(self.uiauto_file))[0]
 
     def setup(self, context):
-        super(UiAutomatorWorkload, self).setup(context)
+        Workload.setup(self, context)
         method_string = '{}.{}#{}'.format(self.uiauto_package, self.uiauto_class, self.uiauto_method)
         params_dict = self.uiauto_params
         params_dict['workdir'] = self.device.working_directory
@@ -181,13 +185,13 @@ class ApkWorkload(Workload):
 
     def __init__(self, device, _call_super=True, **kwargs):
         if _call_super:
-            super(ApkWorkload, self).__init__(device, **kwargs)
+            Workload.__init__(self, device, **kwargs)
         self.apk_file = None
         self.apk_version = None
         self.logcat_log = None
 
     def setup(self, context):
-        super(ApkWorkload, self).setup(context)
+        Workload.setup(self, context)
         # Get APK for the correct version and device ABI
         self.apk_file = context.resolver.get(ApkFile(self, self.device.abi),
                                              version=getattr(self, 'version', None),
@@ -363,7 +367,7 @@ class ReventWorkload(Workload):
 
     def __init__(self, device, _call_super=True, **kwargs):
         if _call_super:
-            super(ReventWorkload, self).__init__(device, **kwargs)
+            Workload.__init__(self, device, **kwargs)
         devpath = self.device.path
         self.on_device_revent_binary = devpath.join(self.device.binaries_directory, 'revent')
         self.setup_timeout = kwargs.get('setup_timeout', None)
@@ -390,7 +394,7 @@ class ReventWorkload(Workload):
         self.run_timeout = self.run_timeout or default_run_timeout
 
     def setup(self, context):
-        super(ReventWorkload, self).setup(context)
+        Workload.setup(self, context)
         self.device.killall('revent')
         command = '{} replay {}'.format(self.on_device_revent_binary, self.on_device_setup_revent)
         self.device.execute(command, timeout=self.setup_timeout)
