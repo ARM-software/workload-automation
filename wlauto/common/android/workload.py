@@ -138,6 +138,11 @@ class ApkWorkload(Workload):
     :view: The class of the main view pane of the app. This needs to be defined in order
            to collect SurfaceFlinger-derived statistics (such as FPS) for the app, but
            may otherwise be left as ``None``.
+    :launch_main: If ``False``, the default activity will not be launched (during setup),
+                  allowing workloads to start the app with an intent of their choice in
+                  the run step. This is useful for apps without a launchable default/main
+                  activity or those where it cannot be launched without intent data (which
+                  is provided at the run phase).
     :install_timeout: Timeout for the installation of the APK. This may vary wildly based on
                       the size and nature of a specific APK, and so should be defined on
                       per-workload basis.
@@ -160,6 +165,7 @@ class ApkWorkload(Workload):
     min_apk_version = None
     max_apk_version = None
     supported_platforms = ['android']
+    launch_main = True
 
     parameters = [
         Parameter('install_timeout', kind=int, default=300,
@@ -214,7 +220,8 @@ class ApkWorkload(Workload):
         if self.check_apk:
             self.check_apk_version()
 
-        self.launch_package()
+        if self.launch_main:
+            self.launch_package() # launch default activity without intent data
         self.device.execute('am kill-all')  # kill all *background* activities
         self.device.clear_logcat()
 
