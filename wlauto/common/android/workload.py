@@ -341,7 +341,7 @@ class ApkWorkload(Workload):
                 try:
                     self.device.execute("pm grant {} {}".format(self.package, permission))
                 except DeviceError as e:
-                    if "not a changeable permission" in e.message:
+                    if "changeable permission" in e.message or "Unknown permission" in e.message:
                         self.logger.debug(e)
                     else:
                         raise e
