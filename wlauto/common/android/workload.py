@@ -35,6 +35,7 @@ import wlauto.common.android.resources
 
 DELAY = 5
 
+
 # Due to the way `super` works you have to call it at every level but WA executes some
 # methods conditionally and so has to do them directly via the class, this breaks super
 # and causes it to run things mutiple times ect. As a work around for this untill workloads
@@ -221,7 +222,7 @@ class ApkWorkload(Workload):
             self.check_apk_version()
 
         if self.launch_main:
-            self.launch_package() # launch default activity without intent data
+            self.launch_package()  # launch default activity without intent data
         self.device.execute('am kill-all')  # kill all *background* activities
         self.device.clear_logcat()
 

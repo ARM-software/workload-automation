@@ -224,18 +224,11 @@ class Param(object):
         else:
             new_value = current_value + [value]
             setattr(obj, self.name, new_value)
-
-    def validate(self, obj):
-        value = getattr(obj, self.name, None)
         if value is not None:
             if self.allowed_values:
                 self._validate_allowed_values(obj, value)
             if self.constraint:
                 self._validate_constraint(obj, value)
-        else:
-            if self.mandatory:
-                msg = 'No value specified for mandatory parameter {} in {}.'
-                raise ConfigError(msg.format(self.name, obj.name))
 
     def get_type_name(self):
         typename = str(self.kind)
@@ -567,7 +560,9 @@ class Extension(object):
         if self.name is None:
             raise ValidationError('Name not set for {}'.format(self._classname))
         for param in self.parameters:
-            param.validate(self)
+            if param.mandatory and getattr(self, param.name, None) is None:
+                msg = 'No value specified for mandatory parameter {} in {}.'
+                raise ConfigError(msg.format(param.name, self.name))
 
     def initialize(self, context):
         pass

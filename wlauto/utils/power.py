@@ -682,7 +682,8 @@ def main():
     # pylint: disable=unbalanced-tuple-unpacking
     logging.basicConfig(level=logging.INFO)
     args = parse_arguments()
-    parallel_report, powerstate_report = report_power_stats(
+
+    reports = report_power_stats(
         trace_file=args.infile,
         idle_state_names=args.idle_state_names,
         core_names=args.core_names,
@@ -696,6 +697,10 @@ def main():
         max_freq_list=args.max_freq_list,
         start_marker_handling=args.start_marker_handling,
     )
+
+    parallel_report = reports.pop(0)
+    powerstate_report = reports.pop(0)
+
     parallel_report.write(os.path.join(args.output_directory, 'parallel.csv'))
     powerstate_report.write(os.path.join(args.output_directory, 'cpustate.csv'))
 
