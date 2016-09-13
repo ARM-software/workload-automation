@@ -73,7 +73,7 @@ class Glb(AndroidUiAutoBenchmark):
     regex = re.compile(r'GLBenchmark (metric|FPS): (.*)')
 
     parameters = [
-        Parameter('version', default='2.7', allowed_values=['2.7', '2.5'],
+        Parameter('version', default='2.7', allowed_values=['2.7', '2.7.0', '2.5', '2.5.1'],
                   description=('Specifies which version of the benchmark to run (different versions '
                                'support different use cases).')),
         Parameter('use_case', default=None,
@@ -111,6 +111,10 @@ class Glb(AndroidUiAutoBenchmark):
 
     def __init__(self, device, **kwargs):
         super(Glb, self).__init__(device, **kwargs)
+        if self.version == '2.7.0':
+            self.version = '2.7'
+        elif self.version == '2.5.1':
+            self.version = '2.5'
         self.uiauto_params['version'] = self.version
 
         if self.use_case is None:
