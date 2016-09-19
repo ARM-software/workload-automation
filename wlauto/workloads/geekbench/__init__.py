@@ -73,8 +73,7 @@ class Geekbench(AndroidUiAutoBenchmark):
     replace_regex = re.compile(r'<[^>]*>')
 
     parameters = [
-        Parameter('version', default=sorted(versions.keys())[-1], allowed_values=sorted(versions.keys() +
-                                                                                        ['2', '3']),
+        Parameter('version', default=sorted(versions.keys())[-1], allowed_values=sorted(versions.keys()),
                   description='Specifies which version of the workload should be run.'),
         Parameter('times', kind=int, default=1,
                   description=('Specfies the number of times the benchmark will be run in a "tight '
@@ -91,10 +90,6 @@ class Geekbench(AndroidUiAutoBenchmark):
 
     def __init__(self, device, **kwargs):
         super(Geekbench, self).__init__(device, **kwargs)
-        if self.version == '3':
-            self.version = '3.0.0'
-        elif self.version == '2':
-            self.version = '2.2.7'
         self.uiauto_params['version'] = self.version
         self.uiauto_params['times'] = self.times
         self.run_timeout = 5 * 60 * self.times
