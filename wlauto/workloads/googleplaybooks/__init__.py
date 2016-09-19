@@ -74,6 +74,6 @@ class Googleplaybooks(AndroidUxPerfWorkload):
 
     def validate(self):
         super(Googleplaybooks, self).validate()
-        self.uiauto_params['book_title'] = self.search_book_title.replace(" ", "_")
+        self.uiauto_params['book_title'] = self.search_book_title.replace(" ", "0space0")
         self.uiauto_params['chapter_page_number'] = self.select_chapter_page_number
         self.uiauto_params['search_word'] = self.search_word

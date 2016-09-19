@@ -49,7 +49,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         packageName = parameters.getString("package");
         packageID = packageName + ":id/";
 
-        String bookTitle = parameters.getString("book_title").replace("_", " ");
+        String bookTitle = parameters.getString("book_title").replace("0space0", " ");
         String chapterPageNumber = parameters.getString("chapter_page_number");
         String searchWord = parameters.getString("search_word");
         String noteText = "This is a test note";
@@ -241,6 +241,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void openBook(final String bookTitle) throws Exception {
+        String testTag = "open_book";
+        ActionLogger logger = new ActionLogger(testTag, parameters);
 
         UiScrollable cardsGrid =
             new UiScrollable(new UiSelector().resourceId(packageID + "cards_grid"));
@@ -272,12 +274,14 @@ public class UiAutomation extends UxPerfUiAutomation {
                         "Exceeded maximum wait time (" + maxWaitTimeSeconds  + " seconds) to download book \"" + bookTitle + "\"");
         }
 
+        logger.start();
         book.click();
         waitForPage();
+        logger.stop();
     }
 
     private void gesturesTest() throws Exception {
-        String testTag = "gestures";
+        String testTag = "gesture";
 
         // Perform a range of swipe tests while browsing home photoplaybooks gallery
         LinkedHashMap<String, GestureTestParams> testParams = new LinkedHashMap<String, GestureTestParams>();
@@ -306,9 +310,6 @@ public class UiAutomation extends UxPerfUiAutomation {
             switch (type) {
                 case UIDEVICE_SWIPE:
                     uiDeviceSwipe(dir, steps);
-                    break;
-                case UIOBJECT_SWIPE:
-                    uiObjectSwipe(pageView, dir, steps);
                     break;
                 case PINCH:
                     uiObjectVertPinch(pageView, pinch, steps, percent);
@@ -365,11 +366,12 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void addNote(final String text) throws Exception {
-        String testTag = "add_note";
+        String testTag = "note_add";
         ActionLogger logger = new ActionLogger(testTag, parameters);
-        logger.start();
 
         hideDropDownMenu();
+
+        logger.start();
 
         UiObject clickable = new UiObject(new UiSelector().longClickable(true));
         uiObjectPerformLongClick(clickable, 100);
@@ -395,7 +397,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void removeNote() throws Exception {
-        String testTag = "remove_note";
+        String testTag = "note_remove";
         ActionLogger logger = new ActionLogger(testTag, parameters);
         logger.start();
 
@@ -415,17 +417,20 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void searchForWord(final String text) throws Exception {
-        String testTag = "search_for_word";
+        String testTag = "search_word";
         ActionLogger logger = new ActionLogger(testTag, parameters);
 
         getDropdownMenu();
-        logger.start();
+
         UiObject search = new UiObject(
                 new UiSelector().resourceId(packageID + "menu_search"));
         search.click();
 
         UiObject searchText = new UiObject(
                 new UiSelector().resourceId(packageID + "search_src_text"));
+
+        logger.start();
+
         searchText.setText(text);
         pressEnter();
 
@@ -448,11 +453,12 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
 
         logger.stop();
+
         pressBack();
     }
 
     private void switchPageStyles() throws Exception {
-        String testTag = "switch_page_style";
+        String testTag = "style";
 
         getDropdownMenu();
         UiObject readerSettings = getUiObjectByResourceId(packageID + "menu_reader_settings",
@@ -472,8 +478,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         for (String style : styles) {
             try {
                 ActionLogger logger = new ActionLogger(testTag + "_" + style, parameters);
-                logger.start();
                 UiObject pageStyle = new UiObject(new UiSelector().description(style));
+                logger.start();
                 pageStyle.clickAndWaitForNewWindow(viewTimeout);
                 logger.stop();
             } catch (UiObjectNotFoundException e) {
@@ -490,21 +496,24 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void aboutBook() throws Exception {
-        String testTag = "about_book";
+        String testTag = "open_about";
         ActionLogger logger = new ActionLogger(testTag, parameters);
 
         getDropdownMenu();
-        logger.start();
 
         UiObject moreOptions = getUiObjectByDescription("More options", "android.widget.ImageView");
         moreOptions.click();
 
         UiObject bookInfo = getUiObjectByText("About this book", "android.widget.TextView");
+
+        logger.start();
+
         bookInfo.clickAndWaitForNewWindow(uiAutoTimeout);
 
         UiObject detailsPanel =
             new UiObject(new UiSelector().resourceId("com.android.vending:id/item_details_panel"));
         waitObject(detailsPanel, viewTimeoutSecs);
+        
         logger.stop();
 
         pressBack();
