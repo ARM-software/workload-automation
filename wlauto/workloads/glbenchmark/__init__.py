@@ -57,14 +57,14 @@ class Glb(AndroidUiAutoBenchmark):
     view = 'com.glbenchmark.glbenchmark27/com.glbenchmark.activities.GLBRender'
 
     packages = {
-        '2.7': 'com.glbenchmark.glbenchmark27',
-        '2.5': 'com.glbenchmark.glbenchmark25',
+        '2.7.0': 'com.glbenchmark.glbenchmark27',
+        '2.5.1': 'com.glbenchmark.glbenchmark25',
     }
     # If usecase is not specified the default usecase is the first supported usecase alias
     # for the specified version.
     supported_usecase_aliases = {
-        '2.7': ['t-rex', 'egypt'],
-        '2.5': ['egypt-classic', 'egypt'],
+        '2.7.0': ['t-rex', 'egypt'],
+        '2.5.1': ['egypt-classic', 'egypt'],
     }
 
     default_iterations = 1
@@ -73,15 +73,15 @@ class Glb(AndroidUiAutoBenchmark):
     regex = re.compile(r'GLBenchmark (metric|FPS): (.*)')
 
     parameters = [
-        Parameter('version', default='2.7', allowed_values=['2.7', '2.5'],
+        Parameter('version', default='2.7.0', allowed_values=['2.7.0', '2.5.1'],
                   description=('Specifies which version of the benchmark to run (different versions '
                                'support different use cases).')),
         Parameter('use_case', default=None,
                   description="""Specifies which usecase to run, as listed in the benchmark menu; e.g.
                                  ``'GLBenchmark 2.5 Egypt HD'``. For convenience, two aliases are provided
                                  for the most common use cases: ``'egypt'`` and ``'t-rex'``. These could
-                                 be use instead of the full use case title. For version ``'2.7'`` it defaults
-                                 to ``'t-rex'``, for version ``'2.5'`` it defaults to ``'egypt-classic'``.
+                                 be use instead of the full use case title. For version ``'2.7.0'`` it defaults
+                                 to ``'t-rex'``, for version ``'2.5.1'`` it defaults to ``'egypt-classic'``.
                   """),
         Parameter('variant', default='onscreen',
                   description="""Specifies which variant of the use case to run, as listed in the benchmarks

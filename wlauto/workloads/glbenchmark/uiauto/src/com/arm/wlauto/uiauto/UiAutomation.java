@@ -33,7 +33,7 @@ import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
 import com.arm.wlauto.uiauto.BaseUiAutomation;
 
-public class UiAutomation extends BaseUiAutomation {
+public class UiAutomation extends BaseUiAutomation {   
 
     public static String TAG = "glb";
     public static int maxScrolls = 15;
@@ -63,7 +63,7 @@ public class UiAutomation extends BaseUiAutomation {
                 extractResults();
                 iterations -= 1;
         }
-
+        
         Bundle status = new Bundle();
         getAutomationSupport().sendStatus(Activity.RESULT_OK, status);
     }
@@ -81,9 +81,9 @@ public class UiAutomation extends BaseUiAutomation {
         UiObject useCaseText = new UiObject(selector.className("android.widget.TextView")
                                                     .text(useCase)
                                            );
-        if (version.equals("2.7")){
+        if (version.equals("2.7.0")){
                 UiObject variantText =  useCaseText.getFromParent(selector.className("android.widget.TextView")
-                                                                          .text(variant));
+                                                                          .text(variant));    
                 int scrolls = 0;
                 while(!variantText.exists()) {
                         testList.scrollForward();
@@ -94,7 +94,7 @@ public class UiAutomation extends BaseUiAutomation {
                 }
                 variantText.click();
         }
-        else if (version.equals("2.5")){
+        else if (version.equals("2.5.1")){
                 int scrolls = 0;
                 while(!useCaseText.exists()) {
                         testList.scrollForward();
@@ -123,7 +123,7 @@ public class UiAutomation extends BaseUiAutomation {
     public void waitForResults(String version, String useCase, int timeout) throws Exception {
         UiSelector selector = new UiSelector();
         UiObject results = null;
-        if (version.equals("2.7"))
+        if (version.equals("2.7.0"))
                 results = new UiObject(selector.text("Results").className("android.widget.TextView"));
         else
                 results =  new UiObject(selector.text(useCase).className("android.widget.TextView"));
@@ -135,7 +135,7 @@ public class UiAutomation extends BaseUiAutomation {
 	// starting GLB.
         if (!results.waitForExists(TimeUnit.SECONDS.toMillis(timeout))) {
 		Log.v(TAG, "Results screen not found. Attempting to bring to foreground.");
-		String[] commandLine = {"am", "start",
+		String[] commandLine = {"am", "start", 
 					"-a", "android.intent.action.MAIN",
 					"-c", "android.intent.category.LAUNCHER",
 					"-n", "com.glbenchmark.glbenchmark27/com.glbenchmark.activities.GLBenchmarkDownloaderActivity"};
