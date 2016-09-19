@@ -56,7 +56,8 @@ from wlauto.core.extension_loader import ExtensionLoader
 from wlauto.core.resolver import ResourceResolver
 from wlauto.core.result import ResultManager, IterationResult, RunResult
 from wlauto.exceptions import (WAError, ConfigError, TimeoutError, InstrumentError,
-                               DeviceError, DeviceNotRespondingError)
+                               DeviceError, DeviceNotRespondingError, ResourceError,
+                               HostError)
 from wlauto.utils.misc import ensure_directory_exists as _d, get_traceback, merge_dicts, format_duration
 
 
@@ -756,17 +757,21 @@ class Runner(object):
             if self.current_job:
                 self.current_job.result.status = on_error_status
                 self.current_job.result.add_event(str(we))
-            try:
-                self._take_screenshot('error.png')
-                if self.device.platform == 'android':
-                    self._take_uiautomator_dump('error.xml')
-            except Exception, e:  # pylint: disable=W0703
-                # We're already in error state, so the fact that taking a
-                # screenshot failed is not surprising...
-                pass
+
+            # There is no point in taking a screenshot ect if the issue is not
+            # with the device but with the host or a missing resource
+            if not (isinstance(we, ResourceError) or isinstance(we, HostError)):
+                try:
+                    self._take_screenshot('error.png')
+                    if self.device.platform == 'android':
+                        self._take_uiautomator_dump('error.xml')
+                except Exception, e:  # pylint: disable=W0703
+                    # We're already in error state, so the fact that taking a
+                    # screenshot failed is not surprising...
+                    pass
             if action:
                 action = action[0].lower() + action[1:]
-            self.logger.error('Error while {}:\n\t{}'.format(action, we))
+            self.logger.error('Error while {}:\n\t{}'.format(action, str(we).replace("\n", "\n\t")))
         except Exception, e:  # pylint: disable=W0703
             error_text = '{}("{}")'.format(e.__class__.__name__, e)
             if self.current_job:
