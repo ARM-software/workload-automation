@@ -192,7 +192,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickUiObject(BY_DESC, "New presentation");
         clickUiObject(BY_TEXT, "New PowerPoint", true);
         stopLogger("document_new");
-        waitForProgress(WAIT_TIMEOUT_1SEC * 30);
     }
 
     public void saveDocument(String docName) throws Exception {
@@ -275,6 +274,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     protected void testEditNewSlidesDocument(String docName) throws Exception {
         // Init
         newDocument();
+        waitForProgress(WAIT_TIMEOUT_1SEC * 30);
 
         // Slide 1 - Text
         if (doTextEntry) {
@@ -331,7 +331,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         // scroll forward in edit mode
         startLogger("slideshow_editforward");
-        while (++slideIndex < slideCount) {
+        while (slideIndex++ < slideCount) {
             uiDeviceSwipeHorizontal(rightEdge, leftEdge, yCoordinate, DEFAULT_SWIPE_STEPS);
             waitForProgress(WAIT_TIMEOUT_1SEC*5);
         }
@@ -340,7 +340,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         // scroll backward in edit mode
         startLogger("slideshow_editbackward");
-        while (--slideIndex > 0) {
+        while (slideIndex-- > 0) {
             uiDeviceSwipeHorizontal(leftEdge, rightEdge, yCoordinate, DEFAULT_SWIPE_STEPS);
             waitForProgress(WAIT_TIMEOUT_1SEC*5);
         }
@@ -360,9 +360,11 @@ public class UiAutomation extends UxPerfUiAutomation {
         stopLogger("slideshow_run");
         sleep(1);
 
+        slideIndex = 0;
+        
         // scroll forward in slideshow mode
         startLogger("slideshow_playforward");
-        while (++slideIndex < slideCount) {
+        while (slideIndex++ < slideCount) {
             uiDeviceSwipeHorizontal(rightEdge, leftEdge, yCoordinate, DEFAULT_SWIPE_STEPS);
             waitForProgress(WAIT_TIMEOUT_1SEC*5);
         }
@@ -371,7 +373,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         // scroll backward in slideshow mode
         startLogger("slideshow_playbackward");
-        while (--slideIndex > 0) {
+        while (slideIndex-- > 0) {
             uiDeviceSwipeHorizontal(leftEdge, rightEdge, yCoordinate, DEFAULT_SWIPE_STEPS);
             waitForProgress(WAIT_TIMEOUT_1SEC*5);
         }
