@@ -36,7 +36,6 @@ public class UiAutomation extends UxPerfUiAutomation {
     public static final String CLASS_TEXT_VIEW = "android.widget.TextView";
 
     public static final int WAIT_TIMEOUT_1SEC = 1000;
-    public static final int WAIT_TIMEOUT_5SEC = 5000;
     public static final int VIDEO_SLEEP_SECONDS = 3;
     public static final int LIST_SWIPE_COUNT = 5;
     public static final String SOURCE_MY_VIDEOS = "my_videos";
@@ -47,12 +46,14 @@ public class UiAutomation extends UxPerfUiAutomation {
     protected Bundle parameters;
     protected String packageName;
     protected String packageID;
+    protected String videoSource;
     protected String searchTerm;
 
     public void runUiAutomation() throws Exception {
         parameters = getParams();
         packageName = parameters.getString("package");
         packageID = packageName + ":id/";
+        videoSource = parameters.getString("video_source");
         searchTerm = parameters.getString("search_term");
         if (searchTerm != null) {
             searchTerm = searchTerm.replaceAll("0space0", " ");
@@ -61,7 +62,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         setScreenOrientation(ScreenOrientation.NATURAL);
         clearFirstRunDialogues();
         disableAutoplay();
-        testPlayVideo(parameters.getString("video_source"), searchTerm);
+        testPlayVideo(videoSource, searchTerm);
         unsetScreenOrientation();
     }
 
@@ -86,12 +87,8 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void disableAutoplay() throws Exception {
         clickUiObject(BY_DESC, "More options");
-        startMeasurements("goto_settings");
         clickUiObject(BY_TEXT, "Settings", true);
-        endMeasurements("goto_settings");
-        startMeasurements("goto_settings_general");
         clickUiObject(BY_TEXT, "General", true);
-        endMeasurements("goto_settings_general");
 
         // Don't fail fatally if autoplay toggle cannot be found
         UiObject autoplayToggle = new UiObject(new UiSelector().textContains("Autoplay"));
@@ -109,30 +106,13 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void testPlayVideo(String source, String searchTerm) throws Exception {
-        if (SOURCE_MY_VIDEOS.equalsIgnoreCase(source)) {
-            startMeasurements("goto_account");
-            clickUiObject(BY_DESC, "Account");
-            endMeasurements("goto_account");
-            startMeasurements("goto_my_videos");
-            clickUiObject(BY_TEXT, "My Videos", true);
-            endMeasurements("goto_my_videos");
-
-            startMeasurements("play_from_my_videos");
-            clickUiObject(BY_ID, packageID + "thumbnail", true);
-            endMeasurements("play_from_my_videos");
-
-        } else if (SOURCE_SEARCH.equalsIgnoreCase(source)) {
-            startMeasurements("goto_search");
+        if (SOURCE_SEARCH.equalsIgnoreCase(source)) {
             clickUiObject(BY_DESC, "Search");
-            endMeasurements("goto_search");
-
-            startMeasurements("search_video");
             UiObject textField = getUiObjectByResourceId(packageID + "search_edit_text");
             textField.setText(searchTerm);
-            endMeasurements("search_video");
-
             getUiDevice().pressEnter();
-            startMeasurements("play_from_search");
+
+            startMeasurements("play_search");
             // If a video exists whose title contains the exact search term, then play it
             // Otherwise click the first video in the search results
             UiObject thumbnail = new UiObject(new UiSelector().resourceId(packageID + "thumbnail"));
@@ -142,25 +122,28 @@ public class UiAutomation extends UxPerfUiAutomation {
             } else {
                 thumbnail.clickAndWaitForNewWindow();
             }
-            endMeasurements("play_from_search");
+            endMeasurements();
+        } else if (SOURCE_MY_VIDEOS.equalsIgnoreCase(source)) {
+            clickUiObject(BY_DESC, "Account");
+            clickUiObject(BY_TEXT, "My Videos", true);
 
-        } else if (SOURCE_TRENDING.equalsIgnoreCase(source)) {
-            startMeasurements("goto_trending");
-            clickUiObject(BY_DESC, "Trending");
-            endMeasurements("goto_trending");
-
-            startMeasurements("play_from_trending");
+            startMeasurements("play_myvideos");
             clickUiObject(BY_ID, packageID + "thumbnail", true);
-            endMeasurements("play_from_trending");
+            endMeasurements();
+        } else if (SOURCE_TRENDING.equalsIgnoreCase(source)) {
+            clickUiObject(BY_DESC, "Trending");
 
+            startMeasurements("play_trending");
+            clickUiObject(BY_ID, packageID + "thumbnail", true);
+            endMeasurements();
         } else { // homepage videos
             UiScrollable list = new UiScrollable(new UiSelector().resourceId(packageID + "results"));
             if (list.exists()) {
                 list.scrollForward();
             }
-            startMeasurements("play_from_home");
+            startMeasurements("play_home");
             clickUiObject(BY_ID, packageID + "thumbnail", true);
-            endMeasurements("play_from_home");
+            endMeasurements();
         }
 
         dismissAdvert();
@@ -174,7 +157,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject advert = new UiObject(new UiSelector().textContains("Visit advertiser"));
         if (advert.exists()) {
             UiObject skip = new UiObject(new UiSelector().textContains("Skip ad"));
-            if (skip.waitForExists(WAIT_TIMEOUT_5SEC)) {
+            if (skip.waitForExists(WAIT_TIMEOUT_1SEC*5)) {
                 skip.click();
                 sleep(VIDEO_SLEEP_SECONDS);
             }
@@ -195,9 +178,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         repeatClickUiObject(player, 2, 100);
         sleep(1); // pause the video momentarily
         player.click();
-        startMeasurements("player_video_windowed");
         sleep(VIDEO_SLEEP_SECONDS);
-        endMeasurements("player_video_windowed");
     }
 
     public void checkVideoInfo() throws Exception {
@@ -215,13 +196,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         // ListView of related videos and (maybe) comments
         UiScrollable list = new UiScrollable(new UiSelector().resourceId(packageID + "watch_list"));
         if (list.isScrollable()) {
-            startMeasurements("watch_list_fling_down");
+            startMeasurements("scroll_down");
             list.flingToEnd(LIST_SWIPE_COUNT);
-            endMeasurements("watch_list_fling_down");
+            endMeasurements();
 
-            startMeasurements("watch_list_fling_up");
+            startMeasurements("scroll_up");
             list.flingToBeginning(LIST_SWIPE_COUNT);
-            endMeasurements("watch_list_fling_up");
+            endMeasurements();
         }
         // After flinging, give the window enough time to settle down before
         // the next step, or else UiAutomator fails to find views in time
@@ -233,7 +214,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         logger.start();
     }
 
-    protected void endMeasurements(String testTag) throws Exception {
+    protected void endMeasurements() throws Exception {
         logger.stop();
     }
 }
