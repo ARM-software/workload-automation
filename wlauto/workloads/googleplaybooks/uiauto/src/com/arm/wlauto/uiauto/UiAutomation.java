@@ -67,8 +67,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         registerWatcher("pageSyncPopUp", pageSyncPopUpWatcher);
         runWatchers();
 
-        gesturesTest();
         selectChapter(chapterPageNumber);
+        gesturesTest();
         addNote(noteText);
         removeNote();
         searchForWord(searchWord);
