@@ -59,11 +59,11 @@ class Geekbench(AndroidUiAutoBenchmark):
     """
     summary_metrics = ['score', 'multicore_score']
     versions = {
-        '3.0.0': {
+        '3': {
             'package': 'com.primatelabs.geekbench3',
             'activity': '.HomeActivity',
         },
-        '2.2.7': {
+        '2': {
             'package': 'ca.primatelabs.geekbench2',
             'activity': '.HomeActivity',
         },
@@ -73,8 +73,7 @@ class Geekbench(AndroidUiAutoBenchmark):
     replace_regex = re.compile(r'<[^>]*>')
 
     parameters = [
-        Parameter('version', default=sorted(versions.keys())[-1], allowed_values=sorted(versions.keys() +
-                                                                                        ['2', '3']),
+        Parameter('version', default=sorted(versions.keys())[-1], allowed_values=sorted(versions.keys()),
                   description='Specifies which version of the workload should be run.'),
         Parameter('times', kind=int, default=1,
                   description=('Specfies the number of times the benchmark will be run in a "tight '
@@ -91,16 +90,12 @@ class Geekbench(AndroidUiAutoBenchmark):
 
     def __init__(self, device, **kwargs):
         super(Geekbench, self).__init__(device, **kwargs)
-        if self.version == '3':
-            self.version = '3.0.0'
-        elif self.version == '2':
-            self.version = '2.2.7'
         self.uiauto_params['version'] = self.version
         self.uiauto_params['times'] = self.times
         self.run_timeout = 5 * 60 * self.times
 
     def initialize(self, context):
-        if self.version == '3.0.0' and not self.device.is_rooted:
+        if self.version == '3' and not self.device.is_rooted:
             raise WorkloadError('Geekbench workload only works on rooted devices.')
 
     def init_resources(self, context):
@@ -113,14 +108,12 @@ class Geekbench(AndroidUiAutoBenchmark):
 
     def update_result(self, context):
         super(Geekbench, self).update_result(context)
-        if self.version == "2.2.7":
-            self.update_result_2(context)
-        else:
-            self.update_result_3(context)
+        update_method = getattr(self, 'update_result_{}'.format(self.version))
+        update_method(context)
 
     def validate(self):
-        if (self.times > 1) and (self.version == '2.2.7'):
-            raise ConfigError('times parameter is not supported for version 2.2.7 of Geekbench.')
+        if (self.times > 1) and (self.version == '2'):
+            raise ConfigError('times parameter is not supported for version 2 of Geekbench.')
 
     def update_result_2(self, context):
         score_calculator = GBScoreCalculator()

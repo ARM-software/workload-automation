@@ -25,7 +25,7 @@ from wlauto.core.workload import Workload
 from wlauto.core.resource import NO_ONE
 from wlauto.common.android.resources import ApkFile
 from wlauto.common.resources import ExtensionAsset, Executable, File
-from wlauto.exceptions import WorkloadError, ResourceError, ConfigError, DeviceError
+from wlauto.exceptions import WorkloadError, ResourceError, DeviceError
 from wlauto.utils.android import ApkInfo, ANDROID_NORMAL_PERMISSIONS, UNSUPPORTED_PACKAGES
 from wlauto.utils.types import boolean
 from wlauto.utils.revent import ReventParser
@@ -35,11 +35,11 @@ import wlauto.common.android.resources
 
 DELAY = 5
 
-
 # Due to the way `super` works you have to call it at every level but WA executes some
-# methods conditionally and so has to do them directly via the class, this breaks super
+# methods conditionally and so has to call them directly via the class, this breaks super
 # and causes it to run things mutiple times ect. As a work around for this untill workloads
 # are reworked everything that subclasses workload calls parent methods explicitly
+
 
 class UiAutomatorWorkload(Workload):
     """
@@ -173,13 +173,16 @@ class ApkWorkload(Workload):
                   description='Timeout for the installation of the apk.'),
         Parameter('check_apk', kind=boolean, default=True,
                   description='''
-                  Discover the APK for this workload on the host, and check that
-                  the version matches the one on device (if already installed).
+                  When set to True the APK file on the host will be prefered if
+                  it is a valid version and ABI, if not it will fall back to the
+                  version on the targer. When set to False the target version is
+                  prefered.
                   '''),
         Parameter('force_install', kind=boolean, default=False,
                   description='''
                   Always re-install the APK, even if matching version is found already installed
-                  on the device. Runs ``adb install -r`` to ensure existing APK is replaced.
+                  on the device. Runs ``adb install -r`` to ensure existing APK is replaced. When
+                  this is set, check_apk is ignored.
                   '''),
         Parameter('uninstall_apk', kind=boolean, default=False,
                   description='If ``True``, will uninstall workload\'s APK as part of teardown.'),
@@ -199,88 +202,149 @@ class ApkWorkload(Workload):
 
     def setup(self, context):
         Workload.setup(self, context)
-        # Get APK for the correct version and device ABI
+
+        # Get target version
+        target_version = self.device.get_installed_package_version(self.package)
+        if target_version:
+            target_version = LooseVersion(target_version)
+            self.logger.debug("Found version '{}' on target device".format(target_version))
+
+        # Get host version
         self.apk_file = context.resolver.get(ApkFile(self, self.device.abi),
                                              version=getattr(self, 'version', None),
                                              check_abi=getattr(self, 'check_abi', False),
                                              variant_name=getattr(self, 'variant_name', None),
-                                             strict=self.check_apk)
-        # Validate the APK
-        if self.check_apk:
-            if not self.apk_file:
-                raise WorkloadError('No APK file found for workload {}.'.format(self.name))
+                                             strict=False)
+        host_version = None
+        if self.apk_file is not None:
+            host_version = ApkInfo(self.apk_file).version_name
+            if host_version:
+                host_version = LooseVersion(host_version)
+            self.logger.debug("Found version '{}' on host".format(host_version))
+
+        # Error if apk was not found anywhere
+        if target_version is None and host_version is None:
+            msg = "Could not find APK for '{}' on the host or target device"
+            raise ResourceError(msg.format(self.name))
+
+        # Ensure the apk is setup on the device
+        if self.force_install:
+            self.force_install_apk(context, host_version, target_version)
+        elif self.check_apk:
+            self.prefer_host_apk(context, host_version, target_version)
         else:
-            if self.force_install:
-                raise ConfigError('force_install cannot be "True" when check_apk is set to "False".')
+            self.prefer_target_apk(context, host_version, target_version)
 
-        self.initialize_package(context)
-
-        # Check the APK version against the min and max versions compatible
-        # with the workload before launching the package. Note: must be called
-        # after initialize_package() to get self.apk_version.
-        if self.check_apk:
-            self.check_apk_version()
+        self.reset(context)
+        self.apk_version = self.device.get_installed_package_version(self.package)
+        context.add_classifiers(apk_version=self.apk_version)
 
         if self.launch_main:
-            self.launch_package()  # launch default activity without intent data
+            self.launch_package() # launch default activity without intent data
         self.device.execute('am kill-all')  # kill all *background* activities
         self.device.clear_logcat()
 
-    def initialize_package(self, context):
-        installed_version = self.device.get_installed_package_version(self.package)
-        if self.check_apk:
-            self.initialize_with_host_apk(context, installed_version)
-        else:
-            if not installed_version:
-                message = '''{} not found on the device and check_apk is set to "False"
-                             so host version was not checked.'''
-                raise WorkloadError(message.format(self.package))
-            message = 'Version {} installed on device; skipping host APK check.'
-            self.logger.debug(message.format(installed_version))
-            self.reset(context)
-            self.apk_version = installed_version
-        context.add_classifiers(apk_version=self.apk_version)
+    def force_install_apk(self, context, host_version, target_version):
+        if host_version is None:
+            raise ResourceError("force_install is 'True' but could not find APK on the host")
+        try:
+            self.validate_version(host_version)
+        except ResourceError as e:
+            msg = "force_install is 'True' but the host version is invalid:\n\t{}"
+            raise ResourceError(msg.format(str(e)))
+        self.install_apk(context, replace=(target_version is not None))
 
-    def initialize_with_host_apk(self, context, installed_version):
-        host_version = ApkInfo(self.apk_file).version_name
-        if installed_version != host_version:
-            if installed_version:
-                message = '{} host version: {}, device version: {}; re-installing...'
-                self.logger.debug(message.format(os.path.basename(self.apk_file),
-                                                 host_version, installed_version))
+    def prefer_host_apk(self, context, host_version, target_version):
+        msg = "check_apk is 'True' "
+        if host_version is None:
+            try:
+                self.validate_version(target_version)
+            except ResourceError as e:
+                msg += "but the APK was not found on the host and the target version is invalid:\n\t{}"
+                raise ResourceError(msg.format(str(e)))
             else:
-                message = '{} host version: {}, not found on device; installing...'
-                self.logger.debug(message.format(os.path.basename(self.apk_file),
-                                                 host_version))
-            self.force_install = True  # pylint: disable=attribute-defined-outside-init
-        else:
-            message = '{} version {} found on both device and host.'
-            self.logger.debug(message.format(os.path.basename(self.apk_file),
-                                             host_version))
-        if self.force_install:
-            if installed_version:
-                self.device.uninstall(self.package)
-            # It's possible that the uninstall above fails, which might result in a warning
-            # and/or failure during installation. However execution should proceed, so need
-            # to make sure that the right apk_vesion is reported in the end.
-            if self.install_apk(context):
-                self.apk_version = host_version
+                msg += "but the APK was not found on the host, using target version"
+                self.logger.debug(msg)
+                return
+        try:
+            self.validate_version(host_version)
+        except ResourceError as e1:
+            msg += "but the host APK version is invalid:\n\t{}\n"
+            if target_version is None:
+                msg += "The target does not have the app either"
+                raise ResourceError(msg.format(str(e1)))
+            try:
+                self.validate_version(target_version)
+            except ResourceError as e2:
+                msg += "The target version is also invalid:\n\t{}"
+                raise ResourceError(msg.format(str(e1), str(e2)))
             else:
-                self.apk_version = installed_version
+                msg += "using the target version instead"
+                self.logger.debug(msg.format(str(e1)))
+        else:  # Host version is valid
+            if target_version is not None and target_version == host_version:
+                msg += " and a matching version is alread on the device, doing nothing"
+                self.logger.debug(msg)
+                return
+            msg += " and the host version is not on the target, installing APK"
+            self.logger.debug(msg)
+            self.install_apk(context, replace=(target_version is not None))
+
+    def prefer_target_apk(self, context, host_version, target_version):
+        msg = "check_apk is 'False' "
+        if target_version is None:
+            try:
+                self.validate_version(host_version)
+            except ResourceError as e:
+                msg += "but the app was not found on the target and the host version is invalid:\n\t{}"
+                raise ResourceError(msg.format(str(e)))
+            else:
+                msg += "and the app was not found on the target, using host version"
+                self.logger.debug(msg)
+                self.install_apk(context)
+                return
+        try:
+            self.validate_version(target_version)
+        except ResourceError as e1:
+            msg += "but the target app version is invalid:\n\t{}\n"
+            if host_version is None:
+                msg += "The host does not have the APK either"
+                raise ResourceError(msg.format(str(e1)))
+            try:
+                self.validate_version(host_version)
+            except ResourceError as e2:
+                msg += "The host version is also invalid:\n\t{}"
+                raise ResourceError(msg.format(str(e1), str(e2)))
+            else:
+                msg += "Using the host APK instead"
+                self.logger.debug(msg.format(str(e1)))
+                self.install_apk(context, replace=True)
         else:
-            self.apk_version = installed_version
-            self.reset(context)
+            msg += "and a valid version of the app is already on the target, using target app"
+            self.logger.debug(msg)
 
-    def check_apk_version(self):
-        if self.min_apk_version:
-            if LooseVersion(self.apk_version) < LooseVersion(self.min_apk_version):
-                message = "APK version not supported. Minimum version required: {}"
-                raise WorkloadError(message.format(self.min_apk_version))
+    def validate_version(self, version):
+        min_apk_version = getattr(self, 'min_apk_version', None)
+        max_apk_version = getattr(self, 'max_apk_version', None)
 
-        if self.max_apk_version:
-            if LooseVersion(self.apk_version) > LooseVersion(self.max_apk_version):
-                message = "APK version not supported. Maximum version supported: {}"
-                raise WorkloadError(message.format(self.max_apk_version))
+        if min_apk_version is not None and max_apk_version is not None:
+            if version < LooseVersion(min_apk_version) or \
+                    version > LooseVersion(max_apk_version):
+                msg = "version '{}' not supported. " \
+                      "Minimum version required: '{}', Maximum version known to work: '{}'"
+                raise ResourceError(msg.format(version, min_apk_version))
+
+        elif min_apk_version is not None:
+            if version < LooseVersion(min_apk_version):
+                msg = "version '{}' not supported. " \
+                      "Minimum version required: '{}'"
+                raise ResourceError(msg.format(version, min_apk_version))
+
+        elif max_apk_version is not None:
+            if version > LooseVersion(max_apk_version):
+                msg = "version '{}' not supported. " \
+                      "Maximum version known to work: '{}'"
+                raise ResourceError(msg.format(version, min_apk_version))
 
     def launch_package(self):
         if not self.activity:
@@ -302,9 +366,9 @@ class ApkWorkload(Workload):
         if self.device.get_sdk_version() >= 23:
             self._grant_requested_permissions()
 
-    def install_apk(self, context):
+    def install_apk(self, context, replace=False):
         success = False
-        output = self.device.install(self.apk_file, self.install_timeout, replace=self.force_install)
+        output = self.device.install(self.apk_file, self.install_timeout, replace=replace)
         if 'Failure' in output:
             if 'ALREADY_EXISTS' in output:
                 self.logger.warn('Using already installed APK (did not unistall properly?)')

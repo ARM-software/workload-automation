@@ -118,6 +118,7 @@ and detailed descriptions of how WA functions under the hood.
    additional_topics
    daq_device_setup
    revent
+   apk_workloads
    contributing
 
 API Reference
