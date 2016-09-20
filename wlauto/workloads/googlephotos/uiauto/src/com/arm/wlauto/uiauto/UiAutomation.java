@@ -26,6 +26,10 @@ import com.android.uiautomator.core.UiScrollable;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
+
 import java.util.concurrent.TimeUnit;
 import java.util.LinkedHashMap;
 import java.util.Iterator;
@@ -34,14 +38,11 @@ import java.util.Map.Entry;
 
 public class UiAutomation extends UxPerfUiAutomation {
 
-    public static String TAG = "uxperf_googlephotos";
-
     public Bundle parameters;
     public String packageName;
     public String packageID;
 
-    private int viewTimeoutSecs = 10;
-    private long viewTimeout =  TimeUnit.SECONDS.toMillis(viewTimeoutSecs);
+    private long viewTimeout =  TimeUnit.SECONDS.toMillis(10);
 
     public void runUiAutomation() throws Exception {
         parameters = getParams();
@@ -52,11 +53,25 @@ public class UiAutomation extends UxPerfUiAutomation {
         setScreenOrientation(ScreenOrientation.NATURAL);
         dismissWelcomeView();
         closePromotionPopUp();
-        selectWorkingGallery();
+
+        selectWorkingGallery("wa-1");
         gesturesTest();
+        navigateUp();
+
+        selectWorkingGallery("wa-2");
         editPhotoColorTest();
+        closeAndReturn(true);
+        navigateUp();
+
+        selectWorkingGallery("wa-3");
         cropPhotoTest();
+        closeAndReturn(true);
+        navigateUp();
+
+        selectWorkingGallery("wa-4");
         rotatePhotoTest();
+        closeAndReturn(true);
+
         unsetScreenOrientation();
     }
 
@@ -67,7 +82,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject getStartedButton =
             new UiObject(new UiSelector().textContains("Get started")
                                          .className("android.widget.Button"));
-
         if (getStartedButton.waitForExists(viewTimeout)) {
             getStartedButton.click();
         }
@@ -78,25 +92,17 @@ public class UiAutomation extends UxPerfUiAutomation {
         // pathways when dismissing welcome views here.
         UiObject doNotSignInButton =
             new UiObject(new UiSelector().resourceId(packageID + "dont_sign_in_button"));
-
         if (doNotSignInButton.exists()) {
             doNotSignInButton.click();
         } else {
-            UiObject welcomeButton =
-                getUiObjectByResourceId(packageID + "name",
-                        "android.widget.TextView");
-            welcomeButton.click();
-
-            UiObject useWithoutAccount =
-                getUiObjectByText("Use without an account", "android.widget.TextView");
-            useWithoutAccount.clickAndWaitForNewWindow();
-
-            // Folder containing test images (early check required)
-            UiObject workingFolder = new UiObject(new UiSelector().text("wa-working"));
+            clickUiObject(BY_ID, packageID + "name", "android.widget.TextView");
+            clickUiObject(BY_TEXT, "Use without an account", "android.widget.TextView", true);
 
             // On some devices the welcome views don't always appear so check
             // for the existence of the wa-working directory before attempting
             // to dismiss welcome views promoting app features
+            UiObject workingFolder =
+                new UiObject(new UiSelector().text("wa-working"));
             if (!workingFolder.exists()) {
                 sleep(1);
                 uiDeviceSwipeLeft(10);
@@ -111,7 +117,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject nextButton =
             new UiObject(new UiSelector().resourceId(packageID + "next_button")
                                          .className("android.widget.ImageView"));
-
         if (nextButton.exists()) {
             nextButton.clickAndWaitForNewWindow();
         }
@@ -120,22 +125,22 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void closePromotionPopUp() throws Exception {
         UiObject promoCloseButton =
             new UiObject(new UiSelector().resourceId(packageID + "promo_close_button"));
-
         if (promoCloseButton.exists()) {
             promoCloseButton.click();
         }
     }
 
     // Helper to click on the wa-working gallery.
-    public void selectWorkingGallery() throws Exception {
-        UiObject workdir = new UiObject(new UiSelector().text("wa-working")
-                                                        .className("android.widget.TextView"));
+    public void selectWorkingGallery(String directory) throws Exception {
+        UiObject workdir =
+            new UiObject(new UiSelector().text(directory)
+                                         .className("android.widget.TextView"));
+        UiScrollable scrollView =
+            new UiScrollable(new UiSelector().scrollable(true));
 
         // If the wa-working gallery is not present wait for a short time for
         // the media server to refresh its index.
         boolean discovered = workdir.waitForExists(viewTimeout);
-        UiScrollable scrollView = new UiScrollable(new UiSelector().scrollable(true));
-
         if (!discovered && scrollView.exists()) {
             // First check if the wa-working directory is visible on the first
             // screen and if not scroll to the bottom of the screen to look for it.
@@ -162,26 +167,23 @@ public class UiAutomation extends UxPerfUiAutomation {
         if (discovered) {
             workdir.clickAndWaitForNewWindow();
         } else {
-            throw new UiObjectNotFoundException("Could not find \"wa-working\" folder");
+            throw new UiObjectNotFoundException("Could not find folder : " + directory);
         }
-    }
 
-    // Helper to click on an individual photograph based on index in wa-working gallery.
-    public void selectPhoto(final int index) throws Exception {
         UiObject photo =
             new UiObject(new UiSelector().resourceId(packageID + "recycler_view")
                                          .childSelector(new UiSelector()
-                                         .index(index)));
-
-        // On some versions of the app a non-zero index is used for the
-        // photographs position while on other versions a zero index is used.
-        // Try both possiblities before throwing an exception.
+                                         .index(1)));
         if (photo.exists()) {
             photo.click();
         } else {
-            photo = new UiObject(new UiSelector().resourceId(packageID + "recycler_view")
-                                                 .childSelector(new UiSelector()
-                                                 .index(index - 1)));
+            // On some versions of the app a non-zero index is used for the
+            // photographs position while on other versions a zero index is used.
+            // Try both possiblities before throwing an exception.
+            photo =
+                new UiObject(new UiSelector().resourceId(packageID + "recycler_view")
+                                             .childSelector(new UiSelector()
+                                             .index(0)));
             photo.click();
         }
     }
@@ -189,10 +191,12 @@ public class UiAutomation extends UxPerfUiAutomation {
     // Helper that accepts, closes and navigates back to application home screen after an edit operation.
     // dontsave - True will discard the image. False will save the image
     public void closeAndReturn(final boolean dontsave) throws Exception {
-        UiObject accept = new UiObject(new UiSelector().description("Accept"));
-        UiObject done = new UiObject(new UiSelector().resourceId(packageID + "cpe_save_button"));
-
         long timeout =  TimeUnit.SECONDS.toMillis(3);
+
+        UiObject accept =
+            new UiObject(new UiSelector().description("Accept"));
+        UiObject done =
+            new UiObject(new UiSelector().resourceId(packageID + "cpe_save_button"));
 
         // On some edit operations we can either confirm an edit with "Accept" or "DONE"
         if (accept.waitForExists(timeout)) {
@@ -204,8 +208,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
 
         if (dontsave) {
-            UiObject close = getUiObjectByDescription("Close editor", "android.widget.ImageView");
-            close.click();
+            clickUiObject(BY_DESC, "Close editor", "android.widget.ImageView");
 
             UiObject discard = getUiObjectByText("DISCARD", "android.widget.Button");
             discard.waitForExists(viewTimeout);
@@ -215,12 +218,12 @@ public class UiAutomation extends UxPerfUiAutomation {
             save.waitForExists(viewTimeout);
             save.click();
         }
+    }
 
+    public void navigateUp() throws Exception {
         UiObject navigateUpButton =
-            new UiObject(new UiSelector().descriptionContains("Navigate Up")
-                                         .className("android.widget.ImageButton"));
-        navigateUpButton.waitForExists(viewTimeout);
-        navigateUpButton.click();
+            clickUiObject(BY_DESC, "Navigate Up", "android.widget.ImageButton", true);
+        navigateUpButton.clickAndWaitForNewWindow();
     }
 
     private void gesturesTest() throws Exception {
@@ -228,26 +231,20 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         // Perform a range of swipe tests while browsing photo gallery
         LinkedHashMap<String, GestureTestParams> testParams = new LinkedHashMap<String, GestureTestParams>();
-        testParams.put("swipe_left", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.LEFT, 10));
         testParams.put("pinch_out", new GestureTestParams(GestureType.PINCH, PinchType.OUT, 100, 50));
         testParams.put("pinch_in", new GestureTestParams(GestureType.PINCH, PinchType.IN, 100, 50));
-        testParams.put("swipe_right", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.RIGHT, 10));
 
         Iterator<Entry<String, GestureTestParams>> it = testParams.entrySet().iterator();
-
-        // Select first photograph
-        selectPhoto(1);
 
         while (it.hasNext()) {
             Map.Entry<String, GestureTestParams> pair = it.next();
             GestureType type = pair.getValue().gestureType;
-            Direction dir = pair.getValue().gestureDirection;
             PinchType pinch = pair.getValue().pinchType;
             int steps = pair.getValue().steps;
             int percent = pair.getValue().percent;
 
-            UiObject view = new UiObject(new UiSelector().enabled(true));
-
+            UiObject view =
+                new UiObject(new UiSelector().enabled(true));
             if (!view.waitForExists(viewTimeout)) {
                 throw new UiObjectNotFoundException("Could not find \"photo view\".");
             }
@@ -257,9 +254,6 @@ public class UiAutomation extends UxPerfUiAutomation {
             logger.start();
 
             switch (type) {
-                case UIDEVICE_SWIPE:
-                    uiDeviceSwipe(dir, steps);
-                    break;
                 case PINCH:
                     uiObjectVertPinch(view, pinch, steps, percent);
                     break;
@@ -269,48 +263,40 @@ public class UiAutomation extends UxPerfUiAutomation {
 
             logger.stop();
         }
-
-        UiObject navigateUpButton =
-            getUiObjectByDescription("Navigate Up", "android.widget.ImageButton");
-        navigateUpButton.click();
     }
 
     public enum Position { LEFT, RIGHT, CENTRE };
 
-    private class SeekBarTestParams {
+    private class PositionPair {
+        private Position start;
+        private Position end;
 
-        private Position seekBarPosition;
-        private int percent;
-        private int steps;
-
-        SeekBarTestParams(final Position position, final int steps, final int percent) {
-            this.seekBarPosition = position;
-            this.steps = steps;
-            this.percent = percent;
+        PositionPair(final Position start, final Position end) {
+            this.start = start;
+            this.end = end;
         }
     }
 
     private void editPhotoColorTest() throws Exception {
+        long timeout =  TimeUnit.SECONDS.toMillis(3);
+        // To improve travel accuracy perform the slide bar operation slowly
+        final int steps = 100;
+
         String testTag = "edit";
 
         // Perform a range of swipe tests while browsing photo gallery
-        LinkedHashMap<String, SeekBarTestParams> testParams = new LinkedHashMap<String, SeekBarTestParams>();
-        testParams.put("color_increment", new SeekBarTestParams(Position.RIGHT, 10, 20));
-        testParams.put("color_reset", new SeekBarTestParams(Position.CENTRE, 0, 0));
-        testParams.put("color_decrement", new SeekBarTestParams(Position.LEFT, 10, 20));
+        LinkedHashMap<String, PositionPair> testParams = new LinkedHashMap<String, PositionPair>();
+        testParams.put("color_increment", new PositionPair(Position.CENTRE, Position.RIGHT));
+        testParams.put("color_reset", new PositionPair(Position.RIGHT, Position.CENTRE));
+        testParams.put("color_decrement", new PositionPair(Position.CENTRE, Position.LEFT));
 
-        Iterator<Entry<String, SeekBarTestParams>> it = testParams.entrySet().iterator();
+        Iterator<Entry<String, PositionPair>> it = testParams.entrySet().iterator();
 
-        // Select second photograph
-        selectPhoto(2);
-
-        UiObject editView = getUiObjectByResourceId(packageID + "edit",
-                                                    "android.widget.ImageView");
-        editView.click();
+        clickUiObject(BY_ID, packageID + "edit", "android.widget.ImageView");
 
         // Manage potential different spelling of UI element
-        UiObject editCol = new UiObject(new UiSelector().textMatches("Colou?r"));
-        long timeout =  TimeUnit.SECONDS.toMillis(3);
+        UiObject editCol =
+            new UiObject(new UiSelector().textMatches("Colou?r"));
         if (editCol.waitForExists(timeout)) {
             editCol.click();
         } else {
@@ -318,33 +304,29 @@ public class UiAutomation extends UxPerfUiAutomation {
                                                               "Color/Colour", "android.widget.RadioButton"));
         }
 
-        UiObject seekBar = getUiObjectByResourceId(packageID + "cpe_strength_seek_bar",
-                                                   "android.widget.SeekBar");
+        UiObject seekBar =
+            getUiObjectByResourceId(packageID + "cpe_strength_seek_bar",
+                                    "android.widget.SeekBar");
 
         while (it.hasNext()) {
-            Map.Entry<String, SeekBarTestParams> pair = it.next();
-            Position pos = pair.getValue().seekBarPosition;
-            int steps = pair.getValue().steps;
-            int percent = pair.getValue().percent;
+            Map.Entry<String, PositionPair> pair = it.next();
+            Position start = pair.getValue().start;
+            Position end = pair.getValue().end;
 
             String runName = String.format(testTag + "_" + pair.getKey());
             ActionLogger logger = new ActionLogger(runName, parameters);
 
-            sleep(1); // pause for stability before editing the colour
-
             logger.start();
-            seekBarTest(seekBar, pos, steps);
+            seekBarTest(seekBar, start, end, steps);
             logger.stop();
         }
-
-        closeAndReturn(true);
     }
 
     private void cropPhotoTest() throws Exception {
         String testTag = "crop";
 
         // To improve travel accuracy perform the slide bar operation slowly
-        final int steps = 500;
+        final int steps = 100;
 
         // Perform a range of swipe tests while browsing photo gallery
         LinkedHashMap<String, Position> testParams = new LinkedHashMap<String, Position>();
@@ -354,18 +336,11 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         Iterator<Entry<String, Position>> it = testParams.entrySet().iterator();
 
-        // Select third photograph
-        selectPhoto(3);
+        clickUiObject(BY_ID, packageID + "edit", "android.widget.ImageView");
+        clickUiObject(BY_ID, packageID + "cpe_crop_tool", "android.widget.ImageView");
 
-        UiObject editView = getUiObjectByResourceId(packageID + "edit",
-                                                    "android.widget.ImageView");
-        editView.click();
-
-        UiObject cropTool = getUiObjectByResourceId(packageID + "cpe_crop_tool",
-                                                    "android.widget.ImageView");
-        cropTool.click();
-
-        UiObject straightenSlider = getUiObjectByResourceId(packageID + "cpe_straighten_slider");
+        UiObject straightenSlider =
+            getUiObjectByResourceId(packageID + "cpe_straighten_slider");
 
         while (it.hasNext()) {
             Map.Entry<String, Position> pair = it.next();
@@ -378,8 +353,6 @@ public class UiAutomation extends UxPerfUiAutomation {
             slideBarTest(straightenSlider, pos, steps);
             logger.stop();
         }
-
-        closeAndReturn(true);
     }
 
     private void rotatePhotoTest() throws Exception {
@@ -387,17 +360,11 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         String[] subTests = {"90", "180", "270"};
 
-        // Select fourth photograph
-        selectPhoto(4);
+        clickUiObject(BY_ID, packageID + "edit", "android.widget.ImageView");
+        clickUiObject(BY_ID, packageID + "cpe_crop_tool", "android.widget.ImageView");
 
-        UiObject editView = getUiObjectByResourceId(packageID + "edit",
-                                                    "android.widget.ImageView");
-        editView.click();
-
-        UiObject cropTool = getUiObjectByResourceId(packageID + "cpe_crop_tool");
-        cropTool.click();
-
-        UiObject rotate = getUiObjectByResourceId(packageID + "cpe_rotate_90");
+        UiObject rotate =
+            getUiObjectByResourceId(packageID + "cpe_rotate_90");
 
         for (String subTest : subTests) {
             String runName = String.format(testTag + "_" + subTest);
@@ -407,28 +374,45 @@ public class UiAutomation extends UxPerfUiAutomation {
             rotate.click();
             logger.stop();
         }
-
-        closeAndReturn(true);
     }
 
     // Helper to slide the seekbar during photo edit.
-    private void seekBarTest(final UiObject view, final Position pos, final int steps) throws Exception {
+    private void seekBarTest(final UiObject view, final Position start, final Position end, final int steps) throws Exception {
         final int SWIPE_MARGIN_LIMIT = 5;
         Rect rect = view.getVisibleBounds();
+        int startX, endX;
 
-        switch (pos) {
+        switch (start) {
+            case CENTRE:
+                startX = rect.centerX();
+                break;
             case LEFT:
-                getUiDevice().click(rect.left + SWIPE_MARGIN_LIMIT, rect.centerY());
+                startX = rect.left + SWIPE_MARGIN_LIMIT;
                 break;
             case RIGHT:
-                getUiDevice().click(rect.right - SWIPE_MARGIN_LIMIT, rect.centerY());
-                break;
-            case CENTRE:
-                view.click();
+                startX = rect.right - SWIPE_MARGIN_LIMIT;
                 break;
             default:
+                startX = 0;
                 break;
         }
+
+        switch (end) {
+            case CENTRE:
+                endX = rect.centerX();
+                break;
+            case LEFT:
+                endX = rect.left + SWIPE_MARGIN_LIMIT;
+                break;
+            case RIGHT:
+                endX = rect.right - SWIPE_MARGIN_LIMIT;
+                break;
+            default:
+                endX = 0;
+                break;
+        }
+
+        getUiDevice().drag(startX, rect.centerY(), endX, rect.centerY(), steps);
     }
 
     // Helper to slide the slidebar during photo edit.
@@ -439,12 +423,12 @@ public class UiAutomation extends UxPerfUiAutomation {
         switch (pos) {
             case LEFT:
                 getUiDevice().drag(rect.left + SWIPE_MARGIN_LIMIT, rect.centerY(),
-                                   rect.left + rect.width() / 4, rect.centerY(),
+                                   rect.left + (rect.width() / 4), rect.centerY(),
                                    steps);
                 break;
             case RIGHT:
                 getUiDevice().drag(rect.right - SWIPE_MARGIN_LIMIT, rect.centerY(),
-                                   rect.right - rect.width() / 4, rect.centerY(),
+                                   rect.right - (rect.width() / 4), rect.centerY(),
                                    steps);
                 break;
             default:
