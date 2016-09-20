@@ -48,7 +48,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         packageName = parameters.getString("package");
         packageID = packageName + ":id/";
 
-        pauseForSplashScreen();
+        sleep(5); // Pause while splash screen loads
         setScreenOrientation(ScreenOrientation.NATURAL);
         dismissWelcomeView();
         closePromotionPopUp();
@@ -60,12 +60,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         unsetScreenOrientation();
     }
 
-    public void pauseForSplashScreen() {
-        sleep(5); // Pause while splash screen loads
-    }
-
     public void dismissWelcomeView() throws Exception {
-
         // Click through the first two pages and make sure that we don't sign
         // in to our google account. This ensures the same set of photographs
         // are placed in the camera directory for each run.
@@ -84,9 +79,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject doNotSignInButton =
             new UiObject(new UiSelector().resourceId(packageID + "dont_sign_in_button"));
 
-        // Folder containing test images (early check required)
-        UiObject workingFolder = new UiObject(new UiSelector().text("wa-working"));
-
         if (doNotSignInButton.exists()) {
             doNotSignInButton.click();
         } else {
@@ -98,6 +90,9 @@ public class UiAutomation extends UxPerfUiAutomation {
             UiObject useWithoutAccount =
                 getUiObjectByText("Use without an account", "android.widget.TextView");
             useWithoutAccount.clickAndWaitForNewWindow();
+
+            // Folder containing test images (early check required)
+            UiObject workingFolder = new UiObject(new UiSelector().text("wa-working"));
 
             // On some devices the welcome views don't always appear so check
             // for the existence of the wa-working directory before attempting
@@ -119,240 +114,6 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         if (nextButton.exists()) {
             nextButton.clickAndWaitForNewWindow();
-        }
-    }
-
-    private void gesturesTest() throws Exception {
-        String testTag = "gestures";
-
-        // Perform a range of swipe tests while browsing photo gallery
-        LinkedHashMap<String, GestureTestParams> testParams = new LinkedHashMap<String, GestureTestParams>();
-        testParams.put("swipe_left", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.LEFT, 10));
-        testParams.put("pinch_out", new GestureTestParams(GestureType.PINCH, PinchType.OUT, 100, 50));
-        testParams.put("pinch_in", new GestureTestParams(GestureType.PINCH, PinchType.IN, 100, 50));
-        testParams.put("swipe_right", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.RIGHT, 10));
-
-        Iterator<Entry<String, GestureTestParams>> it = testParams.entrySet().iterator();
-
-        // Select first photograph
-        selectPhoto(1);
-
-        while (it.hasNext()) {
-            Map.Entry<String, GestureTestParams> pair = it.next();
-            GestureType type = pair.getValue().gestureType;
-            Direction dir = pair.getValue().gestureDirection;
-            PinchType pinch = pair.getValue().pinchType;
-            int steps = pair.getValue().steps;
-            int percent = pair.getValue().percent;
-
-            UiObject view = new UiObject(new UiSelector().enabled(true));
-
-            if (!view.waitForExists(viewTimeout)) {
-                throw new UiObjectNotFoundException("Could not find \"photo view\".");
-            }
-
-            String runName = String.format(testTag + "_" + pair.getKey());
-            ActionLogger logger = new ActionLogger(runName, parameters);
-            logger.start();
-
-            switch (type) {
-                case UIDEVICE_SWIPE:
-                    uiDeviceSwipe(dir, steps);
-                    break;
-                case UIOBJECT_SWIPE:
-                    uiObjectSwipe(view, dir, steps);
-                    break;
-                case PINCH:
-                    uiObjectVertPinch(view, pinch, steps, percent);
-                    break;
-                default:
-                    break;
-            }
-
-            logger.stop();
-        }
-
-        UiObject navigateUpButton =
-            getUiObjectByDescription("Navigate Up", "android.widget.ImageButton");
-        navigateUpButton.click();
-    }
-
-    public enum Position { LEFT, RIGHT, CENTRE };
-
-    private class SeekBarTestParams {
-
-        private Position seekBarPosition;
-        private int percent;
-        private int steps;
-
-        SeekBarTestParams(final Position position, final int steps, final int percent) {
-            this.seekBarPosition = position;
-            this.steps = steps;
-            this.percent = percent;
-        }
-    }
-
-    private void editPhotoColorTest() throws Exception {
-        String testTag = "edit_photo";
-
-        // Perform a range of swipe tests while browsing photo gallery
-        LinkedHashMap<String, SeekBarTestParams> testParams = new LinkedHashMap<String, SeekBarTestParams>();
-        testParams.put("increment_color", new SeekBarTestParams(Position.RIGHT, 10, 20));
-        testParams.put("reset_color", new SeekBarTestParams(Position.CENTRE, 0, 0));
-        testParams.put("decrement_color", new SeekBarTestParams(Position.LEFT, 10, 20));
-
-        Iterator<Entry<String, SeekBarTestParams>> it = testParams.entrySet().iterator();
-
-        // Select second photograph
-        selectPhoto(2);
-        UiObject editView = getUiObjectByResourceId(packageID + "edit",
-                                                    "android.widget.ImageView");
-        editView.click();
-
-        // Manage potential different spelling of UI element
-        UiObject editColor = new UiObject(new UiSelector().text("Color"));
-        UiObject editColour = new UiObject(new UiSelector().text("Colour"));
-
-        long timeout =  TimeUnit.SECONDS.toMillis(3);
-
-        if (editColor.waitForExists(timeout)) {
-            editColor.click();
-        } else if (editColour.waitForExists(timeout)) {
-            editColour.click();
-        } else {
-            throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
-                                                              "Color/Colour", "android.widget.RadioButton"));
-        }
-
-        UiObject seekBar = getUiObjectByResourceId(packageID + "cpe_strength_seek_bar",
-                                                   "android.widget.SeekBar");
-
-        while (it.hasNext()) {
-            Map.Entry<String, SeekBarTestParams> pair = it.next();
-            Position pos = pair.getValue().seekBarPosition;
-            int steps = pair.getValue().steps;
-            int percent = pair.getValue().percent;
-
-            String runName = String.format(testTag + "_" + pair.getKey());
-            ActionLogger logger = new ActionLogger(runName, parameters);
-
-            sleep(1); // pause for stability before editing the colour
-
-            logger.start();
-            seekBarTest(seekBar, pos, steps);
-            logger.stop();
-        }
-
-        closeAndReturn(true);
-    }
-
-    private void cropPhotoTest() throws Exception {
-        String testTag = "crop_photo";
-
-        // To improve travel accuracy perform the slide bar operation slowly
-        final int steps = 500;
-
-        // Perform a range of swipe tests while browsing photo gallery
-        LinkedHashMap<String, Position> testParams = new LinkedHashMap<String, Position>();
-        testParams.put("tilt_positive", Position.LEFT);
-        testParams.put("tilt_reset", Position.RIGHT);
-        testParams.put("tilt_negative", Position.RIGHT);
-
-        Iterator<Entry<String, Position>> it = testParams.entrySet().iterator();
-
-        // Select third photograph
-        selectPhoto(3);
-        UiObject editView = getUiObjectByResourceId(packageID + "edit",
-                                                    "android.widget.ImageView");
-        editView.click();
-
-        UiObject cropTool = getUiObjectByResourceId(packageID + "cpe_crop_tool",
-                                                    "android.widget.ImageView");
-        cropTool.click();
-
-        UiObject straightenSlider = getUiObjectByResourceId(packageID + "cpe_straighten_slider");
-
-        while (it.hasNext()) {
-            Map.Entry<String, Position> pair = it.next();
-            Position pos = pair.getValue();
-
-            String runName = String.format(testTag + "_" + pair.getKey());
-            ActionLogger logger = new ActionLogger(runName, parameters);
-
-            logger.start();
-            slideBarTest(straightenSlider, pos, steps);
-            logger.stop();
-        }
-
-        closeAndReturn(true);
-    }
-
-    private void rotatePhotoTest() throws Exception {
-        String testTag = "rotate_photo";
-
-        String[] subTests = {"anticlockwise_90", "anticlockwise_180", "anticlockwise_270"};
-
-        // Select fourth photograph
-        selectPhoto(4);
-        UiObject editView = getUiObjectByResourceId(packageID + "edit",
-                                                    "android.widget.ImageView");
-        editView.click();
-
-        UiObject cropTool = getUiObjectByResourceId(packageID + "cpe_crop_tool");
-        cropTool.click();
-
-        UiObject rotate = getUiObjectByResourceId(packageID + "cpe_rotate_90");
-
-        for (String subTest : subTests) {
-            String runName = String.format(testTag + "_" + subTest);
-            ActionLogger logger = new ActionLogger(runName, parameters);
-
-            logger.start();
-            rotate.click();
-            logger.stop();
-        }
-
-        closeAndReturn(true);
-    }
-
-    // Helper to slide the seekbar during photo edit.
-    private void seekBarTest(final UiObject view, final Position pos, final int steps) throws Exception {
-        final int SWIPE_MARGIN_LIMIT = 5;
-        Rect rect = view.getVisibleBounds();
-
-        switch (pos) {
-            case LEFT:
-                getUiDevice().click(rect.left + SWIPE_MARGIN_LIMIT, rect.centerY());
-                break;
-            case RIGHT:
-                getUiDevice().click(rect.right - SWIPE_MARGIN_LIMIT, rect.centerY());
-                break;
-            case CENTRE:
-                view.click();
-                break;
-            default:
-                break;
-        }
-    }
-
-    // Helper to slide the slidebar during photo edit.
-    private void slideBarTest(final UiObject view, final Position pos, final int steps) throws Exception {
-        final int SWIPE_MARGIN_LIMIT = 5;
-        Rect rect = view.getBounds();
-
-        switch (pos) {
-            case LEFT:
-                getUiDevice().drag(rect.left + SWIPE_MARGIN_LIMIT, rect.centerY(),
-                                   rect.left + rect.width() / 4, rect.centerY(),
-                                   steps);
-                break;
-            case RIGHT:
-                getUiDevice().drag(rect.right - SWIPE_MARGIN_LIMIT, rect.centerY(),
-                                   rect.right - rect.width() / 4, rect.centerY(),
-                                   steps);
-                break;
-            default:
-                break;
         }
     }
 
@@ -462,25 +223,232 @@ public class UiAutomation extends UxPerfUiAutomation {
         navigateUpButton.click();
     }
 
-    // Helper to tag an individual photograph based on the index in wa-working
-    // gallery.  After long clicking it tags the photograph with a tick in the
-    // corner of the image to indicate that the photograph has been selected
-    public void tagPhoto(final int index) throws Exception {
-        UiObject photo =
-            new UiObject(new UiSelector().resourceId(packageID + "recycler_view")
-                                         .childSelector(new UiSelector()
-                                         .index(index)));
+    private void gesturesTest() throws Exception {
+        String testTag = "gesture";
 
-        // On some versions of the app a non-zero index is used for the
-        // photographs position while on other versions a zero index is used.
-        // Try both possiblities before throwing an exception.
-        if (photo.exists()) {
-            uiObjectPerformLongClick(photo, 100);
+        // Perform a range of swipe tests while browsing photo gallery
+        LinkedHashMap<String, GestureTestParams> testParams = new LinkedHashMap<String, GestureTestParams>();
+        testParams.put("swipe_left", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.LEFT, 10));
+        testParams.put("pinch_out", new GestureTestParams(GestureType.PINCH, PinchType.OUT, 100, 50));
+        testParams.put("pinch_in", new GestureTestParams(GestureType.PINCH, PinchType.IN, 100, 50));
+        testParams.put("swipe_right", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.RIGHT, 10));
+
+        Iterator<Entry<String, GestureTestParams>> it = testParams.entrySet().iterator();
+
+        // Select first photograph
+        selectPhoto(1);
+
+        while (it.hasNext()) {
+            Map.Entry<String, GestureTestParams> pair = it.next();
+            GestureType type = pair.getValue().gestureType;
+            Direction dir = pair.getValue().gestureDirection;
+            PinchType pinch = pair.getValue().pinchType;
+            int steps = pair.getValue().steps;
+            int percent = pair.getValue().percent;
+
+            UiObject view = new UiObject(new UiSelector().enabled(true));
+
+            if (!view.waitForExists(viewTimeout)) {
+                throw new UiObjectNotFoundException("Could not find \"photo view\".");
+            }
+
+            String runName = String.format(testTag + "_" + pair.getKey());
+            ActionLogger logger = new ActionLogger(runName, parameters);
+            logger.start();
+
+            switch (type) {
+                case UIDEVICE_SWIPE:
+                    uiDeviceSwipe(dir, steps);
+                    break;
+                case PINCH:
+                    uiObjectVertPinch(view, pinch, steps, percent);
+                    break;
+                default:
+                    break;
+            }
+
+            logger.stop();
+        }
+
+        UiObject navigateUpButton =
+            getUiObjectByDescription("Navigate Up", "android.widget.ImageButton");
+        navigateUpButton.click();
+    }
+
+    public enum Position { LEFT, RIGHT, CENTRE };
+
+    private class SeekBarTestParams {
+
+        private Position seekBarPosition;
+        private int percent;
+        private int steps;
+
+        SeekBarTestParams(final Position position, final int steps, final int percent) {
+            this.seekBarPosition = position;
+            this.steps = steps;
+            this.percent = percent;
+        }
+    }
+
+    private void editPhotoColorTest() throws Exception {
+        String testTag = "edit";
+
+        // Perform a range of swipe tests while browsing photo gallery
+        LinkedHashMap<String, SeekBarTestParams> testParams = new LinkedHashMap<String, SeekBarTestParams>();
+        testParams.put("color_increment", new SeekBarTestParams(Position.RIGHT, 10, 20));
+        testParams.put("color_reset", new SeekBarTestParams(Position.CENTRE, 0, 0));
+        testParams.put("color_decrement", new SeekBarTestParams(Position.LEFT, 10, 20));
+
+        Iterator<Entry<String, SeekBarTestParams>> it = testParams.entrySet().iterator();
+
+        // Select second photograph
+        selectPhoto(2);
+
+        UiObject editView = getUiObjectByResourceId(packageID + "edit",
+                                                    "android.widget.ImageView");
+        editView.click();
+
+        // Manage potential different spelling of UI element
+        UiObject editCol = new UiObject(new UiSelector().textMatches("Colou?r"));
+        long timeout =  TimeUnit.SECONDS.toMillis(3);
+        if (editCol.waitForExists(timeout)) {
+            editCol.click();
         } else {
-            photo = new UiObject(new UiSelector().resourceId(packageID + "recycler_view")
-                                                 .childSelector(new UiSelector()
-                                                 .index(index - 1)));
-            uiObjectPerformLongClick(photo, 100);
+            throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
+                                                              "Color/Colour", "android.widget.RadioButton"));
+        }
+
+        UiObject seekBar = getUiObjectByResourceId(packageID + "cpe_strength_seek_bar",
+                                                   "android.widget.SeekBar");
+
+        while (it.hasNext()) {
+            Map.Entry<String, SeekBarTestParams> pair = it.next();
+            Position pos = pair.getValue().seekBarPosition;
+            int steps = pair.getValue().steps;
+            int percent = pair.getValue().percent;
+
+            String runName = String.format(testTag + "_" + pair.getKey());
+            ActionLogger logger = new ActionLogger(runName, parameters);
+
+            sleep(1); // pause for stability before editing the colour
+
+            logger.start();
+            seekBarTest(seekBar, pos, steps);
+            logger.stop();
+        }
+
+        closeAndReturn(true);
+    }
+
+    private void cropPhotoTest() throws Exception {
+        String testTag = "crop";
+
+        // To improve travel accuracy perform the slide bar operation slowly
+        final int steps = 500;
+
+        // Perform a range of swipe tests while browsing photo gallery
+        LinkedHashMap<String, Position> testParams = new LinkedHashMap<String, Position>();
+        testParams.put("tilt_positive", Position.LEFT);
+        testParams.put("tilt_reset", Position.RIGHT);
+        testParams.put("tilt_negative", Position.RIGHT);
+
+        Iterator<Entry<String, Position>> it = testParams.entrySet().iterator();
+
+        // Select third photograph
+        selectPhoto(3);
+
+        UiObject editView = getUiObjectByResourceId(packageID + "edit",
+                                                    "android.widget.ImageView");
+        editView.click();
+
+        UiObject cropTool = getUiObjectByResourceId(packageID + "cpe_crop_tool",
+                                                    "android.widget.ImageView");
+        cropTool.click();
+
+        UiObject straightenSlider = getUiObjectByResourceId(packageID + "cpe_straighten_slider");
+
+        while (it.hasNext()) {
+            Map.Entry<String, Position> pair = it.next();
+            Position pos = pair.getValue();
+
+            String runName = String.format(testTag + "_" + pair.getKey());
+            ActionLogger logger = new ActionLogger(runName, parameters);
+
+            logger.start();
+            slideBarTest(straightenSlider, pos, steps);
+            logger.stop();
+        }
+
+        closeAndReturn(true);
+    }
+
+    private void rotatePhotoTest() throws Exception {
+        String testTag = "rotate";
+
+        String[] subTests = {"90", "180", "270"};
+
+        // Select fourth photograph
+        selectPhoto(4);
+
+        UiObject editView = getUiObjectByResourceId(packageID + "edit",
+                                                    "android.widget.ImageView");
+        editView.click();
+
+        UiObject cropTool = getUiObjectByResourceId(packageID + "cpe_crop_tool");
+        cropTool.click();
+
+        UiObject rotate = getUiObjectByResourceId(packageID + "cpe_rotate_90");
+
+        for (String subTest : subTests) {
+            String runName = String.format(testTag + "_" + subTest);
+            ActionLogger logger = new ActionLogger(runName, parameters);
+
+            logger.start();
+            rotate.click();
+            logger.stop();
+        }
+
+        closeAndReturn(true);
+    }
+
+    // Helper to slide the seekbar during photo edit.
+    private void seekBarTest(final UiObject view, final Position pos, final int steps) throws Exception {
+        final int SWIPE_MARGIN_LIMIT = 5;
+        Rect rect = view.getVisibleBounds();
+
+        switch (pos) {
+            case LEFT:
+                getUiDevice().click(rect.left + SWIPE_MARGIN_LIMIT, rect.centerY());
+                break;
+            case RIGHT:
+                getUiDevice().click(rect.right - SWIPE_MARGIN_LIMIT, rect.centerY());
+                break;
+            case CENTRE:
+                view.click();
+                break;
+            default:
+                break;
+        }
+    }
+
+    // Helper to slide the slidebar during photo edit.
+    private void slideBarTest(final UiObject view, final Position pos, final int steps) throws Exception {
+        final int SWIPE_MARGIN_LIMIT = 5;
+        Rect rect = view.getBounds();
+
+        switch (pos) {
+            case LEFT:
+                getUiDevice().drag(rect.left + SWIPE_MARGIN_LIMIT, rect.centerY(),
+                                   rect.left + rect.width() / 4, rect.centerY(),
+                                   steps);
+                break;
+            case RIGHT:
+                getUiDevice().drag(rect.right - SWIPE_MARGIN_LIMIT, rect.centerY(),
+                                   rect.right - rect.width() / 4, rect.centerY(),
+                                   steps);
+                break;
+            default:
+                break;
         }
     }
 }
