@@ -28,38 +28,12 @@ import java.util.concurrent.TimeUnit;
 
 public class UiAutomation extends UxPerfUiAutomation {
 
-    public static final String TEXT_VIEW = "android.widget.TextView";
+    public static final String ACTION_VOICE = "voice";
+    public static final String ACTION_VIDEO = "video";
 
     public Bundle parameters;
     public String packageName;
     public String packageID;
-
-    // Creates a watcher for when a pop up dialog appears with a dismiss button.
-    private UiWatcher createInfoPopUpWatcher() throws Exception {
-        UiWatcher infoPopUpWatcher = new UiWatcher() {
-            @Override
-            public boolean checkForCondition() {
-                UiObject dismissButton =
-                    new UiObject(new UiSelector().resourceId(packageID + "dismiss_button"));
-
-                if (dismissButton.exists()) {
-                    try {
-                        dismissButton.click();
-                    } catch (UiObjectNotFoundException e) {
-                        e.printStackTrace();
-                    }
-
-                    Long viewTimeout = TimeUnit.SECONDS.toMillis(10);
-                    boolean dismissed = dismissButton.waitUntilGone(viewTimeout);
-
-                    return dismissed;
-                }
-                return false;
-            }
-        };
-
-        return infoPopUpWatcher;
-    }
 
     public void runUiAutomation() throws Exception {
         // Override superclass value
@@ -86,10 +60,10 @@ public class UiAutomation extends UxPerfUiAutomation {
         handleLoginScreen(loginName, loginPass);
         searchForContact(contactName);
 
-        if ("video".equalsIgnoreCase(callType)) {
-            videoCallTest(callDuration);
-        } else if ("voice".equalsIgnoreCase(callType)) {
+        if (ACTION_VOICE.equalsIgnoreCase(callType)) {
             voiceCallTest(callDuration);
+        } else if (ACTION_VIDEO.equalsIgnoreCase(callType)) {
+            videoCallTest(callDuration);
         }
 
         removeWatcher("infoPopUpWatcher");
@@ -150,6 +124,33 @@ public class UiAutomation extends UxPerfUiAutomation {
                 new UiObject(new UiSelector().resourceId(packageID + "fab"));
             confirm.click();
         }
+    }
+
+    // Creates a watcher for when a pop up dialog appears with a dismiss button.
+    private UiWatcher createInfoPopUpWatcher() throws Exception {
+        UiWatcher infoPopUpWatcher = new UiWatcher() {
+            @Override
+            public boolean checkForCondition() {
+                UiObject dismissButton =
+                    new UiObject(new UiSelector().resourceId(packageID + "dismiss_button"));
+
+                if (dismissButton.exists()) {
+                    try {
+                        dismissButton.click();
+                    } catch (UiObjectNotFoundException e) {
+                        e.printStackTrace();
+                    }
+
+                    Long viewTimeout = TimeUnit.SECONDS.toMillis(10);
+                    boolean dismissed = dismissButton.waitUntilGone(viewTimeout);
+
+                    return dismissed;
+                }
+                return false;
+            }
+        };
+
+        return infoPopUpWatcher;
     }
 
     private void voiceCallTest(int duration) throws Exception {
