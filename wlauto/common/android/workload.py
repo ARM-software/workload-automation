@@ -23,7 +23,7 @@ from distutils.version import LooseVersion
 from wlauto.core.extension import Parameter, ExtensionMeta, ListCollection
 from wlauto.core.workload import Workload
 from wlauto.core.resource import NO_ONE
-from wlauto.common.android.resources import ApkFile
+from wlauto.common.android.resources import ApkFile, ReventFile
 from wlauto.common.resources import ExtensionAsset, Executable, File
 from wlauto.exceptions import WorkloadError, ResourceError, DeviceError
 from wlauto.utils.android import ApkInfo, ANDROID_NORMAL_PERMISSIONS, UNSUPPORTED_PACKAGES
@@ -451,9 +451,9 @@ class ReventWorkload(Workload):
         self.statedefs_dir = None
         self.check_states = None
 
-    def initialize(self, context):
-        self.revent_setup_file = context.resolver.get(wlauto.common.android.resources.ReventFile(self, 'setup'))
-        self.revent_run_file = context.resolver.get(wlauto.common.android.resources.ReventFile(self, 'run'))
+    def setup(self, context):
+        self.revent_setup_file = context.resolver.get(ReventFile(self, 'setup'))
+        self.revent_run_file = context.resolver.get(ReventFile(self, 'run'))
         devpath = self.device.path
         self.on_device_setup_revent = devpath.join(self.device.working_directory,
                                                    os.path.split(self.revent_setup_file)[-1])
@@ -465,7 +465,6 @@ class ReventWorkload(Workload):
         self.setup_timeout = self.setup_timeout or default_setup_timeout
         self.run_timeout = self.run_timeout or default_run_timeout
 
-    def setup(self, context):
         Workload.setup(self, context)
         self.device.killall('revent')
         command = '{} replay {}'.format(self.on_device_revent_binary, self.on_device_setup_revent)
