@@ -58,6 +58,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         // Run tests
         handleLoginScreen(loginName, loginPass);
+        dismissUpdatePopupIfPresent();
         searchForContact(contactName);
 
         if (ACTION_VOICE.equalsIgnoreCase(callType)) {
@@ -84,6 +85,22 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject signinButton = new UiObject(new UiSelector().resourceId(signinButtonResourceId));
         passwordField.setText(password);
         signinButton.clickAndWaitForNewWindow();
+    }
+
+    public void dismissUpdatePopupIfPresent() throws Exception {
+        UiObject updateNotice =
+            new UiObject(new UiSelector().resourceId(packageID + "update_notice_dont_show_again"));
+
+        //Detect if the update notice popup is present
+        if (updateNotice.waitForExists(uiAutoTimeout)) {
+            //Stop the notice from reappearing
+            updateNotice.click();
+
+            UiObject contiuneButton = getUiObjectByText("Continue", "android.widget.Button");
+            if (contiuneButton.exists()) {
+                contiuneButton.click();
+            }
+        }
     }
 
     public void searchForContact(String name) throws Exception {
