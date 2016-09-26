@@ -368,7 +368,9 @@ class ApkWorkload(Workload):
 
     def install_apk(self, context, replace=False):
         success = False
-        output = self.device.install(self.apk_file, self.install_timeout, replace=replace)
+        if replace:
+            self.device.uninstall(self.package)
+        output = self.device.install(self.apk_file, self.install_timeout)
         if 'Failure' in output:
             if 'ALREADY_EXISTS' in output:
                 self.logger.warn('Using already installed APK (did not unistall properly?)')
