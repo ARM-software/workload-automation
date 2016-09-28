@@ -14,15 +14,25 @@
 #
 
 import os
-import re
 
-from wlauto import AndroidUxPerfWorkload, Parameter, File
-from wlauto.exceptions import WorkloadError
+from wlauto import AndroidUxPerfWorkload, Parameter
+from wlauto.exceptions import ValidationError
 
 
 class GoogleSlides(AndroidUxPerfWorkload):
 
     name = 'googleslides'
+    package = 'com.google.android.apps.docs.editors.slides'
+    min_apk_version = '1.6.312.08'
+    activity = ''
+    view = [package + '/com.google.android.apps.docs.quickoffice.filepicker.FilePickerActivity',
+            package + '/com.google.android.apps.docs.editors.shared.filepicker.FilePickerActivity',
+            package + '/com.google.android.apps.docs.quickoffice.filepicker.LocalSaveAsActivity',
+            package + '/com.qo.android.quickpoint.Quickpoint',
+            package + '/com.google.android.apps.docs.app.DocsPreferencesActivity',
+            package + '/com.google.android.apps.docs.app.DocListActivity',
+            package + '/com.google.android.apps.docs.welcome.warmwelcome.TrackingWelcomeActivity',
+            package + '/com.google.android.apps.docs.app.NewMainProxyActivity']
     description = '''
     A workload to perform standard productivity tasks with Google Slides. The workload carries
     out various tasks, such as creating a new presentation, adding text, images, and shapes,
@@ -44,9 +54,8 @@ class GoogleSlides(AndroidUxPerfWorkload):
     3. Create a new PowerPoint presentation in the app (PPT compatibility mode) with a title
        slide and save it to device storage.
     4. Insert another slide and to it insert the pushed image by picking it from the gallery.
-    5. Insert the final slide and add a shape to it. Resize and drag the shape to modify it.
-    6. Finally, navigate back to the documents list and delete file from the list to remove
-       it from the device.
+    5. Insert a final slide and add a shape to it. Resize and drag the shape to modify it.
+    6. Finally, navigate back to the documents list.
 
     --- load ---
     Copy a PowerPoint presentation onto the device to test slide navigation. The PowerPoint
@@ -67,28 +76,10 @@ class GoogleSlides(AndroidUxPerfWorkload):
     NOTE: There are known issues with the reliability of this workload on some targets.
     It MAY NOT ALWAYS WORK on your device. If you do run into problems, it might help to
     set ``do_text_entry`` parameter to ``False``.
-
     '''
 
-    package = 'com.google.android.apps.docs.editors.slides'
-    min_apk_version = '1.6.312.08'
-    max_apk_version = None  # works with latest (1.6.332.13) at time of publishing this
-    activity = ''
-
-    # Views for FPS instrumentation
-    view = [
-        package + '/com.google.android.apps.docs.quickoffice.filepicker.FilePickerActivity',
-        package + '/com.google.android.apps.docs.editors.shared.filepicker.FilePickerActivity',
-        package + '/com.google.android.apps.docs.quickoffice.filepicker.LocalSaveAsActivity',
-        package + '/com.qo.android.quickpoint.Quickpoint',
-        package + '/com.google.android.apps.docs.app.DocsPreferencesActivity',
-        package + '/com.google.android.apps.docs.app.DocListActivity',
-        package + '/com.google.android.apps.docs.welcome.warmwelcome.TrackingWelcomeActivity',
-        package + '/com.google.android.apps.docs.app.NewMainProxyActivity',
-    ]
-
     parameters = [
-        Parameter('test_image', kind=str, mandatory=True, default='uxperf_1600x1200.jpg',
+        Parameter('test_image', kind=str, default='uxperf_1600x1200.jpg',
                   description='''
                   An image to be copied onto the device that will be embedded in the
                   PowerPoint file as part of the test.
@@ -117,7 +108,8 @@ class GoogleSlides(AndroidUxPerfWorkload):
     def __init__(self, device, **kwargs):
         super(GoogleSlides, self).__init__(device, **kwargs)
         self.run_timeout = 600
-        self.deployable_assets += [self.test_image, self.test_file]
+        self.deployable_assets = [self.test_image, self.test_file]
+        self.clean_assets = True
 
     def validate(self):
         super(GoogleSlides, self).validate()
@@ -126,18 +118,15 @@ class GoogleSlides(AndroidUxPerfWorkload):
         self.uiauto_params['slide_count'] = self.slide_count
         self.uiauto_params['do_text_entry'] = self.do_text_entry
         self.uiauto_params['new_doc_name'] = self.new_doc_name.replace(' ', '0space0')
-
-    def setup(self, context):
-        super(GoogleSlides, self).setup(context)
-        # Force re-index of removable storage to pick up pushed image in gallery
-        self.device.broadcast_media_mounted(self.device.working_directory)
+        # Only accept certain image formats
+        if os.path.splitext(self.test_image.lower())[1] not in ['.jpg', '.jpeg', '.png']:
+            raise ValidationError('{} must be a JPEG or PNG file'.format(self.test_image))
+        # Only accept certain presentation formats
+        if os.path.splitext(self.test_file.lower())[1] not in ['.pptx']:
+            raise ValidationError('{} must be a PPTX file'.format(self.test_file))
 
     def teardown(self, context):
         super(GoogleSlides, self).teardown(context)
+        # Remove the newly created file
         self.device.delete_file(self.device.path.join(self.device.working_directory, self.new_doc_name))
-        self.device.broadcast_media_mounted(self.device.working_directory)
-
-    def finalize(self, context):
-        super(GoogleSlides, self).finalize(context)
-        self.delete_assets()
         self.device.broadcast_media_mounted(self.device.working_directory)
