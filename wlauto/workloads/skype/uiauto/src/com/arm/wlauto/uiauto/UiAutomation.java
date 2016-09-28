@@ -22,27 +22,32 @@ import com.android.uiautomator.core.UiObject;
 import com.android.uiautomator.core.UiObjectNotFoundException;
 import com.android.uiautomator.core.UiSelector;
 import com.android.uiautomator.core.UiWatcher;
+
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
+
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
 
 import java.util.concurrent.TimeUnit;
 
 public class UiAutomation extends UxPerfUiAutomation {
 
-    public static final String ACTION_VOICE = "voice";
-    public static final String ACTION_VIDEO = "video";
-
     public Bundle parameters;
     public String packageName;
     public String packageID;
+
+    public static final String ACTION_VOICE = "voice";
+    public static final String ACTION_VIDEO = "video";
 
     public void runUiAutomation() throws Exception {
         // Override superclass value
         this.uiAutoTimeout = TimeUnit.SECONDS.toMillis(10);
 
-        // Get Params
         parameters = getParams();
         packageName = parameters.getString("package");
         packageID = packageName + ":id/";
+
         String loginName = parameters.getString("my_id");
         String loginPass = parameters.getString("my_pwd");
         String contactName = parameters.getString("name").replace("0space0", " ");
@@ -72,17 +77,17 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void handleLoginScreen(String username, String password) throws Exception {
-        String useridResoureId = packageID + "sign_in_userid";
-        String nextButtonResourceId = packageID + "sign_in_next_btn";
-        UiObject useridField = new UiObject(new UiSelector().resourceId(useridResoureId));
-        UiObject nextButton = new UiObject(new UiSelector().resourceId(nextButtonResourceId));
+        UiObject useridField =
+            new UiObject(new UiSelector().resourceId(packageID + "sign_in_userid"));
+        UiObject nextButton =
+            new UiObject(new UiSelector().resourceId(packageID + "sign_in_next_btn"));
         useridField.setText(username);
         nextButton.clickAndWaitForNewWindow();
 
-        String passwordResoureId = packageID + "signin_password";
-        String signinButtonResourceId = packageID + "sign_in_btn";
-        UiObject passwordField = new UiObject(new UiSelector().resourceId(passwordResoureId));
-        UiObject signinButton = new UiObject(new UiSelector().resourceId(signinButtonResourceId));
+        UiObject passwordField =
+            new UiObject(new UiSelector().resourceId(packageID + "signin_password"));
+        UiObject signinButton =
+            new UiObject(new UiSelector().resourceId(packageID + "sign_in_btn"));
         passwordField.setText(password);
         signinButton.clickAndWaitForNewWindow();
     }
@@ -90,55 +95,49 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void dismissUpdatePopupIfPresent() throws Exception {
         UiObject updateNotice =
             new UiObject(new UiSelector().resourceId(packageID + "update_notice_dont_show_again"));
-
         //Detect if the update notice popup is present
         if (updateNotice.waitForExists(uiAutoTimeout)) {
             //Stop the notice from reappearing
             updateNotice.click();
-
-            UiObject contiuneButton = getUiObjectByText("Continue", "android.widget.Button");
-            if (contiuneButton.exists()) {
-                contiuneButton.click();
-            }
+            clickUiObject(BY_TEXT, "Continue", "android.widget.Button");
         }
     }
 
     public void searchForContact(String name) throws Exception {
-        UiObject menuSearch = new UiObject(new UiSelector().resourceId(packageID + "menu_search"));
         boolean sharingResource = false;
-
-        // If searching for a contact from Skype directly we need
-        // to click the menu search button to display the contact search box.
+        UiObject menuSearch =
+            new UiObject(new UiSelector().resourceId(packageID + "menu_search"));
         if (menuSearch.waitForExists(uiAutoTimeout)) {
+            // If searching for a contact from Skype directly we need
+            // to click the menu search button to display the contact search box.
             menuSearch.click();
-
-        // If sharing a resource from another app the contact search box is shown
-        // by default.
         } else {
+            // If sharing a resource from another app the contact search box is shown
+            // by default.
             sharingResource = true;
         }
 
         UiObject search = getUiObjectByText("Search", "android.widget.EditText");
         search.setText(name);
 
-        UiObject peopleItem = getUiObjectByText(name, "android.widget.TextView");
-
-        peopleItem.waitForExists(uiAutoTimeout);
-        peopleItem.click();
+        UiObject peopleItem = clickUiObject(BY_TEXT, name, "android.widget.TextView");
 
         UiObject avatarPresence =
             new UiObject(new UiSelector().resourceId(packageID + "skype_avatar_presence"));
 
+        UiObject confirm =
+            new UiObject(new UiSelector().resourceId(packageID + "fab"));
+
         // On some devices two clicks are needed to select a contact.
         if (!avatarPresence.waitUntilGone(uiAutoTimeout)) {
-            peopleItem.click();
+            if (!sharingResource || !confirm.exists()) {
+                peopleItem.click();
+            }
         }
 
         // Before sharing a resource from another app we first need to
         // confirm our selection.
         if (sharingResource) {
-            UiObject confirm =
-                new UiObject(new UiSelector().resourceId(packageID + "fab"));
             confirm.click();
         }
     }
@@ -158,15 +157,11 @@ public class UiAutomation extends UxPerfUiAutomation {
                         e.printStackTrace();
                     }
 
-                    Long viewTimeout = TimeUnit.SECONDS.toMillis(10);
-                    boolean dismissed = dismissButton.waitUntilGone(viewTimeout);
-
-                    return dismissed;
+                    return dismissButton.waitUntilGone(TimeUnit.SECONDS.toMillis(10));
                 }
                 return false;
             }
         };
-
         return infoPopUpWatcher;
     }
 
@@ -191,11 +186,14 @@ public class UiAutomation extends UxPerfUiAutomation {
     private void makeCall(int duration, boolean video, String testTag) throws Exception {
         String description = video ? "Video call" : "Call options";
 
-        UiObject callButton = new UiObject(new UiSelector().descriptionContains(description));
+        UiObject callButton =
+            new UiObject(new UiSelector().descriptionContains(description));
         callButton.clickAndWaitForNewWindow();
 
-        UiObject muteButton = new UiObject(new UiSelector().descriptionContains("Mute"));
+        UiObject muteButton =
+            new UiObject(new UiSelector().descriptionContains("Mute"));
         muteButton.click();
+        
         sleep(duration);
     }
 }
