@@ -26,12 +26,17 @@ import com.android.uiautomator.core.UiScrollable;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
+
 import java.util.concurrent.TimeUnit;
 import java.util.LinkedHashMap;
 import java.util.Iterator;
-import android.util.Log;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import android.util.Log;
 
 public class UiAutomation extends UxPerfUiAutomation {
 
@@ -43,25 +48,31 @@ public class UiAutomation extends UxPerfUiAutomation {
     private long viewTimeout =  TimeUnit.SECONDS.toMillis(viewTimeoutSecs);
 
     public void runUiAutomation() throws Exception {
+        // Override superclass value
         this.uiAutoTimeout = TimeUnit.SECONDS.toMillis(8);
 
         parameters = getParams();
         packageName = parameters.getString("package");
         packageID = packageName + ":id/";
 
-        String bookTitle = parameters.getString("book_title").replace("0space0", " ");
+        String searchBookTitle = parameters.getString("search_book_title").replace("0space0", " ");
+        String libraryBookTitle = parameters.getString("library_book_title").replace("0space0", " ");
         String chapterPageNumber = parameters.getString("chapter_page_number");
         String searchWord = parameters.getString("search_word");
         String noteText = "This is a test note";
+        String account = parameters.getString("account");
 
         setScreenOrientation(ScreenOrientation.NATURAL);
+
+        chooseAccount(account);
         clearFirstRunDialogues();
+        dismissSendBooksAsGiftsDialog();
         dismissSync();
 
-        searchForBook(bookTitle);
+        searchForBook(searchBookTitle);
         addToLibrary();
         openMyLibrary();
-        openBook(bookTitle);
+        openBook(libraryBookTitle);
 
         UiWatcher pageSyncPopUpWatcher = createPopUpWatcher();
         registerWatcher("pageSyncPopUp", pageSyncPopUpWatcher);
@@ -77,45 +88,38 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         removeWatcher("pageSyncPop");
         pressBack();
+
         unsetScreenOrientation();
     }
 
-    // Creates a watcher for when a pop up warning appears when pages are out
-    // of sync across multiple devices.
-    private UiWatcher createPopUpWatcher() throws Exception {
-        UiWatcher pageSyncPopUpWatcher = new UiWatcher() {
-
-            @Override
-            public boolean checkForCondition() {
-                UiObject popUpDialogue =
-                    new UiObject(new UiSelector().resourceId("android:id/message")
-                                                 .textStartsWith("You're on page"));
-
-                // Don't sync and stay on the current page
-                if (popUpDialogue.exists()) {
-                    try {
-                        UiObject stayOnPage = new UiObject(new UiSelector()
-                                .className("android.widget.Button")
-                                .text("Yes"));
-                        stayOnPage.click();
-                    } catch (UiObjectNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                    return popUpDialogue.waitUntilGone(viewTimeout);
+    // If the device has more than one account setup, a prompt appears
+    // In this case, select the first account in the list, unless `account`
+    // has been specified as a parameter, otherwise select `account`.
+    private void chooseAccount(String account) throws Exception {
+        UiObject accountPopup =
+            new UiObject(new UiSelector().textContains("Choose an account")
+                                         .className("android.widget.TextView"));
+        if (accountPopup.exists()) {
+            if ("None".equals(account)) {
+                // If no account has been specified, pick the first entry in the list
+                UiObject list =
+                    new UiObject(new UiSelector().className("android.widget.ListView"));
+                UiObject first = list.getChild(new UiSelector().index(0));
+                if (!first.exists()) {
+                    // Some devices are not zero indexed. If 0 doesnt exist, pick 1
+                    first = list.getChild(new UiSelector().index(1));
                 }
-                return false;
+                first.click();
+            } else {
+                // Account specified, select that
+                clickUiObject(BY_TEXT, account, "android.widget.CheckedTextView");
             }
-        };
-
-        return pageSyncPopUpWatcher;
-    }
-
-    private void dismissSync() throws Exception {
-        UiObject keepSyncOff =
-            new UiObject(new UiSelector().textContains("Keep sync off")
-                                         .className("android.widget.Button"));
-        if (keepSyncOff.exists()) {
-            keepSyncOff.click();
+            // Click OK to proceed
+            UiObject ok =
+                new UiObject(new UiSelector().textContains("OK")
+                                             .className("android.widget.Button")
+                                             .enabled(true));
+            ok.clickAndWaitForNewWindow();
         }
     }
 
@@ -125,7 +129,6 @@ public class UiAutomation extends UxPerfUiAutomation {
     private void clearFirstRunDialogues() throws Exception {
         UiObject startButton =
             new UiObject(new UiSelector().resourceId(packageID + "start_button"));
-
         // First try and skip the sample book selection
         if (startButton.exists()) {
             startButton.click();
@@ -133,7 +136,6 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         UiObject endButton =
             new UiObject(new UiSelector().resourceId(packageID + "end_button"));
-
         // Click next button if it exists
         if (endButton.exists()) {
             endButton.click();
@@ -148,49 +150,65 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
     }
 
+    private void dismissSendBooksAsGiftsDialog() throws Exception {
+        UiObject gotIt =
+            new UiObject(new UiSelector().textContains("GOT IT!"));
+        if (gotIt.exists()) {
+            gotIt.click();
+        }
+    }
+
+    private void dismissSync() throws Exception {
+        UiObject keepSyncOff =
+            new UiObject(new UiSelector().textContains("Keep sync off")
+                                         .className("android.widget.Button"));
+        if (keepSyncOff.exists()) {
+            keepSyncOff.click();
+        }
+    }
+
     // Searches for a "free" or "purchased" book title in Google play
     private void searchForBook(final String bookTitle) throws Exception {
         UiObject search =
             new UiObject(new UiSelector().resourceId(packageID + "menu_search"));
+        if (!search.exists()) {
+            search =
+                new UiObject(new UiSelector().resourceId(packageID + "search_box_active_text_view"));
+        }
         search.click();
 
-        UiObject searchText = new UiObject(new UiSelector().textContains("Search")
-                                                           .className("android.widget.EditText"));
+        UiObject searchText =
+            new UiObject(new UiSelector().textContains("Search")
+                                         .className("android.widget.EditText"));
         searchText.setText(bookTitle);
         pressEnter();
 
         UiObject resultList =
             new UiObject(new UiSelector().resourceId("com.android.vending:id/search_results_list"));
-
         if (!resultList.waitForExists(viewTimeout)) {
             throw new UiObjectNotFoundException("Could not find \"search results list view\".");
         }
 
-        String desc = String.format("Book: " + bookTitle);
-
         // Create a selector so that we can search for siblings of the desired
         // book that contains a "free" or "purchased" book identifier
-        UiSelector bookSelector = new UiSelector().description(desc).className("android.widget.TextView");
-
         UiObject label =
-            new UiObject(new UiSelector().fromParent(bookSelector)
+            new UiObject(new UiSelector().fromParent(new UiSelector()
+                                         .description(String.format("Book: " + bookTitle))
+                                         .className("android.widget.TextView"))
                                          .resourceId("com.android.vending:id/li_label")
                                          .descriptionMatches("^(Purchased|Free)$"));
-
-        UiScrollable searchResultsList =
-            new UiScrollable(new UiSelector().resourceId("com.android.vending:id/search_results_list"));
 
         final int maxSearchTime = 30;
         int searchTime = maxSearchTime;
 
         while (!label.exists()) {
-            if (searchTime <= 0) {
-                throw new UiObjectNotFoundException(
-                        "Exceeded maximum search time (" + maxSearchTime  + " seconds) to find book \"" + bookTitle + "\"");
-            } else {
+            if (searchTime > 0) {
                 uiDeviceSwipeDown(100);
                 sleep(1);
                 searchTime--;
+            } else {
+                throw new UiObjectNotFoundException(
+                        "Exceeded maximum search time (" + maxSearchTime  + " seconds) to find book \"" + bookTitle + "\"");
             }
         }
 
@@ -200,18 +218,22 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void addToLibrary() throws Exception {
-        UiObject add = new UiObject(new UiSelector().textContains("ADD TO LIBRARY")
-                                                    .className("android.widget.Button"));
+        UiObject add =
+            new UiObject(new UiSelector().textContains("ADD TO LIBRARY")
+                                         .className("android.widget.Button"));
         if (add.exists()) {
-            add.click(); // add to My Library and opens book by default
+            // add to My Library and opens book by default
+            add.click();
+            clickUiObject(BY_TEXT, "BUY", "android.widget.Button", true);
         } else {
-            UiObject read = getUiObjectByText("READ", "android.widget.Button");
-            read.click(); // opens book
+            // opens book
+            clickUiObject(BY_TEXT, "READ", "android.widget.Button");
         }
 
         waitForPage();
 
-        UiObject navigationButton = new UiObject(new UiSelector().description("Navigate up"));
+        UiObject navigationButton =
+            new UiObject(new UiSelector().description("Navigate up"));
 
         // Return to main app window
         pressBack();
@@ -227,15 +249,14 @@ public class UiAutomation extends UxPerfUiAutomation {
     private void openMyLibrary() throws Exception {
         String testTag = "open_library";
         ActionLogger logger = new ActionLogger(testTag, parameters);
+
         logger.start();
-
-        UiObject openDrawer = getUiObjectByDescription("Show navigation drawer");
-        openDrawer.click();
-
+        clickUiObject(BY_DESC, "Show navigation drawer");
         // To correctly find the UiObject we need to specify the index also here
         UiObject myLibrary =
             new UiObject(new UiSelector().className("android.widget.TextView")
-                                         .text("My library").index(3));
+                                         .text("My library")
+                                         .index(3));
         myLibrary.clickAndWaitForNewWindow(uiAutoTimeout);
         logger.stop();
     }
@@ -244,31 +265,24 @@ public class UiAutomation extends UxPerfUiAutomation {
         String testTag = "open_book";
         ActionLogger logger = new ActionLogger(testTag, parameters);
 
-        UiScrollable cardsGrid =
-            new UiScrollable(new UiSelector().resourceId(packageID + "cards_grid"));
+        long maxWaitTimeSeconds = 120;
+        long maxWaitTime = TimeUnit.SECONDS.toMillis(maxWaitTimeSeconds);
 
-        UiSelector bookSelector = new UiSelector().text(bookTitle).className("android.widget.TextView");
+        UiSelector bookSelector =
+            new UiSelector().text(bookTitle)
+                            .className("android.widget.TextView");
         UiObject book = new UiObject(bookSelector);
-
         // Check that books are sorted by time added to library. This way we
         // can assume any newly downloaded books will be visible on the first
         // screen.
-        UiObject menuSort =
-            getUiObjectByResourceId(packageID + "menu_sort", "android.widget.TextView");
-        menuSort.click();
-
-        UiObject sortByRecent = getUiObjectByText("Recent", "android.widget.TextView");
-        sortByRecent.click();
-
+        clickUiObject(BY_ID, packageID + "menu_sort", "android.widget.TextView");
+        clickUiObject(BY_TEXT, "Recent", "android.widget.TextView");
         // When the book is first added to library it may not appear in
         // cardsGrid until it has been fully downloaded. Wait for fully
         // downloaded books
         UiObject downloadComplete =
-            new UiObject(new UiSelector().fromParent(bookSelector).description("100% downloaded"));
-
-        long maxWaitTimeSeconds = 120;
-        long maxWaitTime = TimeUnit.SECONDS.toMillis(maxWaitTimeSeconds);
-
+            new UiObject(new UiSelector().fromParent(bookSelector)
+                                         .description("100% downloaded"));
         if (!downloadComplete.waitForExists(maxWaitTime)) {
                 throw new UiObjectNotFoundException(
                         "Exceeded maximum wait time (" + maxWaitTimeSeconds  + " seconds) to download book \"" + bookTitle + "\"");
@@ -278,6 +292,50 @@ public class UiAutomation extends UxPerfUiAutomation {
         book.click();
         waitForPage();
         logger.stop();
+    }
+
+    // Creates a watcher for when a pop up warning appears when pages are out
+    // of sync across multiple devices.
+    private UiWatcher createPopUpWatcher() throws Exception {
+        UiWatcher pageSyncPopUpWatcher = new UiWatcher() {
+            @Override
+            public boolean checkForCondition() {
+                UiObject popUpDialogue =
+                    new UiObject(new UiSelector().textStartsWith("You're on page")
+                                                 .resourceId("android:id/message"));
+                // Don't sync and stay on the current page
+                if (popUpDialogue.exists()) {
+                    try {
+                        UiObject stayOnPage =
+                            new UiObject(new UiSelector().text("Yes")
+                                                         .className("android.widget.Button"));
+                        stayOnPage.click();
+                    } catch (UiObjectNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                    return popUpDialogue.waitUntilGone(viewTimeout);
+                }
+                return false;
+            }
+        };
+        return pageSyncPopUpWatcher;
+    }
+
+    private void selectChapter(final String chapterPageNumber) throws Exception {
+        getDropdownMenu();
+
+        UiObject contents = getUiObjectByResourceId(packageID + "menu_reader_toc");
+        contents.clickAndWaitForNewWindow(uiAutoTimeout);
+        UiObject toChapterView = getUiObjectByResourceId(packageID + "toc_list_view",
+                                                         "android.widget.ExpandableListView");
+        // Navigate to top of chapter view
+        searchPage(toChapterView, "1", Direction.UP, 10);
+        // Search for chapter page number
+        UiObject page = searchPage(toChapterView, chapterPageNumber, Direction.DOWN, 10);
+        // Go to the page
+        page.clickAndWaitForNewWindow(viewTimeout);
+
+        waitForPage();
     }
 
     private void gesturesTest() throws Exception {
@@ -324,72 +382,28 @@ public class UiAutomation extends UxPerfUiAutomation {
         waitForPage();
     }
 
-    private UiObject searchPage(final UiObject view, final String pagenum, final Direction updown,
-                                final int attempts) throws Exception {
-        if (attempts <= 0) {
-            throw new UiObjectNotFoundException("Could not find \"page number\" after several attempts.");
-        }
-
-        String search = String.format("page " + pagenum);
-        UiObject page = new UiObject(new UiSelector().description(search)
-                                                    .className("android.widget.TextView"));
-        if (!page.exists()) {
-            // Scroll up by swiping down
-            if (updown == Direction.UP) {
-                view.swipeDown(200);
-            // Default case is to scroll down (swipe up)
-            } else {
-                view.swipeUp(200);
-            }
-            searchPage(view, pagenum, updown, attempts - 1);
-        }
-        return page;
-    }
-
-    private void selectChapter(final String chapterPageNumber) throws Exception {
-        getDropdownMenu();
-
-        UiObject contents = getUiObjectByResourceId(packageID + "menu_reader_toc");
-        contents.clickAndWaitForNewWindow(uiAutoTimeout);
-
-        UiObject toChapterView = getUiObjectByResourceId(packageID + "toc_list_view",
-                                                         "android.widget.ExpandableListView");
-
-        // Navigate to top of chapter view
-        searchPage(toChapterView, "1", Direction.UP, 10);
-
-        UiObject page = searchPage(toChapterView, chapterPageNumber, Direction.DOWN, 10);
-
-        page.clickAndWaitForNewWindow(viewTimeout);
-
-        waitForPage();
-    }
-
     private void addNote(final String text) throws Exception {
         String testTag = "note_add";
         ActionLogger logger = new ActionLogger(testTag, parameters);
 
         hideDropDownMenu();
 
+        UiObject clickable = new UiObject(new UiSelector().longClickable(true));
+
         logger.start();
 
-        UiObject clickable = new UiObject(new UiSelector().longClickable(true));
         uiObjectPerformLongClick(clickable, 100);
 
-        UiObject addNoteButton = new UiObject(
-                new UiSelector().resourceId(packageID + "add_note_button"));
+        UiObject addNoteButton =
+            new UiObject(new UiSelector().resourceId(packageID + "add_note_button"));
         addNoteButton.click();
 
         UiObject noteEditText = getUiObjectByResourceId(packageID + "note_edit_text",
                                                         "android.widget.EditText");
         noteEditText.setText(text);
 
-        UiObject noteMenuButton = getUiObjectByResourceId(packageID + "note_menu_button",
-                                                          "android.widget.ImageButton");
-        noteMenuButton.click();
-
-        UiObject saveButton = getUiObjectByText("Save", "android.widget.TextView");
-        saveButton.click();
+        clickUiObject(BY_ID, packageID + "note_menu_button", "android.widget.ImageButton");
+        clickUiObject(BY_TEXT, "Save", "android.widget.TextView");
 
         logger.stop();
 
@@ -399,17 +413,18 @@ public class UiAutomation extends UxPerfUiAutomation {
     private void removeNote() throws Exception {
         String testTag = "note_remove";
         ActionLogger logger = new ActionLogger(testTag, parameters);
-        logger.start();
 
         UiObject clickable = new UiObject(new UiSelector().longClickable(true));
+
+        logger.start();
+
         uiObjectPerformLongClick(clickable, 100);
 
-        UiObject removeButton = new UiObject(
-                new UiSelector().resourceId(packageID + "remove_highlight_button"));
+        UiObject removeButton =
+            new UiObject(new UiSelector().resourceId(packageID + "remove_highlight_button"));
         removeButton.click();
 
-        UiObject confirmRemove = getUiObjectByText("Remove", "android.widget.Button");
-        confirmRemove.click();
+        clickUiObject(BY_TEXT, "Remove", "android.widget.Button");
 
         logger.stop();
 
@@ -420,26 +435,25 @@ public class UiAutomation extends UxPerfUiAutomation {
         String testTag = "search_word";
         ActionLogger logger = new ActionLogger(testTag, parameters);
 
+        // Allow extra time for search queries involing high freqency words
+        final long searchTimeout =  TimeUnit.SECONDS.toMillis(20);
+
         getDropdownMenu();
 
-        UiObject search = new UiObject(
-                new UiSelector().resourceId(packageID + "menu_search"));
+        UiObject search =
+            new UiObject(new UiSelector().resourceId(packageID + "menu_search"));
         search.click();
 
-        UiObject searchText = new UiObject(
-                new UiSelector().resourceId(packageID + "search_src_text"));
+        UiObject searchText =
+            new UiObject(new UiSelector().resourceId(packageID + "search_src_text"));
 
         logger.start();
 
         searchText.setText(text);
         pressEnter();
 
-        UiObject resultList = new UiObject(
-                new UiSelector().resourceId(packageID + "search_results_list"));
-
-        // Allow extra time for search queries involing high freqency words
-        final long searchTimeout =  TimeUnit.SECONDS.toMillis(20);
-
+        UiObject resultList =
+            new UiObject(new UiSelector().resourceId(packageID + "search_results_list"));
         if (!resultList.waitForExists(searchTimeout)) {
             throw new UiObjectNotFoundException("Could not find \"search results list view\".");
         }
@@ -447,7 +461,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject searchWeb =
             new UiObject(new UiSelector().text("Search web")
                                          .className("android.widget.TextView"));
-
         if (!searchWeb.waitForExists(searchTimeout)) {
             throw new UiObjectNotFoundException("Could not find \"Search web view\".");
         }
@@ -461,27 +474,27 @@ public class UiAutomation extends UxPerfUiAutomation {
         String testTag = "style";
 
         getDropdownMenu();
-        UiObject readerSettings = getUiObjectByResourceId(packageID + "menu_reader_settings",
-                                                          "android.widget.TextView");
-        readerSettings.click();
+
+        clickUiObject(BY_ID, packageID + "menu_reader_settings", "android.widget.TextView");
 
         // Check for lighting option button on newer versions
         UiObject lightingOptionsButton =
             new UiObject(new UiSelector().resourceId(packageID + "lighting_options_button"));
-
         if (lightingOptionsButton.exists()) {
             lightingOptionsButton.click();
         }
 
         String[] styles = {"Night", "Sepia", "Day"};
-
         for (String style : styles) {
             try {
                 ActionLogger logger = new ActionLogger(testTag + "_" + style, parameters);
-                UiObject pageStyle = new UiObject(new UiSelector().description(style));
+                UiObject pageStyle =
+                    new UiObject(new UiSelector().description(style));
+
                 logger.start();
                 pageStyle.clickAndWaitForNewWindow(viewTimeout);
                 logger.stop();
+
             } catch (UiObjectNotFoundException e) {
                 // On some devices the lighting options menu disappears
                 // between clicks. Searching for the menu again would affect
@@ -501,8 +514,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         getDropdownMenu();
 
-        UiObject moreOptions = getUiObjectByDescription("More options", "android.widget.ImageView");
-        moreOptions.click();
+        clickUiObject(BY_DESC, "More options", "android.widget.ImageView");
 
         UiObject bookInfo = getUiObjectByText("About this book", "android.widget.TextView");
 
@@ -519,13 +531,49 @@ public class UiAutomation extends UxPerfUiAutomation {
         pressBack();
     }
 
+    // Helper for waiting on a page between actions
+    private UiObject waitForPage() throws Exception {
+        UiObject activityReader =
+            new UiObject(new UiSelector().resourceId(packageID + "activity_reader")
+                                         .childSelector(new UiSelector()
+                                         .focusable(true)));
+        // On some devices the object in the view hierarchy is found before it
+        // becomes visible on the screen. Therefore add pause instead.
+        sleep(3);
+
+        if (!activityReader.waitForExists(viewTimeout)) {
+            throw new UiObjectNotFoundException("Could not find \"activity reader view\".");
+        }
+
+        return activityReader;
+    }
+
     // Helper for accessing the drop down menu
     private void getDropdownMenu() throws Exception {
         UiObject actionBar =
             new UiObject(new UiSelector().resourceId(packageID + "action_bar"));
-
         if (!actionBar.exists()) {
             tapDisplayCentre();
+            sleep(1); // Allow previous views to settle
+        }
+        
+        UiObject card =
+            new UiObject(new UiSelector().resourceId(packageID + "cards")
+                                         .className("android.view.ViewGroup"));
+        if (card.exists()) {
+            // On rare occasions tapping a certain word that appears in the centre
+            // of the display will bring up a card to describe the word.
+            // (Such as a place will bring a map of its location)
+            // In this situation, tap centre to go back, and try again
+            // at a different set of coordinates
+            int x = (int)(getDisplayCentreWidth() * 0.8);
+            int y = (int)(getDisplayCentreHeight() * 0.8);
+            while (card.exists()) {
+                tapDisplay(x, y);
+                sleep(1);
+            }
+            
+            tapDisplay(x, y);
             sleep(1); // Allow previous views to settle
         }
 
@@ -537,7 +585,6 @@ public class UiAutomation extends UxPerfUiAutomation {
     private void hideDropDownMenu() throws Exception {
         UiObject actionBar =
             new UiObject(new UiSelector().resourceId(packageID + "action_bar"));
-
         if (actionBar.exists()) {
             tapDisplayCentre();
             sleep(1); // Allow previous views to settle
@@ -548,20 +595,25 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
     }
 
-    // Helper for waiting on a page between actions
-    private UiObject waitForPage() throws Exception {
-        UiObject activityReader =
-            new UiObject(new UiSelector().resourceId(packageID + "activity_reader")
-                                         .childSelector(new UiSelector().focusable(true)));
-
-        // On some devices the object in the view hierarchy is found before it
-        // becomes visible on the screen. Therefore add pause instead.
-        sleep(3);
-
-        if (!activityReader.waitForExists(viewTimeout)) {
-            throw new UiObjectNotFoundException("Could not find \"activity reader view\".");
+    private UiObject searchPage(final UiObject view, final String pagenum, final Direction updown,
+                                final int attempts) throws Exception {
+        if (attempts <= 0) {
+            throw new UiObjectNotFoundException("Could not find \"page number\" after several attempts.");
         }
 
-        return activityReader;
+        UiObject page =
+            new UiObject(new UiSelector().description(String.format("page " + pagenum))
+                                         .className("android.widget.TextView"));
+        if (!page.exists()) {
+            // Scroll up by swiping down
+            if (updown == Direction.UP) {
+                view.swipeDown(200);
+            // Default case is to scroll down (swipe up)
+            } else {
+                view.swipeUp(200);
+            }
+            page = searchPage(view, pagenum, updown, attempts - 1);
+        }
+        return page;
     }
 }
