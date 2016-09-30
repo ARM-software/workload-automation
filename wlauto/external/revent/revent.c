@@ -26,10 +26,6 @@
 #include <signal.h>
 #include <ctype.h>
 
-#ifdef ANDROID
-#include <android/log.h>
-#endif
-
 
 #define die(args...) do { \
     fprintf(stderr, "ERROR: "); \
@@ -47,14 +43,12 @@ const char magic[] = "REVENT";
 //This should be incremented if any changes are made to the file format
 uint16_t file_version = 1;
 
-#ifndef ANDROID
 int strlcpy(char *dest, char *source,  size_t size)
 {
         strncpy(dest, source, size-1);
         dest[size-1] = '\0';
         return size;
 }
-#endif
 
 typedef enum {
     FALSE=0,
@@ -421,13 +415,7 @@ void replay(const char *logfile)
 {
     replay_buffer_t *replay_buffer;
     replay_buffer_init(&replay_buffer, logfile);
-#ifdef ANDROID
-    __android_log_write(ANDROID_LOG_INFO, "REVENT", "Replay starting");
-#endif
     replay_buffer_play(replay_buffer);
-#ifdef ANDROID
-    __android_log_write(ANDROID_LOG_INFO, "REVENT", "Replay complete");
-#endif
     replay_buffer_close(replay_buffer);
 }
 
