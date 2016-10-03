@@ -13,13 +13,22 @@
 # limitations under the License.
 #
 
-import time
 from wlauto import AndroidUxPerfWorkload, Parameter
 
 
 class Skype(AndroidUxPerfWorkload):
 
     name = 'skype'
+    package = 'com.skype.raider'
+    min_apk_version = '7.01.0.669'
+    activity = ''  # Skype has no default 'main' activity
+    view = [package + '/com.skype.android.app.calling.CallActivity',
+            package + '/com.skype.android.app.calling.PreCallActivity',
+            package + '/com.skype.android.app.chat.ChatActivity',
+            package + '/com.skype.android.app.main.HubActivity',
+            package + '/com.skype.android.app.main.SplashActivity',
+            package + '/com.skype.android.app.signin.SignInActivity',
+            package + '/com.skype.android.app.signin.UnifiedLandingPageActivity']
     description = '''
     A workload to perform standard productivity tasks within Skype. The
     workload logs in to the Skype application, selects a recipient from the
@@ -50,17 +59,7 @@ class Skype(AndroidUxPerfWorkload):
          please search online for specific instructions).
          https://support.skype.com/en/faq/FA3751/can-i-automatically-answer-all-my-calls-with-video-in-skype-for-windows-desktop
     '''
-    package = 'com.skype.raider'
-    min_apk_version = '7.01.0.669'
-    view = [package + '/com.skype.android.app.calling.CallActivity',
-            package + '/com.skype.android.app.calling.PreCallActivity',
-            package + '/com.skype.android.app.chat.ChatActivity',
-            package + '/com.skype.android.app.main.HubActivity',
-            package + '/com.skype.android.app.main.SplashActivity',
-            package + '/com.skype.android.app.signin.SignInActivity',
-            package + '/com.skype.android.app.signin.UnifiedLandingPageActivity']
-
-    activity = ''  # Skype has no default 'main' activity
+    
     launch_main = False  # overrides extended class
 
     parameters = [
@@ -70,7 +69,7 @@ class Skype(AndroidUxPerfWorkload):
                   '''),
         Parameter('login_pass', kind=str, mandatory=True,
                   description='Password associated with the account to log into the device'),
-        Parameter('contact_name', kind=str, mandatory=True, default='Echo / Sound Test Service',
+        Parameter('contact_name', kind=str, default='Echo / Sound Test Service',
                   description='This is the contact display name as it appears in the people list'),
         Parameter('duration', kind=int, default=10,
                   description='This is the duration of the call in seconds'),
