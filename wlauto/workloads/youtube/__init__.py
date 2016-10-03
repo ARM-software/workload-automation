@@ -22,8 +22,9 @@ class Youtube(AndroidUxPerfWorkload):
     name = 'youtube'
     package = 'com.google.android.youtube'
     min_apk_version = '11.19.56'
-    max_apk_version = None  # works with latest (11.33.58) at time of publishing this
     activity = ''
+    view = [package + '/com.google.android.apps.youtube.app.WatchWhileActivity',
+            package + '/com.google.android.apps.youtube.app.honeycomb.SettingsActivity']
     description = '''
     A workload to perform standard productivity tasks within YouTube.
 
@@ -66,15 +67,13 @@ class Youtube(AndroidUxPerfWorkload):
         Parameter('search_term', kind=str,
                   default='Big Buck Bunny 60fps 4K - Official Blender Foundation Short Film',
                   description='''
-                  The search term to use when ``video_source`` is set to ``search``. Ignored otherwise.
+                  The search term to use when ``video_source`` is set to ``search``.
+                  Ignored otherwise.
                   '''),
     ]
 
-    view = [
-        package + '/com.google.android.apps.youtube.app.WatchWhileActivity',
-        package + '/com.google.android.apps.youtube.app.honeycomb.SettingsActivity',
-    ]
-
+    # This workload relies on the internet so check that there is a working
+    # internet connection
     requires_network = True
 
     def __init__(self, device, **kwargs):
@@ -82,9 +81,9 @@ class Youtube(AndroidUxPerfWorkload):
         self.run_timeout = 300
 
     def validate(self):
-        if self.video_source == 'search' and not self.search_term:
-            raise WorkloadError("Param 'search_term' must be specified when video source is 'search'")
-
-        self.uiauto_params['package'] = self.package
+        super(Youtube, self).validate()
         self.uiauto_params['video_source'] = self.video_source
         self.uiauto_params['search_term'] = self.search_term.replace(' ', '0space0')
+        # Make sure search term is set if video source is 'search'
+        if (self.video_source == 'search') and not self.search_term:
+            raise WorkloadError("Param 'search_term' must be specified when video source is 'search'")
