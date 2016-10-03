@@ -38,32 +38,25 @@ import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
 
 public class UiAutomation extends UxPerfUiAutomation {
 
-    public static final String ANDROID_WIDGET = "android.widget.";
-    public static final String CLASS_TEXT_VIEW = ANDROID_WIDGET + "TextView";
-    public static final String CLASS_IMAGE_VIEW = ANDROID_WIDGET + "ImageView";
-    public static final String CLASS_BUTTON = ANDROID_WIDGET + "Button";
-    public static final String CLASS_IMAGE_BUTTON = ANDROID_WIDGET + "ImageButton";
-    public static final String CLASS_TABLE_ROW = ANDROID_WIDGET + "TableRow";
-    public static final String CLASS_PROGRESS_BAR = ANDROID_WIDGET + "ProgressBar";
-    public static final String CLASS_LIST_VIEW = ANDROID_WIDGET + "ListView";
+    public Bundle parameters;
+    public String packageName;
+    public String packageID;
 
     public static final int WAIT_TIMEOUT_1SEC = 1000;
     public static final int SLIDE_WAIT_TIME_MS = 200;
     public static final int DEFAULT_SWIPE_STEPS = 10;
 
-    protected ActionLogger logger;
-    protected String packageId;
-    protected Bundle parameters;
-    protected String newDocumentName;
-    protected String pushedDocumentName;
-    protected String workingDirectoryName;
-    protected int slideCount;
-    protected boolean doTextEntry;
-
     public void runUiAutomation() throws Exception {
-        // Setup
         parameters = getParams();
-        parseParams(parameters);
+        packageName = parameters.getString("package");
+        packageID = packageName + ":id/";
+
+        String newDocumentName = parameters.getString("new_doc_name").replace("0space0", " ");
+        String pushedDocumentName = parameters.getString("test_file").replace("0space0", " ");
+        int slideCount = Integer.parseInt(parameters.getString("slide_count"));
+        boolean doTextEntry = Boolean.parseBoolean(parameters.getString("do_text_entry"));
+        String workingDirectoryName = parameters.getString("workdir_name");
+
         setScreenOrientation(ScreenOrientation.NATURAL);
         changeAckTimeout(100);
         // UI automation begins here
@@ -73,32 +66,29 @@ public class UiAutomation extends UxPerfUiAutomation {
         sleep(1);
         enablePowerpointCompat();
         sleep(1);
-        testEditNewSlidesDocument(newDocumentName);
+        testEditNewSlidesDocument(newDocumentName, workingDirectoryName, doTextEntry);
         sleep(1);
-        testSlideshowFromStorage(pushedDocumentName);
+        // Open document
+        openDocument(pushedDocumentName, workingDirectoryName);
+        waitForProgress(WAIT_TIMEOUT_1SEC*30);
+        testSlideshowFromStorage(slideCount);
         // UI automation ends here
         unsetScreenOrientation();
     }
 
-    public void parseParams(Bundle parameters) throws Exception {
-        pushedDocumentName = parameters.getString("test_file").replaceAll("0space0", " ");
-        newDocumentName = parameters.getString("new_doc_name").replaceAll("0space0", " ");
-        slideCount = Integer.parseInt(parameters.getString("slide_count"));
-        packageId = parameters.getString("package") + ":id/";
-        workingDirectoryName = parameters.getString("workdir_name");
-        doTextEntry = Boolean.parseBoolean(parameters.getString("do_text_entry"));
-    }
-
     public void dismissWorkOfflineBanner() throws Exception {
-        UiObject banner = new UiObject(new UiSelector().textContains("Work offline"));
+        UiObject banner =
+            new UiObject(new UiSelector().textContains("Work offline"));
         if (banner.waitForExists(WAIT_TIMEOUT_1SEC)) {
-            clickUiObject(BY_TEXT, "Got it", CLASS_BUTTON);
+            clickUiObject(BY_TEXT, "Got it", "android.widget.Button");
         }
     }
 
     public void enterTextInSlide(String viewName, String textToEnter) throws Exception {
-        UiSelector container = new UiSelector().resourceId(packageId + "main_canvas");
-        UiObject view = new UiObject(container.childSelector(new UiSelector().descriptionMatches(viewName)));
+        UiObject view =
+            new UiObject(new UiSelector().resourceId(packageID + "main_canvas")
+                                         .childSelector(new UiSelector()
+                                         .descriptionMatches(viewName)));
         view.click();
         getUiDevice().pressEnter();
         view.setText(textToEnter);
@@ -115,7 +105,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickUiObject(BY_TEXT, slideLayout, true);
     }
 
-    public void insertImage() throws Exception {
+    public void insertImage(String workingDirectoryName) throws Exception {
         UiObject insertButton = new UiObject(new UiSelector().descriptionContains("Insert"));
         if (insertButton.exists()) {
             insertButton.click();
@@ -126,7 +116,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickUiObject(BY_TEXT, "Image", true);
         clickUiObject(BY_TEXT, "From photos");
 
-        UiObject imagesFolder = new UiObject(new UiSelector().className(CLASS_TEXT_VIEW).textContains("Images"));
+        UiObject imagesFolder = new UiObject(new UiSelector().className("android.widget.TextView").textContains("Images"));
         if (!imagesFolder.waitForExists(WAIT_TIMEOUT_1SEC*10)) {
             clickUiObject(BY_DESC, "Show roots");
         }
@@ -144,8 +134,12 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void insertShape(String shapeName) throws Exception {
-        startLogger("shape_insert");
-        UiObject insertButton = new UiObject(new UiSelector().descriptionContains("Insert"));
+        String testTag = "shape_insert";
+        ActionLogger logger = new ActionLogger(testTag, parameters);
+
+        UiObject insertButton =
+            new UiObject(new UiSelector().descriptionContains("Insert"));
+        logger.start();
         if (insertButton.exists()) {
             insertButton.click();
         } else {
@@ -154,91 +148,124 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
         clickUiObject(BY_TEXT, "Shape");
         clickUiObject(BY_DESC, shapeName);
-        stopLogger("shape_insert");
+        logger.stop();
     }
 
     public void modifyShape(String shapeName) throws Exception {
-        UiObject resizeHandle = new UiObject(new UiSelector().descriptionMatches(".*Bottom[- ]right resize.*"));
+        String testTag = "shape_resize";
+        ActionLogger logger = new ActionLogger(testTag, parameters);
+
+        UiObject resizeHandle =
+            new UiObject(new UiSelector().descriptionMatches(".*Bottom[- ]right resize.*"));
         Rect bounds = resizeHandle.getVisibleBounds();
         int newX = bounds.left - 40;
         int newY = bounds.bottom - 40;
-        startLogger("shape_resize");
+        logger.start();
         resizeHandle.dragTo(newX, newY, 40);
-        stopLogger("shape_resize");
+        logger.stop();
 
-        UiSelector container = new UiSelector().resourceId(packageId + "main_canvas");
-        UiSelector shapeSelector = container.childSelector(new UiSelector().descriptionContains(shapeName));
-        startLogger("shape_drag");
-        new UiObject(shapeSelector).dragTo(newX, newY, 40);
-        stopLogger("shape_drag");
+        testTag = "shape_drag";
+        logger = new ActionLogger(testTag, parameters);
+
+        UiObject shapeSelector =
+            new UiObject(new UiSelector().resourceId(packageID + "main_canvas")
+                                         .childSelector(new UiSelector()
+                                         .descriptionContains(shapeName)));
+        logger.start();
+        shapeSelector.dragTo(newX, newY, 40);
+        logger.stop();
     }
 
-    public void openDocument(String docName) throws Exception {
+    public void openDocument(String docName, String workingDirectoryName) throws Exception {
+        String testTag = "document_open";
+        ActionLogger logger = new ActionLogger(testTag, parameters);
+
         clickUiObject(BY_DESC, "Open presentation");
         clickUiObject(BY_TEXT, "Device storage", true);
         clickUiObject(BY_DESC, "Navigate up");
-        UiScrollable list = new UiScrollable(new UiSelector().className(CLASS_LIST_VIEW));
+        UiScrollable list =
+            new UiScrollable(new UiSelector().className("android.widget.ListView"));
         list.scrollIntoView(new UiSelector().textMatches(workingDirectoryName));
         clickUiObject(BY_TEXT, workingDirectoryName);
         list.scrollIntoView(new UiSelector().textContains(docName));
-        startLogger("document_open");
+
+        logger.start();
         clickUiObject(BY_TEXT, docName);
-        clickUiObject(BY_TEXT, "Open", CLASS_BUTTON, true);
-        stopLogger("document_open");
+        clickUiObject(BY_TEXT, "Open", "android.widget.Button", true);
+        logger.stop();
     }
 
     public void newDocument() throws Exception {
-        startLogger("document_new");
+        String testTag = "document_new";
+        ActionLogger logger = new ActionLogger(testTag, parameters);
+
+        logger.start();
         clickUiObject(BY_DESC, "New presentation");
         clickUiObject(BY_TEXT, "New PowerPoint", true);
-        stopLogger("document_new");
+        logger.stop();
     }
 
     public void saveDocument(String docName) throws Exception {
-        UiObject saveActionButton = new UiObject(new UiSelector().resourceId(packageId + "action"));
-        UiObject unsavedIndicator = new UiObject(new UiSelector().textContains("Not saved"));
-        startLogger("document_save");
+        String testTag = "document_save";
+        ActionLogger logger = new ActionLogger(testTag, parameters);
+
+        UiObject saveActionButton =
+            new UiObject(new UiSelector().resourceId(packageID + "action"));
+        UiObject unsavedIndicator =
+            new UiObject(new UiSelector().textContains("Not saved"));
+        logger.start();
         if (saveActionButton.waitForExists(WAIT_TIMEOUT_1SEC)) {
             saveActionButton.click();
         } else if (unsavedIndicator.waitForExists(WAIT_TIMEOUT_1SEC)) {
             unsavedIndicator.click();
         }
         clickUiObject(BY_TEXT, "Device");
-        UiObject save = clickUiObject(BY_TEXT, "Save", CLASS_BUTTON);
+        UiObject save = clickUiObject(BY_TEXT, "Save", "android.widget.Button");
         if (save.waitForExists(WAIT_TIMEOUT_1SEC)) {
             save.click();
         }
-        stopLogger("document_save");
+        logger.stop();
 
         // Overwrite if prompted
         // Should not happen under normal circumstances. But ensures test doesn't stop
         // if a previous iteration failed prematurely and was unable to delete the file.
         // Note that this file isn't removed during workload teardown as deleting it is
         // part of the UiAutomator test case.
-        UiObject overwriteView = new UiObject(new UiSelector().textContains("already exists"));
+        UiObject overwriteView =
+            new UiObject(new UiSelector().textContains("already exists"));
         if (overwriteView.waitForExists(WAIT_TIMEOUT_1SEC)) {
             clickUiObject(BY_TEXT, "Overwrite");
         }
     }
 
     public void deleteDocument(String docName) throws Exception {
+        String testTag = "document_delete";
+        ActionLogger logger = new ActionLogger(testTag, parameters);
+
         String filenameRegex = String.format(".*((%s)|([Uu]ntitled presentation)).pptx.*", docName);
-        UiObject doc = new UiObject(new UiSelector().textMatches(filenameRegex));
-        UiObject moreActions = doc.getFromParent(new UiSelector().descriptionContains("More actions"));
-        startLogger("document_delete");
+        UiObject doc =
+            new UiObject(new UiSelector().textMatches(filenameRegex));
+        UiObject moreActions =
+            doc.getFromParent(new UiSelector().descriptionContains("More actions"));
+        
+        logger.start();
         moreActions.click();
 
-        UiObject deleteButton = new UiObject(new UiSelector().textMatches(".*([Dd]elete|[Rr]emove).*"));
+        UiObject deleteButton =
+            new UiObject(new UiSelector().textMatches(".*([Dd]elete|[Rr]emove).*"));
         if (deleteButton.waitForExists(WAIT_TIMEOUT_1SEC)) {
             deleteButton.click();
         } else {
             // Delete button not found, try to scroll the view
-            UiScrollable scrollable = new UiScrollable(new UiSelector().scrollable(true)
-                    .childSelector(new UiSelector().textContains("Rename")));
+            UiScrollable scrollable =
+                new UiScrollable(new UiSelector().scrollable(true)
+                                                 .childSelector(new UiSelector()
+                                                 .textContains("Rename")));
             if (scrollable.exists()) {
                 scrollable.scrollIntoView(deleteButton);
             } else {
-                UiObject content = new UiObject(new UiSelector().resourceId(packageId + "content"));
+                UiObject content =
+                    new UiObject(new UiSelector().resourceId(packageID + "content"));
                 int attemptsLeft = 10; // try a maximum of 10 swipe attempts
                 while (!deleteButton.exists() && attemptsLeft > 0) {
                     content.swipeUp(DEFAULT_SWIPE_STEPS);
@@ -248,30 +275,34 @@ public class UiAutomation extends UxPerfUiAutomation {
             deleteButton.click();
         }
 
-        UiObject okButton = new UiObject(new UiSelector().className(CLASS_BUTTON).textContains("OK"));
+        UiObject okButton =
+            new UiObject(new UiSelector().textContains("OK")
+                                         .className("android.widget.Button"));
         if (okButton.waitForExists(WAIT_TIMEOUT_1SEC)) {
             okButton.clickAndWaitForNewWindow();
         } else {
-            clickUiObject(BY_TEXT, "Remove", CLASS_BUTTON, true);
+            clickUiObject(BY_TEXT, "Remove", "android.widget.Button", true);
         }
-        stopLogger("document_delete");
+        logger.stop();
     }
-
 
     protected void skipWelcomeScreen() throws Exception {
         clickUiObject(BY_TEXT, "Skip", true);
     }
 
     protected void enablePowerpointCompat() throws Exception {
-        startLogger("enable_pptmode");
+        String testTag = "enable_pptmode";
+        ActionLogger logger = new ActionLogger(testTag, parameters);
+
+        logger.start();
         clickUiObject(BY_DESC, "drawer");
         clickUiObject(BY_TEXT, "Settings", true);
         clickUiObject(BY_TEXT, "Create PowerPoint");
         getUiDevice().pressBack();
-        stopLogger("enable_pptmode");
+        logger.stop();
     }
 
-    protected void testEditNewSlidesDocument(String docName) throws Exception {
+    protected void testEditNewSlidesDocument(String docName, String workingDirectoryName, boolean doTextEntry) throws Exception {
         // Init
         newDocument();
         waitForProgress(WAIT_TIMEOUT_1SEC * 30);
@@ -286,7 +317,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         // Slide 2 - Image
         insertSlide("Title only");
-        insertImage();
+        insertImage(workingDirectoryName);
         sleep(1);
 
         // If text wasn't entered in first slide, save prompt will appear here
@@ -312,17 +343,15 @@ public class UiAutomation extends UxPerfUiAutomation {
         // deleteDocument(docName);
     }
 
-    protected void testSlideshowFromStorage(String docName) throws Exception {
-        // Open document
-        openDocument(docName);
-        waitForProgress(WAIT_TIMEOUT_1SEC*30);
-
+    protected void testSlideshowFromStorage(int slideCount) throws Exception {
+        String testTag = "slideshow";
         // Begin Slide show test
 
         // Note: Using coordinates slightly offset from the slide edges avoids accidentally
         // selecting any shapes or text boxes inside the slides while swiping, which may
         // cause the view to switch into edit mode and fail the test
-        UiObject slideCanvas = new UiObject(new UiSelector().resourceId(packageId + "main_canvas"));
+        UiObject slideCanvas =
+            new UiObject(new UiSelector().resourceId(packageID + "main_canvas"));
         Rect canvasBounds = slideCanvas.getVisibleBounds();
         int leftEdge = canvasBounds.left + 10;
         int rightEdge = canvasBounds.right - 10;
@@ -330,71 +359,69 @@ public class UiAutomation extends UxPerfUiAutomation {
         int slideIndex = 0;
 
         // scroll forward in edit mode
-        startLogger("slideshow_editforward");
+        ActionLogger logger = new ActionLogger(testTag + "_editforward", parameters);
+        logger.start();
         while (slideIndex++ < slideCount) {
             uiDeviceSwipeHorizontal(rightEdge, leftEdge, yCoordinate, DEFAULT_SWIPE_STEPS);
             waitForProgress(WAIT_TIMEOUT_1SEC*5);
         }
-        stopLogger("slideshow_editforward");
+        logger.stop();
         sleep(1);
 
         // scroll backward in edit mode
-        startLogger("slideshow_editbackward");
+        logger = new ActionLogger(testTag + "_editbackward", parameters);
+        logger.start();
         while (slideIndex-- > 0) {
             uiDeviceSwipeHorizontal(leftEdge, rightEdge, yCoordinate, DEFAULT_SWIPE_STEPS);
             waitForProgress(WAIT_TIMEOUT_1SEC*5);
         }
-        stopLogger("slideshow_editbackward");
+        logger.stop();
         sleep(1);
 
         // run slideshow
-        startLogger("slideshow_run");
+        logger = new ActionLogger(testTag + "_run", parameters);
+        logger.start();
         clickUiObject(BY_DESC, "Start slideshow", true);
-        UiObject onDevice = new UiObject(new UiSelector().textContains("this device"));
+        UiObject onDevice =
+            new UiObject(new UiSelector().textContains("this device"));
         if (onDevice.waitForExists(WAIT_TIMEOUT_1SEC)) {
             onDevice.clickAndWaitForNewWindow();
             waitForProgress(WAIT_TIMEOUT_1SEC*30);
-            UiObject presentation = new UiObject(new UiSelector().descriptionContains("Presentation Viewer"));
+            UiObject presentation =
+                new UiObject(new UiSelector().descriptionContains("Presentation Viewer"));
             presentation.waitForExists(WAIT_TIMEOUT_1SEC*30);
         }
-        stopLogger("slideshow_run");
+        logger.stop();
         sleep(1);
 
         slideIndex = 0;
         
         // scroll forward in slideshow mode
-        startLogger("slideshow_playforward");
+        logger = new ActionLogger(testTag + "_playforward", parameters);
+        logger.start();
         while (slideIndex++ < slideCount) {
             uiDeviceSwipeHorizontal(rightEdge, leftEdge, yCoordinate, DEFAULT_SWIPE_STEPS);
             waitForProgress(WAIT_TIMEOUT_1SEC*5);
         }
-        stopLogger("slideshow_playforward");
+        logger.stop();
         sleep(1);
 
         // scroll backward in slideshow mode
-        startLogger("slideshow_playbackward");
+        logger = new ActionLogger(testTag + "_playbackward", parameters);
+        logger.start();
         while (slideIndex-- > 0) {
             uiDeviceSwipeHorizontal(leftEdge, rightEdge, yCoordinate, DEFAULT_SWIPE_STEPS);
             waitForProgress(WAIT_TIMEOUT_1SEC*5);
         }
-        stopLogger("slideshow_playbackward");
+        logger.stop();
         sleep(1);
 
         getUiDevice().pressBack();
         getUiDevice().pressBack();
     }
 
-    protected void startLogger(String name) throws Exception {
-        logger = new ActionLogger(name, parameters);
-        logger.start();
-    }
-
-    protected void stopLogger(String name) throws Exception {
-        logger.stop();
-    }
-
     protected boolean waitForProgress(int timeout) throws Exception {
-        UiObject progress = new UiObject(new UiSelector().className(CLASS_PROGRESS_BAR));
+        UiObject progress = new UiObject(new UiSelector().className("android.widget.ProgressBar"));
         if (progress.waitForExists(WAIT_TIMEOUT_1SEC)) {
             return progress.waitUntilGone(timeout);
         } else {
@@ -410,10 +437,9 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void tapOpenArea() throws Exception {
-        UiObject openArea = getUiObjectByResourceId(packageId + "punch_view_pager");
+        UiObject openArea = getUiObjectByResourceId(packageID + "punch_view_pager");
         Rect bounds = openArea.getVisibleBounds();
         // 10px from top of view, 10px from the right edge
         tapDisplay(bounds.right - 10, bounds.top + 10);
     }
-
 }
