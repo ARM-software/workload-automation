@@ -101,6 +101,8 @@ class RecordCommand(ReventCommand):
         self.parser.add_argument('-p', '--package', help='Package to launch before recording')
         self.parser.add_argument('-C', '--clear', help='Clear app cache before launching it',
                                  action="store_true")
+        self.parser.add_argument('-S', '--capture-screen', help='Record a screen capture after recording',
+                                 action="store_true")
 
     def run(self, args):
         if args.device:
@@ -128,6 +130,9 @@ class RecordCommand(ReventCommand):
 
         self.logger.info("Press Enter when you have finished recording...")
         raw_input("")
+        if args.screencapture:
+            self.logger.info("Recording screen capture")
+            self.device.capture_screen(args.output or os.getcwdu())
         self.device.killall("revent", signal.SIGTERM)
         self.logger.info("Waiting for revent to finish")
         while self.device.get_pids_of("revent"):
