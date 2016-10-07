@@ -241,10 +241,15 @@ public class UiAutomation extends BaseUiAutomation {
     public void dismissLetsRoll() throws Exception {
         UiSelector selector = new UiSelector();
         UiObject letsRollButton = new UiObject(selector.className("android.widget.Button")
-                                                       .textContains("Let's Roll"));
+                                                       .textContains("LET'S ROLL"));
         if (!letsRollButton.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
             if (!letsRollButton.exists()) {
-                throw new UiObjectNotFoundException("Could not find \"Let's Roll\" button.");
+		    // As a fall-back look for the old capitalization
+		    letsRollButton = new UiObject(selector.className("android.widget.Button")
+							  .textContains("Let's Roll"));
+		    if (!letsRollButton.exists()) {
+			throw new UiObjectNotFoundException("Could not find \"Let's Roll\" button.");
+		    }
             }
         }
         letsRollButton.click();
