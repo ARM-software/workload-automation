@@ -252,7 +252,7 @@ class ApkWorkload(Workload):
         except ResourceError as e:
             msg = "force_install is 'True' but the host version is invalid:\n\t{}"
             raise ResourceError(msg.format(str(e)))
-        self.install_apk(context, replace=(target_version is not None))
+        self.install_apk(context, replace=True)
 
     def prefer_host_apk(self, context, host_version, target_version):
         msg = "check_apk is 'True' "
@@ -288,7 +288,7 @@ class ApkWorkload(Workload):
                 return
             msg += " and the host version is not on the target, installing APK"
             self.logger.debug(msg)
-            self.install_apk(context, replace=(target_version is not None))
+            self.install_apk(context, replace=True)
 
     def prefer_target_apk(self, context, host_version, target_version):
         msg = "check_apk is 'False' "
@@ -370,7 +370,8 @@ class ApkWorkload(Workload):
         success = False
         if replace:
             self.device.uninstall(self.package)
-        output = self.device.install(self.apk_file, self.install_timeout)
+        output = self.device.install_apk(self.apk_file, timeout=self.install_timeout,
+                                         replace=replace, allow_downgrade=True)
         if 'Failure' in output:
             if 'ALREADY_EXISTS' in output:
                 self.logger.warn('Using already installed APK (did not unistall properly?)')
