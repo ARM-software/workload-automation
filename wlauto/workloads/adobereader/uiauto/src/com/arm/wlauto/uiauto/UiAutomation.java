@@ -105,9 +105,11 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
 
         // Click the button to search from the present file list view
-        UiObject searchButton = getUiObjectByResourceId(packageID + "split_pane_search",
-                                                        "android.widget.TextView",
-                                                        TimeUnit.SECONDS.toMillis(10));
+        UiObject searchButton =
+            new UiObject(new UiSelector().resourceId(packageID + "split_pane_search"));
+        if (!searchButton.waitForExists(TimeUnit.SECONDS.toMillis(10))) {
+            throw new UiObjectNotFoundException("Could not find search button");
+        }
         searchButton.click();
 
         // Enter search text into the file searchBox.  This will automatically filter the list.
@@ -193,8 +195,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         // and if not, tap again before continuing
         tapDisplayCentre();
         UiObject searchIcon =
-            new UiObject(new UiSelector().resourceId(packageID + "document_view_search_icon")
-                                         .className("android.widget.TextView"));
+            new UiObject(new UiSelector().resourceId(packageID + "document_view_search_icon"));
         if (!searchIcon.waitForExists(uiAutoTimeout)) {
             tapDisplayCentre();
         }
