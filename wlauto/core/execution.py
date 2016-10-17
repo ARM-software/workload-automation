@@ -742,7 +742,7 @@ class Runner(object):
             filepath = os.path.join(self.context.output_directory, filename)
         else:
             filepath = os.path.join(settings.output_directory, filename)
-        self.device.capture_view_hierachy(filepath)
+        self.device.capture_ui_hierarchy(filepath)
 
     @contextmanager
     def _handle_errors(self, action, on_error_status=IterationResult.FAILED):
@@ -764,7 +764,7 @@ class Runner(object):
                 try:
                     self._take_screenshot('error.png')
                     if self.device.platform == 'android':
-                        self._take_uiautomator_dump('error.xml')
+                        self._take_uiautomator_dump('error.uix')
                 except Exception, e:  # pylint: disable=W0703
                     # We're already in error state, so the fact that taking a
                     # screenshot failed is not surprising...
