@@ -332,9 +332,13 @@ def adb_shell(device, command, timeout=None, check_exit_code=False, as_root=Fals
                 raise DeviceError('adb has returned early; did not get an exit code. Was kill-server invoked?')
     else:  # do not check exit code
         try:
-            output, _ = check_output(full_command, timeout, shell=True)
+            output, error = check_output(full_command, timeout, shell=True)
+            if output is None:
+                output = error
+            elif error is not None:
+                output = '\n'.join([output, error])
         except CalledProcessErrorWithStderr as e:
-            output = e.output
+            output = e.error or e.output
             exit_code = e.returncode
             if e.returncode == 1:
                 logger.debug("Got Exit code 1, could be either the return code of the command or mean ADB failed")
