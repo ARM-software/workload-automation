@@ -229,7 +229,7 @@ class ApkWorkload(Workload):
 
         # Ensure the apk is setup on the device
         if self.force_install:
-            self.force_install_apk(context, host_version, target_version)
+            self.force_install_apk(context, host_version)
         elif self.check_apk:
             self.prefer_host_apk(context, host_version, target_version)
         else:
@@ -244,7 +244,7 @@ class ApkWorkload(Workload):
         self.device.execute('am kill-all')  # kill all *background* activities
         self.device.clear_logcat()
 
-    def force_install_apk(self, context, host_version, target_version):
+    def force_install_apk(self, context, host_version):
         if host_version is None:
             raise ResourceError("force_install is 'True' but could not find APK on the host")
         try:

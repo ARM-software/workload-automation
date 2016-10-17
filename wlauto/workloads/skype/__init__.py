@@ -59,7 +59,7 @@ class Skype(AndroidUxPerfWorkload):
          please search online for specific instructions).
          https://support.skype.com/en/faq/FA3751/can-i-automatically-answer-all-my-calls-with-video-in-skype-for-windows-desktop
     '''
-    
+
     launch_main = False  # overrides extended class
 
     parameters = [
