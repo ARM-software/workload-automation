@@ -246,7 +246,7 @@ definition.yaml file
 This defines each state of the workload and lists which templates are expected
 to be found and how many are required to be detected for a conclusive match. It
 also defines the expected state in each workload phase where a state detection
-is run (currently those are setupComplete and runComplete).
+is run (currently those are setup_complete and run_complete).
 
 Templates are picture elements to be matched in a screenshot. Each template
 mentioned in the definition file should be placed as a file with the same name
@@ -260,7 +260,7 @@ understand the format. Note that more than just two states (for the afterSetup
 and afterRun phase) can be defined and this helps track the cause of errors in
 case an unexpected state is encountered.
 
-.. code-block:: python
+.. code-block:: yaml
 
     workload_name: angrybirds
 
