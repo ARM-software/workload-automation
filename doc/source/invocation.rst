@@ -148,7 +148,7 @@ either ``setup`` or ``run``. This should be specified with the ``-s``
 argument. The full set of options for this command are::
 
     usage: wa record [-h] [-c CONFIG] [-v] [--debug] [--version] [-d DEVICE]
-                 [-s SUFFIX] [-o OUTPUT] [-p PACKAGE] [-C]
+                 [-s SUFFIX] [-o OUTPUT] [-p PACKAGE] [-g] [-C]
 
     optional arguments:
       -h, --help            show this help message and exit
@@ -165,6 +165,7 @@ argument. The full set of options for this command are::
                             Directory to save the recording in
       -p PACKAGE, --package PACKAGE
                             Package to launch before recording
+      -g, --gamepad         Record from a gamepad rather than all devices.
       -C, --clear           Clear app cache before launching it
 
 .. _replay-command:
