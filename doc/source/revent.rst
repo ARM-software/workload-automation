@@ -1,7 +1,10 @@
 .. _revent_files_creation:
 
 revent
-======
+++++++
+
+Overview and Usage
+==================
 
 revent utility can be used to record and later play back a sequence of user
 input events, such as key presses and touch screen taps. This is an alternative
@@ -42,6 +45,10 @@ to the current directory. It will be named ``{device_model}.revent``. When
 recording revent files for a ``GameWorkload`` you can use the ``-s`` option to
 add ``run`` or ``setup`` suffixes.
 
+From version 2.6 of WA onwards, a "gamepad" recording mode is also supported.
+This mode requires a gamepad to be connected to the device when recoridng, but
+the recordings produced in this mode should be portable across devices.
+
 For more information run please read :ref:`record-command`
 
 
@@ -54,6 +61,7 @@ replay::
         wa replay my_recording.revent
 
 For more information run please read :ref:`replay-command`
+
 
 Using revent With Workloads
 ---------------------------
@@ -108,110 +116,6 @@ revent sequence is also faster than writing automation code (on the other hand,
 one would need maintain a different revent log for each screen resolution).
 
 
-File format of revent
-=====================
-
-.. note:: All values below are little endian
-
-Recording structure of revent
------------------------------
-
-revent recordings are made of of five parts:
-
- * A "magic" string of `REVENT` to help identify revent recordings.
- * A unsigned integer representing the revent file format version.
- * A signed integer that gives the number of devices in this recording.
- * A series of device paths, the number of which is given in the previous field.
-   For more detail see `Device path structure`_ below.
- * An unlimited number of recorded events. For more detail see `Event Structure`_
-   below.
-
-::
-
-     0                   1                   2                   3
-     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                             MAGIC                             |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |          MAGIC cont.          |            Version            |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                       Number of devices                       |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                                                               |
-    |             Device paths              +-+-+-+-+-+-+-+-+-+-+-+-+
-    |                                       |                       |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+                       |
-    |                                                               |
-    |                             Events                            |
-    |                                                               |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
-Device path structure
-----------------------
-
-This part of an revent recording is used to store the paths to input devices used in the
-recording. It consists of:
-
- * A signed integer giving the size of the following string.
- * A string, with a maximum length of 30, containing the path of an input device.
-
-::
-
-     0                   1                   2                   3
-     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                     Length of device path                     |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                                                               |
-    |                          Device path                          |
-    |                                                               |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-Event structure
----------------
-
-The majority of an revent recording will be made up of the input events that were
-recorded. There and be an unlimited number of these events in an revent file and they
-are structured as follows:
-
- * A signed integer representing which device from the list of device paths
-   this event is for (zero indexed). E.g. Device ID = 3 would be the 4th
-   device in the list of device paths.
- * 32 bits of padding
- * A signed integer representing the number of seconds since "epoch" when the
-   event was recorded.
- * A signed integer representing the microseconds part of the timestamp.
- * An unsigned integer representing the event type
- * An unsigned integer representing the event code
- * An unsigned integer representing the event value
-
-For more information about the event type, code and value please read:
-https://www.kernel.org/doc/Documentation/input/event-codes.txt
-
-::
-
-     0                   1                   2                   3
-     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                           Device ID                           |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                            PADDING                            |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                       Timestamp Seconds                       |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                    Timestamp Seconds cont.                    |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                     Timestamp Micoseconds                     |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                  Timestamp Micoseconds cont.                  |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |          Event Type           |          Event Code           |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    |                          Event Value                          |
-    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-
 Using state detection with revent
 =================================
 
@@ -230,6 +134,8 @@ State definition directory
 State and phase definitions should be placed in a directory of the following
 structure inside the dependencies directory of each workload (along with
 revent files etc):
+
+::
 
    dependencies/
       <workload_name>/
@@ -307,3 +213,261 @@ case an unexpected state is encountered.
         expected_state: gameplay
       - phase_name: run_complete
         expected_state: level_cleared_screen
+
+
+File format of revent recordings
+================================
+
+You do not need to understand recording format in order to use revent. This
+section is intended for those looking to extend revent in some way, or to
+utilize revent recordings for other purposes.
+
+Format Overview
+---------------
+
+Recordings are stored in a binary format. A recording consists of three
+sections::
+
+    +-+-+-+-+-+-+-+-+-+-+-+
+    |       Header        |
+    +-+-+-+-+-+-+-+-+-+-+-+
+    |                     |
+    |  Device Description |
+    |                     |
+    +-+-+-+-+-+-+-+-+-+-+-+
+    |                     |
+    |                     |
+    |     Event Stream    |
+    |                     |
+    |                     |
+    +-+-+-+-+-+-+-+-+-+-+-+
+
+The header contains metadata describing the recording. The device description
+contains information about input devices involved in this recording. Finally,
+the event stream contains the recorded input events.
+
+All fields are either fixed size or prefixed with their length or the number of
+(fixed-sized) elements.
+
+.. note:: All values below are little endian
+
+
+Recording Header
+----------------
+
+An revent recoding header has the following structure
+
+ * It starts with the "magic" string ``REVENT`` to indicate that this is an
+   revent recording.
+ * The magic is followed by a 16 bit version number. This indicates the format
+   version of the recording that follows. Current version is ``2``.
+ * The next 16 bits indicate the type of the recording. This dictates the
+   structure of the Device Description section. Valid values are:
+
+        ``0``
+                This is a general input event recording. The device description
+                contains a list of paths from which the events where recorded.
+        ``1``
+                This a gamepad recording. The device description contains the
+                description of the gamepad used to create the recording.
+
+ * The header is zero-padded to 128 bits.
+
+::
+
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |      'R'      |      'E'      |      'V'      |      'E'      |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |      'N'      |      'T'      |            Version            |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |             Mode              |            PADDING            |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                            PADDING                            |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+Device Description
+------------------
+
+This section describes the input devices used in the recording. Its structure is
+determined by the value of ``Mode`` field in the header.
+
+general recording
+~~~~~~~~~~~~~~~~~
+
+.. note:: This is the only format supported prior to version ``2``.
+
+The recording has been made from all available input devices. This section
+contains the list of ``/dev/input`` paths for the devices, prefixed with total
+number of the devices recorded.
+
+::
+
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                       Number of devices                       |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                                                               |
+    |             Device paths              +-+-+-+-+-+-+-+-+-+-+-+-+
+    |                                       |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+Similarly, each device path is a length-prefixed string. Unlike C strings, the
+path is *not* NULL-terminated.
+
+::
+
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                     Length of device path                     |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                                                               |
+    |                          Device path                          |
+    |                                                               |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+gamepad recording
+~~~~~~~~~~~~~~~~~
+
+The recording has been made from a specific gamepad. All events in the stream
+will be for that device only. The section describes the device properties that
+will be used to create a virtual input device using ``/dev/uinput``. Please
+see ``linux/input.h`` header in the Linux kernel source for more information
+about the fields in this section.
+
+::
+
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |            bustype            |             vendor            |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |            product            |            version            |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                         name_length                           |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                                                               |
+    |                             name                              |
+    |                                                               |
+    |                                                               |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                            ev_bits                            |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                                                               |
+    |                                                               |
+    |                       key_bits (96 bytes)                     |
+    |                                                               |
+    |                                                               |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                                                               |
+    |                                                               |
+    |                       rel_bits (96 bytes)                     |
+    |                                                               |
+    |                                                               |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                                                               |
+    |                                                               |
+    |                       abs_bits (96 bytes)                     |
+    |                                                               |
+    |                                                               |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                          num_absinfo                          |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                                                               |
+    |                                                               |
+    |                                                               |
+    |                                                               |
+    |                        absinfo entries                        |
+    |                                                               |
+    |                                                               |
+    |                                                               |
+    |                                                               |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+Each ``absinfo`` entry consists of six 32 bit values. The number of entries is
+determined by the ``abs_bits`` field.
+
+
+::
+
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                            value                              |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           minimum                             |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                           maximum                             |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                             fuzz                              |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                             flat                              |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                          resolution                           |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+Event structure
+---------------
+
+The majority of an revent recording will be made up of the input events that were
+recorded. The event stream is prefixed with the number of events in the stream.
+
+Each event entry structured as follows:
+
+ * A signed integer representing which device from the list of device paths
+   this event is for (zero indexed). E.g. Device ID = 3 would be the 4th
+   device in the list of device paths.
+ * 32 bits of padding
+ * A signed integer representing the number of seconds since "epoch" when the
+   event was recorded.
+ * A signed integer representing the microseconds part of the timestamp.
+ * An unsigned integer representing the event type
+ * An unsigned integer representing the event code
+ * An unsigned integer representing the event value
+
+For more information about the event type, code and value please read:
+https://www.kernel.org/doc/Documentation/input/event-codes.txt
+
+::
+
+     0                   1                   2                   3
+     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |           Device ID           |        Timestamp Seconds      |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |                       Timestamp Seconds (cont.)               |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |   Timestamp Seconds (cont.)   |        stamp Micoseconds      |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |              Timestamp Micoseconds (cont.)                    |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    | Timestamp Micoseconds (cont.) |          Event Type           |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |          Event Code           |          Event Value          |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+    |       Event Value (cont.)     |
+    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+Parser
+------
+
+WA has a parser for revent recordings. This can be used to work with revent
+recordings in scripts. Here is an example:
+
+.. code:: python
+
+    from wlauto.utils.revent import ReventRecording
+
+    with ReventRecording('/path/to/recording.revent') as recording:
+        print "Recording: {}".format(recording.filepath)
+        print "There are {} input events".format(recording.num_events)
+        print "Over a total of {} seconds".format(recording.duration)

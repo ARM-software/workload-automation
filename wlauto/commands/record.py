@@ -24,7 +24,7 @@ from wlauto.core.resource import NO_ONE
 from wlauto.core.resolver import ResourceResolver
 from wlauto.core.configuration import RunConfiguration
 from wlauto.core.agenda import Agenda
-from wlauto.utils.revent import ReventParser
+from wlauto.utils.revent import ReventRecording, GAMEPAD_MODE
 
 
 class ReventCommand(Command):
@@ -91,6 +91,27 @@ class RecordCommand(ReventCommand):
      - suffix is used by WA to determine which part of the app execution the
        recording is for, currently these are either ``setup`` or ``run``. This
        should be specified with the ``-s`` argument.
+
+
+    **gamepad recording**
+
+    revent supports an alternative recording mode, where it will record events
+    from a single gamepad device. In this mode, revent will store the
+    description of this device as a part of the recording. When replaying such
+    a recording, revent will first create a virtual gamepad using the
+    description, and will replay the events into it, so a physical controller
+    does not need to be connected on replay. Unlike standard revent recordings,
+    recordings generated in this mode should be (to an extent) portable across
+    different devices.
+
+    note:
+
+      - The device on which a recording is being made in gamepad mode, must have
+        exactly one gamepad connected to it.
+      - The device on which a gamepad recording is being replayed must have
+        /dev/uinput enabled in the kernel (this interface is necessary to create
+        virtual gamepad).
+
     '''
 
     def initialize(self, context):
@@ -99,6 +120,8 @@ class RecordCommand(ReventCommand):
         self.parser.add_argument('-s', '--suffix', help='The suffix of the revent file, e.g. ``setup``')
         self.parser.add_argument('-o', '--output', help='Directory to save the recording in')
         self.parser.add_argument('-p', '--package', help='Package to launch before recording')
+        self.parser.add_argument('-g', '--gamepad', help='Record from a gamepad rather than all devices.',
+                                 action="store_true")
         self.parser.add_argument('-C', '--clear', help='Clear app cache before launching it',
                                  action="store_true")
         self.parser.add_argument('-S', '--capture-screen', help='Record a screen capture after recording',
@@ -125,7 +148,8 @@ class RecordCommand(ReventCommand):
 
         self.logger.info("Press Enter when you are ready to record...")
         raw_input("")
-        command = "{} record -s {}".format(self.target_binary, revent_file)
+        gamepad_flag = '-g ' if args.gamepad else ''
+        command = "{} record {}-s {}".format(self.target_binary, gamepad_flag, revent_file)
         self.device.kick_off(command)
 
         self.logger.info("Press Enter when you have finished recording...")
@@ -172,8 +196,11 @@ class ReplayCommand(ReventCommand):
 
         self.logger.info("Replaying recording")
         command = "{} replay {}".format(self.target_binary, revent_file)
-        timeout = ceil(ReventParser.get_revent_duration(args.revent)) + 30
-        self.device.execute(command, timeout=timeout)
+        recording = ReventRecording(args.revent)
+        timeout = ceil(recording.duration) + 30
+        recording.close()
+        self.device.execute(command, timeout=timeout,
+                            as_root=(recording.mode == GAMEPAD_MODE))
         self.logger.info("Finished replay")
 
 
