@@ -28,7 +28,7 @@ from wlauto.common.resources import ExtensionAsset, Executable, File
 from wlauto.exceptions import WorkloadError, ResourceError, DeviceError
 from wlauto.utils.android import ApkInfo, ANDROID_NORMAL_PERMISSIONS, UNSUPPORTED_PACKAGES
 from wlauto.utils.types import boolean
-from wlauto.utils.revent import ReventParser
+from wlauto.utils.revent import ReventRecording
 import wlauto.utils.statedetect as state_detector
 import wlauto.common.android.resources
 
@@ -466,8 +466,8 @@ class ReventWorkload(Workload):
         self.on_device_run_revent = devpath.join(self.device.working_directory,
                                                  os.path.split(self.revent_run_file)[-1])
         self._check_revent_files(context)
-        default_setup_timeout = ceil(ReventParser.get_revent_duration(self.revent_setup_file)) + 30
-        default_run_timeout = ceil(ReventParser.get_revent_duration(self.revent_run_file)) + 30
+        default_setup_timeout = ceil(ReventRecording(self.revent_setup_file).duration) + 30
+        default_run_timeout = ceil(ReventRecording(self.revent_run_file).duration) + 30
         self.setup_timeout = self.setup_timeout or default_setup_timeout
         self.run_timeout = self.run_timeout or default_run_timeout
 

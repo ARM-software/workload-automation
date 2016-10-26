@@ -33,7 +33,7 @@ from wlauto.exceptions import ResourceError
 from wlauto.utils.android import ApkInfo
 from wlauto.utils.misc import ensure_directory_exists as _d, ensure_file_directory_exists as _f, sha256, urljoin
 from wlauto.utils.types import boolean
-from wlauto.utils.revent import ReventParser
+from wlauto.utils.revent import ReventRecording
 
 
 logging.getLogger("requests").setLevel(logging.WARNING)
@@ -101,7 +101,7 @@ class ReventGetter(ResourceGetter):
                 if candidate.lower() == filename.lower():
                     path = os.path.join(location, candidate)
                     try:
-                        ReventParser.check_revent_file(path)
+                        ReventRecording(path).close()  # Check valid recording
                         return path
                     except ValueError as e:
                         self.logger.warning(e.message)
@@ -437,7 +437,7 @@ class HttpGetter(ResourceGetter):
                     pathname = os.path.basename(asset['path']).lower()
                     if pathname == filename:
                         try:
-                            ReventParser.check_revent_file(asset['path'])
+                            ReventRecording(asset['path']).close()  # Check valid recording
                             return asset
                         except ValueError as e:
                             self.logger.warning(e.message)
@@ -535,7 +535,7 @@ class RemoteFilerGetter(ResourceGetter):
                             path = os.path.join(location, candidate)
                 if path:
                     try:
-                        ReventParser.check_revent_file(path)
+                        ReventRecording(path).close()  # Check valid recording
                         return path
                     except ValueError as e:
                         self.logger.warning(e.message)
