@@ -40,6 +40,8 @@ try:
 except ImportError:
     imutils = None
 
+from wlauto.exceptions import HostError
+
 
 class StateDefinitionError(RuntimeError):
     pass
@@ -58,10 +60,14 @@ def auto_canny(image, sigma=0.33):
     return edged
 
 
+def check_match_state_dependencies():
+    if np is None or cv2 is None or imutils is None:
+        raise HostError("State detection requires numpy, opencv (cv2) and imutils.")
+
+
 def match_state(screenshot_file, defpath, state_definitions):  # pylint: disable=too-many-locals
     # check dependencies
-    if np is None or cv2 is None or imutils is None:
-        raise RuntimeError("State detection requires numpy, opencv (cv2) and imutils.")
+    check_match_state_dependencies()
 
     # check if file exists, then load screenshot into opencv and create edge map
     if not os.path.isfile(screenshot_file):

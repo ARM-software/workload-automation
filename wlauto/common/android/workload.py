@@ -240,7 +240,7 @@ class ApkWorkload(Workload):
         context.add_classifiers(apk_version=self.apk_version)
 
         if self.launch_main:
-            self.launch_package() # launch default activity without intent data
+            self.launch_package()  # launch default activity without intent data
         self.device.execute('am kill-all')  # kill all *background* activities
         self.device.clear_logcat()
 
@@ -439,6 +439,7 @@ AndroidBenchmark = ApkWorkload  # backward compatibility
 
 
 class ReventWorkload(Workload):
+    # pylint: disable=attribute-defined-outside-init
 
     def __init__(self, device, _call_super=True, **kwargs):
         if _call_super:
@@ -452,7 +453,9 @@ class ReventWorkload(Workload):
         self.on_device_setup_revent = None
         self.on_device_run_revent = None
         self.statedefs_dir = None
-        self.check_states = None
+
+        if self.check_states:
+            state_detector.check_match_state_dependencies()
 
     def setup(self, context):
         self.revent_setup_file = context.resolver.get(ReventFile(self, 'setup'))
