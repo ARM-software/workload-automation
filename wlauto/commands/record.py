@@ -130,7 +130,7 @@ class RecordCommand(ReventCommand):
 
         self.logger.info("Press Enter when you have finished recording...")
         raw_input("")
-        if args.screencapture:
+        if args.capture_screen:
             self.logger.info("Recording screen capture")
             self.device.capture_screen(args.output or os.getcwdu())
         self.device.killall("revent", signal.SIGTERM)
