@@ -745,7 +745,8 @@ class EnergyModelInstrument(Instrument):
                     spec.runtime_parameters['{}_frequency'.format(core)] = freq
                     if not self.no_hotplug:
                         spec.runtime_parameters['{}_cores'.format(core)] = num_cpus
-                    spec.runtime_parameters['ui'] = 'off'
+                    if self.device.platform == 'chromeos':
+                        spec.runtime_parameters['ui'] = 'off'
                     spec.id = '{}_{}_{}'.format(cluster, num_cpus, freq)
                     spec.label = 'freq_{}_{}'.format(cluster, spec.label)
                     spec.workload_parameters['taskset_mask'] = list_to_mask(self.get_cpus(cluster))
