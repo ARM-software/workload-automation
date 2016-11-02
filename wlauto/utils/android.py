@@ -282,13 +282,16 @@ def adb_shell(device, command, timeout=None, check_exit_code=False, as_root=Fals
     _check_env()
     if as_root:
         command = 'echo \'{}\' | su'.format(escape_single_quotes(command))
-    device_string = '-s {}'.format(device) if device else ''
-    full_command = 'adb {} shell "{}"'.format(device_string, escape_double_quotes(command))
+    device_part = ['-s', device] if device else []
+    device_string = ' {} {}'.format(*device_part) if device_part else ''
+    full_command = 'adb{} shell "{}"'.format(device_string,
+                                             escape_double_quotes(command))
     logger.debug(full_command)
     if check_exit_code:
-        actual_command = "adb {} shell '({}); echo \"\n$?\"'".format(device_string, escape_single_quotes(command))
+        adb_shell_command = '({}); echo \"\n$?\"'.format(command)
+        actual_command = ['adb'] + device_part + ['shell', adb_shell_command]
         try:
-            raw_output, error = check_output(actual_command, timeout, shell=True)
+            raw_output, error = check_output(actual_command, timeout, shell=False)
         except CalledProcessErrorWithStderr as e:
             raw_output = e.output
             error = e.error
