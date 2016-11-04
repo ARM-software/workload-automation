@@ -91,14 +91,24 @@ def match_state(screenshot_file, defpath, state_definitions):  # pylint: disable
     for template_png in template_list:
         template = cv2.imread(os.path.join(defpath, 'templates', template_png + '.png'), 0)
         template_edge = auto_canny(template)
+        template_height, template_width = template_edge.shape[:2]
 
-        res = cv2.matchTemplate(img_edge, template_edge, cv2.TM_CCOEFF_NORMED)
-        threshold = 0.5
-        loc = np.where(res >= threshold)
-        zipped = zip(*loc[::-1])
+        # loop over the scales of the image
+        for scale in np.linspace(1.4, 0.6, 61):
+            resized = imutils.resize(img_edge, width=int(img_edge.shape[1] * scale))
 
-        if len(zipped) > 0:
-            matched_templates.append(template_png)
+            # skip if the resized image is smaller than the template
+            if resized.shape[0] < template_height or resized.shape[1] < template_width:
+                break
+
+            res = cv2.matchTemplate(resized, template_edge, cv2.TM_CCOEFF_NORMED)
+            threshold = 0.4
+            loc = np.where(res >= threshold)
+            zipped = zip(*loc[::-1])
+
+            if len(zipped) > 0:
+                matched_templates.append(template_png)
+                break
 
     # determine the state according to the matched templates
     matched_state = "none"
