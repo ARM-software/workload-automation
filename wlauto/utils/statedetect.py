@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# pylint: disable=no-member
 
 
 """
@@ -20,7 +21,7 @@ Requires a 'statedetection' directory in the workload directory that includes th
 and the 'templates' folder with PNGs of all templates mentioned in the yaml file.
 
 Requires the following Python libraries:
-numpy, pyyaml (yaml), imutils and opencv (cv2)
+numpy, pyyaml (yaml), imutils and opencv-python
 
 """
 

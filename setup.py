@@ -80,7 +80,7 @@ params = dict(
     ],
     extras_require={
         'other': ['jinja2', 'pandas>=0.13.1'],
-        'statedetect': ['numpy', 'imutils', 'cv2'],
+        'statedetect': ['numpy', 'imutils', 'opencv-python'],
         'test': ['nose'],
         'mongodb': ['pymongo'],
         'notify': ['notify2'],
