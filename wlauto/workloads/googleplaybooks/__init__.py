@@ -21,7 +21,7 @@ class Googleplaybooks(AndroidUxPerfWorkload):
 
     name = 'googleplaybooks'
     package = 'com.google.android.apps.books'
-    min_apk_verson = '3.9.37'
+    min_apk_version = '3.9.37'
     activity = 'com.google.android.apps.books.app.BooksActivity'
     view = [package + '/com.google.android.apps.books.app.HomeActivity',
             package + '/com.android.vending/com.google.android.finsky.activities.MainActivity',

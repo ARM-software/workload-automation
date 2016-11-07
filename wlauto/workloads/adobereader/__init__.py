@@ -24,7 +24,7 @@ class AdobeReader(AndroidUxPerfWorkload):
 
     name = 'adobereader'
     package = 'com.adobe.reader'
-    min_apk_verson = '16.1.1'
+    min_apk_version = '16.1.1'
     activity = 'com.adobe.reader.AdobeReader'
     view = [package + '/com.adobe.reader.help.AROnboardingHelpActivity',
             package + '/com.adobe.reader.viewer.ARSplitPaneActivity',
