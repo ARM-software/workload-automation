@@ -277,7 +277,7 @@ class LatencyCollector(threading.Thread):
         else:
             self.header = GfxInfoFrame._fields
             self.process_trace_line = self._process_gfxinfo_line
-            self.re_frame = re.compile('[0-9,]+')
+            self.re_frame = re.compile('([0-9]+,)+')
             self.re_stats = re.compile('.*(percentile|frames|Number).*')
             # Create a template summary text block that matches what gfxinfo gives after a reset
             # - 133 is the default ms value for percentiles after reset
