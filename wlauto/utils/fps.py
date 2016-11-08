@@ -108,12 +108,13 @@ class FpsProcessor(object):
             per_frame_fps.name = 'fps'
 
             frame_count = self.data.index.size
-            janks = frame_time[frame_time >= vsync_interval].count()
-            not_at_vsync = self.data.IntendedVsync - self.data.Vsync
-            not_at_vsync = not_at_vsync[not_at_vsync != 0].count()
+            if frame_count:
+                janks = frame_time[frame_time >= vsync_interval].count()
+                not_at_vsync = self.data.IntendedVsync - self.data.Vsync
+                not_at_vsync = not_at_vsync[not_at_vsync != 0].count()
 
-            duration = self.data.Vsync.iloc[-1] - self.data.Vsync.iloc[0]
-            fps = (1e9 * frame_count) / float(duration)
+                duration = self.data.Vsync.iloc[-1] - self.data.Vsync.iloc[0]
+                fps = (1e9 * frame_count) / float(duration)
 
             # If gfxinfocsv is provided, get stats from that instead
             if self.extra_data:
