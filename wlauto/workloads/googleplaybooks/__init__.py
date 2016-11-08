@@ -14,7 +14,6 @@
 #
 
 from wlauto import AndroidUxPerfWorkload, Parameter
-from wlauto.exceptions import DeviceError
 
 
 class Googleplaybooks(AndroidUxPerfWorkload):
@@ -27,7 +26,7 @@ class Googleplaybooks(AndroidUxPerfWorkload):
             package + '/com.android.vending/com.google.android.finsky.activities.MainActivity',
             package + '/com.google.android.apps.books.app.ReadingActivity',
             package + '/com.google.android.apps.books.app.TableOfContentsActivityLight']
-    description = """
+    description = '''
     A workload to perform standard productivity tasks with googleplaybooks.
     This workload performs various tasks, such as searching for a book title
     online, browsing through a book, adding and removing notes, word searching,
@@ -48,32 +47,57 @@ class Googleplaybooks(AndroidUxPerfWorkload):
     12. Switches page styles from 'Day' to 'Night' to 'Sepia' and back to 'Day'
     13. Uses the 'About this book' facility on the currently selected book
 
-    NOTE: This workload requires a network connection (ideally, wifi) to run
-          and a Google account to be setup on the device.
-    """
+    NOTE: This workload requires a network connection (ideally, wifi) to run,
+          a Google account to be setup on the device, and payment details for the account.
+          Free books require payment details to have been setup otherwise it fails.
+          Tip: Install the 'Google Opinion Rewards' app to bypass the need to enter valid
+          card/bank detail.
+    '''
 
     parameters = [
-        Parameter('search_book_title', kind=str, mandatory=False, default="Hamlet",
+        Parameter('search_book_title', kind=str, default='Nikola Tesla: Imagination and the Man That Invented the 20th Century',
                   description="""
                   The book title to search for within Google Play Books archive.
                   The book must either be already in the account's library, or free to purchase.
                   """),
-        Parameter('select_chapter_page_number', kind=int, mandatory=False, default=22,
+        Parameter('library_book_title', kind=str, default='Nikola Tesla',
+                  description="""
+                  The book title to search for within My Library.
+                  The Library name can differ (usually shorter) to the Store name.
+                  If left blank, the ``search_book_title`` will be used.
+                  """),
+        Parameter('select_chapter_page_number', kind=int, default=4,
                   description="""
                   The Page Number to search for within a selected book's Chapter list.
                   Note: Accepts integers only.
                   """),
-        Parameter('search_word', kind=str, mandatory=False, default='the',
+        Parameter('search_word', kind=str, default='the',
                   description="""
                   The word to search for within a selected book.
                   Note: Accepts single words only.
                   """),
+        Parameter('account', kind=str, mandatory=False,
+                  description="""
+                  If you are running this workload on a device which has more than one
+                  Google account setup, then this parameter is used to select which account
+                  to select when prompted.
+                  The account requires the book to have already been purchased or payment details
+                  already associated with the account.
+                  If omitted, the first account in the list will be selected if prompted.
+                  """),
     ]
 
+    # This workload relies on the internet so check that there is a working
+    # internet connection
     requires_network = True
 
     def validate(self):
         super(Googleplaybooks, self).validate()
-        self.uiauto_params['book_title'] = self.search_book_title.replace(" ", "0space0")
+        self.uiauto_params['search_book_title'] = self.search_book_title.replace(' ', '0space0')
+        # If library_book_title is blank, set it to the same as search_book_title
+        if not self.library_book_title:  # pylint: disable=access-member-before-definition
+            self.library_book_title = self.search_book_title  # pylint: disable=attribute-defined-outside-init
+        self.uiauto_params['library_book_title'] = self.library_book_title.replace(' ', '0space0')
         self.uiauto_params['chapter_page_number'] = self.select_chapter_page_number
         self.uiauto_params['search_word'] = self.search_word
+        self.uiauto_params['account'] = self.account
