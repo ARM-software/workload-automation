@@ -199,6 +199,7 @@ class ApkWorkload(Workload):
         self.apk_file = None
         self.apk_version = None
         self.logcat_log = None
+        self.exact_apk_version = None
 
     def setup(self, context):
         Workload.setup(self, context)
@@ -226,6 +227,11 @@ class ApkWorkload(Workload):
         if target_version is None and host_version is None:
             msg = "Could not find APK for '{}' on the host or target device"
             raise ResourceError(msg.format(self.name))
+
+        if self.exact_apk_version is not None:
+            if self.exact_apk_version != target_version and self.version != host_version:
+                msg = "APK version '{}' not found on the host '{}' or target '{}'"
+                raise ResourceError(msg.format(self.version, host_version, target_version))
 
         # Ensure the apk is setup on the device
         if self.force_install:
