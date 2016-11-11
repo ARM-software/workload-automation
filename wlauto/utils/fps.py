@@ -74,17 +74,15 @@ class FpsProcessor(object):
             # fiter out bogus frames.
             bogus_frames_filter = self.data.actual_present_time != 0x7fffffffffffffff
             actual_present_times = self.data.actual_present_time[bogus_frames_filter]
+            actual_present_time_deltas = actual_present_times.diff().dropna()
 
-            actual_present_time_deltas = actual_present_times - actual_present_times.shift()
-            actual_present_time_deltas = actual_present_time_deltas.drop(0)
-
-            vsyncs_to_compose = actual_present_time_deltas / vsync_interval
+            vsyncs_to_compose = actual_present_time_deltas.div(vsync_interval)
             vsyncs_to_compose.apply(lambda x: int(round(x, 0)))
 
             # drop values lower than drop_threshold FPS as real in-game frame
             # rate is unlikely to drop below that (except on loading screens
             # etc, which should not be factored in frame rate calculation).
-            per_frame_fps = (1.0 / (vsyncs_to_compose * (vsync_interval / 1e9)))
+            per_frame_fps = (1.0 / (vsyncs_to_compose.multiply(vsync_interval / 1e9)))
             keep_filter = per_frame_fps > drop_threshold
             filtered_vsyncs_to_compose = vsyncs_to_compose[keep_filter]
             per_frame_fps.name = 'fps'
@@ -135,9 +133,13 @@ class FpsProcessor(object):
         elif self.data.columns.tolist() == list(GfxInfoFrame._fields):
             frame_time = self.data.FrameCompleted - self.data.IntendedVsync
 
-        data = frame_time.quantile([0.90, 0.95, 0.99])
+        data = frame_time.dropna().quantile([0.90, 0.95, 0.99])
         # Convert to ms, round to nearest, cast to int
-        data = data.div(1e6).round().astype('int')
+        data = data.div(1e6).round()
+        try:
+            data = data.astype('int')
+        except ValueError:
+            pass
 
         # If gfxinfocsv is provided, get stats from that instead
         if self.extra_data:
@@ -153,9 +155,8 @@ class FpsProcessor(object):
         Internal method for calculating jank frames.
         """
         pause_latency = 20
-        vtc_deltas = filtered_vsyncs_to_compose - filtered_vsyncs_to_compose.shift()
-        vtc_deltas.index = range(0, vtc_deltas.size)
-        vtc_deltas = vtc_deltas.drop(0).abs()
+        vtc_deltas = filtered_vsyncs_to_compose.diff().dropna()
+        vtc_deltas = vtc_deltas.abs()
         janks = vtc_deltas.apply(lambda x: (pause_latency > x > 1.5) and 1 or 0).sum()
 
         return janks
