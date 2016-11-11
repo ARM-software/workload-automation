@@ -59,6 +59,15 @@ class Geekbench(AndroidUiAutoBenchmark):
     """
     summary_metrics = ['score', 'multicore_score']
     versions = {
+        '4.0.1': {
+            'package': 'com.primatelabs.geekbench',
+            'activity': '.HomeActivity',
+        },
+        # Version 3.4.1 was the final version 3 variant
+        '3.4.1': {
+            'package': 'com.primatelabs.geekbench',
+            'activity': '.HomeActivity',
+        },
         '3': {
             'package': 'com.primatelabs.geekbench3',
             'activity': '.HomeActivity',
@@ -92,23 +101,13 @@ class Geekbench(AndroidUiAutoBenchmark):
         super(Geekbench, self).__init__(device, **kwargs)
         self.uiauto_params['version'] = self.version
         self.uiauto_params['times'] = self.times
-        self.run_timeout = 5 * 60 * self.times
-
-    def initialize(self, context):
-        if self.version == '3' and not self.device.is_rooted:
-            raise WorkloadError('Geekbench workload only works on rooted devices.')
-
-    def init_resources(self, context):
-        self.apk_file = context.resolver.get(wlauto.common.android.resources.ApkFile(self), version=self.version)
-        self.uiauto_file = context.resolver.get(wlauto.common.android.resources.JarFile(self))
-        self.device_uiauto_file = self.device.path.join(self.device.working_directory,
-                                                        os.path.basename(self.uiauto_file))
-        if not self.uiauto_package:
-            self.uiauto_package = os.path.splitext(os.path.basename(self.uiauto_file))[0]
+        self.run_timeout = 10 * 60 * self.times
+        self.exact_apk_version = self.version
 
     def update_result(self, context):
         super(Geekbench, self).update_result(context)
-        update_method = getattr(self, 'update_result_{}'.format(self.version))
+        major_version = versiontuple(self.version)[0]
+        update_method = getattr(self, 'update_result_{}'.format(major_version))
         update_method(context)
 
     def validate(self):
@@ -143,6 +142,30 @@ class Geekbench(AndroidUiAutoBenchmark):
                 context.result.add_metric(namemify(section['name'] + '_multicore_score', i),
                                           section['multicore_score'])
 
+    def update_result_4(self, context):
+        outfile_glob = self.device.path.join(self.device.package_data_directory, self.package, 'files', '*gb4')
+        on_device_output_files = [f.strip() for f in self.device.execute('ls {}'.format(outfile_glob),
+                                                                         as_root=True).split('\n') if f]
+        for i, on_device_output_file in enumerate(on_device_output_files):
+            host_temp_file = tempfile.mktemp()
+            self.device.pull_file(on_device_output_file, host_temp_file)
+            host_output_file = os.path.join(context.output_directory, os.path.basename(on_device_output_file))
+            with open(host_temp_file) as fh:
+                data = json.load(fh)
+            os.remove(host_temp_file)
+            with open(host_output_file, 'w') as wfh:
+                json.dump(data, wfh, indent=4)
+            context.iteration_artifacts.append(Artifact('geekout', path=os.path.basename(on_device_output_file),
+                                                        kind='data',
+                                                        description='Geekbench 4 output from device.'))
+            context.result.add_metric(namemify('score', i), data['score'])
+            context.result.add_metric(namemify('multicore_score', i), data['multicore_score'])
+            for section in data['sections']:
+                context.result.add_metric(namemify(section['name'] + '_score', i), section['score'])
+                for workloads in section['workloads']:
+                    workload_name = workloads['name'].replace(" ", "-")
+                    context.result.add_metric(namemify(section['name'] + '_' + workload_name + '_score', i),
+                                          workloads['score'])
 
 class GBWorkload(object):
     """
@@ -353,3 +376,6 @@ class GBScoreCalculator(object):
 
 def namemify(basename, i):
     return basename + (' {}'.format(i) if i else '')
+
+def versiontuple(v):
+    return tuple(map(int, (v.split("."))))

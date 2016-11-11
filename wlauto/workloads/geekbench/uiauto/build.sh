@@ -17,9 +17,9 @@
 
 
 class_dir=bin/classes/com/arm/wlauto/uiauto
-base_class=`python -c "import os, wlauto; print os.path.join(os.path.dirname(wlauto.__file__), 'common', 'android', 'BaseUiAutomation.class')"`
+base_classes=`python -c "import os, wlauto; print os.path.join(os.path.dirname(wlauto.__file__), 'common', 'android', '*.class')"`
 mkdir -p $class_dir
-cp $base_class $class_dir
+cp $base_classes $class_dir
 
 ant build
 
