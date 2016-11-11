@@ -16,6 +16,7 @@
 package com.arm.wlauto.uiauto.skype;
 
 import android.os.Bundle;
+import android.util.Log;
 
 // Import the uiautomator libraries
 import com.android.uiautomator.core.UiObject;
@@ -55,6 +56,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         String callType = parameters.getString("action");
         String resultsFile = parameters.getString("results_file");
 
+	Log.d("UX_PERF", "applaunch_end " + System.currentTimeMillis());
         setScreenOrientation(ScreenOrientation.NATURAL);
 
         UiWatcher infoPopUpWatcher = createInfoPopUpWatcher();

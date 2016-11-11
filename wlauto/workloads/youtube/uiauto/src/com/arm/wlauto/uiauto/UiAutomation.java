@@ -17,6 +17,7 @@ package com.arm.wlauto.uiauto.youtube;
 
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.util.Log;
 
 // Import the uiautomator libraries
 import com.android.uiautomator.core.UiObject;
@@ -54,6 +55,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             searchTerm = searchTerm.replace("0space0", " ");
         }
 
+	Log.d("UX_PERF", "applaunch_end " + System.currentTimeMillis());
         setScreenOrientation(ScreenOrientation.NATURAL);
 
         clearFirstRunDialogues();
