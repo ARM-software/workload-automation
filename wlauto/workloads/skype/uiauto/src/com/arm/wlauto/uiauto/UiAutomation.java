@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.arm.wlauto.uiauto.skype;
 
 import android.os.Bundle;
@@ -194,6 +193,6 @@ public class UiAutomation extends UxPerfUiAutomation {
             new UiObject(new UiSelector().descriptionContains("Mute"));
         muteButton.click();
         
-        sleep(duration);
+        sleepSeconds(duration);
     }
 }

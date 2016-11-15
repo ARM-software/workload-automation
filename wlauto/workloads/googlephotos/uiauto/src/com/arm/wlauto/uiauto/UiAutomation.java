@@ -49,7 +49,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         packageName = parameters.getString("package");
         packageID = packageName + ":id/";
 
-        sleep(5); // Pause while splash screen loads
+        sleepSeconds(5); // Pause while splash screen loads
         setScreenOrientation(ScreenOrientation.NATURAL);
         dismissWelcomeView();
         closePromotionPopUp();
@@ -104,13 +104,13 @@ public class UiAutomation extends UxPerfUiAutomation {
             UiObject workingFolder =
                 new UiObject(new UiSelector().text("wa-working"));
             if (!workingFolder.exists()) {
-                sleep(1);
+                sleepSeconds(1);
                 uiDeviceSwipeLeft(10);
-                sleep(1);
+                sleepSeconds(1);
                 uiDeviceSwipeLeft(10);
-                sleep(1);
+                sleepSeconds(1);
                 uiDeviceSwipeLeft(10);
-                sleep(1);
+                sleepSeconds(1);
             }
         }
 

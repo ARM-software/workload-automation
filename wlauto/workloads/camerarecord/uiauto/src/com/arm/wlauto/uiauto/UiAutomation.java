@@ -69,15 +69,15 @@ public class UiAutomation extends BaseUiAutomation {
         // switch to camera capture mode
         UiObject clickModes = new UiObject(new UiSelector().descriptionMatches("Camera, video or panorama selector"));
         clickModes.click();
-        sleep(sleepTime);
+        sleepSeconds(sleepTime);
 
         UiObject changeModeToCapture = new UiObject(new UiSelector().descriptionMatches("Switch to video"));
         changeModeToCapture.click();
-        sleep(sleepTime);
+        sleepSeconds(sleepTime);
 
         UiObject clickRecordingButton = new UiObject(new UiSelector().descriptionMatches("Shutter button"));
         clickRecordingButton.longClick();
-        sleep(recordingTime);
+        sleepSeconds(recordingTime);
 
         // Stop video recording
         clickRecordingButton.longClick();
@@ -89,7 +89,7 @@ public class UiAutomation extends BaseUiAutomation {
         UiObject tutorialText = new UiObject(new UiSelector().resourceId("com.android.camera2:id/photoVideoSwipeTutorialText"));
         if (tutorialText.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
             tutorialText.swipeLeft(5);
-            sleep(sleepTime);
+            sleepSeconds(sleepTime);
             tutorialText.swipeRight(5);
         }
         
@@ -110,7 +110,7 @@ public class UiAutomation extends BaseUiAutomation {
         // click to capture photos
         UiObject clickCaptureButton = new UiObject(new UiSelector().resourceId(captureButtonId));
         clickCaptureButton.longClick();
-        sleep(recordingTime);
+        sleepSeconds(recordingTime);
 
         // stop video recording
         clickCaptureButton.longClick();
@@ -124,11 +124,11 @@ public class UiAutomation extends BaseUiAutomation {
         // Switch to video mode
         UiObject changeModeToCapture = new UiObject(new UiSelector().descriptionMatches("Switch to Video Camera"));
         changeModeToCapture.click();
-        sleep(sleepTime);
+        sleepSeconds(sleepTime);
 
         UiObject clickRecordingButton = new UiObject(new UiSelector().descriptionMatches("Shutter"));
         clickRecordingButton.longClick();
-        sleep(recordingTime);
+        sleepSeconds(recordingTime);
 
         // Stop video recording
         clickRecordingButton.longClick();

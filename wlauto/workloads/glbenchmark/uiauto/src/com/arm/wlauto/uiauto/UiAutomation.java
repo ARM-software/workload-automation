@@ -151,7 +151,7 @@ public class UiAutomation extends BaseUiAutomation {
 
     public void extractResults() throws Exception {
             Log.v(TAG, "Extracting results.");
-	    sleep(2); // wait for the results screen to fully load.
+	    sleepSeconds(2); // wait for the results screen to fully load.
             UiSelector selector = new UiSelector();
             UiObject fpsText = new UiObject(selector.className("android.widget.TextView")
                                                     .textContains("fps")

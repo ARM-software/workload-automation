@@ -85,7 +85,7 @@ public class UiAutomation extends BaseUiAutomation {
                     writer.println(urlAddress);
                     break;
                 }
-            sleep(10);
+            sleepSeconds(10);
             }
         } else if (browser.equals("chrome")) { // Code for Chrome browser
             UiObject adressBar = new UiObject(new UiSelector()
@@ -106,7 +106,7 @@ public class UiAutomation extends BaseUiAutomation {
                     writer.println(urlAddress);
                     break;
                     }
-            sleep(10);
+            sleepSeconds(10);
             }
         }
         writer.close();

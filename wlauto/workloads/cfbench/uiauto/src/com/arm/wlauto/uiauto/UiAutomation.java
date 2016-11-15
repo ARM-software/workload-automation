@@ -41,21 +41,21 @@ public class UiAutomation extends BaseUiAutomation {
                                                    .className("android.widget.TextView"));
 
         text_bench.click();
-        sleep(2);
+        sleepSeconds(2);
 
         try{
             UiObject stop_text = new UiObject(selector.textContains("Benchmarking ...")
                                                       .className("android.widget.TextView"));
             waitUntilNoObject(stop_text, 600);
 
-            sleep(2);
+            sleepSeconds(2);
         }finally{
             takeScreenshot("cf-bench");
         }
 
         UiScrollable res = new UiScrollable(new UiSelector());//.scrollable(true));
         res.flingToEnd(10);
-        sleep(2);
+        sleepSeconds(2);
 
         getAutomationSupport().sendStatus(Activity.RESULT_OK, status);
     }

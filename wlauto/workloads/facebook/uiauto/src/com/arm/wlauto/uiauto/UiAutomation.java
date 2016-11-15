@@ -58,7 +58,7 @@ public class UiAutomation extends BaseUiAutomation {
 
         logInButton.clickAndWaitForNewWindow(timeout);
 
-        sleep(timeout);
+        sleepSeconds(timeout);
 
         //Click on message logo
         UiObject messageLogo = new UiObject(new UiSelector()
@@ -78,7 +78,7 @@ public class UiAutomation extends BaseUiAutomation {
             .className("android.widget.RelativeLayout").index(1)));
         clickMessage.clickAndWaitForNewWindow(timeout);
 
-        sleep(timeout);
+        sleepSeconds(timeout);
 
         UiObject sendMessage = new UiObject(new UiSelector()
             .className("android.widget.FrameLayout").index(4)
@@ -89,7 +89,7 @@ public class UiAutomation extends BaseUiAutomation {
             .text("Write a message")));
         sendMessage.click();
 
-        sleep(timeout);
+        sleepSeconds(timeout);
 
         UiObject editMessage = new UiObject(new UiSelector()
             .className("android.widget.EditText").text("Write a message"));
@@ -101,9 +101,9 @@ public class UiAutomation extends BaseUiAutomation {
         sendButton.click();
 
         getUiDevice().pressDPadDown();
-        sleep(timeout);
+        sleepSeconds(timeout);
         getUiDevice().pressBack();
-        sleep(timeout);
+        sleepSeconds(timeout);
         getUiDevice().pressBack();
 
         //Check for notifications
@@ -124,9 +124,9 @@ public class UiAutomation extends BaseUiAutomation {
              .className("android.widget.LinearLayout").index(1)));
         clickNotify.clickAndWaitForNewWindow(timeout);
 
-        sleep(timeout);
+        sleepSeconds(timeout);
         getUiDevice().pressBack();
-        sleep(timeout);
+        sleepSeconds(timeout);
         getUiDevice().pressBack();
 
         //Search for the facebook account
@@ -155,21 +155,21 @@ public class UiAutomation extends BaseUiAutomation {
 
         editSearch.clearTextField();
         editSearch.setText("amol kamble");
-        sleep(timeout);
+        sleepSeconds(timeout);
 
         UiObject clickOnSearchResult = new UiObject(new UiSelector()
              .className("android.webkit.WebView").index(0));
         clickOnSearchResult.clickTopLeft();
 
-        sleep(2 * timeout);
+        sleepSeconds(2 * timeout);
 
         getUiDevice().pressBack();
-        sleep(timeout);
+        sleepSeconds(timeout);
         getUiDevice().pressBack();
 
         clickBar.click();
 
-        sleep(timeout);
+        sleepSeconds(timeout);
 
         //Click on find friends
         UiObject clickFriends = new UiObject(new UiSelector()
@@ -188,7 +188,7 @@ public class UiAutomation extends BaseUiAutomation {
         UiObject friends = clickFriends.getChild(new UiSelector()
              .className("android.widget.RelativeLayout").index(3));
         friends.click();
-        sleep(timeout);
+        sleepSeconds(timeout);
         getUiDevice().pressBack();
 
         //Update the status

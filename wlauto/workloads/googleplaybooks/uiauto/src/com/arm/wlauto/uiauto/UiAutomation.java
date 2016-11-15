@@ -141,9 +141,9 @@ public class UiAutomation extends UxPerfUiAutomation {
             endButton.click();
 
             // Select a random sample book to add to My library
-            sleep(1);
+            sleepSeconds(1);
             tapDisplayCentre();
-            sleep(1);
+            sleepSeconds(1);
 
             // Click done button (uses same resource-id)
             endButton.click();
@@ -204,7 +204,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         while (!label.exists()) {
             if (searchTime > 0) {
                 uiDeviceSwipeDown(100);
-                sleep(1);
+                sleepSeconds(1);
                 searchTime--;
             } else {
                 throw new UiObjectNotFoundException(
@@ -503,7 +503,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             }
         }
 
-        sleep(2);
+        sleepSeconds(2);
         tapDisplayCentre(); // exit reader settings dialog
         waitForPage();
     }
@@ -539,7 +539,7 @@ public class UiAutomation extends UxPerfUiAutomation {
                                          .focusable(true)));
         // On some devices the object in the view hierarchy is found before it
         // becomes visible on the screen. Therefore add pause instead.
-        sleep(3);
+        sleepSeconds(3);
 
         if (!activityReader.waitForExists(viewTimeout)) {
             throw new UiObjectNotFoundException("Could not find \"activity reader view\".");
@@ -554,7 +554,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             new UiObject(new UiSelector().resourceId(packageID + "action_bar"));
         if (!actionBar.exists()) {
             tapDisplayCentre();
-            sleep(1); // Allow previous views to settle
+            sleepSeconds(1); // Allow previous views to settle
         }
         
         UiObject card =
@@ -570,11 +570,11 @@ public class UiAutomation extends UxPerfUiAutomation {
             int y = (int)(getDisplayCentreHeight() * 0.8);
             while (card.exists()) {
                 tapDisplay(x, y);
-                sleep(1);
+                sleepSeconds(1);
             }
             
             tapDisplay(x, y);
-            sleep(1); // Allow previous views to settle
+            sleepSeconds(1); // Allow previous views to settle
         }
 
         if (!actionBar.exists()) {
@@ -587,7 +587,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             new UiObject(new UiSelector().resourceId(packageID + "action_bar"));
         if (actionBar.exists()) {
             tapDisplayCentre();
-            sleep(1); // Allow previous views to settle
+            sleepSeconds(1); // Allow previous views to settle
         }
 
         if (actionBar.exists()) {

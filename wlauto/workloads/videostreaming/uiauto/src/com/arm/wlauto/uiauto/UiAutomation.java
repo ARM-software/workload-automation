@@ -121,7 +121,7 @@ public class UiAutomation extends BaseUiAutomation {
               UiObject videoCurrentTime = new UiObject(new UiSelector()
                  .className("android.widget.TextView").index(0));
 
-              sleep(samplingInterval);
+              sleepSeconds(samplingInterval);
 
               // Handle the time taken by the getText function
               timeBeforeGetText = new Date().getTime() / 1000;
@@ -146,7 +146,7 @@ public class UiAutomation extends BaseUiAutomation {
 
          }
        } else {
-            sleep(videoTime);
+            sleepSeconds(videoTime);
        }
        getUiDevice().pressBack();
        getUiDevice().pressHome();
