@@ -345,7 +345,7 @@ class HttpGetter(ResourceGetter):
 
     """
     priority = GetterPriority.remote
-    resource_type = ['apk', 'file', 'jar', 'revent']
+    resource_type = ['apk', 'file', 'jar', 'revent', 'executable']
 
     parameters = [
         Parameter('url', global_alias='remote_assets_url',
@@ -441,6 +441,12 @@ class HttpGetter(ResourceGetter):
                             return asset
                         except ValueError as e:
                             self.logger.warning(e.message)
+        elif resource.name == 'executable':
+            platform = resource.platform
+            path = '/'.join(['bin', platform, resource.filename])
+            for asset in assets:
+                if asset['path'].lower() == path.lower():
+                    return asset
         else:  # file
             for asset in assets:
                 if asset['path'].lower() == resource.path.lower():
