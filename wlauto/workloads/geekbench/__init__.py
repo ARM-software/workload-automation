@@ -87,6 +87,8 @@ class Geekbench(AndroidUiAutoBenchmark):
         Parameter('times', kind=int, default=1,
                   description=('Specfies the number of times the benchmark will be run in a "tight '
                                'loop", i.e. without performaing setup/teardown inbetween.')),
+        Parameter('run_timeout', kind=int, default=900,
+                  description='Timeout, in seconds, for the script run time.'),
     ]
 
     @property
@@ -101,7 +103,8 @@ class Geekbench(AndroidUiAutoBenchmark):
         super(Geekbench, self).__init__(device, **kwargs)
         self.uiauto_params['version'] = self.version
         self.uiauto_params['times'] = self.times
-        self.run_timeout = 10 * 60 * self.times
+        if (self.times > 1):
+            self.run_timeout = 10 * 60 * self.times
         self.exact_apk_version = self.version
 
     def update_result(self, context):
