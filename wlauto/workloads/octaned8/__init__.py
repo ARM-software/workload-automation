@@ -59,7 +59,7 @@ class Octaned8(Workload):
     """
 
     parameters = [
-        Parameter('timeout', kind=int, default=120,
+        Parameter('run_timeout', kind=int, default=180,
                   description='Timeout, in seconds, for the script run time.'),
     ]
 
@@ -73,9 +73,9 @@ class Octaned8(Workload):
 
         assets_tar = 'octaned8-assets.tar'
         fpath = context.resolver.get(File(self, assets_tar))
-        self.device.push_file(fpath, assets_dir, timeout=300)
+        self.device.push_file(fpath, assets_dir, timeout=10)
         self.command = 'cd {}; {} busybox tar -x -f {}'.format(assets_dir, self.device.busybox, assets_tar)
-        self.output = self.device.execute(self.command, timeout=self.timeout, check_exit_code=False)
+        self.output = self.device.execute(self.command, timeout=10, check_exit_code=False)
 
         for f in self.executables:
             binFile = context.resolver.get(Executable(self, self.device.abi, f))
@@ -85,11 +85,12 @@ class Octaned8(Workload):
         self.logger.info('Copying d8 binaries to device')
         assets_dir = self.device.path.join(self.device.working_directory, 'assets')
         device_file = self.device.path.join(self.device.working_directory, 'octaned8.output')
+        self.device.execute('rm {}'.format(device_file))
         self.command = 'cd {}; {}/d8 ./run.js >> {} 2>&1'.format(assets_dir, self.device.binaries_directory, device_file)
 
     def run(self, context):
         self.logger.info('Starting d8 tests')
-        self.output = self.device.execute(self.command, timeout=self.timeout, check_exit_code=False)
+        self.output = self.device.execute(self.command, timeout=self.run_timeout, check_exit_code=False)
 
     def update_result(self, context):
         host_file = os.path.join(context.output_directory, 'octaned8.output')
@@ -103,6 +104,8 @@ class Octaned8(Workload):
                     match = regex.search(line)
                     if match:
                         context.result.add_metric(label, float(match.group(1)))
+        device_file = self.device.path.join(self.device.working_directory, 'octaned8.output')
+        self.device.execute('rm {}'.format(device_file))
 
     def finalize(self, context):
         for f in self.executables:
@@ -110,5 +113,3 @@ class Octaned8(Workload):
             self.device.execute('rm  {}'.format(self.device.path.join(self.device.working_directory, f)))
         assets_dir = self.device.path.join(self.device.working_directory, 'assets')
         self.device.execute('rm -rf {}'.format(assets_dir))
-        device_file = self.device.path.join(self.device.working_directory, 'octaned8.output')
-        self.device.execute('rm {}'.format(device_file))
