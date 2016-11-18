@@ -226,25 +226,25 @@ void destroy_replay_device(int fd)
 		die("Could not destroy replay device");
 }
 
-inline void set_evbit(fd, bit)
+inline void set_evbit(int fd, int bit)
 {
 	if(ioctl(fd, UI_SET_EVBIT, bit) < 0)
 		die("Could not set EVBIT %i", bit);
 }
 
-inline void set_keybit(fd, bit)
+inline void set_keybit(int fd, int bit)
 {
 	if(ioctl(fd, UI_SET_KEYBIT, bit) < 0)
 		die("Could not set KEYBIT %i", bit);
 }
 
-inline void set_absbit(fd, bit)
+inline void set_absbit(int fd, int bit)
 {
 	if(ioctl(fd, UI_SET_ABSBIT, bit) < 0)
 		die("Could not set ABSBIT %i", bit);
 }
 
-inline void set_relbit(fd, bit)
+inline void set_relbit(int fd, int bit)
 {
 	if(ioctl(fd, UI_SET_RELBIT, bit) < 0)
 		die("Could not set RELBIT %i", bit);
@@ -562,16 +562,19 @@ void print_device_info(device_info_t *info)
 int write_replay_event(FILE *fout, const replay_event_t *ev)
 {
 	size_t ret;
+	uint64_t time;
 
 	ret = fwrite(&ev->dev_idx, sizeof(uint16_t), 1, fout);
 	if (ret < 1)
 		return errno;
-
-	ret = fwrite(&ev->event.time.tv_sec, sizeof(uint64_t), 1, fout);
+	
+	time = (uint64_t)ev->event.time.tv_sec;
+	ret = fwrite(&time, sizeof(uint64_t), 1, fout);
 	if (ret < 1)
 		return errno;
 
-	ret = fwrite(&ev->event.time.tv_usec, sizeof(uint64_t), 1, fout);
+	time = (uint64_t)ev->event.time.tv_usec;
+	ret = fwrite(&time, sizeof(uint64_t), 1, fout);
 	if (ret < 1)
 		return errno;
 
@@ -1020,6 +1023,12 @@ void open_gamepad_input_devices_for_playback_or_die(input_devices_t *devices, co
 	devices->max_fd = fd;
 }
 
+//Used to exit program properly on termination
+static volatile int EXIT = 0;
+void exitHandler(int z) {
+    EXIT = 1;
+}
+
 void record(const char *filepath, int delay, recording_mode_t mode)
 {
 	int ret;
@@ -1054,6 +1063,7 @@ void record(const char *filepath, int delay, recording_mode_t mode)
 	}
 
 	sigset_t old_sigset;
+	sigemptyset(&old_sigset);
 	block_sigterm(&old_sigset);
 
 	// Write the zero size as a place holder and remember the position in the
@@ -1074,7 +1084,11 @@ void record(const char *filepath, int delay, recording_mode_t mode)
 	int32_t maxfd = 0;
 	int32_t keydev = 0;
 	int i;
-        printf("recording...\n");
+	printf("recording...\n");
+
+	errno = 0;
+	signal(SIGINT, exitHandler);
+	
 	while(1)
 	{
 		FD_ZERO(&readfds);
@@ -1086,11 +1100,18 @@ void record(const char *filepath, int delay, recording_mode_t mode)
 		/* wait for input */
 		tout.tv_sec = delay;
 		tout.tv_nsec = 0;
+
 		ret = pselect(devices.max_fd + 1, &readfds, NULL, NULL, &tout, &old_sigset);
-		if (errno == EINTR)
+
+		if (EXIT){
 			break;
-		if (!ret)
+		}
+		if (errno == EINTR){
 			break;
+		}
+		if (!ret){
+			break;
+		}
 
 		if (wait_for_stdin && FD_ISSET(STDIN_FILENO, &readfds)) {
 			// in this case the key down for the return key will be recorded
