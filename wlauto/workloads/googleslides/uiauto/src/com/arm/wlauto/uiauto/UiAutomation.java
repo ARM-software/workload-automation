@@ -61,13 +61,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         changeAckTimeout(100);
         // UI automation begins here
         skipWelcomeScreen();
-        sleep(1);
+        sleepSeconds(1);
         dismissWorkOfflineBanner();
-        sleep(1);
+        sleepSeconds(1);
         enablePowerpointCompat();
-        sleep(1);
+        sleepSeconds(1);
         testEditNewSlidesDocument(newDocumentName, workingDirectoryName, doTextEntry);
-        sleep(1);
+        sleepSeconds(1);
         // Open document
         openDocument(pushedDocumentName, workingDirectoryName);
         waitForProgress(WAIT_TIMEOUT_1SEC*30);
@@ -312,19 +312,19 @@ public class UiAutomation extends UxPerfUiAutomation {
             enterTextInSlide(".*[Tt]itle.*", docName);
             // Save
             saveDocument(docName);
-            sleep(1);
+            sleepSeconds(1);
         }
 
         // Slide 2 - Image
         insertSlide("Title only");
         insertImage(workingDirectoryName);
-        sleep(1);
+        sleepSeconds(1);
 
         // If text wasn't entered in first slide, save prompt will appear here
         if (!doTextEntry) {
             // Save
             saveDocument(docName);
-            sleep(1);
+            sleepSeconds(1);
         }
 
         // Slide 3 - Shape
@@ -333,7 +333,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         insertShape(shapeName);
         modifyShape(shapeName);
         getUiDevice().pressBack();
-        sleep(1);
+        sleepSeconds(1);
 
         // Tidy up
         getUiDevice().pressBack();
@@ -366,7 +366,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             waitForProgress(WAIT_TIMEOUT_1SEC*5);
         }
         logger.stop();
-        sleep(1);
+        sleepSeconds(1);
 
         // scroll backward in edit mode
         logger = new ActionLogger(testTag + "_editbackward", parameters);
@@ -376,7 +376,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             waitForProgress(WAIT_TIMEOUT_1SEC*5);
         }
         logger.stop();
-        sleep(1);
+        sleepSeconds(1);
 
         // run slideshow
         logger = new ActionLogger(testTag + "_run", parameters);
@@ -392,7 +392,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             presentation.waitForExists(WAIT_TIMEOUT_1SEC*30);
         }
         logger.stop();
-        sleep(1);
+        sleepSeconds(1);
 
         slideIndex = 0;
         
@@ -404,7 +404,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             waitForProgress(WAIT_TIMEOUT_1SEC*5);
         }
         logger.stop();
-        sleep(1);
+        sleepSeconds(1);
 
         // scroll backward in slideshow mode
         logger = new ActionLogger(testTag + "_playbackward", parameters);
@@ -414,7 +414,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             waitForProgress(WAIT_TIMEOUT_1SEC*5);
         }
         logger.stop();
-        sleep(1);
+        sleepSeconds(1);
 
         getUiDevice().pressBack();
         getUiDevice().pressBack();

@@ -146,16 +146,16 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void scrollThroughResults() throws Exception {
         UiSelector selector = new UiSelector();
         getUiDevice().pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
-        sleep(1);
+        sleepSeconds(1);
         getUiDevice().pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
-        sleep(1);
+        sleepSeconds(1);
         getUiDevice().pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
-        sleep(1);
+        sleepSeconds(1);
         getUiDevice().pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
     }
 
     public void shareResults() throws Exception {
-        sleep(2); // transition
+        sleepSeconds(2); // transition
         UiSelector selector = new UiSelector();
         getUiDevice().pressMenu();
         UiObject shareButton = new UiObject(selector.text("Share")

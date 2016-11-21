@@ -69,19 +69,19 @@ public class UiAutomation extends BaseUiAutomation {
         // switch to camera capture mode
         UiObject clickModes = new UiObject(new UiSelector().descriptionMatches("Camera, video or panorama selector"));
         clickModes.click();
-        sleep(sleepTime);
+        sleepSeconds(sleepTime);
 
         UiObject changeModeToCapture = new UiObject(new UiSelector().descriptionMatches("Switch to photo"));
 
         changeModeToCapture.click();
-        sleep(sleepTime);
+        sleepSeconds(sleepTime);
 
         // click to capture photos
         UiObject clickCaptureButton = new UiObject(new UiSelector().descriptionMatches("Shutter button"));
 
         for (int i = 0; i < iterations; i++) {
             clickCaptureButton.longClick();
-            sleep(timeDurationBetweenEachCapture);
+            sleepSeconds(timeDurationBetweenEachCapture);
         }
         getUiDevice().pressBack();
     }
@@ -92,7 +92,7 @@ public class UiAutomation extends BaseUiAutomation {
         UiObject tutorialText = new UiObject(new UiSelector().resourceId("com.android.camera2:id/photoVideoSwipeTutorialText"));
         if (tutorialText.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
             tutorialText.swipeLeft(5);
-            sleep(sleepTime);
+            sleepSeconds(sleepTime);
             tutorialText.swipeRight(5);
         }
         
@@ -105,7 +105,7 @@ public class UiAutomation extends BaseUiAutomation {
 
         for (int i = 0; i < iterations; i++) {
             clickCaptureButton.longClick();
-            sleep(timeDurationBetweenEachCapture);
+            sleepSeconds(timeDurationBetweenEachCapture);
         }
     }
 
@@ -118,14 +118,14 @@ public class UiAutomation extends BaseUiAutomation {
         // switch to video mode
         UiObject changeModeToCapture = new UiObject(new UiSelector().descriptionMatches("Switch to Camera Mode"));
         changeModeToCapture.click();
-        sleep(sleepTime);
+        sleepSeconds(sleepTime);
 
         // click to capture photos
         UiObject clickCaptureButton = new UiObject(new UiSelector().descriptionMatches("Shutter"));
 
         for (int i = 0; i < iterations; i++) {
             clickCaptureButton.longClick();
-            sleep(timeDurationBetweenEachCapture);
+            sleepSeconds(timeDurationBetweenEachCapture);
         }
     }
 }

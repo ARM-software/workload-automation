@@ -48,7 +48,7 @@ public class UiAutomation extends BaseUiAutomation {
                                                       .className("android.widget.Button"));
             waitUntilNoObject(stop_text, 600);
 
-            sleep(2);
+            sleepSeconds(2);
             this.extractResults();
         } finally {
         }
@@ -94,7 +94,7 @@ public class UiAutomation extends BaseUiAutomation {
             if (!label.exists()){
                 resultList.scrollForward();
                 index--;
-                sleep(1);
+                sleepSeconds(1);
                 continue;
             }
             Log.v("sqlite", label.getText() + " = " + value.getText().replace("\n", " "));

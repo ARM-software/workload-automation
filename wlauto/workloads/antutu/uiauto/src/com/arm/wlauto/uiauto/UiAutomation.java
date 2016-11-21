@@ -109,7 +109,7 @@ public class UiAutomation extends BaseUiAutomation {
         UiObject closeButton = new UiObject(selector.text("Cancel"));
         if (closeButton.waitForExists(TimeUnit.SECONDS.toMillis(initialTimeoutSeconds))) {
             closeButton.click();
-            sleep(1); // diaglog dismissal
+            sleepSeconds(1); // diaglog dismissal
             return true;
         } else {
             return false;
@@ -121,7 +121,7 @@ public class UiAutomation extends BaseUiAutomation {
         UiObject closeButton = new UiObject(selector.text("Close"));
         if (closeButton.waitForExists(TimeUnit.SECONDS.toMillis(initialTimeoutSeconds))) {
             closeButton.click();
-            sleep(1); // diaglog dismissal
+            sleepSeconds(1); // diaglog dismissal
             return true;
         } else {
             return false;
@@ -137,7 +137,7 @@ public class UiAutomation extends BaseUiAutomation {
         // dismiss it as long as keeps popping up.
         while (closeButton.waitForExists(2)) {
             closeButton.click();
-            sleep(1); // diaglog dismissal
+            sleepSeconds(1); // diaglog dismissal
             dismissed = true;
         }
         return dismissed;
@@ -149,7 +149,7 @@ public class UiAutomation extends BaseUiAutomation {
                                              .className("android.widget.Button"));
         test.waitForExists(initialTimeoutSeconds);
         test.click();
-        sleep(1); // possible tab transtion
+        sleepSeconds(1); // possible tab transtion
     }
 
    /* In version 5 of antutu, the test has been changed from a button widget to a textview */
@@ -160,7 +160,7 @@ public class UiAutomation extends BaseUiAutomation {
                                              .className("android.widget.TextView"));
         test.waitForExists(initialTimeoutSeconds);
         test.click();
-        sleep(1); // possible tab transtion
+        sleepSeconds(1); // possible tab transtion
     }
 
 
@@ -168,14 +168,14 @@ public class UiAutomation extends BaseUiAutomation {
         UiSelector selector = new UiSelector();
         UiObject test = new UiObject(selector.text("Test"));
         test.click();
-        sleep(1); // possible tab transtion
+        sleepSeconds(1); // possible tab transtion
     }
 
     public void disableSdCardTests() throws Exception {
         UiSelector selector = new UiSelector();
         UiObject custom = new UiObject(selector.textContains("Custom"));
         custom.click();
-        sleep(1); // tab transition
+        sleepSeconds(1); // tab transition
 
         UiObject sdCardButton = new UiObject(selector.text("SD card IO"));
         sdCardButton.click();
@@ -203,7 +203,7 @@ public class UiAutomation extends BaseUiAutomation {
             if (detailsButton.exists() || barChart.exists()) {
                 break;
             }
-            sleep(5);
+            sleepSeconds(5);
         }
 
         if (barChart.exists()) {
@@ -218,7 +218,7 @@ public class UiAutomation extends BaseUiAutomation {
             if (qrText.exists()) {
                 break;
             }
-            sleep(5);
+            sleepSeconds(5);
         }
     }
 
@@ -313,7 +313,7 @@ public class UiAutomation extends BaseUiAutomation {
             UiSelector selector = new UiSelector();
             UiObject detailsButton = new UiObject(new UiSelector().className("android.widget.Button")
                                                                   .text("Details"));
-            sleep(1);
+            sleepSeconds(1);
             getUiDevice().pressBack();
         }
     }
@@ -343,7 +343,7 @@ public class UiAutomation extends BaseUiAutomation {
                 foundResults = true;
                 break;
             }
-            sleep(5);
+            sleepSeconds(5);
         }
 
         if (!foundResults) {
@@ -360,20 +360,20 @@ public class UiAutomation extends BaseUiAutomation {
 
         if (detailTextView.exists()) {
             detailTextView.click();
-            sleep(1); // tab transition
+            sleepSeconds(1); // tab transition
 
             UiObject testTextView = new UiObject(selector.text("Test")
                                                     .className("android.widget.TextView"));
             if (testTextView.exists()) {
             testTextView.click();
-            sleep(1); // tab transition
+            sleepSeconds(1); // tab transition
             }
 
             UiObject scoresTextView = new UiObject(selector.text("Scores")
                                                     .className("android.widget.TextView"));
             if (scoresTextView.exists()) {
             scoresTextView.click();
-            sleep(1); // tab transition
+            sleepSeconds(1); // tab transition
             }
         }
     }

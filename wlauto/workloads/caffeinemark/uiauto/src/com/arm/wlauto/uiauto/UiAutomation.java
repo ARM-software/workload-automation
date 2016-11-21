@@ -70,7 +70,7 @@ public class UiAutomation extends BaseUiAutomation {
         UiObject detailsButton = new UiObject(selector.text("Details")
                                                       .className("android.widget.Button"));
         detailsButton.click(); 
-        sleep(2);
+        sleepSeconds(2);
 
         UiObject linearObject;
         UiObject detailedScore;

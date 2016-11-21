@@ -178,9 +178,9 @@ public class UiAutomation extends BaseUiAutomation {
                     throw new UiObjectNotFoundException("Could not find \"Swipe screen\".");
                 }
             }
-            sleep(1);
+            sleepSeconds(1);
             swipeScreen.swipeLeft(2);
-            sleep(1);
+            sleepSeconds(1);
             swipeScreen.swipeLeft(2);
         }
 

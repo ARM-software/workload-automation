@@ -37,7 +37,7 @@ public class UiAutomation extends BaseUiAutomation {
         Bundle status = new Bundle();
         status.putString("product", getUiDevice().getProductName());
         UiSelector selector = new UiSelector();
-        sleep(3);
+        sleepSeconds(3);
         UiObject text_bench = new UiObject(selector.text("Run SmartBench")
                                                    .className("android.widget.TextView"));
         text_bench.click();
@@ -48,13 +48,13 @@ public class UiAutomation extends BaseUiAutomation {
 
             waitObject(complete_text);            
 
-            sleep(2);
+            sleepSeconds(2);
             complete_text.click();
         } finally{
             //complete_text.click();
         }
 
-        sleep(5);
+        sleepSeconds(5);
         takeScreenshot("SmartBench");
         getAutomationSupport().sendStatus(Activity.RESULT_OK, status);
     }

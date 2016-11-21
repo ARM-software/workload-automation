@@ -182,7 +182,7 @@ public class UiAutomation extends UxPerfUiAutomation {
                 new UiObject(new UiSelector().textContains("Skip ad"));
             if (skip.waitForExists(WAIT_TIMEOUT_1SEC*5)) {
                 skip.click();
-                sleep(VIDEO_SLEEP_SECONDS);
+                sleepSeconds(VIDEO_SLEEP_SECONDS);
             }
         }
     }
@@ -199,11 +199,11 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void pausePlayVideo() throws Exception {
         UiObject player = getUiObjectByResourceId(packageID + "player_fragment_container");
-        sleep(VIDEO_SLEEP_SECONDS);
+        sleepSeconds(VIDEO_SLEEP_SECONDS);
         repeatClickUiObject(player, 2, 100);
-        sleep(1); // pause the video momentarily
+        sleepSeconds(1); // pause the video momentarily
         player.click();
-        sleep(VIDEO_SLEEP_SECONDS);
+        sleepSeconds(VIDEO_SLEEP_SECONDS);
     }
 
     public void checkVideoInfo() throws Exception {
@@ -237,6 +237,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
         // After flinging, give the window enough time to settle down before
         // the next step, or else UiAutomator fails to find views in time
-        sleep(VIDEO_SLEEP_SECONDS);
+        sleepSeconds(VIDEO_SLEEP_SECONDS);
     }
 }

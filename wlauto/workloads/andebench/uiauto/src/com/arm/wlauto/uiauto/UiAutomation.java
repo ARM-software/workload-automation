@@ -78,7 +78,7 @@ public class UiAutomation extends BaseUiAutomation {
         threadNumberField.setText(numThreads);
 
         getUiDevice().pressBack();
-        sleep(shortDelaySeconds);
+        sleepSeconds(shortDelaySeconds);
         // If the device does not have a physical keyboard, a virtual one might have
         // poped up when setting the number of threads. If that happend, then the above
         // backpress would dismiss the vkb and another one will be necessary to return
@@ -86,7 +86,7 @@ public class UiAutomation extends BaseUiAutomation {
         if(threadNumberField.exists())
         {
             getUiDevice().pressBack();
-            sleep(shortDelaySeconds);
+            sleepSeconds(shortDelaySeconds);
         }
     }
 
@@ -95,7 +95,7 @@ public class UiAutomation extends BaseUiAutomation {
         UiObject startButton = new UiObject(selector.className("android.widget.ImageButton")
                                                     .packageName("com.eembc.coremark"));
         startButton.click();
-        sleep(shortDelaySeconds);
+        sleepSeconds(shortDelaySeconds);
     }
 
     public void waitForAndExtractResuts() throws Exception {
@@ -110,6 +110,6 @@ public class UiAutomation extends BaseUiAutomation {
                                                     .packageName("com.eembc.coremark"));
         resultText.waitForExists(TimeUnit.SECONDS.toMillis(shortDelaySeconds));
         Log.v(TAG, resultText.getText());
-        sleep(shortDelaySeconds);
+        sleepSeconds(shortDelaySeconds);
     }
 }

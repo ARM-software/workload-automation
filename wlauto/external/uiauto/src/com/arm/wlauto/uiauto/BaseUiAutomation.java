@@ -100,7 +100,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         }
     }
 
-    public void sleep(int second) {
+    public void sleepSeconds(int second) {
         super.sleep(second * 1000);
     }
 
@@ -154,7 +154,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         long currentTime = System.currentTimeMillis();
         boolean found = false;
         while ((currentTime - startTime) < timeout) {
-            sleep(2);  // poll every two seconds
+            sleepSeconds(2);  // poll every two seconds
 
             while ((line = reader.readLine()) != null) {
                 if (line.contains(searchText)) {
