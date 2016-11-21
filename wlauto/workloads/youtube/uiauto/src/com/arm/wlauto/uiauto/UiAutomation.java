@@ -17,6 +17,7 @@ package com.arm.wlauto.uiauto.youtube;
 
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.util.Log;
 
 // Import the uiautomator libraries
 import com.android.uiautomator.core.UiObject;
@@ -34,6 +35,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     public Bundle parameters;
     public String packageName;
     public String packageID;
+    public String activityName;
+    public Boolean applaunch_enabled;
 
     public static final String SOURCE_MY_VIDEOS = "my_videos";
     public static final String SOURCE_SEARCH = "search";
@@ -46,7 +49,9 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void runUiAutomation() throws Exception {
         parameters = getParams();
         packageName = parameters.getString("package");
+        activityName = parameters.getString("launch_activity");
         packageID = packageName + ":id/";
+        applaunch_enabled = Boolean.parseBoolean(parameters.getString("markers_enabled"));
 
         String videoSource = parameters.getString("video_source");
         String searchTerm = parameters.getString("search_term");
@@ -54,10 +59,22 @@ public class UiAutomation extends UxPerfUiAutomation {
             searchTerm = searchTerm.replace("0space0", " ");
         }
 
+        //Applaunch object for launching an application and measuring the time taken
+        AppLaunch applaunch = new AppLaunch(packageName, activityName, parameters);
+        //Widget on the screen that marks the application ready for user interaction
+        UiObject userBeginObject =
+            new UiObject(new UiSelector().textContains("Home")
+                                         .className("android.widget.TextView"));
+        if(applaunch_enabled) {
+            applaunch.launch_main();//launch the application
+        }
         setScreenOrientation(ScreenOrientation.NATURAL);
 
         clearFirstRunDialogues();
         disableAutoplay();
+        if(applaunch_enabled) {
+            applaunch.launch_end(userBeginObject,5);//mark the end of launch
+        }
         testPlayVideo(videoSource, searchTerm);
         dismissAdvert();
         checkPlayerError();

@@ -99,6 +99,77 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
             }
         }
     }
+    /*
+     * AppLaunch class implements methods that facilitates launching applications from the uiautomator.
+     * ActionLogger class is instantiated within the class for measuring applaunch time.
+     * launch_main(): starts the application launch.
+     * launch_end(UiObject,int): marks the end of application launch, to measure the correct applaunch end time.
+     *         @param Uiobject: is a workload specific object to search in the screen that potentially marks the beginning of user interaction.
+     *         @param int: speficies the number of seconds to wait for the object to appear on screen, throws Uiobject not found exception.
+    */
+    public class AppLaunch {
+
+        private String packageName;
+        private String activityName;
+        public String testTag = "applaunch";
+        public Bundle parameters;
+        public ActionLogger logger;
+
+        public AppLaunch(String packageName,
+                String activityName, 
+                Bundle parameters) {
+            this.packageName = packageName;
+            this.activityName = activityName;
+            this.parameters = parameters;
+            this.logger = new ActionLogger(testTag, parameters);
+        }
+
+        //Called by launch_main() to check if app launch is successful
+        public void launch_validate(Process launch_p) throws Exception {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(launch_p.getInputStream()));
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains("Error:")) {
+                    throw new Exception("Application could not be launched");
+                }
+            }
+        }
+
+        //Marks the end of applaunch of the workload.
+        public void launch_end(UiObject launch_end_resource, int launch_timeout) throws Exception{
+            waitObject(launch_end_resource, launch_timeout);
+            logger.stop();
+        }
+
+        //Launches the application.
+        public void launch_main() throws Exception{
+            Process launch_p;
+            logger.start();
+            if(activityName.equals("None")) {
+                launch_p = Runtime.getRuntime().exec(String.format("am start -W %s",
+                                packageName));
+                Log.d("Launched without activity", activityName);
+            }
+            else {
+                launch_p = Runtime.getRuntime().exec(String.format("am start -W -n %s/%s",
+                                packageName, activityName));
+                Log.d("Launched with activity", activityName);
+            }
+
+            launch_validate(launch_p);
+            launch_p.destroy();
+        }
+        //Launches the Skype application
+        public void launch_main(String actionName, String dataURI) throws Exception{
+            Process launch_p;
+            logger.start();
+            launch_p = Runtime.getRuntime().exec(String.format("am start -W -a %s -d %s",
+                                actionName, dataURI));
+
+            launch_validate(launch_p);
+            launch_p.destroy();
+        }
+    }
 
     public void sleep(int second) {
         super.sleep(second * 1000);
