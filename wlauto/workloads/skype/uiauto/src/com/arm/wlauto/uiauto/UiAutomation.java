@@ -66,9 +66,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         //Widget on the screen that marks the application ready for user interaction
         UiObject userBeginObject =
             new UiObject(new UiSelector().resourceId(packageID + "menu_search"));
-        if(applaunch_enabled) {
-            applaunch.launch_main(actionName,dataURI);//launch the application
-        }
         
 
         setScreenOrientation(ScreenOrientation.NATURAL);
@@ -80,6 +77,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Run tests
         handleLoginScreen(loginName, loginPass);
         dismissUpdatePopupIfPresent();
+        if(applaunch_enabled) {
+            applaunch.launch_main(actionName,dataURI);//launch the application
+        }
         if(applaunch_enabled) {
             applaunch.launch_end(userBeginObject,5);//mark the end of launch
         }
@@ -182,6 +182,29 @@ public class UiAutomation extends UxPerfUiAutomation {
             }
         };
         return infoPopUpWatcher;
+    }
+
+    // Creates a watcher for when a pop up dialog appears with a continue button.
+    private UiWatcher createUpdatePopUpWatcher() throws Exception {
+        UiWatcher updatePopUpWatcher = new UiWatcher() {
+            @Override
+            public boolean checkForCondition() {
+                UiObject continueButton =
+                    new UiObject(new UiSelector().resourceId(packageID + "button2"));
+
+                if (continueButton.exists()) {
+                    try {
+                        continueButton.click();
+                    } catch (UiObjectNotFoundException e) {
+                        e.printStackTrace();
+                    }
+
+                    return continueButton.waitUntilGone(TimeUnit.SECONDS.toMillis(10));
+                }
+                return false;
+            }
+        };
+        return updatePopUpWatcher;
     }
 
     private void voiceCallTest(int duration) throws Exception {

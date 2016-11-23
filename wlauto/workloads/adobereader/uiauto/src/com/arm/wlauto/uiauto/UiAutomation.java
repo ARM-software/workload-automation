@@ -62,11 +62,11 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject userBeginObject =
             new UiObject(new UiSelector().textContains("RECENT")
                                          .className("android.widget.TextView"));
+        setScreenOrientation(ScreenOrientation.NATURAL);
+        dismissWelcomeView();
         if(applaunch_enabled) {
             applaunch.launch_main();//launch the application
         }
-        setScreenOrientation(ScreenOrientation.NATURAL);
-        dismissWelcomeView();
         if(applaunch_enabled) {
             applaunch.launch_end(userBeginObject,5);//mark the end of launch
         }

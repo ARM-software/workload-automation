@@ -144,6 +144,9 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         //Launches the application.
         public void launch_main() throws Exception{
             Process launch_p;
+            Process stop_app;
+            stop_app = Runtime.getRuntime().exec(String.format("am force-stop %s",
+                                packageName));
             logger.start();
             if(activityName.equals("None")) {
                 launch_p = Runtime.getRuntime().exec(String.format("am start -W %s",
@@ -157,16 +160,24 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
             }
 
             launch_validate(launch_p);
+            stop_app.destroy();
             launch_p.destroy();
         }
         //Launches the Skype application
         public void launch_main(String actionName, String dataURI) throws Exception{
             Process launch_p;
+            Process stop_app;
+            sleep(2);
+            stop_app = Runtime.getRuntime().exec(String.format("am force-stop %s",
+                                packageName));
             logger.start();
+            stop_app.waitFor();
             launch_p = Runtime.getRuntime().exec(String.format("am start -W -a %s -d %s",
                                 actionName, dataURI));
 
+            launch_p.waitFor();
             launch_validate(launch_p);
+            stop_app.destroy();
             launch_p.destroy();
         }
     }

@@ -630,9 +630,6 @@ class AndroidUxPerfWorkload(AndroidUiAutoBenchmark):
         super(AndroidUxPerfWorkload, self).__init__(device, **kwargs)
         # Turn class attribute into instance attribute
         self.deployable_assets = list(self.deployable_assets)
-        # Turn off app launch from wa if markers are enabled for uxperf
-        if self.markers_enabled:
-            self.launch_main = False
 
     def validate(self):
         super(AndroidUxPerfWorkload, self).validate()

@@ -71,9 +71,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         //Widget on the screen that marks the application ready for user interaction
         UiObject userBeginObject =
             new UiObject(new UiSelector().resourceId(packageID + "menu_search"));
-        if(applaunch_enabled) {
-            applaunch.launch_main();//launch the application
-        }
         
         setScreenOrientation(ScreenOrientation.NATURAL);
 
@@ -82,6 +79,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         dismissSendBooksAsGiftsDialog();
         dismissSync();
 
+        if(applaunch_enabled) {
+            applaunch.launch_main();//launch the application
+        }
         if(applaunch_enabled) {
             applaunch.launch_end(userBeginObject,5);//mark the end of launch
         }
