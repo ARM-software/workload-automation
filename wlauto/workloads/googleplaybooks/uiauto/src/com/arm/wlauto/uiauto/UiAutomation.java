@@ -43,6 +43,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     protected Bundle parameters;
     protected String packageName;
     protected String packageID;
+    public String activityName;
+    public Boolean applaunch_enabled;
 
     private int viewTimeoutSecs = 10;
     private long viewTimeout =  TimeUnit.SECONDS.toMillis(viewTimeoutSecs);
@@ -53,7 +55,9 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         parameters = getParams();
         packageName = parameters.getString("package");
+        activityName = parameters.getString("launch_activity");
         packageID = packageName + ":id/";
+        applaunch_enabled = Boolean.parseBoolean(parameters.getString("markers_enabled"));
 
         String searchBookTitle = parameters.getString("search_book_title").replace("0space0", " ");
         String libraryBookTitle = parameters.getString("library_book_title").replace("0space0", " ");
@@ -62,12 +66,25 @@ public class UiAutomation extends UxPerfUiAutomation {
         String noteText = "This is a test note";
         String account = parameters.getString("account");
 
+        //Applaunch object for launching an application and measuring the time taken
+        AppLaunch applaunch = new AppLaunch(packageName, activityName, parameters);
+        //Widget on the screen that marks the application ready for user interaction
+        UiObject userBeginObject =
+            new UiObject(new UiSelector().resourceId(packageID + "menu_search"));
+        
         setScreenOrientation(ScreenOrientation.NATURAL);
 
         chooseAccount(account);
         clearFirstRunDialogues();
         dismissSendBooksAsGiftsDialog();
         dismissSync();
+
+        if(applaunch_enabled) {
+            applaunch.launch_main();//launch the application
+        }
+        if(applaunch_enabled) {
+            applaunch.launch_end(userBeginObject,5);//mark the end of launch
+        }
 
         searchForBook(searchBookTitle);
         addToLibrary();

@@ -23,6 +23,7 @@ import com.android.uiautomator.core.UiObject;
 import com.android.uiautomator.core.UiObjectNotFoundException;
 import com.android.uiautomator.core.UiSelector;
 import com.android.uiautomator.core.UiScrollable;
+import com.android.uiautomator.core.UiWatcher;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
@@ -41,18 +42,41 @@ public class UiAutomation extends UxPerfUiAutomation {
     public Bundle parameters;
     public String packageName;
     public String packageID;
+    public String activityName;
+    public Boolean applaunch_enabled;
 
     private long viewTimeout =  TimeUnit.SECONDS.toMillis(10);
 
     public void runUiAutomation() throws Exception {
         parameters = getParams();
         packageName = parameters.getString("package");
+        activityName = parameters.getString("launch_activity");
         packageID = packageName + ":id/";
+        applaunch_enabled = Boolean.parseBoolean(parameters.getString("markers_enabled"));
 
-        sleep(5); // Pause while splash screen loads
+        //Applaunch object for launching an application and measuring the time taken
+        AppLaunch applaunch = new AppLaunch(packageName, activityName, parameters);
+        //Widget on the screen that marks the application ready for user interaction
+        UiObject userBeginObject =
+            new UiObject(new UiSelector().textContains("Photos")
+                                         .className("android.widget.TextView"));
+        //Watcher that takes care of backup popup during warm start
+        UiWatcher backupPopUpWatcher = createBackupPopUpWatcher();
+        registerWatcher("backupPopUpWatcher", backupPopUpWatcher);
+        runWatchers();
+        
+
         setScreenOrientation(ScreenOrientation.NATURAL);
         dismissWelcomeView();
         closePromotionPopUp();
+        
+        if(applaunch_enabled) {
+            applaunch.launch_main();//launch the application
+        }
+        
+        if(applaunch_enabled) {
+            applaunch.launch_end(userBeginObject,5);//mark the end of launch
+        }
 
         selectWorkingGallery("wa-1");
         gesturesTest();
@@ -434,5 +458,27 @@ public class UiAutomation extends UxPerfUiAutomation {
             default:
                 break;
         }
+    }
+    // Creates a watcher for when a pop up dialog appears with a signin/close button.
+    private UiWatcher createBackupPopUpWatcher() throws Exception {
+        UiWatcher backupPopUpWatcher = new UiWatcher() {
+            @Override
+            public boolean checkForCondition() {
+                UiObject closeButton =
+                    new UiObject(new UiSelector().resourceId(packageID + "promo_close_button"));
+
+                if (closeButton.exists()) {
+                    try {
+                        closeButton.click();
+                    } catch (UiObjectNotFoundException e) {
+                        e.printStackTrace();
+                    }
+
+                    return closeButton.waitUntilGone(TimeUnit.SECONDS.toMillis(10));
+                }
+                return false;
+            }
+        };
+        return backupPopUpWatcher;
     }
 }

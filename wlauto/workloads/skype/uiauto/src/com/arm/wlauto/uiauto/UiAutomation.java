@@ -36,6 +36,10 @@ public class UiAutomation extends UxPerfUiAutomation {
     public Bundle parameters;
     public String packageName;
     public String packageID;
+    public String activityName;
+    public String actionName = "android.intent.action.VIEW"; //required for launching skype
+    public String dataURI = "skype:dummy?dummy"; // required for launching skype
+    public Boolean applaunch_enabled;
 
     public static final String ACTION_VOICE = "voice";
     public static final String ACTION_VIDEO = "video";
@@ -46,7 +50,9 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         parameters = getParams();
         packageName = parameters.getString("package");
+        activityName = parameters.getString("launch_activity");
         packageID = packageName + ":id/";
+        applaunch_enabled = Boolean.parseBoolean(parameters.getString("markers_enabled"));
 
         String loginName = parameters.getString("my_id");
         String loginPass = parameters.getString("my_pwd");
@@ -54,6 +60,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         int callDuration = Integer.parseInt(parameters.getString("duration"));
         String callType = parameters.getString("action");
         String resultsFile = parameters.getString("results_file");
+        
+        //Applaunch object for launching an application and measuring the time taken
+        AppLaunch applaunch = new AppLaunch(packageName, activityName, parameters);
+        //Widget on the screen that marks the application ready for user interaction
+        UiObject userBeginObject =
+            new UiObject(new UiSelector().resourceId(packageID + "menu_search"));
+        
 
         setScreenOrientation(ScreenOrientation.NATURAL);
 
@@ -64,6 +77,12 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Run tests
         handleLoginScreen(loginName, loginPass);
         dismissUpdatePopupIfPresent();
+        if(applaunch_enabled) {
+            applaunch.launch_main(actionName,dataURI);//launch the application
+        }
+        if(applaunch_enabled) {
+            applaunch.launch_end(userBeginObject,5);//mark the end of launch
+        }
         searchForContact(contactName);
 
         if (ACTION_VOICE.equalsIgnoreCase(callType)) {
@@ -163,6 +182,29 @@ public class UiAutomation extends UxPerfUiAutomation {
             }
         };
         return infoPopUpWatcher;
+    }
+
+    // Creates a watcher for when a pop up dialog appears with a continue button.
+    private UiWatcher createUpdatePopUpWatcher() throws Exception {
+        UiWatcher updatePopUpWatcher = new UiWatcher() {
+            @Override
+            public boolean checkForCondition() {
+                UiObject continueButton =
+                    new UiObject(new UiSelector().resourceId(packageID + "button2"));
+
+                if (continueButton.exists()) {
+                    try {
+                        continueButton.click();
+                    } catch (UiObjectNotFoundException e) {
+                        e.printStackTrace();
+                    }
+
+                    return continueButton.waitUntilGone(TimeUnit.SECONDS.toMillis(10));
+                }
+                return false;
+            }
+        };
+        return updatePopUpWatcher;
     }
 
     private void voiceCallTest(int duration) throws Exception {

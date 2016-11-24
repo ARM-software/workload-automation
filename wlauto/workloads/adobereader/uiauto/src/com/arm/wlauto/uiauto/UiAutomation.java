@@ -39,6 +39,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     protected Bundle parameters;
     protected String packageName;
     protected String packageID;
+    public String activityName;
+    public Boolean applaunch_enabled;
 
     private long networkTimeout =  TimeUnit.SECONDS.toMillis(20);
     private long searchTimeout =  TimeUnit.SECONDS.toMillis(20);
@@ -46,15 +48,28 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void runUiAutomation() throws Exception {
         parameters = getParams();
         packageName = parameters.getString("package");
+        activityName = parameters.getString("launch_activity");
         packageID = packageName + ":id/";
+        applaunch_enabled = Boolean.parseBoolean(parameters.getString("markers_enabled"));
 
         String filename = parameters.getString("filename").replace("0space0", " ");
         String[] searchStrings =
             parameters.getString("search_string_list").replace("0space0", " ").split("0newline0");
 
+        //Applaunch object for launching an application and measuring the time taken
+        AppLaunch applaunch = new AppLaunch(packageName, activityName, parameters);
+        //Widget on the screen that marks the application ready for user interaction
+        UiObject userBeginObject =
+            new UiObject(new UiSelector().textContains("RECENT")
+                                         .className("android.widget.TextView"));
         setScreenOrientation(ScreenOrientation.NATURAL);
-
         dismissWelcomeView();
+        if(applaunch_enabled) {
+            applaunch.launch_main();//launch the application
+        }
+        if(applaunch_enabled) {
+            applaunch.launch_end(userBeginObject,5);//mark the end of launch
+        }
         openFile(filename);
         gesturesTest();
         searchPdfTest(searchStrings);
