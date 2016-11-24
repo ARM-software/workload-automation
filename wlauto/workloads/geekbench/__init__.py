@@ -87,6 +87,14 @@ class Geekbench(AndroidUiAutoBenchmark):
         Parameter('times', kind=int, default=1,
                   description=('Specfies the number of times the benchmark will be run in a "tight '
                                'loop", i.e. without performaing setup/teardown inbetween.')),
+        Parameter('timeout', kind=int, default=900,
+                  description=('Timeout for a single iteration of the benchmark. This value is '
+                               'multiplied by ``times`` to calculate the overall run timeout. ')),
+        Parameter('disable_update_result', kind=bool, default=False,
+                  description=('If ``True`` the results file will not be pulled from the devices '
+                               '/data/data/com.primatelabs.geekbench folder.  This allows the '
+                               'workload to be run on unrooted devices and the results extracted '
+                               'manually later. ' )),
     ]
 
     @property
@@ -101,14 +109,15 @@ class Geekbench(AndroidUiAutoBenchmark):
         super(Geekbench, self).__init__(device, **kwargs)
         self.uiauto_params['version'] = self.version
         self.uiauto_params['times'] = self.times
-        self.run_timeout = 10 * 60 * self.times
+        self.run_timeout = self.timeout * self.times
         self.exact_apk_version = self.version
 
     def update_result(self, context):
         super(Geekbench, self).update_result(context)
-        major_version = versiontuple(self.version)[0]
-        update_method = getattr(self, 'update_result_{}'.format(major_version))
-        update_method(context)
+        if not self.disable_update_result:
+            major_version = versiontuple(self.version)[0]
+            update_method = getattr(self, 'update_result_{}'.format(major_version))
+            update_method(context)
 
     def validate(self):
         if (self.times > 1) and (self.version == '2'):
