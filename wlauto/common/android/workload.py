@@ -229,9 +229,9 @@ class ApkWorkload(Workload):
             raise ResourceError(msg.format(self.name))
 
         if self.exact_apk_version is not None:
-            if self.exact_apk_version != target_version and self.version != host_version:
+            if self.exact_apk_version != target_version and self.exact_apk_version != host_version:
                 msg = "APK version '{}' not found on the host '{}' or target '{}'"
-                raise ResourceError(msg.format(self.version, host_version, target_version))
+                raise ResourceError(msg.format(self.exact_apk_version, host_version, target_version))
 
         # Ensure the apk is setup on the device
         if self.force_install:
