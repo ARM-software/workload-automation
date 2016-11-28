@@ -59,8 +59,8 @@ class Octaned8(Workload):
     """
 
     parameters = [
-        Parameter('timeout', kind=int, default=120,
-                  description='Timeout, in seconds, for the script run time.'),
+        Parameter('run_timeout', kind=int, default=180,
+                  description='Timeout, in seconds, for the test execution.'),
     ]
 
     supported_platforms = ['android']
@@ -75,7 +75,7 @@ class Octaned8(Workload):
         fpath = context.resolver.get(File(self, assets_tar))
         self.device.push_file(fpath, assets_dir, timeout=300)
         self.command = 'cd {}; {} busybox tar -x -f {}'.format(assets_dir, self.device.busybox, assets_tar)
-        self.output = self.device.execute(self.command, timeout=self.timeout, check_exit_code=False)
+        self.output = self.device.execute(self.command, timeout=self.run_timeout)
 
         for f in self.executables:
             binFile = context.resolver.get(Executable(self, self.device.abi, f))
@@ -89,13 +89,12 @@ class Octaned8(Workload):
 
     def run(self, context):
         self.logger.info('Starting d8 tests')
-        self.output = self.device.execute(self.command, timeout=self.timeout, check_exit_code=False)
+        self.output = self.device.execute(self.command, timeout=self.run_timeout)
 
     def update_result(self, context):
         host_file = os.path.join(context.output_directory, 'octaned8.output')
         device_file = self.device.path.join(self.device.working_directory, 'octaned8.output')
         self.device.pull_file(device_file, host_file)
-        context.add_artifact('octaned8', host_file, 'data')
 
         with open(os.path.join(host_file)) as octaned8_file:
             for line in octaned8_file:
@@ -104,11 +103,11 @@ class Octaned8(Workload):
                     if match:
                         context.result.add_metric(label, float(match.group(1)))
 
+        self.device.execute('rm {}'.format(device_file))
+
     def finalize(self, context):
         for f in self.executables:
             self.device.uninstall_executable(f)
             self.device.execute('rm  {}'.format(self.device.path.join(self.device.working_directory, f)))
         assets_dir = self.device.path.join(self.device.working_directory, 'assets')
         self.device.execute('rm -rf {}'.format(assets_dir))
-        device_file = self.device.path.join(self.device.working_directory, 'octaned8.output')
-        self.device.execute('rm {}'.format(device_file))
