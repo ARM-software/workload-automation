@@ -422,10 +422,9 @@ recorded. The event stream is prefixed with the number of events in the stream.
 
 Each event entry structured as follows:
 
- * A signed integer representing which device from the list of device paths
+ * An unsigned integer representing which device from the list of device paths
    this event is for (zero indexed). E.g. Device ID = 3 would be the 4th
    device in the list of device paths.
- * 32 bits of padding
  * A signed integer representing the number of seconds since "epoch" when the
    event was recorded.
  * A signed integer representing the microseconds part of the timestamp.

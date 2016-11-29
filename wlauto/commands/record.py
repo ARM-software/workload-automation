@@ -157,7 +157,7 @@ class RecordCommand(ReventCommand):
         if args.capture_screen:
             self.logger.info("Recording screen capture")
             self.device.capture_screen(args.output or os.getcwdu())
-        self.device.killall("revent", signal.SIGTERM)
+        self.device.killall("revent", signal.SIGINT)
         self.logger.info("Waiting for revent to finish")
         while self.device.get_pids_of("revent"):
             pass
