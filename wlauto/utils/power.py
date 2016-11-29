@@ -32,6 +32,7 @@ logger = logging.getLogger('power')
 UNKNOWN_FREQUENCY = -1
 
 INIT_CPU_FREQ_REGEX = re.compile(r'CPU (?P<cpu>\d+) FREQUENCY: (?P<freq>\d+) kHZ')
+DEVLIB_CPU_FREQ_REGEX = re.compile(r'cpu_frequency(?:_devlib):\s+state=(?P<freq>\d+)\s+cpu_id=(?P<cpu>\d+)')
 
 
 class CorePowerTransitionEvent(object):
@@ -311,7 +312,10 @@ def stream_cpu_power_transitions(events):
             elif TRACE_MARKER_STOP in event.text:
                 yield TraceMarkerEvent('STOP')
             else:
-                match = INIT_CPU_FREQ_REGEX.search(event.text)
+                if 'cpu_frequency' in event.text:
+                    match = DEVLIB_CPU_FREQ_REGEX.search(event.text)
+                else:
+                    match = INIT_CPU_FREQ_REGEX.search(event.text)
                 if match:
                     yield CorePowerTransitionEvent(event.timestamp,
                                                    int(match.group('cpu')),
