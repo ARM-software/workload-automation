@@ -67,9 +67,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         searchForContact(contactName);
 
         if (ACTION_VOICE.equalsIgnoreCase(callType)) {
-            voiceCallTest(callDuration);
+            makeCall(callDuration, false);
         } else if (ACTION_VIDEO.equalsIgnoreCase(callType)) {
-            videoCallTest(callDuration);
+            makeCall(callDuration, true);
         }
 
         removeWatcher("infoPopUpWatcher");
@@ -96,7 +96,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject updateNotice =
             new UiObject(new UiSelector().resourceId(packageID + "update_notice_dont_show_again"));
         //Detect if the update notice popup is present
-        if (updateNotice.waitForExists(uiAutoTimeout)) {
+        if (updateNotice.waitForExists(TimeUnit.SECONDS.toMillis(30))) {
             //Stop the notice from reappearing
             updateNotice.click();
             clickUiObject(BY_TEXT, "Continue", "android.widget.Button");
@@ -165,35 +165,58 @@ public class UiAutomation extends UxPerfUiAutomation {
         return infoPopUpWatcher;
     }
 
-    private void voiceCallTest(int duration) throws Exception {
-        String testTag = "call_voice";
-        ActionLogger logger = new ActionLogger(testTag, parameters);
-
-        logger.start();
-        makeCall(duration, false, testTag);
-        logger.stop();
-    }
-
-    private void videoCallTest(int duration) throws Exception {
-        String testTag = "call_video";
-        ActionLogger logger = new ActionLogger(testTag, parameters);
-
-        logger.start();
-        makeCall(duration, true, testTag);
-        logger.stop();
-    }
-
-    private void makeCall(int duration, boolean video, String testTag) throws Exception {
+    private void makeCall(int duration, boolean video) throws Exception {
+        String testTag = video ? "video" : "voice";
         String description = video ? "Video call" : "Call options";
 
         UiObject callButton =
             new UiObject(new UiSelector().descriptionContains(description));
-        callButton.clickAndWaitForNewWindow();
-
         UiObject muteButton =
-            new UiObject(new UiSelector().descriptionContains("Mute"));
-        muteButton.click();
-        
-        sleep(duration);
+            new UiObject(new UiSelector().descriptionContains("mute"));
+        UiObject endButton =
+            new UiObject(new UiSelector().descriptionContains("end"));
+
+        // Start the call and log how long that takes
+        ActionLogger logger = new ActionLogger(testTag + "_start", parameters);
+        logger.start();
+        long target = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(duration);
+        callButton.clickAndWaitForNewWindow();
+        logger.stop();
+
+        // Wait for 'duration' seconds - attempt to mute while waiting
+        logger = new ActionLogger(testTag + "_call", parameters);
+        logger.start();
+        boolean muted = false;
+        while (System.currentTimeMillis() < target) {
+            if (muted == true) {
+                sleep(1);
+            } else {
+                muted = tryButton(muteButton, 500);
+            }
+        }
+        logger.stop();
+
+        // Hang up the call and log how long that takes
+        logger = new ActionLogger(testTag + "_stop", parameters);
+        logger.start();
+        tryButton(endButton, 500);
+        logger.stop();
+    }
+
+    private boolean tryButton(UiObject button, long timeout) throws Exception {
+        if (button.waitForExists(timeout)) {
+            button.click();
+            return true;
+        }
+        else {
+            // The buttons could be hidden...
+            // Tap screen to make them appear and look again
+            tapDisplayCentre();
+            if (button.waitForExists(timeout)) {
+                button.click();
+                return true;
+            }
+        }
+        return false;
     }
 }
