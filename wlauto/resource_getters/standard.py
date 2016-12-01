@@ -414,7 +414,7 @@ class HttpGetter(ResourceGetter):
         return requests.get(url, auth=auth, stream=stream)
 
     def resolve_resource(self, resource):
-        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-branches,too-many-locals
         assets = self.index.get(resource.owner.name, {})
         if not assets:
             return {}

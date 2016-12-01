@@ -165,7 +165,8 @@ class Geekbench(AndroidUiAutoBenchmark):
                 for workloads in section['workloads']:
                     workload_name = workloads['name'].replace(" ", "-")
                     context.result.add_metric(namemify(section['name'] + '_' + workload_name + '_score', i),
-                                          workloads['score'])
+                                              workloads['score'])
+
 
 class GBWorkload(object):
     """
@@ -376,6 +377,7 @@ class GBScoreCalculator(object):
 
 def namemify(basename, i):
     return basename + (' {}'.format(i) if i else '')
+
 
 def versiontuple(v):
     return tuple(map(int, (v.split("."))))

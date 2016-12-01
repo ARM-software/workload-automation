@@ -22,6 +22,7 @@ from wlauto import Workload, Parameter, Executable
 from wlauto.common.resources import File
 from wlauto.exceptions import ConfigError
 
+
 regex_map = {
     "Richards": (re.compile(r'Richards: (\d+.*)')),
     "DeltaBlue": (re.compile(r'DeltaBlue: (\d+.*)')),
@@ -41,6 +42,7 @@ regex_map = {
     "zlib": (re.compile(r'zlib: (\d+.*)')),
     "Score": (re.compile(r'Score .*: (\d+.*)'))
 }
+
 
 class Octaned8(Workload):
 
