@@ -574,4 +574,45 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         }
         return object;
     }
+
+    // Helper to select a folder in the gallery
+    public void selectGalleryFolder(String directory) throws Exception {
+        UiObject workdir =
+            new UiObject(new UiSelector().text(directory)
+                                         .className("android.widget.TextView"));
+        UiScrollable scrollView =
+            new UiScrollable(new UiSelector().scrollable(true));
+
+        // If the folder is not present wait for a short time for
+        // the media server to refresh its index.
+        boolean discovered = workdir.waitForExists(TimeUnit.SECONDS.toMillis(10));
+        if (!discovered && scrollView.exists()) {
+            // First check if the directory is visible on the first
+            // screen and if not scroll to the bottom of the screen to look for it.
+            discovered = scrollView.scrollIntoView(workdir);
+
+            // If still not discovered scroll back to the top of the screen and
+            // wait for a longer amount of time for the media server to refresh
+            // its index.
+            if (!discovered) {
+                // scrollView.scrollToBeggining() doesn't work for this
+                // particular scrollable view so use device method instead
+                for (int i = 0; i < 10; i++) {
+                    uiDeviceSwipeUp(20);
+                }
+                discovered = workdir.waitForExists(TimeUnit.SECONDS.toMillis(60));
+
+                // Scroll to the bottom of the screen one last time
+                if (!discovered) {
+                    discovered = scrollView.scrollIntoView(workdir);
+                }
+            }
+        }
+
+        if (discovered) {
+            workdir.clickAndWaitForNewWindow();
+        } else {
+            throw new UiObjectNotFoundException("Could not find folder : " + directory);
+        }
+    }
 }
