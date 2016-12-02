@@ -40,19 +40,19 @@ class Skype(AndroidUxPerfWorkload):
     2. Log in to a pre-defined account
     3. Select a recipient from the Contacts list
     4. Initiate either a ``voice`` or ``video`` call for ``duration`` time (in seconds)
+       Note: The actual duration of the call may not match exactly the intended duration
+       due to the uiautomation overhead.
 
     **Skype Setup**
 
-       - You should install Skype client from Google Play Store on the device
-         (this was tested with client version 7.01.0.669; other recent versions
-         should also work).
-       - You must have a Skype account set up.
+       - You must have a Skype account set up and its credentials passed
+         as parameters into this workload
        - The contact to be called must be added (and has accepted) to the
          account. It's possible to have multiple contacts in the list, however
          the contact to be called *must* be visible on initial navigation to the
          list.
        - For video calls the contact must be able to received the call. This
-         means that there must be  a Skype client running (somewhere) with the
+         means that there must be a Skype client running (somewhere) with the
          contact logged in and that client must have been configured to
          auto-accept calls from the account on the device (how to set this
          varies between different versions of Skype and between platforms --
@@ -72,7 +72,7 @@ class Skype(AndroidUxPerfWorkload):
         Parameter('contact_name', kind=str, default='Echo / Sound Test Service',
                   description='This is the contact display name as it appears in the people list'),
         Parameter('duration', kind=int, default=10,
-                  description='This is the duration of the call in seconds'),
+                  description='This is the target duration of the call in seconds'),
         Parameter('action', kind=str, allowed_values=['voice', 'video'], default='voice',
                   description='Action to take - either voice call (default) or video'),
     ]
