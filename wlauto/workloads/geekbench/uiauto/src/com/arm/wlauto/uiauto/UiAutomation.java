@@ -35,9 +35,8 @@ import java.util.concurrent.TimeUnit;
 public class UiAutomation extends UxPerfUiAutomation {
 
     public static String TAG = "geekbench";
-    public static final int WAIT_TIMEOUT_1SEC = 1000;
-    public static final long WAIT_TIMEOUT_5MIN = TimeUnit.SECONDS.toMillis(5 * 60);
-    public static final long WAIT_TIMEOUT_10MIN = TimeUnit.SECONDS.toMillis(10 * 60);
+    public static final long WAIT_TIMEOUT_5SEC = TimeUnit.SECONDS.toMillis(5);
+    public static final long WAIT_TIMEOUT_20MIN = TimeUnit.SECONDS.toMillis(20 * 60);
 
     public void runUiAutomation() throws Exception {
         Bundle params = getParams();
@@ -93,7 +92,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             // new UiObject(new UiSelector().textContains("Accept")
             new UiObject(new UiSelector().resourceId("android:id/button1")
                                          .className("android.widget.Button"));
-        if (!acceptButton.waitForExists(WAIT_TIMEOUT_1SEC)) {
+        if (!acceptButton.waitForExists(WAIT_TIMEOUT_5SEC)) {
             throw new UiObjectNotFoundException("Could not find Accept button");
         }
         acceptButton.click();
@@ -103,7 +102,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject runButton =
             new UiObject(new UiSelector().textContains("Run Benchmarks")
                                          .className("android.widget.Button"));
-        if (!runButton.waitForExists(WAIT_TIMEOUT_1SEC)) {
+        if (!runButton.waitForExists(WAIT_TIMEOUT_5SEC)) {
             throw new UiObjectNotFoundException("Could not find Run button");
         }
         runButton.click();
@@ -116,7 +115,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject runButton =
             new UiObject(new UiSelector().resourceId("com.primatelabs.geekbench:id/runCpuBenchmarks")
                                          .className("android.widget.Button"));
-        if (!runButton.waitForExists(WAIT_TIMEOUT_1SEC)) {
+        if (!runButton.waitForExists(WAIT_TIMEOUT_5SEC)) {
             throw new UiObjectNotFoundException("Could not find Run button");
         }
         runButton.click();
@@ -125,7 +124,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void waitForResultsv2() throws Exception {
         UiSelector selector = new UiSelector();
         UiObject resultsWebview = new UiObject(selector.className("android.webkit.WebView"));
-        if (!resultsWebview.waitForExists(WAIT_TIMEOUT_5MIN)) {
+        if (!resultsWebview.waitForExists(WAIT_TIMEOUT_20MIN)) {
             throw new UiObjectNotFoundException("Did not see Geekbench results screen.");
         }
     }
@@ -135,10 +134,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject runningTextView = new UiObject(selector.text("Running Benchmarks...")
                                                         .className("android.widget.TextView"));
 
-        if (!runningTextView.waitForExists(WAIT_TIMEOUT_1SEC)) {
-            throw new UiObjectNotFoundException("Did not get to Running Benchmarks... screen.");
-        }
-        if (!runningTextView.waitUntilGone(WAIT_TIMEOUT_10MIN)) {
+        if (!runningTextView.waitUntilGone(WAIT_TIMEOUT_20MIN)) {
             throw new UiObjectNotFoundException("Did not get to Geekbench results screen.");
         }
     }
@@ -160,7 +156,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         getUiDevice().pressMenu();
         UiObject shareButton = new UiObject(selector.text("Share")
                                                     .className("android.widget.TextView"));
-        shareButton.waitForExists(WAIT_TIMEOUT_1SEC);
+        shareButton.waitForExists(WAIT_TIMEOUT_5SEC);
         shareButton.click();
     }
 }
