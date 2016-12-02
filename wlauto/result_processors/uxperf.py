@@ -229,20 +229,24 @@ class UxPerfParser(object):
         '''
         Creates a data frame containing fps metrics for a captured action.
         '''
-        start, end = map(int, action)
-        df = pd.read_csv(frames)
-        # SurfaceFlinger Algorithm
-        if df.columns.tolist() == list(SurfaceFlingerFrame._fields):  # pylint: disable=maybe-no-member
-            field = 'actual_present_time'
-        # GfxInfo Algorithm
-        elif df.columns.tolist() == list(GfxInfoFrame._fields):  # pylint: disable=maybe-no-member
-            field = 'FrameCompleted'
+        if len(action) == 2:
+            start, end = map(int, action)
+            df = pd.read_csv(frames)
+            # SurfaceFlinger Algorithm
+            if df.columns.tolist() == list(SurfaceFlingerFrame._fields):  # pylint: disable=maybe-no-member
+                field = 'actual_present_time'
+            # GfxInfo Algorithm
+            elif df.columns.tolist() == list(GfxInfoFrame._fields):  # pylint: disable=maybe-no-member
+                field = 'FrameCompleted'
+            else:
+                field = ''
+                self.logger.error('frames.csv not in a recognised format. Cannot parse.')
+            if field:
+                df = df[start < df[field]]
+                df = df[df[field] <= end]
         else:
-            field = ''
-            self.logger.error('frames.csv not in a recognised format. Cannot parse.')
-        if field:
-            df = df[start < df[field]]
-            df = df[df[field] <= end]
+            self.logger.warning('Discarding action. Expected 2 timestamps, got {}!'.format(len(action)))
+            df = pd.DataFrame()
         return df
 
     def _read(self, log):
