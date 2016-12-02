@@ -630,9 +630,12 @@ int read_legacy_replay_event(int fdin, replay_event_t* ev)
 	char padding[EVENT_PADDING_SIZE];
 
 	rb = read(fdin, &(ev->dev_idx), sizeof(int32_t));
-	if (rb < (int)sizeof(int32_t))
+	if (rb < (int)sizeof(int32_t)){
+		//Allow for abrupt ending of legacy recordings.
+		if (!errno)
+			return EOF;
 		return errno;
-
+	}
 	rb = read(fdin, &padding, EVENT_PADDING_SIZE);
 	if (rb < (int)sizeof(int32_t))
 		return errno;
@@ -997,6 +1000,10 @@ inline void read_revent_recording_or_die(const char *filepath, revent_recording_
 		 fsize  = get_file_size(filepath);
 		 recording->events = malloc((size_t)fsize);
 		 i = 0;
+
+		// Safely get file descriptor for fin, by flushing first.
+		fflush(fin);
+
 		 while (1) {
 			ret = read_legacy_replay_event(fileno(fin), &recording->events[i]);
 			if (ret == EOF) {

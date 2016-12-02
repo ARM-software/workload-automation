@@ -208,6 +208,7 @@ class ReventRecording(object):
                 raise ValueError('Unexpected recording mode: {}'.format(self.mode))
             self.num_events, = read_struct(fh, u64_struct)
         elif 2 > self.version >= 0:
+            self.mode = GENERAL_MODE
             self._read_devices(fh)
         else:
             raise ValueError('Invalid recording version: {}'.format(self.version))
