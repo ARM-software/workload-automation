@@ -54,21 +54,25 @@ public class UiAutomation extends UxPerfUiAutomation {
         dismissWelcomeView();
         closePromotionPopUp();
 
-        selectWorkingGallery("wa-1");
+        selectGalleryFolder("wa-1");
+        selectFirstImage();
         gesturesTest();
         navigateUp();
 
-        selectWorkingGallery("wa-2");
+        selectGalleryFolder("wa-2");
+        selectFirstImage();
         editPhotoColorTest();
         closeAndReturn(true);
         navigateUp();
 
-        selectWorkingGallery("wa-3");
+        selectGalleryFolder("wa-3");
+        selectFirstImage();
         cropPhotoTest();
         closeAndReturn(true);
         navigateUp();
 
-        selectWorkingGallery("wa-4");
+        selectGalleryFolder("wa-4");
+        selectFirstImage();
         rotatePhotoTest();
         closeAndReturn(true);
 
@@ -130,46 +134,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
     }
 
-    // Helper to click on the wa-working gallery.
-    public void selectWorkingGallery(String directory) throws Exception {
-        UiObject workdir =
-            new UiObject(new UiSelector().text(directory)
-                                         .className("android.widget.TextView"));
-        UiScrollable scrollView =
-            new UiScrollable(new UiSelector().scrollable(true));
-
-        // If the wa-working gallery is not present wait for a short time for
-        // the media server to refresh its index.
-        boolean discovered = workdir.waitForExists(viewTimeout);
-        if (!discovered && scrollView.exists()) {
-            // First check if the wa-working directory is visible on the first
-            // screen and if not scroll to the bottom of the screen to look for it.
-            discovered = scrollView.scrollIntoView(workdir);
-
-            // If still not discovered scroll back to the top of the screen and
-            // wait for a longer amount of time for the media server to refresh
-            // its index.
-            if (!discovered) {
-                // scrollView.scrollToBeggining() doesn't work for this
-                // particular scrollable view so use device method instead
-                for (int i = 0; i < 10; i++) {
-                    uiDeviceSwipeUp(20);
-                }
-                discovered = workdir.waitForExists(TimeUnit.SECONDS.toMillis(60));
-
-                // Scroll to the bottom of the screen one last time
-                if (!discovered) {
-                    discovered = scrollView.scrollIntoView(workdir);
-                }
-            }
-        }
-
-        if (discovered) {
-            workdir.clickAndWaitForNewWindow();
-        } else {
-            throw new UiObjectNotFoundException("Could not find folder : " + directory);
-        }
-
+    // Helper to click on the first image
+    public void selectFirstImage() throws Exception {
         UiObject photo =
             new UiObject(new UiSelector().resourceId(packageID + "recycler_view")
                                          .childSelector(new UiSelector()
@@ -221,9 +187,13 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void navigateUp() throws Exception {
+        // Navigate up to go to folder
         UiObject navigateUpButton =
             clickUiObject(BY_DESC, "Navigate Up", "android.widget.ImageButton", true);
-        navigateUpButton.clickAndWaitForNewWindow();
+        // Navigate up again to go to gallery - if it exists
+        if (navigateUpButton.exists()) {
+            navigateUpButton.clickAndWaitForNewWindow();
+        }
     }
 
     private void gesturesTest() throws Exception {
