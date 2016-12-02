@@ -111,8 +111,9 @@ class FpsProcessor(object):
                 not_at_vsync = self.data.IntendedVsync - self.data.Vsync
                 not_at_vsync = not_at_vsync[not_at_vsync != 0].count()
 
-                duration = self.data.Vsync.iloc[-1] - self.data.Vsync.iloc[0]
-                fps = (1e9 * frame_count) / float(duration)
+                if frame_count > 1:
+                    duration = self.data.Vsync.iloc[-1] - self.data.Vsync.iloc[0]
+                    fps = (1e9 * frame_count) / float(duration)
 
             # If gfxinfocsv is provided, get stats from that instead
             if self.extra_data:
