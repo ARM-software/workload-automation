@@ -22,6 +22,7 @@ import java.util.Map;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.util.Log;
 
 // Import the uiautomator libraries
 import com.android.uiautomator.core.Configurator;
@@ -57,6 +58,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         boolean doTextEntry = Boolean.parseBoolean(parameters.getString("do_text_entry"));
         String workingDirectoryName = parameters.getString("workdir_name");
 
+	Log.d("UX_PERF", "applaunch_end " + System.currentTimeMillis());
         setScreenOrientation(ScreenOrientation.NATURAL);
         changeAckTimeout(100);
         // UI automation begins here

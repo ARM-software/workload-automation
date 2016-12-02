@@ -16,6 +16,7 @@
 package com.arm.wlauto.uiauto.adobereader;
 
 import android.os.Bundle;
+import android.util.Log;
 
 // Import the uiautomator libraries
 import com.android.uiautomator.core.UiObject;
@@ -52,6 +53,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         String[] searchStrings =
             parameters.getString("search_string_list").replace("0space0", " ").split("0newline0");
 
+	Log.d("UX_PERF", "applaunch_end " + System.currentTimeMillis());
         setScreenOrientation(ScreenOrientation.NATURAL);
 
         dismissWelcomeView();

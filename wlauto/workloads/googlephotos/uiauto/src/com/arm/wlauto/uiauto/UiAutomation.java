@@ -17,6 +17,7 @@ package com.arm.wlauto.uiauto.googlephotos;
 
 import android.os.Bundle;
 import android.graphics.Rect;
+import android.util.Log;
 
 // Import the uiautomator libraries
 import com.android.uiautomator.core.UiObject;
@@ -50,6 +51,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         packageID = packageName + ":id/";
 
         sleep(5); // Pause while splash screen loads
+	Log.d("UX_PERF", "applaunch_end " + System.currentTimeMillis());
         setScreenOrientation(ScreenOrientation.NATURAL);
         dismissWelcomeView();
         closePromotionPopUp();

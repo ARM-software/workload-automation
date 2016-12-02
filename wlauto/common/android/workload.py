@@ -200,6 +200,7 @@ class ApkWorkload(Workload):
         self.apk_version = None
         self.logcat_log = None
         self.exact_apk_version = None
+        self.applaunch_start_time = None
 
     def setup(self, context):
         Workload.setup(self, context)
@@ -246,6 +247,7 @@ class ApkWorkload(Workload):
         context.add_classifiers(apk_version=self.apk_version)
 
         if self.launch_main:
+            self.applaunch_start_time = int(float(self.device.execute('echo $EPOCHREALTIME')) * 1000)
             self.launch_package()  # launch default activity without intent data
         self.device.execute('am kill-all')  # kill all *background* activities
         self.device.clear_logcat()
@@ -430,6 +432,13 @@ class ApkWorkload(Workload):
     def update_result(self, context):
         self.logcat_log = os.path.join(context.output_directory, 'logcat.log')
         self.device.dump_logcat(self.logcat_log)
+        #Appending applaunch start time to logcat file
+        logcatfile = open(self.logcat_log, "r+")
+        logcat_content = logcatfile.read()
+        logcatfile.seek(0, 0)
+        applaunchMarker = "UX_PERF : applaunch_start " + str(self.applaunch_start_time)
+        logcatfile.write(applaunchMarker.rstrip('\r\n') + '\n' + logcat_content)
+        logcatfile.close()
         context.add_iteration_artifact(name='logcat',
                                        path='logcat.log',
                                        kind='log',
