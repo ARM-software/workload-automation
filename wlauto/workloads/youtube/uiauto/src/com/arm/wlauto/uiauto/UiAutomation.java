@@ -33,6 +33,8 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public Bundle parameters;
     public String packageName;
+    protected String activityName;
+    protected String applaunchType;
     public String packageID;
 
     public static final String SOURCE_MY_VIDEOS = "my_videos";
@@ -56,8 +58,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         setScreenOrientation(ScreenOrientation.NATURAL);
 
-        clearFirstRunDialogues();
-        disableAutoplay();
+        clearDialogues();
         testPlayVideo(videoSource, searchTerm);
         dismissAdvert();
         checkPlayerError();
@@ -66,6 +67,52 @@ public class UiAutomation extends UxPerfUiAutomation {
         scrollRelated();
 
         unsetScreenOrientation();
+    }
+
+    
+    public void clearDialogues() throws Exception {
+        clearFirstRunDialogues();
+        disableAutoplay();
+    }
+
+    public void applaunchEnd() throws Exception {
+        applaunchType = parameters.getString("applaunch_type");
+        if (applaunchType.equals("launch_from_background")) {
+            pressHome();
+        }
+    }
+    
+    public void runApplaunchSetup() throws Exception {
+        parameters = getParams();
+        packageName = parameters.getString("package");
+        packageID = packageName + ":id/";
+        sleep(5);
+        setScreenOrientation(ScreenOrientation.NATURAL);
+        clearDialogues();
+        unsetScreenOrientation();
+        applaunchEnd();
+    }
+    
+    public void runApplaunchIteration() throws Exception {
+        parameters = getParams();
+        packageName = parameters.getString("package");
+        packageID = packageName + ":id/";
+        activityName = parameters.getString("launch_activity");
+
+        String iteration_count = parameters.getString("iteration_count");
+        String testTag = "applaunch" + iteration_count;
+        //Applaunch object for launching an application and measuring the time taken
+        AppLaunch applaunch = new AppLaunch(testTag, packageName, activityName, parameters);
+        //Widget on the screen that marks the application ready for user interaction
+        UiObject userBeginObject =
+            new UiObject(new UiSelector().resourceId(packageID + "menu_search"));
+        
+        applaunch.startLaunch();//Launch the application and start timer 
+
+        applaunch.endLaunch(userBeginObject,10);//marks the end of launch and stops timer
+        applaunchEnd();
+
+    
     }
 
     public void clearFirstRunDialogues() throws Exception {
@@ -120,6 +167,8 @@ public class UiAutomation extends UxPerfUiAutomation {
             getUiDevice().pressBack();
         }
     }
+
+    
 
     public void testPlayVideo(String source, String searchTerm) throws Exception {
         String testTag = "play";

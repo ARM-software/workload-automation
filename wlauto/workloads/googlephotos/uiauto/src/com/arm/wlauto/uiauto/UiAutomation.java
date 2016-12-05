@@ -17,6 +17,7 @@ package com.arm.wlauto.uiauto.googlephotos;
 
 import android.os.Bundle;
 import android.graphics.Rect;
+import android.util.Log;
 
 // Import the uiautomator libraries
 import com.android.uiautomator.core.UiObject;
@@ -40,6 +41,8 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public Bundle parameters;
     public String packageName;
+    public String activityName;
+    public String applaunchType;
     public String packageID;
 
     private long viewTimeout =  TimeUnit.SECONDS.toMillis(10);
@@ -48,11 +51,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         parameters = getParams();
         packageName = parameters.getString("package");
         packageID = packageName + ":id/";
-
-        sleep(5); // Pause while splash screen loads
+        
         setScreenOrientation(ScreenOrientation.NATURAL);
-        dismissWelcomeView();
-        closePromotionPopUp();
+        clearDialogues();
 
         selectGalleryFolder("wa-1");
         selectFirstImage();
@@ -77,6 +78,50 @@ public class UiAutomation extends UxPerfUiAutomation {
         closeAndReturn(true);
 
         unsetScreenOrientation();
+    }
+
+    public void clearDialogues() throws Exception {
+        dismissWelcomeView();
+        closePromotionPopUp();
+    }
+    
+    public void applaunchEnd() throws Exception {
+        applaunchType = parameters.getString("applaunch_type");
+        if (applaunchType.equals("launch_from_background")) {
+            pressHome();
+        }
+    }
+
+    public void runApplaunchSetup() throws Exception {
+        parameters = getParams();
+        packageName = parameters.getString("package");
+        packageID = packageName + ":id/";
+        sleep(5);
+        setScreenOrientation(ScreenOrientation.NATURAL);
+        clearDialogues();
+        unsetScreenOrientation();
+        applaunchEnd();
+    }
+    
+    public void runApplaunchIteration() throws Exception {
+        parameters = getParams();
+        packageName = parameters.getString("package");
+        packageID = packageName + ":id/";
+        activityName = parameters.getString("launch_activity");
+
+        String iteration_count = parameters.getString("iteration_count");
+        String testTag = "applaunch" + iteration_count;
+        //Applaunch object for launching an application and measuring the time taken
+        AppLaunch applaunch = new AppLaunch(testTag, packageName, activityName, parameters);
+        //Widget on the screen that marks the application ready for user interaction
+        UiObject userBeginObject =
+            new UiObject(new UiSelector().textContains("Photos")
+                                         .className("android.widget.TextView"));
+        
+        applaunch.startLaunch();//Launch the appl;ication and start timer 
+        applaunch.endLaunch(userBeginObject,10);//marks the end of launch and stops timer
+        applaunchEnd();
+
     }
 
     public void dismissWelcomeView() throws Exception {

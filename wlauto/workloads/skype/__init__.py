@@ -96,4 +96,7 @@ class Skype(AndroidUxPerfWorkload):
 
     def setup(self, context):
         super(Skype, self).setup(context)
+        self.launch_app()
+
+    def launch_app(self):    
         self.device.execute('am start -W -a android.intent.action.VIEW -d skype:dummy?dummy')

@@ -42,6 +42,8 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     protected Bundle parameters;
     protected String packageName;
+    protected String activityName;
+    protected String applaunchType;
     protected String packageID;
 
     private int viewTimeoutSecs = 10;
@@ -60,14 +62,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         String chapterPageNumber = parameters.getString("chapter_page_number");
         String searchWord = parameters.getString("search_word");
         String noteText = "This is a test note";
-        String account = parameters.getString("account");
 
         setScreenOrientation(ScreenOrientation.NATURAL);
-
-        chooseAccount(account);
-        clearFirstRunDialogues();
-        dismissSendBooksAsGiftsDialog();
-        dismissSync();
+        clearDialogues();
 
         searchForBook(searchBookTitle);
         addToLibrary();
@@ -92,6 +89,51 @@ public class UiAutomation extends UxPerfUiAutomation {
         unsetScreenOrientation();
     }
 
+    public void clearDialogues() throws Exception {
+        String account = parameters.getString("account");
+        chooseAccount(account);
+        clearFirstRunDialogues();
+        dismissSendBooksAsGiftsDialog();
+        dismissSync();
+    }
+
+    public void applaunchEnd() throws Exception {
+        applaunchType = parameters.getString("applaunch_type");
+        if (applaunchType.equals("launch_from_background")) {
+            pressHome();
+        }
+    }
+    
+    public void runApplaunchSetup() throws Exception {
+        parameters = getParams();
+        packageName = parameters.getString("package");
+        packageID = packageName + ":id/";
+        sleep(5);
+        setScreenOrientation(ScreenOrientation.NATURAL);
+        clearDialogues();
+        unsetScreenOrientation();
+        applaunchEnd();
+    }
+    
+    public void runApplaunchIteration() throws Exception {
+        parameters = getParams();
+        packageName = parameters.getString("package");
+        packageID = packageName + ":id/";
+        activityName = parameters.getString("launch_activity");
+
+        String iteration_count = parameters.getString("iteration_count");
+        String testTag = "applaunch" + iteration_count;
+        //Applaunch object for launching an application and measuring the time taken
+        AppLaunch applaunch = new AppLaunch(testTag, packageName, activityName, parameters);
+        //Widget on the screen that marks the application ready for user interaction
+        UiObject userBeginObject =
+            new UiObject(new UiSelector().className("android.widget.ImageButton"));
+        
+        applaunch.startLaunch();//Launch the application and start timer
+        applaunch.endLaunch(userBeginObject,20);//marks the end of launch and stops timer
+        applaunchEnd();
+
+    }
     // If the device has more than one account setup, a prompt appears
     // In this case, select the first account in the list, unless `account`
     // has been specified as a parameter, otherwise select `account`.

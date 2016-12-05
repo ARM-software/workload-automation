@@ -38,6 +38,8 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     protected Bundle parameters;
     protected String packageName;
+    protected String activityName;
+    protected String applaunchType;
     protected String packageID;
 
     private long networkTimeout =  TimeUnit.SECONDS.toMillis(20);
@@ -53,14 +55,56 @@ public class UiAutomation extends UxPerfUiAutomation {
             parameters.getString("search_string_list").replace("0space0", " ").split("0newline0");
 
         setScreenOrientation(ScreenOrientation.NATURAL);
+        clearDialogues();
 
-        dismissWelcomeView();
         openFile(filename);
         gesturesTest();
         searchPdfTest(searchStrings);
         exitDocument();
 
         unsetScreenOrientation();
+    }
+    
+    public void clearDialogues() throws Exception {
+        dismissWelcomeView();
+    }
+
+    public void applaunchEnd() throws Exception {
+        applaunchType = parameters.getString("applaunch_type");
+        if (applaunchType.equals("launch_from_background")) {
+            pressHome();
+        }
+    }
+    
+    public void runApplaunchSetup() throws Exception {
+        parameters = getParams();
+        packageName = parameters.getString("package");
+        packageID = packageName + ":id/";
+        sleep(5);
+        setScreenOrientation(ScreenOrientation.NATURAL);
+        clearDialogues();
+        unsetScreenOrientation();
+        applaunchEnd();
+    }
+    
+    public void runApplaunchIteration() throws Exception {
+        parameters = getParams();
+        packageName = parameters.getString("package");
+        packageID = packageName + ":id/";
+        activityName = parameters.getString("launch_activity");
+
+        String iteration_count = parameters.getString("iteration_count");
+        String testTag = "applaunch" + iteration_count;
+        //Applaunch object for launching an application and measuring the time taken
+        AppLaunch applaunch = new AppLaunch(testTag, packageName, activityName, parameters);
+        //Widget on the screen that marks the application ready for user interaction
+        UiObject userBeginObject =
+            new UiObject(new UiSelector().textContains("RECENT")
+                                         .className("android.widget.TextView"));
+        
+        applaunch.startLaunch();//Launch the appl;ication and start timer 
+        applaunch.endLaunch(userBeginObject,10);//marks the end of launch and stops timer
+        applaunchEnd();
     }
 
     private void dismissWelcomeView() throws Exception {

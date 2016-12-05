@@ -40,6 +40,8 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public Bundle parameters;
     public String packageName;
+    protected String activityName;
+    protected String applaunchType;
     public String packageID;
 
     public static final int WAIT_TIMEOUT_1SEC = 1000;
@@ -58,11 +60,10 @@ public class UiAutomation extends UxPerfUiAutomation {
         String workingDirectoryName = parameters.getString("workdir_name");
 
         setScreenOrientation(ScreenOrientation.NATURAL);
+
         changeAckTimeout(100);
         // UI automation begins here
-        skipWelcomeScreen();
-        sleep(1);
-        dismissWorkOfflineBanner();
+        clearDialogues();
         sleep(1);
         enablePowerpointCompat();
         sleep(1);
@@ -74,6 +75,50 @@ public class UiAutomation extends UxPerfUiAutomation {
         testSlideshowFromStorage(slideCount);
         // UI automation ends here
         unsetScreenOrientation();
+    }
+    
+    public void clearDialogues() throws Exception {
+        skipWelcomeScreen();
+        sleep(1);
+        dismissWorkOfflineBanner();
+    }
+
+    public void applaunchEnd() throws Exception {
+        applaunchType = parameters.getString("applaunch_type");
+        if (applaunchType.equals("launch_from_background")) {
+            pressHome();
+        }
+    }
+    
+    public void runApplaunchSetup() throws Exception {
+        parameters = getParams();
+        packageName = parameters.getString("package");
+        packageID = packageName + ":id/";
+        sleep(5);
+        setScreenOrientation(ScreenOrientation.NATURAL);
+        clearDialogues();
+        unsetScreenOrientation();
+        applaunchEnd();
+    }
+    
+    public void runApplaunchIteration() throws Exception {
+        parameters = getParams();
+        packageName = parameters.getString("package");
+        packageID = packageName + ":id/";
+        activityName = parameters.getString("launch_activity");
+
+        String iteration_count = parameters.getString("iteration_count");
+        String testTag = "applaunch" + iteration_count;
+        //Applaunch object for launching an application and measuring the time taken
+        AppLaunch applaunch = new AppLaunch(testTag, packageName, activityName, parameters);
+        //Widget on the screen that marks the application ready for user interaction
+        UiObject userBeginObject =
+            new UiObject(new UiSelector().className("android.widget.ImageButton"));
+        
+        applaunch.startLaunch();//Launch the application and start timer
+        applaunch.endLaunch(userBeginObject,20);//marks the end of launch and stops timer
+        applaunchEnd();
+
     }
 
     public void dismissWorkOfflineBanner() throws Exception {
