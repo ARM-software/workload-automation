@@ -30,7 +30,7 @@ from wlauto.common.resources import Executable
 from wlauto.core.resource import NO_ONE
 from wlauto.common.linux.device import BaseLinuxDevice, PsEntry
 from wlauto.exceptions import DeviceError, WorkerThreadError, TimeoutError, DeviceNotRespondingError
-from wlauto.utils.misc import convert_new_lines
+from wlauto.utils.misc import convert_new_lines, ABI_MAP
 from wlauto.utils.types import boolean, regex
 from wlauto.utils.android import (adb_shell, adb_background_shell, adb_list_devices,
                                   adb_command, AndroidProperties, ANDROID_VERSION_MAP)
@@ -108,7 +108,11 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
 
     @property
     def abi(self):
-        return self.getprop()['ro.product.cpu.abi'].split('-')[0]
+        val = self.getprop()['ro.product.cpu.abi'].split('-')[0]
+        for abi, architectures in ABI_MAP.iteritems():
+            if val in architectures:
+                return abi
+        return val
 
     @property
     def supported_eabi(self):
@@ -120,7 +124,18 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
             for eabi in props['ro.product.cpu.abilist'].split(','):
                 if eabi not in result:
                     result.append(eabi)
-        return result
+
+        mapped_result = []
+        for supported_eabi in result:
+            for abi, architectures in ABI_MAP.iteritems():
+                found = False
+                if supported_eabi in architectures and abi not in mapped_result:
+                    mapped_result.append(abi)
+                    found = True
+                    break
+            if not found and supported_eabi not in mapped_result:
+                mapped_result.append(supported_eabi)
+        return mapped_result
 
     def __init__(self, **kwargs):
         super(AndroidDevice, self).__init__(**kwargs)

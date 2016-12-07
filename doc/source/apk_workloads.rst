@@ -18,10 +18,10 @@ All ApkWorkloads have parameters that affect the way in which APK files are reso
 
 .. confval:: check_abi
 
-   If this setting is enabled WA's resource resolvers will look for the devices ABI within the file name
-   e.g. ``calculator_arm65.apk``. By default this setting is disabled since most apks will work across all
+   If this setting is enabled WA's resource resolvers will look for the devices ABI with any native 
+   code present in the apk. By default this setting is disabled since most apks will work across all
    devices. You may wish to enable this feature when working with devices that support multiple ABI's (like 
-   64-bit devices that can run 32-bit APK files) and  are specifically trying to test one or the other.
+   64-bit devices that can run 32-bit APK files) and are specifically trying to test one or the other.
 
 .. confval:: force_install
 
