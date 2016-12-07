@@ -28,7 +28,7 @@ import re
 from wlauto.exceptions import DeviceError, ConfigError, HostError, WAError
 from wlauto.utils.misc import (check_output, escape_single_quotes,
                                escape_double_quotes, get_null,
-                               CalledProcessErrorWithStderr)
+                               CalledProcessErrorWithStderr, ABI_MAP)
 
 
 MAX_TRIES = 5
@@ -164,6 +164,7 @@ class ApkInfo(object):
         self.label = None
         self.version_name = None
         self.version_code = None
+        self.native_code = []
         self.parse(path)
 
     def parse(self, apk_path):
@@ -183,6 +184,19 @@ class ApkInfo(object):
             elif line.startswith('launchable-activity:'):
                 match = self.name_regex.search(line)
                 self.activity = match.group('name')
+            elif line.startswith('native-code'):
+                apk_abis = [entry.strip() for entry in line.split(':')[1].split("'") if entry.strip()]
+                mapped_abis = []
+                for apk_abi in apk_abis:
+                    found = False
+                    for abi, architectures in ABI_MAP.iteritems():
+                        if apk_abi in architectures:
+                            mapped_abis.append(abi)
+                            found = True
+                            break
+                    if not found:
+                        mapped_abis.append(apk_abi)
+                self.native_code = mapped_abis
             else:
                 pass  # not interested
 
