@@ -186,7 +186,7 @@ class ApkWorkload(Workload):
                   '''),
         Parameter('uninstall_apk', kind=boolean, default=False,
                   description='If ``True``, will uninstall workload\'s APK as part of teardown.'),
-        Parameter('check_abi', kind=bool, default=False,
+        Parameter('exact_abi', kind=bool, default=False,
                   description='''
                   If ``True``, workload will check that the APK matches the target
                   device ABI, otherwise any APK found will be used.
@@ -200,7 +200,7 @@ class ApkWorkload(Workload):
         self.apk_version = None
         self.logcat_log = None
         self.exact_apk_version = None
-        self.check_abi = kwargs.get('check_abi')
+        self.exact_abi = kwargs.get('exact_abi')
 
     def setup(self, context):  # pylint: disable=too-many-branches
         Workload.setup(self, context)
@@ -229,8 +229,8 @@ class ApkWorkload(Workload):
                                                  variant_name=getattr(self, 'variant_name', None),
                                                  strict=False)
 
-            # Stop if apk found, or if check_abi is set only look for primary abi.
-            if self.apk_file or self.check_abi:
+            # Stop if apk found, or if exact_abi is set only look for primary abi.
+            if self.apk_file or self.exact_abi:
                 break
 
         host_version = None
@@ -250,8 +250,8 @@ class ApkWorkload(Workload):
                 msg = "APK version '{}' not found on the host '{}' or target '{}'"
                 raise ResourceError(msg.format(self.exact_apk_version, host_version, target_version))
 
-        # Error if check_abi and suitable apk not found on host and incorrect version on device
-        if self.check_abi and host_version is None:
+        # Error if exact_abi and suitable apk not found on host and incorrect version on device
+        if self.exact_abi and host_version is None:
             if target_abi != self.device.abi:
                 msg = "APK abi '{}' not found on the host and target is '{}'"
                 raise ResourceError(msg.format(self.device.abi, target_abi))
