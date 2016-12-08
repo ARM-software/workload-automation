@@ -262,6 +262,24 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
                 return line.split('=', 1)[1]
         return None
 
+    def get_installed_package_abi(self, package):
+        """
+        Returns the primary abi of the specified package if it is installed
+        on the device, or ``None`` otherwise.
+        """
+        output = self.execute('dumpsys package {}'.format(package))
+        val = None
+        for line in convert_new_lines(output).split('\n'):
+            if 'primaryCpuAbi' in line:
+                val = line.split('=', 1)[1]
+                break
+        if val == 'null':
+            return None
+        for abi, architectures in ABI_MAP.iteritems():
+            if val in architectures:
+                return abi
+        return val
+
     def list_packages(self):
         """
         List packages installed on the device.
