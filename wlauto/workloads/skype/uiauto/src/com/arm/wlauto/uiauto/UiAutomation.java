@@ -81,6 +81,10 @@ public class UiAutomation extends UxPerfUiAutomation {
             new UiObject(new UiSelector().resourceId(packageID + "sign_in_userid"));
         UiObject nextButton =
             new UiObject(new UiSelector().resourceId(packageID + "sign_in_next_btn"));
+
+        // Wait for login screen to appear
+        waitObject(useridField, 20);
+
         useridField.setText(username);
         nextButton.clickAndWaitForNewWindow();
 
@@ -118,6 +122,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
 
         UiObject search = getUiObjectByText("Search", "android.widget.EditText");
+        // Wait for search screen to appear
+        waitObject(search, 10);
         search.setText(name);
 
         UiObject peopleItem = clickUiObject(BY_TEXT, name, "android.widget.TextView");
