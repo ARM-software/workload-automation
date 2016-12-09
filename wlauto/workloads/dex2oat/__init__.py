@@ -60,8 +60,8 @@ class Dex2oatBenchmark(Workload):
     def setup(self, context):
         if self.device.getprop('persist.sys.dalvik.vm.lib.2') != 'libart.so':
             raise WorkloadError('Android system must be using ART (rather than Dalvik) in order for dex2oat to work.')
-        supported = [eabi == 'armeabi' and 'arm' or eabi.split('-')[0]
-                     for eabi in self.device.supported_eabi]
+        supported = [abi == 'armeabi' and 'arm' or abi.split('-')[0]
+                     for abi in self.device.supported_abi]
         if self.instruction_set not in supported:
             message = 'Instruction set "{}" is not supported by the device; (supported: {})'
             raise WorkloadError(message.format(self.instruction_set, supported))

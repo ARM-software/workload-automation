@@ -223,7 +223,7 @@ class ApkWorkload(Workload):
             self.logger.debug("Found apk with primary abi '{}' on target device".format(target_abi))
 
         # Get host version, primary abi is first, and then try to find supported.
-        for abi in self.device.supported_eabi:
+        for abi in self.device.supported_abi:
             self.apk_file = context.resolver.get(ApkFile(self, abi),
                                                  version=getattr(self, 'version', None),
                                                  variant_name=getattr(self, 'variant_name', None),

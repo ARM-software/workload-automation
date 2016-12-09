@@ -115,26 +115,26 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         return val
 
     @property
-    def supported_eabi(self):
+    def supported_abi(self):
         props = self.getprop()
         result = [props['ro.product.cpu.abi']]
         if 'ro.product.cpu.abi2' in props:
             result.append(props['ro.product.cpu.abi2'])
         if 'ro.product.cpu.abilist' in props:
-            for eabi in props['ro.product.cpu.abilist'].split(','):
-                if eabi not in result:
-                    result.append(eabi)
+            for abi in props['ro.product.cpu.abilist'].split(','):
+                if abi not in result:
+                    result.append(abi)
 
         mapped_result = []
-        for supported_eabi in result:
+        for supported_abi in result:
             for abi, architectures in ABI_MAP.iteritems():
                 found = False
-                if supported_eabi in architectures and abi not in mapped_result:
+                if supported_abi in architectures and abi not in mapped_result:
                     mapped_result.append(abi)
                     found = True
                     break
-            if not found and supported_eabi not in mapped_result:
-                mapped_result.append(supported_eabi)
+            if not found and supported_abi not in mapped_result:
+                mapped_result.append(supported_abi)
         return mapped_result
 
     def __init__(self, **kwargs):
