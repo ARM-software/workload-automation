@@ -65,12 +65,23 @@ public class UiAutomation extends BaseUiAutomation {
             UiObject addressBar = new UiObject(new UiSelector()
                                   .className("android.widget.TextView")
                                   .text("Enter Search or Address"));
+            if (!addressBar.exists()) {
+                addressBar = new UiObject(new UiSelector()
+                             .resourceIdMatches(".*/url_bar_title"));
+            }
             addressBar.click();
             UiObject setUrl = new UiObject(new UiSelector()
                               .className("android.widget.EditText"));
             setUrl.clearTextField();
             setUrl.setText(peacekeeperUrl);
             getUiDevice().pressEnter();
+
+            // Allow time for UI to update
+            sleep(1);
+
+            if (!setUrl.exists()){
+                setUrl = addressBar;
+            }
 
             UiObject currentUrl = new UiObject(new UiSelector()
                                .className("android.widget.TextView").index(1));
@@ -88,19 +99,43 @@ public class UiAutomation extends BaseUiAutomation {
             sleep(10);
             }
         } else if (browser.equals("chrome")) { // Code for Chrome browser
-            UiObject adressBar = new UiObject(new UiSelector()
-                                  .className("android.widget.EditText")
-                                  .description("Search or type url"));
 
-            adressBar.clearTextField();
-            adressBar.setText(peacekeeperUrl);
+            //Check for welcome screen and dismiss if present.
+            UiObject acceptTerms = new UiObject(new UiSelector()
+                                   .className("android.widget.Button")
+                                   .textContains("Accept & continue"));
+            if (acceptTerms.exists()){
+                acceptTerms.click();
+                UiObject dismiss = new UiObject(new UiSelector()
+                                   .className("android.widget.Button")
+                                   .resourceIdMatches(".*/negative_button"));
+                if (dismiss.exists()){
+                    dismiss.clickAndWaitForNewWindow();
+                }
+            }
+
+            UiObject addressBar = new UiObject(new UiSelector()
+                                  .className("android.widget.EditText")
+                                  .descriptionContains("Search or type url"));
+
+            addressBar.clickAndWaitForNewWindow();
+            addressBar.clearTextField();
+            addressBar.setText(peacekeeperUrl);
             getUiDevice().pressEnter();
+
+            // Allow time for UI to update
+            sleep(1);
+
+            if (!addressBar.exists()){
+                addressBar = new UiObject(new UiSelector()
+                             .resourceIdMatches(".*/url_bar"));
+            }
             for (int i = 0; i < TIMEOUT; i++) {
 
-                if (!adressBar.getText().contains("run.action")) {
+                if (!addressBar.getText().contains("run.action")) {
 
                     // write url address to peacekeeper.txt file
-                    urlAddress = adressBar.getText();
+                    urlAddress = addressBar.getText();
                     if (!urlAddress.contains("http"))
                     urlAddress = "http://" + urlAddress;
                     writer.println(urlAddress);
