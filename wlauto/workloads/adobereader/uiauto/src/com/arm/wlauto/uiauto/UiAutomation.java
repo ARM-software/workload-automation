@@ -69,6 +69,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         welcomeView.swipeLeft(10);
         welcomeView.swipeLeft(10);
 
+        UiObject onboarding_finish_button =
+            new UiObject(new UiSelector().resourceId("com.adobe.reader:id/onboarding_finish_button"));
+                                         
+        if (!onboarding_finish_button.exists()) {
+            welcomeView.swipeLeft(10);
+        }
+        
         clickUiObject(BY_ID, packageID + "onboarding_finish_button", "android.widget.Button");
 
         // Deal with popup dialog message promoting Dropbox access
@@ -113,8 +120,10 @@ public class UiAutomation extends UxPerfUiAutomation {
         searchButton.click();
 
         // Enter search text into the file searchBox.  This will automatically filter the list.
-        UiObject searchBox = getUiObjectByResourceId("android:id/search_src_text",
-                                                     "android.widget.EditText");
+        UiObject searchBox =
+            new UiObject(new UiSelector().resourceIdMatches(".*search_src_text")
+                                         .classNameMatches("android.widget.Edit.*"));
+
         searchBox.setText(filename);
 
         // Open a file from a file list view by searching for UiObjects containing the doc title.
@@ -200,6 +209,14 @@ public class UiAutomation extends UxPerfUiAutomation {
             tapDisplayCentre();
         }
 
+        if (!searchIcon.waitForExists(uiAutoTimeout)) {
+            searchIcon =
+                new UiObject(new UiSelector().resourceId(packageID + "document_view_search"));
+            if (!searchIcon.waitForExists(uiAutoTimeout)) {
+                tapDisplayCentre();
+            }
+        }
+
         for (int i = 0; i < searchStrings.length; i++) {
             String runName = String.format(testTag + "_string" + i);
             ActionLogger logger = new ActionLogger(runName, parameters);
@@ -208,8 +225,10 @@ public class UiAutomation extends UxPerfUiAutomation {
             // so click the box again and press Enter to start the search.
             searchIcon.clickAndWaitForNewWindow();
 
-            UiObject searchBox = getUiObjectByResourceId("android:id/search_src_text",
-                                                         "android.widget.EditText");
+            UiObject searchBox =
+                new UiObject(new UiSelector().resourceIdMatches(".*search_src_text")
+                                             .className("android.widget.EditText"));
+
             searchBox.setText(searchStrings[i]);
 
             logger.start();
@@ -227,21 +246,63 @@ public class UiAutomation extends UxPerfUiAutomation {
             logger.stop();
 
             // Get back to the main document view by clicking twice on the close button
-            UiObject searchCloseButton = clickUiObject(BY_ID, "android:id/search_close_btn", "android.widget.ImageView", true);
-            searchCloseButton.clickAndWaitForNewWindow();
+            UiObject searchCloseButton = 
+                 new UiObject(new UiSelector().resourceIdMatches(".*search_close_btn")
+                                              .className("android.widget.ImageView"));
+            searchCloseButton.click();
+
+            if (searchCloseButton.exists()){
+                searchCloseButton.clickAndWaitForNewWindow();
+            }
+            else {
+                UiObject searchBackButton = getUiObjectByDescription("Collapse",
+                                                                     "android.widget.ImageButton");
+                searchBackButton.clickAndWaitForNewWindow();
+            }
         }
     }
 
     private void exitDocument() throws Exception {
         // Return from the document view to the file list view by pressing home and my documents.
+        UiObject actionBar =
+                new UiObject(new UiSelector().resourceIdMatches(".*action_bar.*")
+                                             .className("android.view.View"));
+        if (!actionBar.exists()){
+            tapDisplayCentre();
+        }
+
         UiObject homeButton =
             new UiObject(new UiSelector().resourceId("android:id/home")
                                          .className("android.widget.ImageView"));
-        if (!homeButton.waitForExists(uiAutoTimeout)) {
-            tapDisplayCentre();
+
+        //Newer version of app have a menu button instead of home button.
+        UiObject menuButton =
+            new UiObject(new UiSelector().description("Navigate up")
+                                         .classNameMatches("android.widget.Image.*"));
+
+        if (menuButton.exists()){
+            menuButton.clickAndWaitForNewWindow();
         }
-        homeButton.clickAndWaitForNewWindow();
+        else if (menuButton.exists()){
+            menuButton.clickAndWaitForNewWindow();
+        }
+        else {
+            menuButton =
+                new UiObject(new UiSelector().resourceIdMatches(".*up.*")
+                                             .classNameMatches("android.widget.Image.*"));
+            menuButton.clickAndWaitForNewWindow();
+        }
+        
         clickUiObject(BY_DESC, "My Documents", "android.widget.LinearLayout", true);
-        clickUiObject(BY_ID, "android:id/up", "android.widget.ImageView", true);
+
+        UiObject searchBackButton =
+                    new UiObject(new UiSelector().description("Collapse")
+                                                 .className("android.widget.ImageButton"));
+        if (searchBackButton.exists()){
+            searchBackButton.click();
+        }
+        else {
+            clickUiObject(BY_ID, "android:id/up", "android.widget.ImageView", true);
+        }
     }
 }
