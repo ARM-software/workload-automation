@@ -44,6 +44,7 @@ class Facebook(AndroidUiAutoBenchmark):
     """
     package = 'com.facebook.katana'
     activity = '.LoginActivity'
+    max_apk_version = '3.4'
 
     #'du' specify 'disable update'
     du_activity = 'com.android.vending/.AssetBrowserActivity'

@@ -131,10 +131,8 @@ public class UiAutomation extends BaseUiAutomation {
 
         //Search for the facebook account
         UiObject clickBar = new UiObject(new UiSelector()
-             .className("android.view.View").index(0)
-             .childSelector(new UiSelector()
              .className("android.widget.ImageButton").index(0)
-             .description("Main navigation menu")));
+             .description("Main navigation menu"));
         clickBar.clickAndWaitForNewWindow(timeout);
 
         UiObject clickSearch = new UiObject(new UiSelector()
@@ -189,7 +187,6 @@ public class UiAutomation extends BaseUiAutomation {
              .className("android.widget.RelativeLayout").index(3));
         friends.click();
         sleep(timeout);
-        getUiDevice().pressBack();
 
         //Update the status
         UiObject updateStatus = new UiObject(new UiSelector()
@@ -197,7 +194,7 @@ public class UiAutomation extends BaseUiAutomation {
              .childSelector(new UiSelector()
              .className("android.widget.FrameLayout").index(1)
              .childSelector(new UiSelector()
-             .className("android.widget.RelativeLayout").index(1)
+             .className("android.widget.RelativeLayout").index(0)
              .childSelector(new UiSelector()
              .className("android.widget.LinearLayout").index(0)
              .childSelector(new UiSelector()
