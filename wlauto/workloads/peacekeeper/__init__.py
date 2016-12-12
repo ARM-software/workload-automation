@@ -81,6 +81,10 @@ class Peacekeeper(AndroidUiAutoBenchmark):
         if not url:
             raise WorkloadError('The url is empty, error while running peacekeeper benchmark')
 
+        # urlopen expects url beginning with protocol.
+        if not url.startswith('http'):
+            url = 'http://' + url
+
         req = urllib2.Request(url)
         response = urllib2.urlopen(req)
         result_page = response.read()
