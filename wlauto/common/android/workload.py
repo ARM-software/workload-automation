@@ -338,7 +338,7 @@ class ApkWorkload(Workload):
                     version > LooseVersion(max_apk_version):
                 msg = "version '{}' not supported. " \
                       "Minimum version required: '{}', Maximum version known to work: '{}'"
-                raise ResourceError(msg.format(version, min_apk_version))
+                raise ResourceError(msg.format(version, min_apk_version, max_apk_version))
 
         elif min_apk_version is not None:
             if version < LooseVersion(min_apk_version):
@@ -350,7 +350,7 @@ class ApkWorkload(Workload):
             if version > LooseVersion(max_apk_version):
                 msg = "version '{}' not supported. " \
                       "Maximum version known to work: '{}'"
-                raise ResourceError(msg.format(version, min_apk_version))
+                raise ResourceError(msg.format(version, max_apk_version))
 
     def launch_package(self):
         if not self.activity:
