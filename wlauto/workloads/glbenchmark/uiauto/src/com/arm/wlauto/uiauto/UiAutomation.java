@@ -81,7 +81,7 @@ public class UiAutomation extends BaseUiAutomation {
         UiObject useCaseText = new UiObject(selector.className("android.widget.TextView")
                                                     .text(useCase)
                                            );
-        if (version.equals("2.7.0")){
+        if (version.equals("2.7")){
                 UiObject variantText =  useCaseText.getFromParent(selector.className("android.widget.TextView")
                                                                           .text(variant));    
                 int scrolls = 0;
@@ -94,7 +94,7 @@ public class UiAutomation extends BaseUiAutomation {
                 }
                 variantText.click();
         }
-        else if (version.equals("2.5.1")){
+        else if (version.equals("2.5")){
                 int scrolls = 0;
                 while(!useCaseText.exists()) {
                         testList.scrollForward();
@@ -123,7 +123,7 @@ public class UiAutomation extends BaseUiAutomation {
     public void waitForResults(String version, String useCase, int timeout) throws Exception {
         UiSelector selector = new UiSelector();
         UiObject results = null;
-        if (version.equals("2.7.0"))
+        if (version.equals("2.7"))
                 results = new UiObject(selector.text("Results").className("android.widget.TextView"));
         else
                 results =  new UiObject(selector.text(useCase).className("android.widget.TextView"));
