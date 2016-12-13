@@ -86,7 +86,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         switchPageStyles();
         aboutBook();
 
-        removeWatcher("pageSyncPop");
+        removeWatcher("pageSyncPopUp");
         pressBack();
 
         unsetScreenOrientation();
@@ -389,6 +389,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         hideDropDownMenu();
 
         UiObject clickable = new UiObject(new UiSelector().longClickable(true));
+        if (!clickable.exists()){ 
+            clickable = new UiObject(new UiSelector().resourceIdMatches(".*/main_page"));
+        }
 
         logger.start();
 
@@ -415,6 +418,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         ActionLogger logger = new ActionLogger(testTag, parameters);
 
         UiObject clickable = new UiObject(new UiSelector().longClickable(true));
+        if (!clickable.exists()){ 
+            clickable = new UiObject(new UiSelector().resourceIdMatches(".*/main_page"));
+        }
 
         logger.start();
 
