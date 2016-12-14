@@ -126,16 +126,18 @@ public class UiAutomation extends UxPerfUiAutomation {
         waitObject(search, 10);
         search.setText(name);
 
-        UiObject peopleItem = clickUiObject(BY_TEXT, name, "android.widget.TextView");
+        UiObject peopleItem = new UiObject(new UiSelector().textContains(name)
+                                           .resourceId(packageID + "people_item_full_name"));
+        peopleItem.click();
 
-        UiObject avatarPresence =
-            new UiObject(new UiSelector().resourceId(packageID + "skype_avatar_presence"));
+        UiObject search_item_icon =
+            new UiObject(new UiSelector().resourceId(packageID + "search_item_icon"));
 
         UiObject confirm =
             new UiObject(new UiSelector().resourceId(packageID + "fab"));
 
         // On some devices two clicks are needed to select a contact.
-        if (!avatarPresence.waitUntilGone(uiAutoTimeout)) {
+        if (!search_item_icon.waitUntilGone(uiAutoTimeout)) {
             if (!sharingResource || !confirm.exists()) {
                 peopleItem.click();
             }
@@ -205,7 +207,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Hang up the call and log how long that takes
         logger = new ActionLogger(testTag + "_stop", parameters);
         logger.start();
-        tryButton(endButton, 500);
+        if (!(tryButton(endButton, 500))){
+            throw new UiObjectNotFoundException("Could not find end call button on screen.");
+        }
         logger.stop();
     }
 
