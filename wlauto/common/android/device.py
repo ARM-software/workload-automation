@@ -30,7 +30,7 @@ from wlauto.common.resources import Executable
 from wlauto.core.resource import NO_ONE
 from wlauto.common.linux.device import BaseLinuxDevice, PsEntry
 from wlauto.exceptions import DeviceError, WorkerThreadError, TimeoutError, DeviceNotRespondingError
-from wlauto.utils.misc import convert_new_lines
+from wlauto.utils.misc import convert_new_lines, ABI_MAP
 from wlauto.utils.types import boolean, regex
 from wlauto.utils.android import (adb_shell, adb_background_shell, adb_list_devices,
                                   adb_command, AndroidProperties, ANDROID_VERSION_MAP)
@@ -108,19 +108,34 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
 
     @property
     def abi(self):
-        return self.getprop()['ro.product.cpu.abi'].split('-')[0]
+        val = self.getprop()['ro.product.cpu.abi'].split('-')[0]
+        for abi, architectures in ABI_MAP.iteritems():
+            if val in architectures:
+                return abi
+        return val
 
     @property
-    def supported_eabi(self):
+    def supported_abi(self):
         props = self.getprop()
         result = [props['ro.product.cpu.abi']]
         if 'ro.product.cpu.abi2' in props:
             result.append(props['ro.product.cpu.abi2'])
         if 'ro.product.cpu.abilist' in props:
-            for eabi in props['ro.product.cpu.abilist'].split(','):
-                if eabi not in result:
-                    result.append(eabi)
-        return result
+            for abi in props['ro.product.cpu.abilist'].split(','):
+                if abi not in result:
+                    result.append(abi)
+
+        mapped_result = []
+        for supported_abi in result:
+            for abi, architectures in ABI_MAP.iteritems():
+                found = False
+                if supported_abi in architectures and abi not in mapped_result:
+                    mapped_result.append(abi)
+                    found = True
+                    break
+            if not found and supported_abi not in mapped_result:
+                mapped_result.append(supported_abi)
+        return mapped_result
 
     def __init__(self, **kwargs):
         super(AndroidDevice, self).__init__(**kwargs)
@@ -261,6 +276,24 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
             if 'versionName' in line:
                 return line.split('=', 1)[1]
         return None
+
+    def get_installed_package_abi(self, package):
+        """
+        Returns the primary abi of the specified package if it is installed
+        on the device, or ``None`` otherwise.
+        """
+        output = self.execute('dumpsys package {}'.format(package))
+        val = None
+        for line in convert_new_lines(output).split('\n'):
+            if 'primaryCpuAbi' in line:
+                val = line.split('=', 1)[1]
+                break
+        if val == 'null':
+            return None
+        for abi, architectures in ABI_MAP.iteritems():
+            if val in architectures:
+                return abi
+        return val
 
     def list_packages(self):
         """

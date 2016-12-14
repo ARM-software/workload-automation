@@ -137,6 +137,10 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
         return self._abi
 
     @property
+    def supported_abi(self):
+        return [self.abi]
+
+    @property
     def online_cpus(self):
         val = self.get_sysfile_value('/sys/devices/system/cpu/online')
         return ranges_to_list(val)

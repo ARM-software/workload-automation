@@ -186,7 +186,7 @@ class ApkWorkload(Workload):
                   '''),
         Parameter('uninstall_apk', kind=boolean, default=False,
                   description='If ``True``, will uninstall workload\'s APK as part of teardown.'),
-        Parameter('check_abi', kind=bool, default=False,
+        Parameter('exact_abi', kind=bool, default=False,
                   description='''
                   If ``True``, workload will check that the APK matches the target
                   device ABI, otherwise any APK found will be used.
@@ -200,8 +200,9 @@ class ApkWorkload(Workload):
         self.apk_version = None
         self.logcat_log = None
         self.exact_apk_version = None
+        self.exact_abi = kwargs.get('exact_abi')
 
-    def setup(self, context):
+    def setup(self, context):  # pylint: disable=too-many-branches
         Workload.setup(self, context)
 
         # Get target version
@@ -213,9 +214,25 @@ class ApkWorkload(Workload):
         # Get host version
         self.apk_file = context.resolver.get(ApkFile(self, self.device.abi),
                                              version=getattr(self, 'version', None),
-                                             check_abi=getattr(self, 'check_abi', False),
                                              variant_name=getattr(self, 'variant_name', None),
                                              strict=False)
+
+        # Get target abi
+        target_abi = self.device.get_installed_package_abi(self.package)
+        if target_abi:
+            self.logger.debug("Found apk with primary abi '{}' on target device".format(target_abi))
+
+        # Get host version, primary abi is first, and then try to find supported.
+        for abi in self.device.supported_abi:
+            self.apk_file = context.resolver.get(ApkFile(self, abi),
+                                                 version=getattr(self, 'version', None),
+                                                 variant_name=getattr(self, 'variant_name', None),
+                                                 strict=False)
+
+            # Stop if apk found, or if exact_abi is set only look for primary abi.
+            if self.apk_file or self.exact_abi:
+                break
+
         host_version = None
         if self.apk_file is not None:
             host_version = ApkInfo(self.apk_file).version_name
@@ -232,6 +249,12 @@ class ApkWorkload(Workload):
             if self.exact_apk_version != target_version and self.exact_apk_version != host_version:
                 msg = "APK version '{}' not found on the host '{}' or target '{}'"
                 raise ResourceError(msg.format(self.exact_apk_version, host_version, target_version))
+
+        # Error if exact_abi and suitable apk not found on host and incorrect version on device
+        if self.exact_abi and host_version is None:
+            if target_abi != self.device.abi:
+                msg = "APK abi '{}' not found on the host and target is '{}'"
+                raise ResourceError(msg.format(self.device.abi, target_abi))
 
         # Ensure the apk is setup on the device
         if self.force_install:

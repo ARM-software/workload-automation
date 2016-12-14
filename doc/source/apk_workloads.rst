@@ -13,15 +13,15 @@ to chnage the location of this folder. The APK files need to be put into the cor
 for the workload they belong to. The name of the file can be anything but as explained below may need
 to contain certain peices of information.
 
-All ApkWorkloads have parameters that affect the way in which APK files are resolved, ``check_abi``,
+All ApkWorkloads have parameters that affect the way in which APK files are resolved, ``exact_abi``,
 ``force_install`` and ``check_apk``. Their exact behaviours are outlined below.
 
-.. confval:: check_abi
+.. confval:: exact_abi
 
-   If this setting is enabled WA's resource resolvers will look for the devices ABI within the file name
-   e.g. ``calculator_arm65.apk``. By default this setting is disabled since most apks will work across all
+   If this setting is enabled WA's resource resolvers will look for the devices ABI with any native 
+   code present in the apk. By default this setting is disabled since most apks will work across all
    devices. You may wish to enable this feature when working with devices that support multiple ABI's (like 
-   64-bit devices that can run 32-bit APK files) and  are specifically trying to test one or the other.
+   64-bit devices that can run 32-bit APK files) and are specifically trying to test one or the other.
 
 .. confval:: force_install
 
