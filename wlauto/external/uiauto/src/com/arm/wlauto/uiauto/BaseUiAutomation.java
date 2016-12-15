@@ -275,18 +275,18 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     public void uiDeviceSwipeUp(int steps) {
         UiDevice.getInstance().swipe(
             getDisplayCentreWidth(),
-            (getDisplayCentreHeight() / 2),
-            getDisplayCentreWidth(),
             (getDisplayCentreHeight() + (getDisplayCentreHeight() / 2)),
+            getDisplayCentreWidth(),
+            (getDisplayCentreHeight() / 2),
             steps);
     }
 
     public void uiDeviceSwipeDown(int steps) {
         UiDevice.getInstance().swipe(
             getDisplayCentreWidth(),
-            (getDisplayCentreHeight() + (getDisplayCentreHeight() / 2)),
-            getDisplayCentreWidth(),
             (getDisplayCentreHeight() / 2),
+            getDisplayCentreWidth(),
+            (getDisplayCentreHeight() + (getDisplayCentreHeight() / 2)),
             steps);
     }
 
