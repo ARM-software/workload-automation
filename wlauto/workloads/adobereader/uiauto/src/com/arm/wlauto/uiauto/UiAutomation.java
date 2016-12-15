@@ -266,7 +266,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Return from the document view to the file list view by pressing home and my documents.
         UiObject actionBar =
                 new UiObject(new UiSelector().resourceIdMatches(".*action_bar.*")
-                                             .className("android.view.View"));
+                                             .classNameMatches("android.view.View.*"));
         if (!actionBar.exists()){
             tapDisplayCentre();
         }
@@ -274,14 +274,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject homeButton =
             new UiObject(new UiSelector().resourceId("android:id/home")
                                          .className("android.widget.ImageView"));
-
-        //Newer version of app have a menu button instead of home button.
+        // Newer version of app have a menu button instead of home button.
         UiObject menuButton =
             new UiObject(new UiSelector().description("Navigate up")
                                          .classNameMatches("android.widget.Image.*"));
 
-        if (menuButton.exists()){
-            menuButton.clickAndWaitForNewWindow();
+        if (homeButton.exists()){
+            homeButton.clickAndWaitForNewWindow();
         }
         else if (menuButton.exists()){
             menuButton.clickAndWaitForNewWindow();
