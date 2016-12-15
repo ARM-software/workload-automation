@@ -21,7 +21,6 @@ class Youtube(AndroidUxPerfWorkload):
 
     name = 'youtube'
     package = 'com.google.android.youtube'
-    min_apk_version = '11.19.56'
     activity = ''
     view = [package + '/com.google.android.apps.youtube.app.WatchWhileActivity',
             package + '/com.google.android.apps.youtube.app.honeycomb.SettingsActivity']
@@ -55,6 +54,8 @@ class Youtube(AndroidUxPerfWorkload):
     4.  Expand the info card that shows video metadata, then collapse it again.
     5.  Scroll down to the end of related videos and comments under the info card, and then
         back up to the start. A maximum of 5 swipe actions is performed in either direction.
+
+    Known working APK version: 11.19.56
     '''
 
     parameters = [

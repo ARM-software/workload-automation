@@ -20,7 +20,6 @@ class Googleplaybooks(AndroidUxPerfWorkload):
 
     name = 'googleplaybooks'
     package = 'com.google.android.apps.books'
-    min_apk_version = '3.9.37'
     activity = 'com.google.android.apps.books.app.BooksActivity'
     view = [package + '/com.google.android.apps.books.app.HomeActivity',
             package + '/com.android.vending/com.google.android.finsky.activities.MainActivity',
@@ -52,6 +51,8 @@ class Googleplaybooks(AndroidUxPerfWorkload):
           Free books require payment details to have been setup otherwise it fails.
           Tip: Install the 'Google Opinion Rewards' app to bypass the need to enter valid
           card/bank detail.
+
+    Known working APK version: 3.9.37
     '''
 
     parameters = [

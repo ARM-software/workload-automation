@@ -20,7 +20,6 @@ class Skype(AndroidUxPerfWorkload):
 
     name = 'skype'
     package = 'com.skype.raider'
-    min_apk_version = '7.01.0.669'
     activity = ''  # Skype has no default 'main' activity
     view = [package + '/com.skype.android.app.calling.CallActivity',
             package + '/com.skype.android.app.calling.PreCallActivity',
@@ -58,6 +57,8 @@ class Skype(AndroidUxPerfWorkload):
          varies between different versions of Skype and between platforms --
          please search online for specific instructions).
          https://support.skype.com/en/faq/FA3751/can-i-automatically-answer-all-my-calls-with-video-in-skype-for-windows-desktop
+
+    Known working APK version: 7.01.0.669
     '''
 
     launch_main = False  # overrides extended class

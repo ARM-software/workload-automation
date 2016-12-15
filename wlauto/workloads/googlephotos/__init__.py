@@ -25,7 +25,6 @@ class Googlephotos(AndroidUxPerfWorkload):
 
     name = 'googlephotos'
     package = 'com.google.android.apps.photos'
-    min_apk_version = '1.21.0.123444480'
     activity = 'com.google.android.apps.photos.home.HomeActivity'
     view = [package + '/com.google.android.apps.consumerphotoeditor.fragments.ConsumerPhotoEditorActivity',
             package + '/com.google.android.apps.photos.home.HomeActivity',
@@ -47,6 +46,8 @@ class Googlephotos(AndroidUxPerfWorkload):
        similar cropping effect.
     6. A rotate test is performed on a selected image, rotating anticlockwise 90 degrees, 180
        degrees and 270 degrees.
+
+    Known working APK version: 1.21.0.123444480
     '''
 
     default_test_images = [
