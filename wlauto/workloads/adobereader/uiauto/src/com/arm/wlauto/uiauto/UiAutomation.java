@@ -71,11 +71,11 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         UiObject onboarding_finish_button =
             new UiObject(new UiSelector().resourceId("com.adobe.reader:id/onboarding_finish_button"));
-                                         
+
         if (!onboarding_finish_button.exists()) {
             welcomeView.swipeLeft(10);
         }
-        
+
         clickUiObject(BY_ID, packageID + "onboarding_finish_button", "android.widget.Button");
 
         // Deal with popup dialog message promoting Dropbox access
@@ -102,7 +102,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     private void openFile(final String filename) throws Exception {
         String testTag = "open_document";
         ActionLogger logger = new ActionLogger(testTag, parameters);
-        
+
         // Select the local files list from the My Documents view
         clickUiObject(BY_TEXT, "LOCAL", "android.widget.TextView");
         UiObject directoryPath =
@@ -147,8 +147,8 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         // Perform a range of swipe tests at different speeds and on different views
         LinkedHashMap<String, GestureTestParams> testParams = new LinkedHashMap<String, GestureTestParams>();
-        testParams.put("swipe_down", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.DOWN, 100));
         testParams.put("swipe_up", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.UP, 100));
+        testParams.put("swipe_down", new GestureTestParams(GestureType.UIDEVICE_SWIPE, Direction.DOWN, 100));
         testParams.put("swipe_right", new GestureTestParams(GestureType.UIOBJECT_SWIPE, Direction.RIGHT, 50));
         testParams.put("swipe_left", new GestureTestParams(GestureType.UIOBJECT_SWIPE, Direction.LEFT, 50));
         testParams.put("pinch_out", new GestureTestParams(GestureType.PINCH, PinchType.OUT, 100, 50));
@@ -246,7 +246,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             logger.stop();
 
             // Get back to the main document view by clicking twice on the close button
-            UiObject searchCloseButton = 
+            UiObject searchCloseButton =
                  new UiObject(new UiSelector().resourceIdMatches(".*search_close_btn")
                                               .className("android.widget.ImageView"));
             searchCloseButton.click();
@@ -291,7 +291,7 @@ public class UiAutomation extends UxPerfUiAutomation {
                                              .classNameMatches("android.widget.Image.*"));
             menuButton.clickAndWaitForNewWindow();
         }
-        
+
         clickUiObject(BY_DESC, "My Documents", "android.widget.LinearLayout", true);
 
         UiObject searchBackButton =
