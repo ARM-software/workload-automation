@@ -33,6 +33,7 @@ class AdobeReader(AndroidUxPerfWorkload):
     The Adobe Reader workflow carries out the following typical productivity tasks.
 
     Test description:
+
     1. Open a local file on the device
     2. Gestures test:
         2.1. Swipe down across the central 50% of the screen in 200 x 5ms steps

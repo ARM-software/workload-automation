@@ -35,6 +35,7 @@ class Youtube(AndroidUxPerfWorkload):
     Test description:
     The ``video_source`` parameter determines where the video to be played will be found
     in the app. Possible values are ``search``, ``home``, ``my_videos``, and ``trending``.
+
     -A. search - Goes to the search view, does a search for the given term, and plays the
         first video in the results. The parameter ``search_term`` must also be provided
         in the agenda for this to work. This is the default mode.
@@ -46,6 +47,7 @@ class Youtube(AndroidUxPerfWorkload):
         video in the trending videos list.
 
     For the selected video source, the following test steps are performed:
+
     1.  Navigate to the general app settings page to disable autoplay. This improves test
         stability and predictability by preventing screen transition to load a new video
         while in the middle of the test.

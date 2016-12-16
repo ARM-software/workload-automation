@@ -48,6 +48,7 @@ class GoogleSlides(AndroidUxPerfWorkload):
     requires an image file specified by the param ``test_image`` to be copied onto the device.
 
     Test description:
+
     1. Start the app and skip the welcome screen. Dismiss the work offline banner if present.
     2. Go to the app settings page and enables PowerPoint compatibility mode. This allows
        PowerPoint files to be created inside Google Slides.
@@ -62,6 +63,7 @@ class GoogleSlides(AndroidUxPerfWorkload):
     file to be copied is given by ``test_file``.
 
     Test description:
+
     1. From the documents list (following the create test), open the specified PowerPoint
        by navigating into device storage and wait for it to be loaded.
     2. A navigation test is performed while the file is in editing mode (i.e. not slideshow).

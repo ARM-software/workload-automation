@@ -33,15 +33,15 @@ class Googleplaybooks(AndroidUxPerfWorkload):
     and querying information about the book.
 
     Test description:
-     1. Open Google Play Books application
-     2. Dismisses sync operation (if applicable)
-     3. Searches for a book title
-     4. Adds books to library if not already present
-     5. Opens 'My Library' contents
-     6. Opens selected  book
-     7. Gestures are performed to swipe between pages and pinch zoom in and out of a page
-     8. Selects a specified chapter based on page number from the navigation view
-     9. Selects a word in the centre of screen and adds a test note to the page
+    1. Open Google Play Books application
+    2. Dismisses sync operation (if applicable)
+    3. Searches for a book title
+    4. Adds books to library if not already present
+    5. Opens 'My Library' contents
+    6. Opens selected book
+    7. Gestures are performed to swipe between pages and pinch zoom in and out of a page
+    8. Selects a specified chapter based on page number from the navigation view
+    9. Selects a word in the centre of screen and adds a test note to the page
     10. Removes the test note from the page (clean up)
     11. Searches for the number of occurrences of a common word throughout the book
     12. Switches page styles from 'Day' to 'Night' to 'Sepia' and back to 'Day'

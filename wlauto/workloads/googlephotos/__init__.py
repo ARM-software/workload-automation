@@ -37,6 +37,7 @@ class Googlephotos(AndroidUxPerfWorkload):
     various tasks, such as browsing images, performing zooms, and post-processing the image.
 
     Test description:
+
     1. Four images are copied to the device
     2. The application is started in offline access mode
     3. Gestures are performed to pinch zoom in and out of the selected image

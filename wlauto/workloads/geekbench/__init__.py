@@ -94,7 +94,7 @@ class Geekbench(AndroidUiAutoBenchmark):
                   description=('If ``True`` the results file will not be pulled from the devices '
                                '/data/data/com.primatelabs.geekbench folder.  This allows the '
                                'workload to be run on unrooted devices and the results extracted '
-                               'manually later. ' )),
+                               'manually later.')),
     ]
 
     @property

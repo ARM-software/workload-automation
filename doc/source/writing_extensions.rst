@@ -161,8 +161,8 @@ In order for the binary to be obtained in this way, it must be stored in one of
 the locations scanned by the resource resolver in a directry structure
 ``<root>/bin/<abi>/<binary>`` (where ``root`` is the base resource location to
 be searched, e.g. ``~/.workload_automation/depencencies/<extension name>``, and
- ``<abi>`` is the ABI for which the exectuable has been compiled, as returned by
-  ``self.device.abi``).
+``<abi>`` is the ABI for which the exectuable has been compiled, as returned by
+``self.device.abi``).
 
 Once the path to the host-side binary has been obtained, it may be deployed using
 one of two methods of a ``Device`` instace -- ``install`` or ``install_if_needed``.
@@ -182,8 +182,8 @@ WA and will not try to re-install.
 
 Both of the above methods will return the path to the installed binary on the
 device. The executable should be invoked *only* via that path; do **not** assume
- that it will be in ``PATH`` on the target (or that the executable with the same
-  name in ``PATH`` is the version deployed by WA.
+that it will be in ``PATH`` on the target (or that the executable with the same
+name in ``PATH`` is the version deployed by WA.
 
 .. code:: python
 
