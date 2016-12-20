@@ -151,8 +151,8 @@ class Spec2000(Workload):
 
     speed_run_template = 'cd {datadir}; time ({launch_command})'
     rate_run_template = 'cd {datadir}; time ({loop}; wait)'
-    loop_template = 'for i in $(busybox seq 1 {threads}); do {launch_command} 1>/dev/null 2>&1 & done'
-    launch_template = 'busybox taskset {cpumask} {command} 1>/dev/null 2>&1'
+    loop_template = 'for i in $({busybox} seq 1 {threads}); do {launch_command} 1>/dev/null 2>&1 & done'
+    launch_template = '{busybox} taskset {cpumask} {command} 1>/dev/null 2>&1'
 
     timing_regex = re.compile(r'(?P<minutes>\d+)m(?P<seconds>[\d.]+)s\s+(?P<category>\w+)')
 
@@ -287,18 +287,19 @@ class Spec2000(Workload):
             if len(commandspecs) != 1:
                 raise AssertionError('Must be exactly one command spec specifed in speed mode.')
             spec = commandspecs[0]
-            launch_command = self.launch_template.format(command=spec.command, cpumask=spec.cpumask)
-            self.commands.append((name,
-                                  self.speed_run_template.format(datadir=spec.datadir,
-                                                                 launch_command=launch_command)))
+            launch_command = self.launch_template.format(busybox=self.device.busybox,
+                                                         command=spec.command, cpumask=spec.cpumask)
+            self.commands.append((name, self.speed_run_template.format(datadir=spec.datadir,
+                                                                       launch_command=launch_command)))
         elif self.mode == 'rate':
             loops = []
             for spec in commandspecs:
-                launch_command = self.launch_template.format(command=spec.command, cpumask=spec.cpumask)
-                loops.append(self.loop_template.format(launch_command=launch_command, threads=spec.threads))
-                self.commands.append((name,
-                                      self.rate_run_template.format(datadir=spec.datadir,
-                                                                    loop='; '.join(loops))))
+                launch_command = self.launch_template.format(busybox=self.device.busybox,
+                                                             command=spec.command, cpumask=spec.cpumask)
+                loops.append(self.loop_template.format(busybox=self.device.busybox,
+                                                       launch_command=launch_command, threads=spec.threads))
+                self.commands.append((name, self.rate_run_template.format(datadir=spec.datadir,
+                                                                          loop='; '.join(loops))))
         else:
             raise ValueError('Unexpected SPEC2000 mode: {}'.format(self.mode))  # Should never get here
 
