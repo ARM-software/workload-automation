@@ -75,7 +75,7 @@ class Dex2oatBenchmark(Workload):
             self.device.push_file(self.apk_file, on_device_apk)
 
     def run(self, context):
-        self.device.execute(self.command, self.run_timeout)
+        self.device.execute(self.command, self.run_timeout, as_root=self.device.is_rooted)
 
     def update_result(self, context):
         """
