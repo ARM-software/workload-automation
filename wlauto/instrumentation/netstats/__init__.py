@@ -16,7 +16,7 @@ from wlauto.utils.types import list_of_strings
 
 THIS_DIR = os.path.dirname(__file__)
 
-NETSTAT_REGEX = re.compile(r'I/(?P<tag>netstats-\d+)\(\s*\d*\): (?P<ts>\d+) '
+NETSTAT_REGEX = re.compile(r'I[\/ ](?P<tag>netstats-\d+).*?: (?P<ts>\d+) '
                            r'"(?P<package>[^"]+)" TX: (?P<tx>\S+) RX: (?P<rx>\S+)')
 
 
