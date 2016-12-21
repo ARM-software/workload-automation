@@ -1,6 +1,6 @@
 # This agenda specifies configuration that may be used for regression runs 
-# on big.LITTLE systems. This agenda will with a TC2 device configured as 
-# described in the documentation.
+# on big.LITTLE systems. This agenda will work with a TC2 device configured 
+# as described in the documentation.
 config:
         device: tc2
         run_name: big.LITTLE_regression
@@ -69,7 +69,7 @@ workloads:
         - id: b10
           name: smartbench
         - id: b11
-          name: sqlite
+          name: sqlitebm
         - id: b12
           name: vellamo
 
