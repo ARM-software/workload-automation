@@ -102,6 +102,14 @@ public class UiAutomation extends UxPerfUiAutomation {
             clickUiObject(BY_ID, packageID + "name", "android.widget.TextView");
             clickUiObject(BY_TEXT, "Use without an account", "android.widget.TextView", true);
 
+            //Some devices get popup asking for confirmation to not use backup.
+            UiObject keepBackupOff =
+            new UiObject(new UiSelector().textContains("Keep Off")
+                                         .className("android.widget.Button"));
+            if (keepBackupOff.exists()){
+                keepBackupOff.click();
+            }
+
             // On some devices the welcome views don't always appear so check
             // for the existence of the wa-working directory before attempting
             // to dismiss welcome views promoting app features
@@ -162,15 +170,14 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject accept =
             new UiObject(new UiSelector().description("Accept"));
         UiObject done =
-            new UiObject(new UiSelector().resourceId(packageID + "cpe_save_button"));
+            new UiObject(new UiSelector().resourceId(packageID + "cpe_save_button")
+                         .textContains("Done"));
 
-        // On some edit operations we can either confirm an edit with "Accept" or "DONE"
+        // On some edit operations we can either confirm an edit with "Accept", "DONE" or neither.
         if (accept.waitForExists(timeout)) {
             accept.click();
         } else if (done.waitForExists(timeout)) {
             done.click();
-        } else {
-            throw new UiObjectNotFoundException("Could not find \"Accept\" or \"DONE\" button.");
         }
 
         if (dontsave) {
@@ -270,13 +277,24 @@ public class UiAutomation extends UxPerfUiAutomation {
         if (editCol.waitForExists(timeout)) {
             editCol.click();
         } else {
-            throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
-                                                              "Color/Colour", "android.widget.RadioButton"));
+            UiObject adjustTool =
+                new UiObject(new UiSelector().resourceId(packageID + "cpe_adjustments_tool")
+                             .className("android.widget.ImageView"));
+            if (adjustTool.waitForExists(timeout)){
+                adjustTool.click();
+            } else {
+                throw new UiObjectNotFoundException(String.format("Could not find Color/Colour adjustment"));
+            }
         }
 
         UiObject seekBar =
-            getUiObjectByResourceId(packageID + "cpe_strength_seek_bar",
-                                    "android.widget.SeekBar");
+            new UiObject(new UiSelector().resourceId(packageID + "cpe_strength_seek_bar")
+                         .className("android.widget.SeekBar"));
+        if (!(seekBar.exists())){
+            seekBar =
+            new UiObject(new UiSelector().resourceIdMatches(".*/cpe_adjustments_section_slider")
+                         .className("android.widget.SeekBar").descriptionMatches("Colou?r"));
+        }
 
         while (it.hasNext()) {
             Map.Entry<String, PositionPair> pair = it.next();
