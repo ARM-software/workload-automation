@@ -35,7 +35,7 @@ class FilePoller(Instrument):
     parameters = [
         Parameter('sample_interval', kind=int, default=1000,
                   description="""The interval between samples in mS."""),
-        Parameter('files', kind=list_or_string,
+        Parameter('files', kind=list_or_string, mandatory=True,
                   description="""A list of paths to the files to be polled"""),
         Parameter('labels', kind=list_or_string,
                   description="""A list of lables to be used in the CSV output for
@@ -49,6 +49,8 @@ class FilePoller(Instrument):
     ]
 
     def validate(self):
+        if not self.files:
+            raise ConfigError('You must specify atleast one file to poll')
         if self.labels and any(['*' in f for f in self.files]):
             raise ConfigError('You cannot used manual labels with `*` wildcards')
 
