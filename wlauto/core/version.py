@@ -18,7 +18,7 @@ from collections import namedtuple
 
 VersionTuple = namedtuple('Version', ['major', 'minor', 'revision'])
 
-version = VersionTuple(2, 5, 0)
+version = VersionTuple(2, 6, 0)
 
 
 def get_wa_version():
