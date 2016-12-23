@@ -22,7 +22,7 @@ from wlauto import File, ExtensionLoader, Command, settings
 from wlauto.core.extension import Extension
 
 
-REMOTE_ASSETS_URL = 'https://github.com/ARM-software/wa-assets/raw/master/dependencies'
+REMOTE_ASSETS_URL = 'https://github.com/ARM-software/workload-automation-assets/raw/master/dependencies'
 
 
 class GetAssetsCommand(Command):

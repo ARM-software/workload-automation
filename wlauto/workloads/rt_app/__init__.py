@@ -49,13 +49,13 @@ class RtApp(Workload):
     The load is described using JSON-like config files. Below are a couple of simple
     examples.
 
+
+    Simple use case which creates a thread that run 1ms then sleep 9ms
+    until the use case is stopped with Ctrl+C:
+
     .. code-block:: json
 
         {
-            /*
-            * Simple use case which creates a thread that run 1ms then sleep 9ms
-            * until the use case is stopped with Ctrl+C
-            */
             "tasks" : {
                 "thread0" : {
                     "loop" : -1,
@@ -76,13 +76,13 @@ class RtApp(Workload):
             }
         }
 
+
+    Simple use case with 2 threads that runs for 10 ms and wake up each
+    other until the use case is stopped with Ctrl+C
+
     .. code-block:: json
 
         {
-            /*
-            * Simple use case with 2 threads that runs for 10 ms and wake up each
-            * other until the use case is stopped with Ctrl+C
-            */
             "tasks" : {
                 "thread0" : {
                     "loop" : -1,

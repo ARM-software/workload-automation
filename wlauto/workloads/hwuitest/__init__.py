@@ -40,6 +40,7 @@ class HWUITest(Workload):
                   allowed_values=["shadowgrid", "rectgrid", "oval"],
                   description="""
                   The test to run:
+
                      - ``'shadowgrid'``: creates a grid of rounded rects that
                        cast shadows, high CPU & GPU load
                      - ``'rectgrid'``: creates a grid of 1x1 rects

@@ -1,6 +1,228 @@
 =================================
 What's New in Workload Automation
 =================================
+-------------
+Version 2.6.0
+-------------
+
+ .. note:: Users who are currently using the GitHub master version of WA should
+           uninstall the existing version before upgrading to avoid potential issues.
+
+Additions:
+##########
+
+Workloads
+~~~~~~~~~
+- ``AdobeReader``: A workload that carries out following typical productivity
+  tasks. These include opening a file, performing various gestures and
+  zooms on screen and searching for a predefined set of strings.
+- ``octaned8``: A workload to run the binary (non-browser) version of the JS
+  benchmark Octane.
+- ``GooglePlayBooks``: A workload to perform standard productivity tasks with
+  Google Play Books. This workload performs various tasks, such as searching
+  for a book title online, browsing through a book, adding and removing notes,
+  word searching, and querying information about the book.
+- ``GooglePhotos``: A workload to perform standard productivity tasks with
+  Google Photos. Carries out various tasks, such as browsing images,
+  performing zooms, and post-processing the image.
+- ``GoogleSlides``: Carries out various tasks, such as creating a new
+  presentation, adding text, images, and shapes, as well as basic editing and
+  playing a slideshow.
+- ``Youtube``: The workload plays a video, determined by the ``video_source``
+  parameter. While the video is playing, some common actions such as video
+  seeking, pausing playback and navigating the comments section are performed.
+- ``Skype``: Replacement for the ``skypevideo`` workload. Logs into Skype
+  and initiates a voice or video call with a contact.
+
+Framework
+~~~~~~~~~
+- ``AndroidUxPerfWorkload``: Added a new workload class to encapsulate
+  functionality common to all uxperf workloads.
+- ``UxPerfUiAutomation``: Added class which contains methods specific to
+  UX performance
+  testing.
+- ``get-assets``: Added new script and command to retrieve external assets
+  for workloads
+
+Results Processors
+~~~~~~~~~~~~~~~~~~~
+- ``uxperf``: Parses device logcat for `UX_PERF` markers to produce performance
+  metrics for workload actions using specified instrumentation.
+
+Other
+~~~~~
+- ``State Detection``: Added feature to use visual state detection to
+  verify the state of a workload after setup and run.
+
+
+Fixes/Improvements:
+###################
+
+Documentation
+~~~~~~~~~~~~~~
+- ``Revent``: Added file structure to the documentation.
+- Clarified documentation regarding binary dependencies.
+- Updated documentation with ``create`` and ``get-assets`` commands.
+
+Instruments
+~~~~~~~~~~~~
+- ``sysfs_extractor``: Fixed error when `tar.gz` file already existed on device,
+  now overwrites.
+- ``cpufreq``: Fixed error when `tar.gz` file already existed on device, now
+  overwrites.
+- ``file-poller``:
+    - Improved csv output.
+    - Added error checking and reporting.
+    - Changed ``files`` to be a mandatory parameter.
+- ``fps``:
+    - Added a new parameter to fps instrument to specify the time period between
+      calls to ``dumpsys SurfaceFlinger --latency`` when collecting frame data.
+    - Added gfxinfo methods to obtain fps stats. Auto detects and uses appropriate
+      method via android version of device.
+    - Fixed issue with regex.
+    - Now handles empty frames correctly.
+- ``energy_model``: Ensures that the ``ui`` runtime parameter is only set for
+  ChromeOS devices.
+- ``ftrace``: Added support to handle traces collected by both WA and devlib.
+- ``Perf``: Updated 32bit binary file for little endian devices.
+
+Resource Getters
+~~~~~~~~~~~~~~~~
+- ``http_getter``: Now used to try and find executables files from a
+  provided ``remove_assets_url``.
+
+Result Processors
+~~~~~~~~~~~~~~~~~
+- ``cpu_states``: Fixes using stand-alone script with timeline option.
+
+Workloads
+~~~~~~~~~
+- ``antutu``: Fixed setting permissions of ``FINE_LOCATION`` on some devices.
+- ``bbench`` Fixed handling of missing results.
+- ``camerarecord``:
+    - Added frame stats collection through dumpsys gfxinfo.
+    - Added possibility to select slow_motion recording mode.
+- ``Geekbench``:
+    - Fixed output file listing causing pull failure.
+    - Added support for Geekbench 4.
+- ``recentfling``:
+    - Fixed issue when binaries were not uninstalled correctly.
+    - Scripts are now deployed via ``install()`` to ensure they are executable.
+    - Fixed handling of when a PID file is deleted before reaching processing
+      results stage.
+    - Added parameter to not start any apps before flinging.
+- ``rt-app``: Added camera recorder simulation.
+- ``sysbench``: Added arm64 binary.
+- ``Vellamo``: Fixed capitalization in part of UIAutomation to prevent
+  potential issues.
+- ``Spec2000``: Now uses WA deployed version of busybox.
+- ``NetStat``: Updated to support new default logcat format in Android 6.
+- ``Dex2oat``: Now uses root if available.
+
+Framework
+~~~~~~~~~
+- ``adb_shell``:
+    - Fixed issue when using single quoted command with ``adb_shell``.
+    - Correctly forward stderror to the caller for newer version of adb.
+- ``revent``
+    - Added ``-S`` argument to "record" command to automatically record a
+      screen capture after a recording is completed.
+    - Fixed issue with multiple iterations of a revent workload.
+    - Added ``-s`` option to executable to allow waiting on stdin.
+    - Removed timeout in command as ``-s`` is specified.
+    - Revent recordings can now be parsed and used within WA.
+    - Fixed issue when some recordings wouldn't be retrieved correctly.
+    - Timeout is now based on recording duration.
+    - Added `magic` and file version to revent files. Revent files should now
+      start with ``REVENT`` followed by the file format version.
+    - Added support for gamepad recording. This type of recording contains
+      only the events from a gamepad device (which is automatically
+      identified).
+    - A ``mode`` field has been added to the recording format to help
+      distinguish between the normal and gamepad recording types.
+    - Added ``-g`` option to ``record`` command to expose the gamepad recording
+      mode.
+    - The structure of revent code has undergone a major overhaul to improve
+      maintainability and robustness.
+    - More detailed ``info`` command output.
+    - Updated Makefile to support debug/production builds.
+- ``Android API``: Upgraded Android API level from 17 to 18.
+- ``uiautomator``: The window hierarchy is now dumped to a file when WA fails
+  on android devices.
+- ``AndroidDevice``:
+    - Added support for downgrading when installing an APK.
+    - Added a ``broadcast_media_mounted`` method to force a re-index of the
+      mediaserver cache for a specified directory.
+    - Now correctly handles ``None`` output for ``get_pids_of()`` when there are no
+      running processes with the specified name.
+    - Renamed the capture method from ``capture_view_hierachy`` to
+      ``capture_ui_hierarchy``.
+    - Changed the file extension of the capture file to ``.uix``
+    - Added ``-rf`` to delete_files to be consistent with ``LinuxDevice``.
+- ``LinuxDevice``: Now ensures output from both stdout and etderr is propagated in
+  the event of a DeviceError.
+- ``APKWorkload``:
+    - Now ensure APKs are replaced properly when reinstalling.
+    - Now checks APK version and ABI when installing.
+    - Fixed error on some devices when trying to grant permissions that were
+      already granted.
+    - Fixed some permissions not being granted.
+    - Now allows disabling the main activity launch in setup (required for some
+      apps).
+    - Added parameter to clear data on reset (default behaviour unchanged).
+    - Ignores exception for non-fatal permission grant failure.
+    - Fixed issue of multiple versions of the same workload failing to find their APK.
+    - Added method to ensure a valid apk version is used within a workload.
+    - Updated how APK resolution is performed to maximise likelihood of
+      a workload running.
+    - When ``check_apk`` is ``True`` will prefer host APK and if no suitable APK
+      is found, will use target APK if the correct version is present. When ``False``
+      will prefer target apk if it is a valid version otherwise will fallback to
+      host APK.
+- ``RunConfiguration``: Fixed disabling of instruments in workload specs.
+- ``Devices``:
+    - Added network connectivity check for devices.
+    - Subclasses can now set ``requires_network`` to ``True`` and network
+      connectivity check will be performed during ``setup()``.
+- ``Workloads``:
+    - Added network check methods.
+    - Fixed versions to be backwards compatible.
+    - Updated workload versions to match APK files.
+    - Fixed issues with calling super.
+- ``Assets``: Added script to retrieve external assets for workloads.
+- ``Execution``: Added a ``clean_up`` global config option to delete WA files from
+  devices.
+- ``Runner``: No longer takes a screenshot or dump of UI hierarchy for some errors when
+  unnecessary, e.g. host errors.
+- ``core``: Constraints and allowed values are now checked when set instead of
+  when validating.
+- ``FpsProcessor``:
+    - Added requirement on ``filtered_vsyncs_to_compose`` for ``total_vsync metric``.
+    - Removed misleading comment in class description.
+- ``BaseUiAutomation``: Added new Marker API so workloads generate start and end
+  markers with a string name.
+- ``AndroidUiAutoBenchmark``: Automatically checks for known package versions
+  that don't work well with AndroidUiAutoBenchmark workloads.
+
+Other
+~~~~~
+- Updated setup.py url to be a valid URI.
+- Fixed workload name in big.Little sample agenda.
+
+Incompatible changes
+####################
+
+Framework
+~~~~~~~~~
+- ``check_abi``: Now renamed to ``exact_abi``, is used to ensure that if enabled,
+  only an apk containing no native code or code designed for the devices primary
+  abi is use.
+- ``AndroidDevice``: Renamed ``supported_eabis`` property to ``supported_abis``
+  to be consistent with linux devices.
+
+Workloads
+~~~~~~~~~~
+- ``skypevideo``: Workload removed and replaced with ``skype`` workload.
 
 -------------
 Version 2.5.0

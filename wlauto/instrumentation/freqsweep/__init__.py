@@ -55,6 +55,7 @@ class FreqSweep(Instrument):
                    - label: Workload specs will be named
                      `{spec id}_{label}_{frequency}`. If a label is not
                      provided it will be named `sweep{sweep No.}`
+
                   Example sweep specification: ::
 
                       freq_sweep:

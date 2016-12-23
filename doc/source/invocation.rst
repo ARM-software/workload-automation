@@ -1,4 +1,5 @@
 .. _invocation:
+.. highlight:: none
 
 ========
 Commands
@@ -15,7 +16,7 @@ Individual sub-commands are discussed in detail below.
 run
 ---
 
-The most common sub-command you will use is ``run``. This will run specfied
+The most common sub-command you will use is ``run``. This will run specified
 workload(s) and process resulting output. This takes a single mandatory
 argument that specifies what you want WA to run. This could be either a
 workload name, or a path  to an "agenda" file that allows to specify multiple
@@ -24,7 +25,7 @@ section for details). Executing ::
 
         wa run -h
 
-Will display help for this subcommand that will look somehtign like this::
+Will display help for this subcommand that will look something like this::
 
         usage: run [-d DIR] [-f] AGENDA
 
@@ -47,13 +48,13 @@ Will display help for this subcommand that will look somehtign like this::
           --debug               Enable debug mode. Note: this implies --verbose.
           -d DIR, --output-directory DIR
                                 Specify a directory where the output will be
-                                generated. If the directoryalready exists, the script
+                                generated. If the directory already exists, the script
                                 will abort unless -f option (see below) is used,in
                                 which case the contents of the directory will be
-                                overwritten. If this optionis not specified, then
+                                overwritten. If this option is not specified, then
                                 wa_output will be used instead.
           -f, --force           Overwrite output directory if it exists. By default,
-                                the script will abort in thissituation to prevent
+                                the script will abort in this situation to prevent
                                 accidental data loss.
           -i ID, --id ID        Specify a workload spec ID from an agenda to run. If
                                 this is specified, only that particular spec will be
@@ -81,10 +82,74 @@ agenda file used to run the workloads along with any other device-specific
 configuration files used during execution.
 
 
+create
+------
+
+This can be used to create various WA-related objects, currently workloads, packages and agendas.
+The full set of options for this command are::
+
+    usage: wa create [-h] [-c CONFIG] [-v] [--debug] [--version]
+                     {workload,package,agenda} ...
+
+    positional arguments:
+      {workload,package,agenda}
+        workload            Create a new workload. By default, a basic workload
+                            template will be used but you can use options to
+                            specify a different template.
+        package             Create a new empty Python package for WA extensions.
+                            On installation, this package will "advertise" itself
+                            to WA so that Extensions with in it will be loaded by
+                            WA when it runs.
+        agenda              Create an agenda whit the specified extensions
+                            enabled. And parameters set to their default values.
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -c CONFIG, --config CONFIG
+                            specify an additional config.py
+      -v, --verbose         The scripts will produce verbose output.
+      --debug               Enable debug mode. Note: this implies --verbose.
+      --version             show program's version number and exit
+
+Use "wa create <object> -h" to see all the object-specific arguments. For example::
+
+        wa create agenda -h
+
+will display the relevant options that can be used to create an agenda. 
+
+get-assets
+----------
+
+This command can download external extension dependencies used by Workload Automation.
+It can be used to download assets for all available extensions or those specificity listed. 
+The full set of options for this command are::
+
+    usage: wa get-assets [-h] [-c CONFIG] [-v] [--debug] [--version] [-f]
+                         [--url URL] (-a | -e EXT [EXT ...])
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -c CONFIG, --config CONFIG
+                            specify an additional config.py
+      -v, --verbose         The scripts will produce verbose output.
+      --debug               Enable debug mode. Note: this implies --verbose.
+      --version             show program's version number and exit
+      -f, --force           Always fetch the assets, even if matching versions
+                            exist in local cache.
+      --url URL             The location from which to download the files. If not
+                            provided, config setting ``remote_assets_url`` will be
+                            used if available, else uses the default
+                            REMOTE_ASSETS_URL parameter in the script.
+      -a, --all             Download assets for all extensions found in the index.
+                            Cannot be used with -e.
+      -e EXT [EXT ...]      One or more extensions whose assets to download.
+                            Cannot be used with --all.
+
+
 list
 ----
 
-This lists all extensions of a particular type. For example ::
+This lists all extensions of a particular type. For example::
 
         wa list workloads
 
@@ -97,11 +162,11 @@ show
 
 This will show detailed information about an extension, including more in-depth
 description and any parameters/configuration that are available.  For example
-executing ::
+executing::
 
         wa show andebench
 
-will produce something like ::
+will produce something like::
 
 
         andebench
