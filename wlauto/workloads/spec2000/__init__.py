@@ -52,7 +52,7 @@ class Spec2000(Workload):
               in order for the results to be valid SPEC2000 results.
 
     .. note:: This workload does not attempt to generate results in an admissible SPEC format. No
-              metadata is provided (though some, but not all, of the required metdata is colleted
+              metadata is provided (though some, but not all, of the required metdata is collected
               by WA elsewhere). It is upto the user to post-process results to generated
               SPEC-admissible results file, if that is their intention.
 
@@ -62,7 +62,7 @@ class Spec2000(Workload):
     configuration (e.g. default compiler flags) with no tuning, and peak is specifically optimized for
     a system. Since this workload uses externally-built binaries, there is no way for WA to be sure
     what configuration is used -- the user is expected to keep track of that. Be aware that
-    base/peak also come with specfic requirements for the way workloads are run (e.g. how many instances
+    base/peak also come with specific requirements for the way workloads are run (e.g. how many instances
     on multi-core systems)::
 
         http://www.spec.org/cpu2000/docs/runrules.html#toc_3
@@ -80,7 +80,7 @@ class Spec2000(Workload):
     and "int" -- for each of the SPEC2000 categories. Under those, there is a sub-directory per benchmark.
     Each benchmark sub-directory contains three sub-sub-directorie:
 
-    - "cpus" contains a subdirector for each supported cpu (e.g. a15) with a single executable binary
+    - "cpus" contains a subdirectory for each supported cpu (e.g. a15) with a single executable binary
       for that cpu, in addition to a "generic" subdirectory that has not been optimized for a specific
       cpu and should run on any ARM system.
     - "data" contains all additional files (input, configuration, etc) that  the benchmark executable
@@ -89,7 +89,7 @@ class Spec2000(Workload):
       appropriate command line parameters. The name of the script must be in the format
       <benchmark name>[.<variant name>].sh, i.e. name of benchmark, optionally followed by variant
       name, followed by ".sh" extension. If there is more than one script, then all of them must
-      have  a variant; if there is only one script the it should not cotain a variant.
+      have  a variant; if there is only one script the it should not contain a variant.
 
     A typical bundle may look like this::
 
@@ -131,7 +131,7 @@ class Spec2000(Workload):
 
     parameters = [
         Parameter('benchmarks', kind=list_or_string,
-                  description='Specfiles the SPEC benchmarks to run.'),
+                  description='Specifies the SPEC benchmarks to run.'),
         Parameter('mode', kind=str, allowed_values=['speed', 'rate'], default='speed',
                   description='SPEC benchmarks can report either speed to execute or throughput/rate. '
                               'In the latter case, several "threads" will be spawned.'),
@@ -146,13 +146,13 @@ class Spec2000(Workload):
                   description='If set to ``True``, assets will be pushed to device even if they\'re already '
                               'present.'),
         Parameter('timeout', kind=int, default=20 * 60,
-                  description='Timemout, in seconds, for the execution of single spec test.'),
+                  description='Timeout, in seconds, for the execution of single spec test.'),
     ]
 
     speed_run_template = 'cd {datadir}; time ({launch_command})'
     rate_run_template = 'cd {datadir}; time ({loop}; wait)'
-    loop_template = 'for i in $(busybox seq 1 {threads}); do {launch_command} 1>/dev/null 2>&1 & done'
-    launch_template = 'busybox taskset {cpumask} {command} 1>/dev/null 2>&1'
+    loop_template = 'for i in $({busybox} seq 1 {threads}); do {launch_command} 1>/dev/null 2>&1 & done'
+    launch_template = '{busybox} taskset {cpumask} {command} 1>/dev/null 2>&1'
 
     timing_regex = re.compile(r'(?P<minutes>\d+)m(?P<seconds>[\d.]+)s\s+(?P<category>\w+)')
 
@@ -162,7 +162,7 @@ class Spec2000(Workload):
     def setup(self, context):
         cpus = self.device.core_names
         if not cpus:
-            raise WorkloadError('Device has not specifed CPU cores configruation.')
+            raise WorkloadError('Device has not specified CPU cores configuration.')
         cpumap = defaultdict(list)
         for i, cpu in enumerate(cpus):
             cpumap[cpu.lower()].append(i)
@@ -285,20 +285,21 @@ class Spec2000(Workload):
     def _build_command(self, name, commandspecs):
         if self.mode == 'speed':
             if len(commandspecs) != 1:
-                raise AssertionError('Must be exactly one command spec specifed in speed mode.')
+                raise AssertionError('Must be exactly one command spec specified in speed mode.')
             spec = commandspecs[0]
-            launch_command = self.launch_template.format(command=spec.command, cpumask=spec.cpumask)
-            self.commands.append((name,
-                                  self.speed_run_template.format(datadir=spec.datadir,
-                                                                 launch_command=launch_command)))
+            launch_command = self.launch_template.format(busybox=self.device.busybox,
+                                                         command=spec.command, cpumask=spec.cpumask)
+            self.commands.append((name, self.speed_run_template.format(datadir=spec.datadir,
+                                                                       launch_command=launch_command)))
         elif self.mode == 'rate':
             loops = []
             for spec in commandspecs:
-                launch_command = self.launch_template.format(command=spec.command, cpumask=spec.cpumask)
-                loops.append(self.loop_template.format(launch_command=launch_command, threads=spec.threads))
-                self.commands.append((name,
-                                      self.rate_run_template.format(datadir=spec.datadir,
-                                                                    loop='; '.join(loops))))
+                launch_command = self.launch_template.format(busybox=self.device.busybox,
+                                                             command=spec.command, cpumask=spec.cpumask)
+                loops.append(self.loop_template.format(busybox=self.device.busybox,
+                                                       launch_command=launch_command, threads=spec.threads))
+                self.commands.append((name, self.rate_run_template.format(datadir=spec.datadir,
+                                                                          loop='; '.join(loops))))
         else:
             raise ValueError('Unexpected SPEC2000 mode: {}'.format(self.mode))  # Should never get here
 
