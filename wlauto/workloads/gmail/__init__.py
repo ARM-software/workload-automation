@@ -23,7 +23,6 @@ class Gmail(AndroidUxPerfWorkload):
 
     name = 'gmail'
     package = 'com.google.android.gm'
-    min_apk_version = '6.7.128801648'
     activity = ''
     view = [package + '/com.google.android.gm.ConversationListActivityGmail',
             package + '/com.google.android.gm.ComposeActivityGmail']
@@ -39,6 +38,8 @@ class Gmail(AndroidUxPerfWorkload):
     5. Enter text in the Subject field
     6. Enter text in the Compose field
     7. Click the Send mail button
+
+    Known working APK version: 6.7.128801648
     '''
 
     parameters = [

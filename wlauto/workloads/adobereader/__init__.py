@@ -24,7 +24,6 @@ class AdobeReader(AndroidUxPerfWorkload):
 
     name = 'adobereader'
     package = 'com.adobe.reader'
-    min_apk_version = '16.1'
     activity = 'com.adobe.reader.AdobeReader'
     view = [package + '/com.adobe.reader.help.AROnboardingHelpActivity',
             package + '/com.adobe.reader.viewer.ARSplitPaneActivity',
@@ -45,6 +44,8 @@ class AdobeReader(AndroidUxPerfWorkload):
     3. Search test:
         Search ``document_name`` for each string in the ``search_string_list``
     4. Close the document
+
+    Known working APK version: 16.1
     '''
 
     default_search_strings = [
