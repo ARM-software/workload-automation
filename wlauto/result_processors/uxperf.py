@@ -185,7 +185,7 @@ class UxPerfParser(object):
         for action, timestamps in self.actions.iteritems():
             # nanosecond precision, but not necessarily nanosecond resolution
             # truncate to guarantee millisecond precision
-            ts_ms = tuple(int(ts[:-6]) for ts in timestamps)
+            ts_ms = tuple(int(ts) for ts in timestamps)
             if len(ts_ms) == 2:
                 start, finish = ts_ms
                 duration = finish - start
