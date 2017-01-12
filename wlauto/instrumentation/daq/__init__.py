@@ -266,7 +266,7 @@ class Daq(Instrument):
                     metric_name = '{}_{}'.format(port, metric)
                     context.result.add_metric(metric_name, round(value, 3), UNITS[metric])
                     self._results[key][metric_name] = round(value, 3)
-                energy = sum(data[metrics.index('power')]) * (self.sampling_rate / 1000000)
+                energy = sum(data[metrics.index('power')]) / self.sampling_rate
                 context.result.add_metric('{}_energy'.format(port), round(energy, 3), UNITS['energy'])
 
     def teardown(self, context):
