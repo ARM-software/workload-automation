@@ -87,7 +87,7 @@ device_config = dict(
 
 
 ####################################################################################################
-################################### Instrumention Configuration ####################################
+################################### Instrumentation Configuration ####################################
 ####################################################################################################
 # This defines the additionnal instrumentation that will be enabled during workload execution,     #
 # which in turn determines what additional data (such as /proc/interrupts content or Streamline    #
@@ -192,7 +192,7 @@ logging = {
 ####################################################################################################
 #################################### Instruments Configuration #####################################
 ####################################################################################################
-# Instrumention Configuration is related to specific instrument's settings. Some of the            #
+# Instrumentation Configuration is related to specific instrument's settings. Some of the            #
 # instrumentations require specific settings in order for them to work. These settings are         #
 # specified here.                                                                                  #
 # Note that these settings only take effect if the corresponding instrument is
