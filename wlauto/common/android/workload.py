@@ -146,7 +146,7 @@ class ApkWorkload(Workload):
                   is provided at the run phase).
     :install_timeout: Timeout for the installation of the APK. This may vary wildly based on
                       the size and nature of a specific APK, and so should be defined on
-                      per-workload basis.
+                        per-workload basis.
 
                       .. note:: To a lesser extent, this will also vary based on the the
                                 device and the nature of adb connection (USB vs Ethernet),
@@ -204,7 +204,13 @@ class ApkWorkload(Workload):
 
     def setup(self, context):  # pylint: disable=too-many-branches
         Workload.setup(self, context)
+        self.setup_workload_apk(context)
+        self.launch_application(context)
+        self.clean_process(context)
+        self.clear_logdata(context)
+    
 
+    def setup_workload_apk(self,context):
         # Get target version
         target_version = self.device.get_installed_package_version(self.package)
         if target_version:
@@ -267,12 +273,17 @@ class ApkWorkload(Workload):
         self.reset(context)
         self.apk_version = self.device.get_installed_package_version(self.package)
         context.add_classifiers(apk_version=self.apk_version)
-
+        
+    def launch_application(self,context):
         if self.launch_main:
             self.launch_package()  # launch default activity without intent data
-        self.device.execute('am kill-all')  # kill all *background* activities
-        self.device.clear_logcat()
 
+    def clear_logdata(self,context):
+        self.device.clear_logcat()
+    
+    def clean_process(self,context):
+        self.device.execute('am kill-all')  # kill all *background* activities
+    
     def force_install_apk(self, context, host_version):
         if host_version is None:
             raise ResourceError("force_install is 'True' but could not find APK on the host")
@@ -669,7 +680,6 @@ class AndroidUxPerfWorkload(AndroidUiAutoBenchmark):
         super(AndroidUxPerfWorkload, self).teardown(context)
         if self.clean_assets:
             self.delete_assets()
-
 
 class GameWorkload(ApkWorkload, ReventWorkload):
     """

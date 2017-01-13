@@ -30,6 +30,8 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public Bundle parameters;
     public String packageName;
+    protected String activityName;
+    protected String applaunchType;
     public String packageID;
 
     private int networkTimeoutSecs = 30;
@@ -43,8 +45,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         String recipient = parameters.getString("recipient");
 
         setScreenOrientation(ScreenOrientation.NATURAL);
+        clearDialogues();
 
-        clearFirstRunDialogues();
         clickNewMail();
         attachImage();
         setToField(recipient);
@@ -53,6 +55,47 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickSendButton();
 
         unsetScreenOrientation();
+    }
+
+    public void clearDialogues() throws Exception {
+        clearFirstRunDialogues();
+    }
+    
+    public void applaunchEnd() throws Exception {
+        applaunchType = parameters.getString("applaunch_type");
+        if (applaunchType.equals("launch_from_background")) {
+            pressHome();
+        }
+    }
+    
+    public void runApplaunchSetup() throws Exception {
+        parameters = getParams();
+        packageName = parameters.getString("package");
+        packageID = packageName + ":id/";
+        sleep(5);
+        setScreenOrientation(ScreenOrientation.NATURAL);
+        clearDialogues();
+        unsetScreenOrientation();
+        applaunchEnd();
+    }
+    
+    public void runApplaunchIteration() throws Exception {
+        parameters = getParams();
+        packageName = parameters.getString("package");
+        packageID = packageName + ":id/";
+        activityName = parameters.getString("launch_activity");
+
+        String iteration_count = parameters.getString("iteration_count");
+        String testTag = "applaunch" + iteration_count;
+        //Applaunch object for launching an application and measuring the time taken
+        AppLaunch applaunch = new AppLaunch(testTag, packageName, activityName, parameters);
+        //Widget on the screen that marks the application ready for user interaction
+        UiObject userBeginObject =
+            new UiObject(new UiSelector().className("android.widget.ImageButton"));
+        
+        applaunch.startLaunch();//Launch the application and start timer
+        applaunch.endLaunch(userBeginObject,20);//marks the end of launch and stops timer
+        applaunchEnd();
     }
 
     public void clearFirstRunDialogues() throws Exception {

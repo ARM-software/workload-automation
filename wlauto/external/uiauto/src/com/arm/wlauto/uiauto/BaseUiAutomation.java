@@ -89,14 +89,100 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
         public void start() {
             if (enabled) {
-                Log.d("UX_PERF", testTag + "_start " + System.nanoTime());
+                Log.d("UX_PERF", testTag + "_start " + System.currentTimeMillis());
             }
         }
 
         public void stop() throws Exception {
             if (enabled) {
-                Log.d("UX_PERF", testTag + "_end " + System.nanoTime());
+                Log.d("UX_PERF", testTag + "_end " + System.currentTimeMillis());
             }
+        }
+    }
+    /*
+     * AppLaunch class implements methods that facilitates launching applications from the uiautomator.
+     * ActionLogger class is instantiated within the class for measuring applaunch time.
+     * launchMain(): starts the application launch.
+     * launchEnd(UiObject,int): marks the end of application launch, to measure the correct applaunch end time.
+     *         @param Uiobject: is a workload specific object to search in the screen that potentially marks the beginning of user interaction.
+     *         @param int: speficies the number of seconds to wait for the object to appear on screen, throws Uiobject not found exception.
+    */
+    public class AppLaunch {
+
+        private String packageName;
+        private String activityName;
+        private String testTag;
+        public Bundle parameters;
+        public ActionLogger logger;
+        Process launch_p;
+
+        public AppLaunch(String testTag,
+                String packageName, 
+                String activityName, 
+                Bundle parameters) {
+            this.packageName = packageName;
+            this.activityName = activityName;
+            this.testTag= testTag;
+            this.parameters = parameters;
+            this.logger = new ActionLogger(testTag, parameters);
+        }
+        
+        //Exits the application by pressing Home button.
+        public void stopApplication(String applaunchType) throws Exception{
+            if(applaunchType.equals("launch_from_background")) {
+                pressHome();
+            }
+        }
+        
+        //Called by launchMain() to check if app launch is successful
+        public void launchValidate(Process launch_p) throws Exception {
+            launch_p.waitFor();
+            Integer exit_val = launch_p.exitValue();
+            if (exit_val != 0) {
+                throw new Exception("Application could not be launched");
+            }
+        }
+
+        //Marks the end of applaunch of the workload.
+        public void endLaunch(UiObject launch_end_resource, int launch_timeout) throws Exception{
+            waitObject(launch_end_resource, launch_timeout);
+            logger.stop();
+            launch_p.destroy();
+        }
+
+
+        //Launches the application.
+        public void launchMain() throws Exception{
+            if(activityName.equals("None")) {
+                launch_p = Runtime.getRuntime().exec(String.format("am start %s",
+                                packageName));
+            }
+            else {
+                launch_p = Runtime.getRuntime().exec(String.format("am start -n %s/%s",
+                                packageName, activityName));
+            }
+
+            launchValidate(launch_p);
+
+        }
+        //Launches the Skype application
+        public void launchMain(String actionName, String dataURI) throws Exception{
+            launch_p = Runtime.getRuntime().exec(String.format("am start -a %s -d %s",
+                                actionName, dataURI));
+
+            launchValidate(launch_p);
+        }
+        
+        //Beginning of application launch for Skype
+        public void startLaunch(String actionName, String dataURI) throws Exception{
+            logger.start();
+            launchMain(actionName, dataURI);
+        }
+        
+        //Beginning of application launch
+        public void startLaunch() throws Exception{
+            logger.start();
+            launchMain();
         }
     }
 
@@ -226,6 +312,10 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
     public void pressEnter() {
         UiDevice.getInstance().pressEnter();
+    }
+
+    public void pressHome() {
+        UiDevice.getInstance().pressHome();
     }
 
     public void pressBack() {

@@ -35,6 +35,8 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public Bundle parameters;
     public String packageName;
+    protected String activityName;
+    protected String applaunchType;
     public String packageID;
 
     public static final String ACTION_VOICE = "voice";
@@ -48,8 +50,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         packageName = parameters.getString("package");
         packageID = packageName + ":id/";
 
-        String loginName = parameters.getString("my_id");
-        String loginPass = parameters.getString("my_pwd");
         String contactName = parameters.getString("name").replace("0space0", " ");
         int callDuration = Integer.parseInt(parameters.getString("duration"));
         String callType = parameters.getString("action");
@@ -62,8 +62,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         runWatchers();
 
         // Run tests
-        handleLoginScreen(loginName, loginPass);
-        dismissUpdatePopupIfPresent();
+        clearDialogues();
         searchForContact(contactName);
 
         if (ACTION_VOICE.equalsIgnoreCase(callType)) {
@@ -74,6 +73,57 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         removeWatcher("infoPopUpWatcher");
         unsetScreenOrientation();
+    }
+    
+    public void clearDialogues() throws Exception {
+        String loginName = parameters.getString("my_id");
+        String loginPass = parameters.getString("my_pwd");
+        handleLoginScreen(loginName, loginPass);
+        dismissUpdatePopupIfPresent();
+    }
+
+    public void applaunchEnd() throws Exception {
+        applaunchType = parameters.getString("applaunch_type");
+        if (applaunchType.equals("launch_from_background")) {
+            pressHome();
+        }
+    }
+    
+    public void runApplaunchSetup() throws Exception {
+        parameters = getParams();
+        packageName = parameters.getString("package");
+        packageID = packageName + ":id/";
+        sleep(5);
+        setScreenOrientation(ScreenOrientation.NATURAL);
+        clearDialogues();
+        unsetScreenOrientation();
+        applaunchEnd();
+    }
+    
+    public void runApplaunchIteration() throws Exception {
+        parameters = getParams();
+        packageName = parameters.getString("package");
+        packageID = packageName + ":id/";
+        activityName = parameters.getString("launch_activity");
+        String actionName = "android.intent.action.VIEW"; //required for launching skype
+        String dataURI = "skype:dummy?dummy"; // required for launching skype
+
+        String iteration_count = parameters.getString("iteration_count");
+        String testTag = "applaunch" + iteration_count;
+        //Applaunch object for launching an application and measuring the time taken
+        AppLaunch applaunch = new AppLaunch(testTag, packageName, activityName, parameters);
+        //Widget on the screen that marks the application ready for user interaction
+        UiObject userBeginObject =
+            new UiObject(new UiSelector().resourceId(packageID + "menu_search"));
+        
+        UiWatcher videoPopupWatcher = videoPopupWatcher();
+        registerWatcher("videoPopupwatcher", videoPopupWatcher);
+        runWatchers();
+
+        applaunch.startLaunch(actionName, dataURI);//Launch the appl;ication and start timer 
+        applaunch.endLaunch(userBeginObject,10);//marks the end of launch and stops timer
+        applaunchEnd();
+
     }
 
     public void handleLoginScreen(String username, String password) throws Exception {
@@ -150,6 +200,28 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
     }
 
+    // Creates a watcher for when a pop up dialog appears with a dismiss button.
+    private UiWatcher videoPopupWatcher() throws Exception {
+        UiWatcher infoPopUpWatcher = new UiWatcher() {
+            @Override
+            public boolean checkForCondition() {
+                UiObject gotitButton =
+                    new UiObject(new UiSelector().textContains("GOT IT"));
+
+                if (gotitButton.exists()) {
+                    try {
+                        gotitButton.click();
+                    } catch (UiObjectNotFoundException e) {
+                        e.printStackTrace();
+                    }
+
+                    return gotitButton.waitUntilGone(TimeUnit.SECONDS.toMillis(10));
+                }
+                return false;
+            }
+        };
+        return infoPopUpWatcher;
+    }
     // Creates a watcher for when a pop up dialog appears with a dismiss button.
     private UiWatcher createInfoPopUpWatcher() throws Exception {
         UiWatcher infoPopUpWatcher = new UiWatcher() {
