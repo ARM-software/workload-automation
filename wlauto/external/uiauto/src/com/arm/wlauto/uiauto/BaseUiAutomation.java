@@ -89,13 +89,13 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
         public void start() {
             if (enabled) {
-                Log.d("UX_PERF", testTag + "_start " + System.nanoTime());
+                Log.d("UX_PERF", testTag + "_start " + System.currentTimeMillis());
             }
         }
 
         public void stop() throws Exception {
             if (enabled) {
-                Log.d("UX_PERF", testTag + "_end " + System.nanoTime());
+                Log.d("UX_PERF", testTag + "_end " + System.currentTimeMillis());
             }
         }
     }
@@ -227,6 +227,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     public void pressEnter() {
         UiDevice.getInstance().pressEnter();
     }
+
 
     public void pressBack() {
         UiDevice.getInstance().pressBack();
