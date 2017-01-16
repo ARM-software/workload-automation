@@ -21,6 +21,7 @@ from wlauto import Workload, AndroidBenchmark, AndroidUxPerfWorkload, UiAutomato
 from wlauto import Parameter
 from wlauto import ExtensionLoader
 from wlauto import File
+from wlauto import settings
 from wlauto.exceptions import ConfigError
 from wlauto.utils.android import ApkInfo
 
@@ -89,11 +90,6 @@ class UxperfApplaunch(Workload):
     supported_platforms = ['android']
 
     parameters = [
-        Parameter('markers_enabled', kind=bool, default=False,
-                  description="""
-                  If ``True``, UX_PERF action markers will be emitted to
-                  logcat during the test run.
-                  """),
         Parameter('workload_name', kind=str,
                   description='Name of the uxperf workload to launch',
                   mandatory=True),
@@ -113,11 +109,16 @@ class UxperfApplaunch(Workload):
                   description="""
                   Number of iterations of the application launch
                   """),
+        Parameter('markers_enabled', kind=bool, default=False,
+                  description="""
+                  If ``True``, UX_PERF action markers will be emitted to
+                  logcat during the test run.
+                  """),
     ]
 
     def __init__(self, device, **kwargs):
         super(UxperfApplaunch, self).__init__(device, **kwargs)
-        loader = ExtensionLoader()
+        loader = ExtensionLoader(packages=settings.extension_packages, paths=settings.extension_paths)
         self.workload_params['markers_enabled'] = self.markers_enabled
         self.workload = loader.get_workload(self.workload_name, device,
                                             **self.workload_params)
@@ -130,8 +131,6 @@ class UxperfApplaunch(Workload):
                 'launch_activity'] = self.workload.activity
         else:
             self.workload.uiauto_params['launch_activity'] = "None"
-        self.workload.uiauto_params[
-            'markers_enabled'] = self.markers_enabled
         self.workload.uiauto_params['applaunch_type'] = self.applaunch_type
         self.workload.uiauto_params['applaunch_iterations'] = self.applaunch_iterations
 
