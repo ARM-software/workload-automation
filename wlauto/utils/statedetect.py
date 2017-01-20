@@ -136,9 +136,6 @@ def verify_state(screenshot_file, state_defs_path, workload_phase):
     with open(statedefs_file) as fh:
         state_definitions = yaml.load(fh)
 
-    # run a match on the screenshot
-    matched_state = match_state(screenshot_file, state_defs_path, state_definitions)
-
     # find what the expected state is for the given workload phase
     expected_state = None
     for phase in state_definitions["workload_phases"]:
@@ -147,5 +144,8 @@ def verify_state(screenshot_file, state_defs_path, workload_phase):
 
     if expected_state is None:
         raise StateDefinitionError("Phase not defined")
+
+    # run a match on the screenshot
+    matched_state = match_state(screenshot_file, state_defs_path, state_definitions)
 
     return expected_state == matched_state
