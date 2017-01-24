@@ -550,11 +550,10 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         props['android_id'] = self.get_android_id()
         self._update_build_properties(props)
 
-        dumpsys_target_file = self.path.join(self.working_directory, 'window.dumpsys')
         dumpsys_host_file = os.path.join(context.host_working_directory, 'window.dumpsys')
-        self.execute('{} > {}'.format('dumpsys window', dumpsys_target_file))
-        self.pull_file(dumpsys_target_file, dumpsys_host_file)
-        context.add_run_artifact('dumpsys_window', dumpsys_host_file, 'meta')
+        with open(dumpsys_host_file, 'w') as wfh:
+            wfh.write(self.execute('dumpsys window'))
+            context.add_run_artifact('dumpsys_window', dumpsys_host_file, 'meta')
 
         prop_file = os.path.join(context.host_working_directory, 'android-props.json')
         with open(prop_file, 'w') as wfh:
