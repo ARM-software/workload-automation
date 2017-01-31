@@ -60,6 +60,16 @@ class ReventCommand(Command):
         self.device.connect()
         self.device.initialize(context)
 
+        # Only install vsync service on android
+        if self.device.platform is 'android':
+            self.logger.debug("Installing HelloJni for vsync service")
+            host_HelloJni_apk = context.resolver.get(Executable(NO_ONE, self.device.abi, 'HelloJni.apk'))
+            self.target_HelloJni = self.device.install_if_needed(host_HelloJni_apk)
+            result = self.device.execute('dumpsys activity services | grep "ChoreoService"', check_exit_code=False)
+            if not result or 'com.example.hellojni/.ChoreoService' not in result:
+                self.device.execute('am startservice com.example.hellojni/.ChoreoService')
+
+        # Install revent
         host_binary = context.resolver.get(Executable(NO_ONE, self.device.abi, 'revent'))
         self.target_binary = self.device.install_executable(host_binary)
 
@@ -149,7 +159,8 @@ class RecordCommand(ReventCommand):
         self.logger.info("Press Enter when you are ready to record...")
         raw_input("")
         gamepad_flag = '-g ' if args.gamepad else ''
-        command = "{} record {}-s {}".format(self.target_binary, gamepad_flag, revent_file)
+        vsync_flag = '-V ' if self.device.platform is 'android' else ''
+        command = "{} record {}{}-s {}".format(self.target_binary, gamepad_flag, vsync_flag, revent_file)
         self.device.kick_off(command)
 
         self.logger.info("Press Enter when you have finished recording...")
@@ -195,7 +206,8 @@ class ReplayCommand(ReventCommand):
             self.device.execute('monkey -p {} -c android.intent.category.LAUNCHER 1'.format(args.package))
 
         self.logger.info("Replaying recording")
-        command = "{} replay {}".format(self.target_binary, revent_file)
+        vsync_flag = '-V ' if self.device.platform is 'android' else ''
+        command = "{} replay {}{}".format(self.target_binary, vsync_flag, revent_file)
         recording = ReventRecording(args.revent)
         timeout = ceil(recording.duration) + 30
         recording.close()

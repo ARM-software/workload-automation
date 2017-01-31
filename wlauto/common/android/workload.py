@@ -482,6 +482,7 @@ class ReventWorkload(Workload):
             Workload.__init__(self, device, **kwargs)
         devpath = self.device.path
         self.on_device_revent_binary = devpath.join(self.device.binaries_directory, 'revent')
+        self.on_device_HelloJni_apk = devpath.join(self.device.binaries_directory, 'HelloJni.apk')
         self.setup_timeout = kwargs.get('setup_timeout', None)
         self.run_timeout = kwargs.get('run_timeout', None)
         self.revent_setup_file = None
@@ -494,6 +495,7 @@ class ReventWorkload(Workload):
             state_detector.check_match_state_dependencies()
 
     def setup(self, context):
+        self.device.killall('revent', signal='SIGKILL')
         self.revent_setup_file = context.resolver.get(ReventFile(self, 'setup'))
         self.revent_run_file = context.resolver.get(ReventFile(self, 'run'))
         devpath = self.device.path
@@ -508,13 +510,24 @@ class ReventWorkload(Workload):
         self.run_timeout = self.run_timeout or default_run_timeout
 
         Workload.setup(self, context)
-        self.device.killall('revent')
-        command = '{} replay {}'.format(self.on_device_revent_binary, self.on_device_setup_revent)
+        if self.device.platform is 'android':
+            result = self.device.execute('dumpsys activity services | grep "ChoreoService"',
+                                         check_exit_code=False)
+            if not result or 'com.example.hellojni/.ChoreoService' not in result:
+                self.logger.debug('Starting VSync Service')
+                self.device.execute('am startservice com.example.hellojni/.ChoreoService')
+                time.sleep(5)  # Allow time for service to start
+        vsync_flag = '-V ' if self.device.platform is 'android' else ''
+        command = '{} replay {}{}'.format(self.on_device_revent_binary, vsync_flag, self.on_device_setup_revent)
         self.device.execute(command, timeout=self.setup_timeout)
 
     def run(self, context):
-        command = '{} replay {}'.format(self.on_device_revent_binary, self.on_device_run_revent)
+        if self.device.platform is 'android':
+            self.device.execute('am startservice com.example.hellojni/.ChoreoService')
+            time.sleep(5)  # Allow time for service to start
         self.logger.debug('Replaying {}'.format(os.path.basename(self.on_device_run_revent)))
+        vsync_flag = '-V ' if self.device.platform is 'android' else ''
+        command = '{} replay {}{}'.format(self.on_device_revent_binary, vsync_flag, self.on_device_run_revent)
         self.device.execute(command, timeout=self.run_timeout)
         self.logger.debug('Replay completed.')
 
@@ -523,6 +536,7 @@ class ReventWorkload(Workload):
 
     def teardown(self, context):
         self.device.killall('revent')
+        self.device.killall("com.example.hellojni")
         self.device.delete_file(self.on_device_setup_revent)
         self.device.delete_file(self.on_device_run_revent)
 
@@ -533,6 +547,10 @@ class ReventWorkload(Workload):
             message = '{} does not exist. '.format(revent_binary)
             message += 'Please build revent for your system and place it in that location'
             raise WorkloadError(message)
+        if self.device.platform is 'android':
+            HelloJni_APK = context.resolver.get(Executable(NO_ONE, self.device.abi, 'HelloJni.apk'))
+            if not os.path.isfile(HelloJni_APK):
+                message = '{} does not exist. '.format(HelloJni_APK)
         if not self.revent_setup_file:
             # pylint: disable=too-few-format-args
             message = '{0}.setup.revent file does not exist, Please provide one for your device, {0}'.format(self.device.name)
@@ -543,6 +561,8 @@ class ReventWorkload(Workload):
             raise WorkloadError(message)
 
         self.on_device_revent_binary = self.device.install_executable(revent_binary)
+        if self.device.platform is 'android':
+            self.on_device_HelloJni_apk = self.device.install_if_needed(HelloJni_APK)
         self.device.push_file(self.revent_run_file, self.on_device_run_revent)
         self.device.push_file(self.revent_setup_file, self.on_device_setup_revent)
 
