@@ -16,6 +16,7 @@
 package com.arm.wlauto.uiauto.adobereader;
 
 import android.os.Bundle;
+import android.util.Log;
 
 // Import the uiautomator libraries
 import com.android.uiautomator.core.UiObject;
@@ -23,6 +24,8 @@ import com.android.uiautomator.core.UiObjectNotFoundException;
 import com.android.uiautomator.core.UiSelector;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
+import com.arm.wlauto.uiauto.ApplaunchInterface;
+import com.arm.wlauto.uiauto.UiAutoUtils;
 
 import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
 import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
@@ -34,33 +37,52 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public class UiAutomation extends UxPerfUiAutomation {
-
-    protected Bundle parameters;
-    protected String packageName;
-    protected String packageID;
+public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterface {
 
     private long networkTimeout =  TimeUnit.SECONDS.toMillis(20);
     private long searchTimeout =  TimeUnit.SECONDS.toMillis(20);
 
     public void runUiAutomation() throws Exception {
         parameters = getParams();
-        packageName = parameters.getString("package");
-        packageID = packageName + ":id/";
 
         String filename = parameters.getString("filename").replace("0space0", " ");
         String[] searchStrings =
             parameters.getString("search_string_list").replace("0space0", " ").split("0newline0");
 
         setScreenOrientation(ScreenOrientation.NATURAL);
+        runApplicationInitialization();
 
-        dismissWelcomeView();
         openFile(filename);
         gesturesTest();
         searchPdfTest(searchStrings);
         exitDocument();
 
         unsetScreenOrientation();
+    }
+    
+    // Get application parameters and clear the initial run dialogues of the application launch.
+    public void runApplicationInitialization() throws Exception {
+        getPackageParameters();
+        dismissWelcomeView();
+    }
+    
+    // Sets the UiObject that marks the end of the application launch.
+    public UiObject getLaunchEndObject() {
+        UiObject launchEndObject = new UiObject(new UiSelector().textContains("RECENT")
+                                         .className("android.widget.TextView"));
+        return launchEndObject;
+    }
+    
+    // Returns the launch command for the application.
+    public String getLaunchCommand() {
+        String launch_command;
+        launch_command = UiAutoUtils.createLaunchCommand(parameters);
+        return launch_command;
+    }
+    
+    // Pass the workload parameters, used for applaunch
+    public void setWorkloadParameters(Bundle workload_parameters) {
+        parameters = workload_parameters;
     }
 
     private void dismissWelcomeView() throws Exception {
