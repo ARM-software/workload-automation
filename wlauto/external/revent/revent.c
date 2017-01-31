@@ -711,7 +711,7 @@ int init_general_input_devices(input_devices_t *devices)
 	uint32_t num, i, path_len;
 	char paths[INPDEV_MAX_DEVICES][INPDEV_MAX_PATH];
 	int fds[INPDEV_MAX_DEVICES];
-	int max_fd;
+	int max_fd = 0;
 
 	num = 0;
 	for(i = 0; i < INPDEV_MAX_DEVICES; ++i) {
