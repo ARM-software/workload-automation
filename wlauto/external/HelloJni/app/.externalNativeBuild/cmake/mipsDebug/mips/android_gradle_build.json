@@ -1,0 +1,41 @@
+
+{
+	"buildFiles" : 
+	[
+		"/data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/src/main/cpp/CMakeLists.txt"
+	],
+	"cFileExtensions" : [ "c" ],
+	"cleanCommands" : 
+	[
+		"/data/marc/Software/android-sdk-linux/cmake/3.6.3155560/bin/cmake --build /data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/mipsDebug/mips --target clean"
+	],
+	"libraries" : 
+	{
+		"hello-jni-Debug-mips" : 
+		{
+			"abi" : "mips",
+			"artifactName" : "hello-jni",
+			"buildCommand" : "/data/marc/Software/android-sdk-linux/cmake/3.6.3155560/bin/cmake --build /data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/mipsDebug/mips --target hello-jni",
+			"buildType" : "debug",
+			"files" : 
+			[
+				
+				{
+					"flags" : "  -target mipsel-none-linux-android -gcc-toolchain /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/mipsel-linux-android-4.9/prebuilt/linux-x86_64 --sysroot=/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-mips -Dhello_jni_EXPORTS  -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -mips32 -Wa,--noexecstack -Wformat -Werror=format-security -g -DANDROID -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -mips32 -Wa,--noexecstack -Wformat -Werror=format-security  -O0 -fno-limit-debug-info -O0 -fno-limit-debug-info  -fPIC      -c ",
+					"src" : "/data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/src/main/cpp/hello-jni.c",
+					"workingDirectory" : "/data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/mipsDebug/mips"
+				}
+			],
+			"output" : "/data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/build/intermediates/cmake/mips/debug/obj/mips/libhello-jni.so",
+			"toolchain" : "523690286300862196"
+		}
+	},
+	"toolchains" : 
+	{
+		"523690286300862196" : 
+		{
+			"cCompilerExecutable" : "/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/clang",
+			"cppCompilerExecutable" : "/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++"
+		}
+	}
+}

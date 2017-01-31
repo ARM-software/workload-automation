@@ -1,0 +1,206 @@
+The target system is: Android - 19 - armv5te
+The host system is: Linux - 3.13.0-95-generic - x86_64
+Determining if the C compiler works passed with the following output:
+Change Dir: /data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/armRelease/armeabi/CMakeFiles/CMakeTmp
+
+Run Build Command:"/data/marc/Software/android-sdk-linux/cmake/3.6.3155560/bin/ninja" "cmTC_d9407"
+[1/2] Building C object CMakeFiles/cmTC_d9407.dir/testCCompiler.c.o
+[2/2] Linking C executable cmTC_d9407
+
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: /data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/armRelease/armeabi/CMakeFiles/CMakeTmp
+
+Run Build Command:"/data/marc/Software/android-sdk-linux/cmake/3.6.3155560/bin/ninja" "cmTC_a33b3"
+[1/2] Building C object CMakeFiles/cmTC_a33b3.dir/CMakeCCompilerABI.c.o
+[2/2] Linking C executable cmTC_a33b3
+Android clang version 3.8.256229  (based on LLVM 3.8.256229)
+Target: armv5te-none-linux-android
+Thread model: posix
+InstalledDir: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin
+Found candidate GCC installation: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x
+Selected GCC installation: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x
+Candidate multilib: .;@m32
+Selected multilib: .;@m32
+ "/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/bin/ld" --sysroot=/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm -pie -z relro -X --build-id --eh-frame-hdr -m armelf_linux_eabi -dynamic-linker /system/bin/linker -o cmTC_a33b3 /data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib/crtbegin_dynamic.o -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib/../lib -L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib -L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib --build-id --warn-shared-textrel --fatal-warnings --no-undefined -z noexecstack -z relro -z now --gc-sections -z nocopyreloc --build-id --warn-shared-textrel --fatal-warnings --no-undefined -z noexecstack -z relro -z now --gc-sections -z nocopyreloc CMakeFiles/cmTC_a33b3.dir/CMakeCCompilerABI.c.o -lgcc -ldl -lc -lgcc -ldl /data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib/crtend_android.o
+
+
+Parsed C implicit link information from above output:
+  link line regex: [^( *|.*[/\])(arm-linux-androideabi-ld|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: /data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/armRelease/armeabi/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command:"/data/marc/Software/android-sdk-linux/cmake/3.6.3155560/bin/ninja" "cmTC_a33b3"]
+  ignore line: [[1/2] Building C object CMakeFiles/cmTC_a33b3.dir/CMakeCCompilerABI.c.o]
+  ignore line: [[2/2] Linking C executable cmTC_a33b3]
+  ignore line: [Android clang version 3.8.256229  (based on LLVM 3.8.256229)]
+  ignore line: [Target: armv5te-none-linux-android]
+  ignore line: [Thread model: posix]
+  ignore line: [InstalledDir: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin]
+  ignore line: [Found candidate GCC installation: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x]
+  ignore line: [Selected GCC installation: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x]
+  ignore line: [Candidate multilib: .]
+  ignore line: [@m32]
+  ignore line: [Selected multilib: .]
+  ignore line: [@m32]
+  link line: [ "/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/bin/ld" --sysroot=/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm -pie -z relro -X --build-id --eh-frame-hdr -m armelf_linux_eabi -dynamic-linker /system/bin/linker -o cmTC_a33b3 /data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib/crtbegin_dynamic.o -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib/../lib -L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib -L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib --build-id --warn-shared-textrel --fatal-warnings --no-undefined -z noexecstack -z relro -z now --gc-sections -z nocopyreloc --build-id --warn-shared-textrel --fatal-warnings --no-undefined -z noexecstack -z relro -z now --gc-sections -z nocopyreloc CMakeFiles/cmTC_a33b3.dir/CMakeCCompilerABI.c.o -lgcc -ldl -lc -lgcc -ldl /data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib/crtend_android.o]
+    arg [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/bin/ld] ==> ignore
+    arg [--sysroot=/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm] ==> ignore
+    arg [-pie] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [-X] ==> ignore
+    arg [--build-id] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [-m] ==> ignore
+    arg [armelf_linux_eabi] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/system/bin/linker] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTC_a33b3] ==> ignore
+    arg [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib/crtbegin_dynamic.o] ==> ignore
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x]
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib/../lib] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib/../lib]
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib]
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib]
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib]
+    arg [--build-id] ==> ignore
+    arg [--warn-shared-textrel] ==> ignore
+    arg [--fatal-warnings] ==> ignore
+    arg [--no-undefined] ==> ignore
+    arg [-znoexecstack] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [-znow] ==> ignore
+    arg [--gc-sections] ==> ignore
+    arg [-znocopyreloc] ==> ignore
+    arg [--build-id] ==> ignore
+    arg [--warn-shared-textrel] ==> ignore
+    arg [--fatal-warnings] ==> ignore
+    arg [--no-undefined] ==> ignore
+    arg [-znoexecstack] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [-znow] ==> ignore
+    arg [--gc-sections] ==> ignore
+    arg [-znocopyreloc] ==> ignore
+    arg [CMakeFiles/cmTC_a33b3.dir/CMakeCCompilerABI.c.o] ==> ignore
+    arg [-lgcc] ==> lib [gcc]
+    arg [-ldl] ==> lib [dl]
+    arg [-lc] ==> lib [c]
+    arg [-lgcc] ==> lib [gcc]
+    arg [-ldl] ==> lib [dl]
+    arg [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib/crtend_android.o] ==> ignore
+  remove lib [gcc]
+  remove lib [gcc]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib/../lib] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/arm-linux-androideabi/lib]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/arm-linux-androideabi/lib]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib]
+  implicit libs: [dl;c;dl]
+  implicit dirs: [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x;/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/arm-linux-androideabi/lib;/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib]
+  implicit fwks: []
+
+
+Determining if the CXX compiler works passed with the following output:
+Change Dir: /data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/armRelease/armeabi/CMakeFiles/CMakeTmp
+
+Run Build Command:"/data/marc/Software/android-sdk-linux/cmake/3.6.3155560/bin/ninja" "cmTC_e34c0"
+[1/2] Building CXX object CMakeFiles/cmTC_e34c0.dir/testCXXCompiler.cxx.o
+[2/2] Linking CXX executable cmTC_e34c0
+
+
+Detecting CXX compiler ABI info compiled with the following output:
+Change Dir: /data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/armRelease/armeabi/CMakeFiles/CMakeTmp
+
+Run Build Command:"/data/marc/Software/android-sdk-linux/cmake/3.6.3155560/bin/ninja" "cmTC_8ff05"
+[1/2] Building CXX object CMakeFiles/cmTC_8ff05.dir/CMakeCXXCompilerABI.cpp.o
+[2/2] Linking CXX executable cmTC_8ff05
+Android clang version 3.8.256229  (based on LLVM 3.8.256229)
+Target: armv5te-none-linux-android
+Thread model: posix
+InstalledDir: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin
+Found candidate GCC installation: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x
+Selected GCC installation: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x
+Candidate multilib: .;@m32
+Selected multilib: .;@m32
+ "/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/bin/ld" --sysroot=/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm -pie -z relro -X --build-id --eh-frame-hdr -m armelf_linux_eabi -dynamic-linker /system/bin/linker -o cmTC_8ff05 /data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib/crtbegin_dynamic.o -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib/../lib -L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib -L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib --build-id --warn-shared-textrel --fatal-warnings --no-undefined -z noexecstack -z relro -z now --gc-sections -z nocopyreloc --build-id --warn-shared-textrel --fatal-warnings --no-undefined -z noexecstack -z relro -z now --gc-sections -z nocopyreloc CMakeFiles/cmTC_8ff05.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc -lgcc -ldl -lc -lgcc -lgcc -ldl /data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib/crtend_android.o
+
+
+Parsed CXX implicit link information from above output:
+  link line regex: [^( *|.*[/\])(arm-linux-androideabi-ld|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: /data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/armRelease/armeabi/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command:"/data/marc/Software/android-sdk-linux/cmake/3.6.3155560/bin/ninja" "cmTC_8ff05"]
+  ignore line: [[1/2] Building CXX object CMakeFiles/cmTC_8ff05.dir/CMakeCXXCompilerABI.cpp.o]
+  ignore line: [[2/2] Linking CXX executable cmTC_8ff05]
+  ignore line: [Android clang version 3.8.256229  (based on LLVM 3.8.256229)]
+  ignore line: [Target: armv5te-none-linux-android]
+  ignore line: [Thread model: posix]
+  ignore line: [InstalledDir: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin]
+  ignore line: [Found candidate GCC installation: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x]
+  ignore line: [Selected GCC installation: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x]
+  ignore line: [Candidate multilib: .]
+  ignore line: [@m32]
+  ignore line: [Selected multilib: .]
+  ignore line: [@m32]
+  link line: [ "/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/bin/ld" --sysroot=/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm -pie -z relro -X --build-id --eh-frame-hdr -m armelf_linux_eabi -dynamic-linker /system/bin/linker -o cmTC_8ff05 /data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib/crtbegin_dynamic.o -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib/../lib -L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib -L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib --build-id --warn-shared-textrel --fatal-warnings --no-undefined -z noexecstack -z relro -z now --gc-sections -z nocopyreloc --build-id --warn-shared-textrel --fatal-warnings --no-undefined -z noexecstack -z relro -z now --gc-sections -z nocopyreloc CMakeFiles/cmTC_8ff05.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc -lgcc -ldl -lc -lgcc -lgcc -ldl /data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib/crtend_android.o]
+    arg [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/bin/ld] ==> ignore
+    arg [--sysroot=/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm] ==> ignore
+    arg [-pie] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [-X] ==> ignore
+    arg [--build-id] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [-m] ==> ignore
+    arg [armelf_linux_eabi] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/system/bin/linker] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTC_8ff05] ==> ignore
+    arg [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib/crtbegin_dynamic.o] ==> ignore
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x]
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib/../lib] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib/../lib]
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib]
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib]
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib]
+    arg [--build-id] ==> ignore
+    arg [--warn-shared-textrel] ==> ignore
+    arg [--fatal-warnings] ==> ignore
+    arg [--no-undefined] ==> ignore
+    arg [-znoexecstack] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [-znow] ==> ignore
+    arg [--gc-sections] ==> ignore
+    arg [-znocopyreloc] ==> ignore
+    arg [--build-id] ==> ignore
+    arg [--warn-shared-textrel] ==> ignore
+    arg [--fatal-warnings] ==> ignore
+    arg [--no-undefined] ==> ignore
+    arg [-znoexecstack] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [-znow] ==> ignore
+    arg [--gc-sections] ==> ignore
+    arg [-znocopyreloc] ==> ignore
+    arg [CMakeFiles/cmTC_8ff05.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+    arg [-lstdc++] ==> lib [stdc++]
+    arg [-lm] ==> lib [m]
+    arg [-lgcc] ==> lib [gcc]
+    arg [-lgcc] ==> lib [gcc]
+    arg [-ldl] ==> lib [dl]
+    arg [-lc] ==> lib [c]
+    arg [-lgcc] ==> lib [gcc]
+    arg [-lgcc] ==> lib [gcc]
+    arg [-ldl] ==> lib [dl]
+    arg [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib/crtend_android.o] ==> ignore
+  remove lib [gcc]
+  remove lib [gcc]
+  remove lib [gcc]
+  remove lib [gcc]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib/../lib] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/arm-linux-androideabi/lib]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib/../lib] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x/../../../../arm-linux-androideabi/lib] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/arm-linux-androideabi/lib]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib]
+  implicit libs: [stdc++;m;dl;c;dl]
+  implicit dirs: [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/lib/gcc/arm-linux-androideabi/4.9.x;/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/arm-linux-androideabi/lib;/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-19/arch-arm/usr/lib]
+  implicit fwks: []
+
+

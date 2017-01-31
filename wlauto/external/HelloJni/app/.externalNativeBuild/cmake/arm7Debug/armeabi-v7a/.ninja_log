@@ -1,0 +1,5 @@
+# ninja log v5
+0	24	0	CMakeFiles/hello-jni.dir/hello-jni.c.o	ca1c114d175525bf
+24	53	0	/data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/build/intermediates/cmake/arm7/debug/obj/armeabi-v7a/libhello-jni.so	4734b0c6af87f1ca
+0	1180	0	CMakeFiles/hello-jni.dir/hello-jni.c.o	ca1c114d175525bf
+1180	1471	0	/data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/build/intermediates/cmake/arm7/debug/obj/armeabi-v7a/libhello-jni.so	4734b0c6af87f1ca

@@ -1,0 +1,216 @@
+The target system is: Android - 21 - x86_64
+The host system is: Linux - 3.13.0-95-generic - x86_64
+Determining if the C compiler works passed with the following output:
+Change Dir: /data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/universalDebug/x86_64/CMakeFiles/CMakeTmp
+
+Run Build Command:"/data/marc/Software/android-sdk-linux/cmake/3.6.3155560/bin/ninja" "cmTC_f5b60"
+[1/2] Building C object CMakeFiles/cmTC_f5b60.dir/testCCompiler.c.o
+[2/2] Linking C executable cmTC_f5b60
+
+
+Detecting C compiler ABI info compiled with the following output:
+Change Dir: /data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/universalDebug/x86_64/CMakeFiles/CMakeTmp
+
+Run Build Command:"/data/marc/Software/android-sdk-linux/cmake/3.6.3155560/bin/ninja" "cmTC_a1521"
+[1/2] Building C object CMakeFiles/cmTC_a1521.dir/CMakeCCompilerABI.c.o
+[2/2] Linking C executable cmTC_a1521
+Android clang version 3.8.256229  (based on LLVM 3.8.256229)
+Target: x86_64-none-linux-android
+Thread model: posix
+InstalledDir: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin
+Found candidate GCC installation: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x
+Selected GCC installation: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x
+Candidate multilib: .;@m64
+Candidate multilib: 32;@m32
+Candidate multilib: x32;@mx32
+Selected multilib: .;@m64
+ "/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/bin/ld" --sysroot=/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64 -pie -z relro --build-id --eh-frame-hdr -m elf_x86_64 -dynamic-linker /system/bin/linker64 -o cmTC_a1521 /data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64/crtbegin_dynamic.o -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib/../lib64 -L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64 -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib -L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib --build-id --warn-shared-textrel --fatal-warnings --no-undefined -z noexecstack -z relro -z now --gc-sections -z nocopyreloc --build-id --warn-shared-textrel --fatal-warnings --no-undefined -z noexecstack -z relro -z now --gc-sections -z nocopyreloc CMakeFiles/cmTC_a1521.dir/CMakeCCompilerABI.c.o -lgcc -ldl -lc -lgcc -ldl /data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64/crtend_android.o
+
+
+Parsed C implicit link information from above output:
+  link line regex: [^( *|.*[/\])(x86_64-linux-android-ld|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: /data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/universalDebug/x86_64/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command:"/data/marc/Software/android-sdk-linux/cmake/3.6.3155560/bin/ninja" "cmTC_a1521"]
+  ignore line: [[1/2] Building C object CMakeFiles/cmTC_a1521.dir/CMakeCCompilerABI.c.o]
+  ignore line: [[2/2] Linking C executable cmTC_a1521]
+  ignore line: [Android clang version 3.8.256229  (based on LLVM 3.8.256229)]
+  ignore line: [Target: x86_64-none-linux-android]
+  ignore line: [Thread model: posix]
+  ignore line: [InstalledDir: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin]
+  ignore line: [Found candidate GCC installation: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x]
+  ignore line: [Selected GCC installation: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x]
+  ignore line: [Candidate multilib: .]
+  ignore line: [@m64]
+  ignore line: [Candidate multilib: 32]
+  ignore line: [@m32]
+  ignore line: [Candidate multilib: x32]
+  ignore line: [@mx32]
+  ignore line: [Selected multilib: .]
+  ignore line: [@m64]
+  link line: [ "/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/bin/ld" --sysroot=/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64 -pie -z relro --build-id --eh-frame-hdr -m elf_x86_64 -dynamic-linker /system/bin/linker64 -o cmTC_a1521 /data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64/crtbegin_dynamic.o -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib/../lib64 -L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64 -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib -L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib --build-id --warn-shared-textrel --fatal-warnings --no-undefined -z noexecstack -z relro -z now --gc-sections -z nocopyreloc --build-id --warn-shared-textrel --fatal-warnings --no-undefined -z noexecstack -z relro -z now --gc-sections -z nocopyreloc CMakeFiles/cmTC_a1521.dir/CMakeCCompilerABI.c.o -lgcc -ldl -lc -lgcc -ldl /data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64/crtend_android.o]
+    arg [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/bin/ld] ==> ignore
+    arg [--sysroot=/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64] ==> ignore
+    arg [-pie] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [--build-id] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [-m] ==> ignore
+    arg [elf_x86_64] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/system/bin/linker64] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTC_a1521] ==> ignore
+    arg [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64/crtbegin_dynamic.o] ==> ignore
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x]
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib/../lib64] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib/../lib64]
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64]
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib]
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib]
+    arg [--build-id] ==> ignore
+    arg [--warn-shared-textrel] ==> ignore
+    arg [--fatal-warnings] ==> ignore
+    arg [--no-undefined] ==> ignore
+    arg [-znoexecstack] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [-znow] ==> ignore
+    arg [--gc-sections] ==> ignore
+    arg [-znocopyreloc] ==> ignore
+    arg [--build-id] ==> ignore
+    arg [--warn-shared-textrel] ==> ignore
+    arg [--fatal-warnings] ==> ignore
+    arg [--no-undefined] ==> ignore
+    arg [-znoexecstack] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [-znow] ==> ignore
+    arg [--gc-sections] ==> ignore
+    arg [-znocopyreloc] ==> ignore
+    arg [CMakeFiles/cmTC_a1521.dir/CMakeCCompilerABI.c.o] ==> ignore
+    arg [-lgcc] ==> lib [gcc]
+    arg [-ldl] ==> lib [dl]
+    arg [-lc] ==> lib [c]
+    arg [-lgcc] ==> lib [gcc]
+    arg [-ldl] ==> lib [dl]
+    arg [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64/crtend_android.o] ==> ignore
+  remove lib [gcc]
+  remove lib [gcc]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib/../lib64] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/x86_64-linux-android/lib64]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib64]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/x86_64-linux-android/lib]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib]
+  implicit libs: [dl;c;dl]
+  implicit dirs: [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x;/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/x86_64-linux-android/lib64;/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib64;/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/x86_64-linux-android/lib;/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib]
+  implicit fwks: []
+
+
+Determining if the CXX compiler works passed with the following output:
+Change Dir: /data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/universalDebug/x86_64/CMakeFiles/CMakeTmp
+
+Run Build Command:"/data/marc/Software/android-sdk-linux/cmake/3.6.3155560/bin/ninja" "cmTC_b65a4"
+[1/2] Building CXX object CMakeFiles/cmTC_b65a4.dir/testCXXCompiler.cxx.o
+[2/2] Linking CXX executable cmTC_b65a4
+
+
+Detecting CXX compiler ABI info compiled with the following output:
+Change Dir: /data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/universalDebug/x86_64/CMakeFiles/CMakeTmp
+
+Run Build Command:"/data/marc/Software/android-sdk-linux/cmake/3.6.3155560/bin/ninja" "cmTC_88cd3"
+[1/2] Building CXX object CMakeFiles/cmTC_88cd3.dir/CMakeCXXCompilerABI.cpp.o
+[2/2] Linking CXX executable cmTC_88cd3
+Android clang version 3.8.256229  (based on LLVM 3.8.256229)
+Target: x86_64-none-linux-android
+Thread model: posix
+InstalledDir: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin
+Found candidate GCC installation: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x
+Selected GCC installation: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x
+Candidate multilib: .;@m64
+Candidate multilib: 32;@m32
+Candidate multilib: x32;@mx32
+Selected multilib: .;@m64
+ "/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/bin/ld" --sysroot=/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64 -pie -z relro --build-id --eh-frame-hdr -m elf_x86_64 -dynamic-linker /system/bin/linker64 -o cmTC_88cd3 /data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64/crtbegin_dynamic.o -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib/../lib64 -L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64 -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib -L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib --build-id --warn-shared-textrel --fatal-warnings --no-undefined -z noexecstack -z relro -z now --gc-sections -z nocopyreloc --build-id --warn-shared-textrel --fatal-warnings --no-undefined -z noexecstack -z relro -z now --gc-sections -z nocopyreloc CMakeFiles/cmTC_88cd3.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc -lgcc -ldl -lc -lgcc -lgcc -ldl /data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64/crtend_android.o
+
+
+Parsed CXX implicit link information from above output:
+  link line regex: [^( *|.*[/\])(x86_64-linux-android-ld|([^/\]+-)?ld|collect2)[^/\]*( |$)]
+  ignore line: [Change Dir: /data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/universalDebug/x86_64/CMakeFiles/CMakeTmp]
+  ignore line: []
+  ignore line: [Run Build Command:"/data/marc/Software/android-sdk-linux/cmake/3.6.3155560/bin/ninja" "cmTC_88cd3"]
+  ignore line: [[1/2] Building CXX object CMakeFiles/cmTC_88cd3.dir/CMakeCXXCompilerABI.cpp.o]
+  ignore line: [[2/2] Linking CXX executable cmTC_88cd3]
+  ignore line: [Android clang version 3.8.256229  (based on LLVM 3.8.256229)]
+  ignore line: [Target: x86_64-none-linux-android]
+  ignore line: [Thread model: posix]
+  ignore line: [InstalledDir: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin]
+  ignore line: [Found candidate GCC installation: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x]
+  ignore line: [Selected GCC installation: /data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x]
+  ignore line: [Candidate multilib: .]
+  ignore line: [@m64]
+  ignore line: [Candidate multilib: 32]
+  ignore line: [@m32]
+  ignore line: [Candidate multilib: x32]
+  ignore line: [@mx32]
+  ignore line: [Selected multilib: .]
+  ignore line: [@m64]
+  link line: [ "/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/bin/ld" --sysroot=/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64 -pie -z relro --build-id --eh-frame-hdr -m elf_x86_64 -dynamic-linker /system/bin/linker64 -o cmTC_88cd3 /data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64/crtbegin_dynamic.o -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib/../lib64 -L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64 -L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib -L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib --build-id --warn-shared-textrel --fatal-warnings --no-undefined -z noexecstack -z relro -z now --gc-sections -z nocopyreloc --build-id --warn-shared-textrel --fatal-warnings --no-undefined -z noexecstack -z relro -z now --gc-sections -z nocopyreloc CMakeFiles/cmTC_88cd3.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc -lgcc -ldl -lc -lgcc -lgcc -ldl /data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64/crtend_android.o]
+    arg [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/bin/ld] ==> ignore
+    arg [--sysroot=/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64] ==> ignore
+    arg [-pie] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [--build-id] ==> ignore
+    arg [--eh-frame-hdr] ==> ignore
+    arg [-m] ==> ignore
+    arg [elf_x86_64] ==> ignore
+    arg [-dynamic-linker] ==> ignore
+    arg [/system/bin/linker64] ==> ignore
+    arg [-o] ==> ignore
+    arg [cmTC_88cd3] ==> ignore
+    arg [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64/crtbegin_dynamic.o] ==> ignore
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x]
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib/../lib64] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib/../lib64]
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64]
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib]
+    arg [-L/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib] ==> dir [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib]
+    arg [--build-id] ==> ignore
+    arg [--warn-shared-textrel] ==> ignore
+    arg [--fatal-warnings] ==> ignore
+    arg [--no-undefined] ==> ignore
+    arg [-znoexecstack] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [-znow] ==> ignore
+    arg [--gc-sections] ==> ignore
+    arg [-znocopyreloc] ==> ignore
+    arg [--build-id] ==> ignore
+    arg [--warn-shared-textrel] ==> ignore
+    arg [--fatal-warnings] ==> ignore
+    arg [--no-undefined] ==> ignore
+    arg [-znoexecstack] ==> ignore
+    arg [-zrelro] ==> ignore
+    arg [-znow] ==> ignore
+    arg [--gc-sections] ==> ignore
+    arg [-znocopyreloc] ==> ignore
+    arg [CMakeFiles/cmTC_88cd3.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+    arg [-lstdc++] ==> lib [stdc++]
+    arg [-lm] ==> lib [m]
+    arg [-lgcc] ==> lib [gcc]
+    arg [-lgcc] ==> lib [gcc]
+    arg [-ldl] ==> lib [dl]
+    arg [-lc] ==> lib [c]
+    arg [-lgcc] ==> lib [gcc]
+    arg [-lgcc] ==> lib [gcc]
+    arg [-ldl] ==> lib [dl]
+    arg [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64/crtend_android.o] ==> ignore
+  remove lib [gcc]
+  remove lib [gcc]
+  remove lib [gcc]
+  remove lib [gcc]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib/../lib64] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/x86_64-linux-android/lib64]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib/../lib64] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib64]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x/../../../../x86_64-linux-android/lib] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/x86_64-linux-android/lib]
+  collapse library dir [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib] ==> [/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib]
+  implicit libs: [stdc++;m;dl;c;dl]
+  implicit dirs: [/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/lib/gcc/x86_64-linux-android/4.9.x;/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/x86_64-linux-android/lib64;/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib64;/data/marc/Software/android-sdk-linux/ndk-bundle/toolchains/x86_64-4.9/prebuilt/linux-x86_64/x86_64-linux-android/lib;/data/marc/Software/android-sdk-linux/ndk-bundle/platforms/android-21/arch-x86_64/usr/lib]
+  implicit fwks: []
+
+

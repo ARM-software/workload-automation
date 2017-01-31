@@ -1,0 +1,3 @@
+/data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/x86_64Release/x86_64/CMakeFiles/edit_cache.dir
+/data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/x86_64Release/x86_64/CMakeFiles/rebuild_cache.dir
+/data/marc/Work/my_wa_tests/revent/vsync/HelloJNI/app/.externalNativeBuild/cmake/x86_64Release/x86_64/CMakeFiles/hello-jni.dir
