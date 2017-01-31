@@ -1099,8 +1099,7 @@ void record(const char *filepath, int delay, recording_mode_t mode)
 	while(1)
 	{
 		FD_ZERO(&readfds);
-		if (wait_for_stdin)
-			FD_SET(STDIN_FILENO, &readfds);
+		FD_SET(STDIN_FILENO, &readfds);
 		for (i=0; i < devices.num; i++)
 			FD_SET(devices.fds[i], &readfds);
 
