@@ -228,6 +228,9 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         UiDevice.getInstance().pressEnter();
     }
 
+    public void pressHome() {
+        UiDevice.getInstance().pressHome();
+    }
 
     public void pressBack() {
         UiDevice.getInstance().pressBack();
