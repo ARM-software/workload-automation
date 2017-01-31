@@ -28,6 +28,11 @@
 #include <linux/input.h>
 #include <linux/uinput.h>
 
+#include <math.h>
+#include <stddef.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+
 #define die(args...) do { \
 	fprintf(stderr, "ERROR: "); \
 	fprintf(stderr, args);   \
@@ -120,8 +125,15 @@ typedef struct {
 	replay_event_t *events;
 } revent_recording_t;
 
+static void read_nbytes(int fd, void* buf, size_t nbytes);
+static int open_vsync_fd();
+static void drain_vsync_fd(int vfd);
+void handle_vsync_event(int fd, struct timeval* delta);
+static void close_vsync_fd(int fd);
+
 bool_t verbose = FALSE;
 bool_t wait_for_stdin = TRUE;
+bool_t vsync_enabled = FALSE;
 
 bool_t is_numeric(char *string)
 {
@@ -474,8 +486,8 @@ int write_device_info(FILE *fout, const device_info_t *info)
 	ret += fwrite(info->key_bits, sizeof(char), KEY_BITS_SIZE, fout);
 	if (ret < (EV_BITS_SIZE + KEY_BITS_SIZE * 3))
 		return EIO;
-        printf("EV_BITS_SIZE: %d\n", EV_BITS_SIZE);
-        printf("KEY_BITS_SIZE: %d\n", KEY_BITS_SIZE);
+		printf("EV_BITS_SIZE: %d\n", EV_BITS_SIZE);
+		printf("KEY_BITS_SIZE: %d\n", KEY_BITS_SIZE);
 
 	ret = fwrite(&info->num_absinfo, sizeof(uint32_t), 1, fout);
 	if (ret < 1)
@@ -532,7 +544,7 @@ void print_device_info(device_info_t *info)
 {
 	printf("device name: %s\n", info->name);
 	printf("bustype: 0x%x vendor: 0x%x product: 0x%x version: 0x%x\n",
-                info->id.bustype, info->id.vendor, info->id.product, info->id.version);
+				info->id.bustype, info->id.vendor, info->id.product, info->id.version);
 	printf("abs_bits: %d\n", count_bits(info->abs_bits));
 	printf("rel_bits: %d\n", count_bits(info->rel_bits));
 	printf("key_bits: %d\n", count_bits(info->key_bits));
@@ -561,6 +573,7 @@ void print_device_info(device_info_t *info)
 
 int write_replay_event(FILE *fout, const replay_event_t *ev)
 {
+
 	size_t ret;
 	uint64_t time;
 
@@ -711,7 +724,7 @@ int init_general_input_devices(input_devices_t *devices)
 	uint32_t num, i, path_len;
 	char paths[INPDEV_MAX_DEVICES][INPDEV_MAX_PATH];
 	int fds[INPDEV_MAX_DEVICES];
-	int max_fd;
+	int max_fd = 0;
 
 	num = 0;
 	for(i = 0; i < INPDEV_MAX_DEVICES; ++i) {
@@ -935,8 +948,8 @@ int create_replay_device_or_die(const device_info_t *info)
 	if(ioctl(fd, UI_DEV_CREATE) < 0)
 		die("Could not create replay device:", strerror(errno));
 
-        // wait for the new device to be recognised by the system
-        sleep(3);
+		// wait for the new device to be recognised by the system
+		sleep(3);
 
 	return fd;
 }
@@ -1033,7 +1046,7 @@ void open_gamepad_input_devices_for_playback_or_die(input_devices_t *devices, co
 //Used to exit program properly on termination
 static volatile int EXIT = 0;
 void exitHandler(int z) {
-    EXIT = 1;
+	EXIT = 1;
 }
 
 void record(const char *filepath, int delay, recording_mode_t mode)
@@ -1045,6 +1058,16 @@ void record(const char *filepath, int delay, recording_mode_t mode)
 
 	input_devices_t devices;
 	init_input_devices(&devices);
+
+	// Get vsync source.
+	int vfd;
+	struct timeval vsync_correction_tv = {
+		.tv_sec = 0,
+		.tv_usec = 0
+	};
+	if (vsync_enabled){
+		vfd = open_vsync_fd();
+	}
 
 	if (mode == GENERAL_MODE) {
 		ret = init_general_input_devices(&devices);
@@ -1099,11 +1122,12 @@ void record(const char *filepath, int delay, recording_mode_t mode)
 	while(1)
 	{
 		FD_ZERO(&readfds);
-		if (wait_for_stdin)
-			FD_SET(STDIN_FILENO, &readfds);
+		FD_SET(STDIN_FILENO, &readfds);
 		for (i=0; i < devices.num; i++)
 			FD_SET(devices.fds[i], &readfds);
-
+		if (vsync_enabled){
+			FD_SET(vfd, &readfds);
+		}
 		/* wait for input */
 		tout.tv_sec = delay;
 		tout.tv_nsec = 0;
@@ -1129,6 +1153,8 @@ void record(const char *filepath, int delay, recording_mode_t mode)
 			rev.event.code = KEY_ENTER;
 			rev.event.value = 0;
 			gettimeofday(&rev.event.time, NULL);
+			if (vsync_enabled)
+				timersub(&rev.event.time, &vsync_correction_tv, &rev.event.time);       // vsync calibrate
 			write_replay_event(fout, &rev);
 
 			// syn
@@ -1138,6 +1164,8 @@ void record(const char *filepath, int delay, recording_mode_t mode)
 			rev.event.code = 0;
 			rev.event.value = 0;
 			gettimeofday(&rev.event.time, NULL);
+			if (vsync_enabled)
+				timersub(&rev.event.time, &vsync_correction_tv, &rev.event.time);       // vsync calibrate
 			write_replay_event(fout, &rev);
 
 			dprintf("added fake return exiting...\n");
@@ -1152,17 +1180,29 @@ void record(const char *filepath, int delay, recording_mode_t mode)
 				memset(&rev, 0, sizeof(rev));
 				rev.dev_idx = i;
 				ret = read(devices.fds[i], (void *)&rev.event, sizeof(rev.event));
+				if (vsync_enabled)
+					timersub(&rev.event.time, &vsync_correction_tv, &rev.event.time);       // vsync calibrate
 				dprintf("%d event: type %d code %d value %d\n",
 						(unsigned int)ret, rev.event.type, rev.event.code, rev.event.value);
 				if (rev.event.type == EV_KEY && rev.event.code == KEY_ENTER && rev.event.value == 1)
 					keydev = i;
 				write_replay_event(fout, &rev);
+
 				event_count++;
 			}
 		}
+
+		if (vsync_enabled && FD_ISSET(vfd, &readfds)) {
+			handle_vsync_event(vfd, &vsync_correction_tv);
+		}
+	}
+
+	if (vsync_enabled){
+		close_vsync_fd(vfd);
 	}
 
 	dprintf("Writing event count...");
+
 	if ((ret = fseek(fout, size_pos, SEEK_SET)) == -1)
 		die("Could not write event count: %s", strerror(errno));
 	ret = fwrite(&event_count, sizeof(uint64_t), 1, fout);
@@ -1213,7 +1253,7 @@ void dump(const char *filepath)
 				recording.events[i].event.type,
 				recording.events[i].event.code,
 				recording.events[i].event.value
-		      );
+			  );
 	}
 
 	fini_revent_recording(&recording);
@@ -1221,21 +1261,30 @@ void dump(const char *filepath)
 
 void replay(const char *filepath)
 {
+	// Get vsync source.
+	int vfd;
+	struct timeval vsync_correction_tv = {
+		.tv_sec = 0,
+		.tv_usec = 0
+	};
+	if (vsync_enabled)
+		vfd = open_vsync_fd();
+
 	revent_recording_t recording;
 	init_revent_recording(&recording);
 
 	read_revent_recording_or_die(filepath, &recording);
 	switch (recording.desc.mode) {
-	case GENERAL_MODE:
-		dprintf("Opening input devices for playback\n");
-		open_general_input_devices_for_playback_or_die(&recording.devices);
-		break;
-	case GAMEPAD_MODE:
-		dprintf("Creating gamepad playback device\n");
-		open_gamepad_input_devices_for_playback_or_die(&recording.devices, recording.gamepad_info);
-		break;
-	default:
-		die("Unexpected recording mod: %d", recording.desc.mode);
+		case GENERAL_MODE:
+			dprintf("Opening input devices for playback\n");
+			open_general_input_devices_for_playback_or_die(&recording.devices);
+			break;
+		case GAMEPAD_MODE:
+			dprintf("Creating gamepad playback device\n");
+			open_gamepad_input_devices_for_playback_or_die(&recording.devices, recording.gamepad_info);
+			break;
+		default:
+			die("Unexpected recording mod: %d", recording.desc.mode);
 	}
 	dprintf("Adjusting event timestamps\n");
 	adjust_event_times(&recording);
@@ -1247,40 +1296,109 @@ void replay(const char *filepath)
 	int ret;
 	uint64_t i = 0;
 	dprintf("Starting payback\n");
-	while (i < recording.num_events) {
-		gettimeofday(&now, NULL);
-		timeradd(&start_time, &last_event_delta, &desired_time);
+	if (vsync_enabled){
+		dprintf("Using VSync\n");
+		while (i < recording.num_events) {
+			// Wait until the next event time, or until the next vsync event, whichever is sooner.
+			while (1) {
+				// Adjust system time by delta derived from vsyncs.
+				gettimeofday(&now, NULL);
+				timersub(&now, &vsync_correction_tv, &now);             // vsync calibrate
 
-		if (timercmp(&desired_time, &now, >)) {
-			timersub(&desired_time, &now, &delta);
-			useconds_t d = (useconds_t)delta.tv_sec * 1000000 + delta.tv_usec;
-			dprintf("now %u.%u desiredtime %u.%u sleeping %u uS\n",
-					(unsigned int)now.tv_sec,
-					(unsigned int)now.tv_usec,
-					(unsigned int)desired_time.tv_sec,
-					(unsigned int)desired_time.tv_usec,
-					d);
-			usleep(d);
+				timeradd(&start_time, &last_event_delta, &desired_time);
+				timersub(&desired_time, &now, &delta);
+
+				if (timercmp(&desired_time, &now, <=)) {
+					break;
+				}
+
+				fd_set rfds;
+				FD_ZERO(&rfds);
+				FD_SET(vfd, &rfds);
+				int r = select(vfd + 1, &rfds, /* writefds */ NULL, /* errorfds */ NULL, &delta);
+
+				// I/O failure. Fall back.
+				if (r < 0) {
+					dprintf("Vsync Failure, falling back...\n");
+					gettimeofday(&now, NULL);
+					timeradd(&start_time, &last_event_delta, &desired_time);
+					if (timercmp(&desired_time, &now, >)) {
+					 timersub(&desired_time, &now, &delta);
+					 useconds_t d = (useconds_t)delta.tv_sec * 1000000 + delta.tv_usec;
+					 dprintf("now %u.%u desiredtime %u.%u sleeping %u uS\n",
+							 (unsigned int)now.tv_sec,
+							 (unsigned int)now.tv_usec,
+							 (unsigned int)desired_time.tv_sec,
+							 (unsigned int)desired_time.tv_usec,
+							 d);
+					 usleep(d);
+					 break;
+					}
+					break;
+				// VSync occurred, so update delta and wait again for the event.
+				} else if (r == 1) {
+					handle_vsync_event(vfd, &vsync_correction_tv);
+
+				// An actual event occurred so execute it.
+				} else {
+					break;
+				}
+			}
+
+			int32_t idx = (recording.events[i]).dev_idx;
+			struct input_event ev = (recording.events[i]).event;
+			while((i < recording.num_events) && !timercmp(&ev.time, &last_event_delta, !=)) {
+				ret = write(recording.devices.fds[idx], &ev, sizeof(ev));
+				if (ret != sizeof(ev))
+					die("Could not replay event");
+				dprintf("replayed event: type %d code %d value %d\n", ev.type, ev.code, ev.value);
+
+				i++;
+				idx = recording.events[i].dev_idx;
+				ev = recording.events[i].event;
+			}
+			last_event_delta = ev.time;
 		}
+	}
+	else {
+		while (i < recording.num_events) {
+			gettimeofday(&now, NULL);
+			timeradd(&start_time, &last_event_delta, &desired_time);
 
-		int32_t idx = (recording.events[i]).dev_idx;
-		struct input_event ev = (recording.events[i]).event;
-		while((i < recording.num_events) && !timercmp(&ev.time, &last_event_delta, !=)) {
-			ret = write(recording.devices.fds[idx], &ev, sizeof(ev));
-			if (ret != sizeof(ev))
-				die("Could not replay event");
-			dprintf("replayed event: type %d code %d value %d\n", ev.type, ev.code, ev.value);
+			if (timercmp(&desired_time, &now, >)) {
+				timersub(&desired_time, &now, &delta);
+				useconds_t d = (useconds_t)delta.tv_sec * 1000000 + delta.tv_usec;
+				dprintf("now %u.%u desiredtime %u.%u sleeping %u uS\n",
+						(unsigned int)now.tv_sec,
+						(unsigned int)now.tv_usec,
+						(unsigned int)desired_time.tv_sec,
+						(unsigned int)desired_time.tv_usec,
+						d);
+				usleep(d);
+			}
 
-			i++;
-			idx = recording.events[i].dev_idx;
-			ev = recording.events[i].event;
+			int32_t idx = (recording.events[i]).dev_idx;
+			struct input_event ev = (recording.events[i]).event;
+			while((i < recording.num_events) && !timercmp(&ev.time, &last_event_delta, !=)) {
+				ret = write(recording.devices.fds[idx], &ev, sizeof(ev));
+				if (ret != sizeof(ev))
+					die("Could not replay event");
+				dprintf("replayed event: type %d code %d value %d\n", ev.type, ev.code, ev.value);
+
+				i++;
+				idx = recording.events[i].dev_idx;
+				ev = recording.events[i].event;
+			}
+			last_event_delta = ev.time;
 		}
-		last_event_delta = ev.time;
 	}
 
-        if (recording.desc.mode == GAMEPAD_MODE)
+	if (recording.desc.mode == GAMEPAD_MODE)
 		destroy_replay_device(recording.devices.fds[0]);
 	fini_revent_recording(&recording);
+	if (vsync_enabled){
+		close_vsync_fd(vfd);
+	}
 }
 
 void info(void)
@@ -1374,7 +1492,7 @@ void revent_args_init(revent_args_t **rargs, int argc, char** argv)
 	revent_args->file = NULL;
 
 	int opt;
-	while ((opt = getopt(argc, argv, "hgt:d:vs")) != -1)
+	while ((opt = getopt(argc, argv, "hgt:d:vsV")) != -1)
 	{
 		switch (opt) {
 			case 'h':
@@ -1405,6 +1523,9 @@ void revent_args_init(revent_args_t **rargs, int argc, char** argv)
 				break;
 			case 's':
 				wait_for_stdin = FALSE;
+				break;
+			case 'V':
+				vsync_enabled = TRUE;
 				break;
 
 			default:
@@ -1488,4 +1609,188 @@ int main(int argc, char** argv)
 
 	revent_args_close(rargs);
 	return 0;
+}
+
+// ---- vsync event handler.-----
+
+const int64_t us_per_sec = 1000 * 1000;
+const int64_t ns_per_us = 1000;
+
+static int64_t first_frame_nanos;
+static struct timeval first_time_val;
+
+static size_t vsync_count;
+static int64_t latest_frame_nanos;
+static struct timeval latest_time_val;
+static int64_t total_drift_ns;
+static int64_t total_abs_drift_ns;
+
+// Circular buffer used to calculate std dev of drift.
+static const size_t max_drift_records = 1024;
+static int64_t drifts_ns[1024];//max_drift_records]; ##CHANGE
+static size_t db_cur;
+
+/**
+   The read function can return before reading all of the requested bytes,
+   This function ensures that exactly nbytes are read (or a failure occurs,
+   or the remote end is closed) before it returns the caller.
+*/
+static void read_nbytes(int fd, void* buf, size_t nbytes) {
+	size_t bytes_read = 0;
+	unsigned char* bufc = (unsigned char*)(buf);
+
+	while (bytes_read < nbytes) {
+		size_t remaining_bytes = nbytes - bytes_read;
+		int r = read(fd, &bufc[bytes_read], remaining_bytes);
+
+		// Zero means remote end has been closed.
+		if (r < 0)
+			die("%s: unexpected read value (%d, %s)", __func__, r, strerror(r));
+		if (r == 0)
+			die("%s: remote end unexpectedly closed.", __func__);
+
+		bytes_read += r;
+	}
+}
+
+/**
+   Opens a Unix domain socket.  The other end is connected to ChoreoService.
+
+   @see handle_vsync_event
+ */
+static int open_vsync_fd() {
+	// Create a blank socket which will be connected to ChoreoService.
+	int vfd = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (vfd == -1)
+		die("open_vsync_fd: could not create socket");
+
+	// The Android class LocalServerSocket creates sockets in the abstract namespace.
+	// Therefore, the name must be prefixed with a '\0' character.
+	const char name[] = "vsync-uds";
+	size_t namelen = strlen(name);
+
+	struct sockaddr_un sau;
+	memset(&sau, 0, sizeof(sau));
+	sau.sun_family = AF_LOCAL;
+	sau.sun_path[0] = '\0';
+	memcpy(&sau.sun_path[1], name, namelen);    // no null terminator
+
+	socklen_t slen = namelen + offsetof(struct sockaddr_un, sun_path) + 1;
+	int r = connect(vfd, (const struct sockaddr*) &sau, slen);
+	if (r == -1)
+		die("Vysnc Service not available\n");
+
+	drain_vsync_fd(vfd);
+
+	read_nbytes(vfd, &first_frame_nanos, sizeof(first_frame_nanos));
+
+	gettimeofday(&first_time_val, /* tzp */ NULL);
+
+	vsync_count = 0;
+	total_drift_ns = 0;
+	total_abs_drift_ns = 0;
+	db_cur = 0;
+
+	return vfd;
+}
+
+/**
+	Drain any stale timestamps in the socket.
+ */
+static void drain_vsync_fd(int vfd) {
+	fd_set fds;
+	FD_ZERO(&fds);
+	FD_SET(vfd, &fds);
+
+	// Zero-length timeout for the select function.  This is not related to the value of
+	// the timestamps used for callibration.
+	struct timeval tvNoWait = {
+		.tv_sec = 0,
+		.tv_usec = 0
+	};
+
+	for (;;) {
+		// Returns immediately if no reads are available.
+		// Advanced Programming in the Unix Environment 2ed, S14.5.1.
+		int r = select(/* maxfd */ vfd, /* readfds */ &fds, /* writefds */ NULL, /* exceptfds */ NULL, &tvNoWait);
+
+		// No events, so socket has been exhausted.
+		if (r == 0) {
+			break;
+		// Read event, so get another frame timestamp.
+		} else if (r == 1) {
+			uint64_t frame_time_nanos;
+			read_nbytes(vfd, &frame_time_nanos, sizeof(frame_time_nanos));
+		} else {
+			die("%s: unexpected select value %d", __func__, r);
+		}
+	} 
+}  
+
+void handle_vsync_event(int fd, struct timeval* delta) {
+	++vsync_count;
+
+	// Get nanoseconds since first frame, as recorded via frame times.
+	read_nbytes(fd, &latest_frame_nanos, sizeof(latest_frame_nanos));
+	int64_t frame_elapsed_ns = latest_frame_nanos - first_frame_nanos;
+
+	// Get time since first frame, as recorded via gettimeofday.
+	gettimeofday(&latest_time_val, /* tzp */ NULL);
+	struct timeval tv_since_start;
+	timersub(&latest_time_val, &first_time_val, &tv_since_start);
+
+	// Convert both above measurements to nanoseconds.
+	int64_t tv_elapsed_us = (tv_since_start.tv_sec * us_per_sec) + tv_since_start.tv_usec;
+	int64_t tv_elapsed_ns = tv_elapsed_us * ns_per_us;
+
+	// Drift is how far time, as recorded by gtod has diverged from frame times.
+	// This is returned as an instance of timeval so it can be used by the main loop.
+	int64_t drift_ns = tv_elapsed_ns -frame_elapsed_ns;
+	int64_t drift_us = drift_ns / ns_per_us;
+
+	total_drift_ns += drift_ns;
+	total_abs_drift_ns += llabs(drift_ns);
+
+	delta->tv_sec = drift_us / us_per_sec;
+	delta->tv_usec = drift_us - (delta->tv_sec * us_per_sec);
+
+	drifts_ns[db_cur] = drift_ns;
+	db_cur = (db_cur + 1) % max_drift_records;
+}
+
+void close_vsync_fd(int fd) {
+	close(fd);
+
+	int64_t frame_elapsed_ns = latest_frame_nanos - first_frame_nanos;
+
+	struct timeval tv_since_start;
+	timersub(&latest_time_val, &first_time_val, &tv_since_start);
+	int64_t gtod_elapsed_us = (tv_since_start.tv_sec * us_per_sec) + tv_since_start.tv_usec;
+	int64_t gtod_elapsed_ns = gtod_elapsed_us * ns_per_us;
+
+	int64_t delta_ns = gtod_elapsed_ns - frame_elapsed_ns;
+
+	// Calculate standard deviation of drifts.
+	// The math here isn't quite true because it only considers those drifts
+	// which are in the circular buffer.
+	size_t ad_count = (vsync_count > max_drift_records) ? max_drift_records : db_cur;
+
+	int64_t ad_sum = 0;
+	int64_t ad_abs_sum = 0;
+	size_t i;
+	for (i = 0; i < ad_count; ++i) {
+		ad_sum += drifts_ns[i];
+		ad_abs_sum += llabs(drifts_ns[i]);
+	}
+	int64_t ad_avg = ad_sum / ad_count;
+	int64_t ad_abs_avg = ad_abs_sum / ad_count;
+
+	int64_t ad_dev_ns = 0;
+	for (i = 0; i < ad_count; ++i) {
+		int64_t dev_ns = drifts_ns[i] - ad_avg;
+		ad_dev_ns += dev_ns * dev_ns;
+	}
+	ad_dev_ns /= (ad_count - 1);        // sample, not population std dev
+	long double ad_smp_dev_ld_ns = __builtin_sqrtl((long double)(ad_dev_ns));
+	int64_t ad_smp_dev_ns = (int64_t)(ad_smp_dev_ld_ns);
 }

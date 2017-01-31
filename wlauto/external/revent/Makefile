@@ -1,6 +1,7 @@
 # CROSS_COMPILE=aarch64-linux-gnu- make
 #
 CC=gcc
+LIBFLAGS= -lm
 
 ifdef DEBUG
 	CFLAGS=-static -lc -g
@@ -9,7 +10,7 @@ else
 endif
 
 revent: revent.c
-	$(CROSS_COMPILE)$(CC) $(CFLAGS) revent.c -o revent
+	$(CROSS_COMPILE)$(CC) $(CFLAGS) revent.c -o revent $(LIBFLAGS)
 
 clean:
 	rm -rf revent
