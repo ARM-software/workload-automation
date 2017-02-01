@@ -711,7 +711,7 @@ int init_general_input_devices(input_devices_t *devices)
 	uint32_t num, i, path_len;
 	char paths[INPDEV_MAX_DEVICES][INPDEV_MAX_PATH];
 	int fds[INPDEV_MAX_DEVICES];
-	int max_fd;
+	int max_fd = 0;
 
 	num = 0;
 	for(i = 0; i < INPDEV_MAX_DEVICES; ++i) {
@@ -1099,8 +1099,7 @@ void record(const char *filepath, int delay, recording_mode_t mode)
 	while(1)
 	{
 		FD_ZERO(&readfds);
-		if (wait_for_stdin)
-			FD_SET(STDIN_FILENO, &readfds);
+		FD_SET(STDIN_FILENO, &readfds);
 		for (i=0; i < devices.num; i++)
 			FD_SET(devices.fds[i], &readfds);
 
