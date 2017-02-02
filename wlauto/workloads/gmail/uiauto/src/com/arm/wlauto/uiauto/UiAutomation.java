@@ -23,28 +23,24 @@ import com.android.uiautomator.core.UiObjectNotFoundException;
 import com.android.uiautomator.core.UiSelector;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
+import com.arm.wlauto.uiauto.ApplaunchInterface;
+import com.arm.wlauto.uiauto.UiAutoUtils;
 
 import java.util.concurrent.TimeUnit;
 
-public class UiAutomation extends UxPerfUiAutomation {
-
-    public Bundle parameters;
-    public String packageName;
-    public String packageID;
+public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterface{
 
     private int networkTimeoutSecs = 30;
     private long networkTimeout =  TimeUnit.SECONDS.toMillis(networkTimeoutSecs);
 
     public void runUiAutomation() throws Exception {
         parameters = getParams();
-        packageName = parameters.getString("package");
-        packageID = packageName + ":id/";
 
         String recipient = parameters.getString("recipient");
 
         setScreenOrientation(ScreenOrientation.NATURAL);
+        runApplicationInitialization();
 
-        clearFirstRunDialogues();
         clickNewMail();
         attachImage();
         setToField(recipient);
@@ -53,6 +49,31 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickSendButton();
 
         unsetScreenOrientation();
+    }
+    
+    // Get application parameters and clear the initial run dialogues of the application launch.
+    public void runApplicationInitialization() throws Exception {
+        getPackageParameters();
+        clearFirstRunDialogues();
+    }
+    
+    // Sets the UiObject that marks the end of the application launch.
+    public UiObject getLaunchEndObject() {
+        UiObject launchEndObject = 
+                        new UiObject(new UiSelector().className("android.widget.ImageButton"));
+        return launchEndObject;
+    }
+    
+    // Returns the launch command for the application.
+    public String getLaunchCommand() {
+        String launch_command;
+        launch_command = UiAutoUtils.createLaunchCommand(parameters);
+        return launch_command;
+    }
+    
+    // Pass the workload parameters, used for applaunch
+    public void setWorkloadParameters(Bundle workload_parameters) {
+        parameters = workload_parameters;
     }
 
     public void clearFirstRunDialogues() throws Exception {
