@@ -39,10 +39,9 @@ from wlauto.instrumentation import instrument_is_installed
 from wlauto.exceptions import (InstrumentError, WorkerThreadError, ConfigError,
                                DeviceNotRespondingError, TimeoutError)
 from wlauto.utils.types import boolean, numeric
-from wlauto.utils.fps import FpsProcessor, SurfaceFlingerFrame, GfxInfoFrame, GFXINFO_EXEMPT
+from wlauto.utils.fps import (FpsProcessor, SurfaceFlingerFrame, GfxInfoFrame, GFXINFO_EXEMPT,
+                              VSYNC_INTERVAL)
 
-
-VSYNC_INTERVAL = 16666667
 PAUSE_LATENCY = 20
 EPSYLON = 0.0001
 

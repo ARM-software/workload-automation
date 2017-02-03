@@ -1,189 +1,169 @@
-#    Copyright 2013-2015 ARM Limited
+#    Copyright 2015 ARM Limited
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
+# Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
+# distributed under the License is distributed on an 'AS IS' BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-# pylint: disable=E1101
-
-from __future__ import division
+# pylint: disable=attribute-defined-outside-init
 import os
 
-try:
-    import jinja2
-except ImportError:
-    jinja2 = None
+from time import sleep
 
-from wlauto import Workload, settings, Parameter
-from wlauto.exceptions import WorkloadError
-from wlauto.utils.hwmon import discover_sensors
-from wlauto.utils.misc import get_meansd
-from wlauto.utils.types import boolean, identifier, list_of_strs
+from wlauto import Workload, AndroidBenchmark, AndroidUxPerfWorkload, UiAutomatorWorkload
+from wlauto import Parameter
+from wlauto import ExtensionLoader
+from wlauto import File
+from wlauto import settings
+from wlauto.exceptions import ConfigError
+from wlauto.exceptions import ResourceError
+from wlauto.utils.android import ApkInfo
+from wlauto.utils.uxperf import UxPerfParser
 
-
-THIS_DIR = os.path.dirname(__file__)
-TEMPLATE_NAME = 'device_script.template'
-SCRIPT_TEMPLATE = os.path.join(THIS_DIR, TEMPLATE_NAME)
-
-APP_CONFIG = {
-    'browser': {
-        'package': 'com.android.browser',
-        'activity': '.BrowserActivity',
-        'options': '-d about:blank',
-    },
-    'calculator': {
-        'package': 'com.android.calculator2',
-        'activity': '.Calculator',
-        'options': '',
-    },
-    'calendar': {
-        'package': 'com.android.calendar',
-        'activity': '.LaunchActivity',
-        'options': '',
-    },
-}
+import wlauto.common.android.resources
 
 
-class ApplaunchWorkload(Workload):
+class Applaunch(AndroidUxPerfWorkload):
 
     name = 'applaunch'
-    description = """
-    Measures the time and energy used in launching an application.
+    description = '''
+    This workload launches and measures the launch time of applications for supporting workloads.
+    
+    Currently supported workloads are the ones that implement ``ApplaunchInterface``. For any
+    workload to support this workload, it should implement the ``ApplaunchInterface``.
+    The corresponding java file of the workload associated with the application being measured
+    is executed during the run. The application that needs to be
+    measured is passed as a parametre ``workload_name``. The parameters required for that workload
+    have to be passed as a dictionary which is captured by the parametre ``workload_params``.
+    This information can be obtained by inspecting the workload details of the specific workload.
 
-    """
+    The workload allows to run multiple iterations of an application
+    launch in two modes:
+
+    1. Launch from background
+    2. Launch from long-idle
+
+    These modes are captured as a parameter applaunch_type.
+
+    ``launch_from_background``
+        Launches an application after the application is sent to background by
+        pressing Home button.
+
+    ``launch_from_long-idle``
+        Launches an application after killing an application process and
+        clearing all the caches.
+
+    **Test Description:**
+
+    -   During the initialization and setup, the application being launched is launched 
+        for the first time. The jar file of the workload of the application
+        is moved to device at the location ``workdir`` which further implements the methods
+        needed to measure the application launch time.
+
+    -   Run phase calls the UiAutomator of the applaunch which runs in two subphases.
+            A.  Applaunch Setup Run:
+                    During this phase, welcome screens and dialogues during the first launch
+                    of the instrumented application are cleared.
+            B.  Applaunch Metric Run:
+                    During this phase, the application is launched multiple times determined by
+                    the iteration number specified by the parametre ``applaunch_iterations``.
+                    Each of these iterations are instrumented to capture the launch time taken
+                    and the values are recorded as UXPERF marker values in logfile.
+    '''
     supported_platforms = ['android']
 
     parameters = [
-        Parameter('app', default='browser', allowed_values=['calculator', 'browser', 'calendar'],
-                  description='The name of the application to measure.'),
-        Parameter('set_launcher_affinity', kind=bool, default=True,
-                  description=('If ``True``, this will explicitly set the affinity of the launcher '
-                               'process to the A15 cluster.')),
-        Parameter('times', kind=int, default=8,
-                  description='Number of app launches to do on the device.'),
-        Parameter('measure_energy', kind=boolean, default=False,
+        Parameter('workload_name', kind=str,
+                  description='Name of the uxperf workload to launch',
+                  default='gmail'),
+        Parameter('workload_params', kind=dict, default={},
                   description="""
-                  Specfies wether energy measurments should be taken during the run.
-
-                  .. note:: This depends on appropriate sensors to be exposed through HWMON.
-
+                  parameters of the uxperf workload whose application launch
+                  time is measured
                   """),
-        Parameter('io_stress', kind=boolean, default=False,
-                  description='Specifies whether to stress IO during App launch.'),
-        Parameter('io_scheduler', allowed_values=['noop', 'deadline', 'row', 'cfq', 'bfq'],
-                  description='Set the IO scheduler to test on the device.'),
-        Parameter('cleanup', kind=boolean, default=True,
-                  description='Specifies whether to clean up temporary files on the device.'),
+        Parameter('applaunch_type', kind=str, default='launch_from_background',
+                  allowed_values=['launch_from_background', 'launch_from_long-idle'],
+                  description="""
+                  Choose launch_from_long-idle for measuring launch time
+                  from long-idle. These two types are described in the class
+                  description.
+                  """),
+        Parameter('applaunch_iterations', kind=int, default=1,
+                  description="""
+                  Number of iterations of the application launch
+                  """),
+        Parameter('report_results', kind=bool, default=True,
+                  description="""
+                  Choose to report results of the application launch time.
+                  """),
     ]
 
     def __init__(self, device, **kwargs):
-        super(ApplaunchWorkload, self).__init__(device, **kwargs)
-        if not jinja2:
-            raise WorkloadError('Please install jinja2 Python package: "sudo pip install jinja2"')
-        filename = '{}-{}.sh'.format(self.name, self.app)
-        self.host_script_file = os.path.join(settings.meta_directory, filename)
-        self.device_script_file = os.path.join(self.device.working_directory, filename)
-        self._launcher_pid = None
-        self._old_launcher_affinity = None
-        self.sensors = []
+        super(Applaunch, self).__init__(device, **kwargs)
 
-    def on_run_init(self, context):  # pylint: disable=W0613
-        if self.measure_energy:
-            self.sensors = discover_sensors(self.device, ['energy'])
-            for sensor in self.sensors:
-                sensor.label = identifier(sensor.label).upper()
+    def init_resources(self, context):
+        super(Applaunch, self).init_resources(context)
+        loader = ExtensionLoader(packages=settings.extension_packages, paths=settings.extension_paths)
+        self.workload_params['markers_enabled'] = True
+        self.workload = loader.get_workload(self.workload_name, self.device,
+                                            **self.workload_params)
+        self.init_workload_resources(context)
+
+    def init_workload_resources(self, context):
+        self.workload.uiauto_file = context.resolver.get(wlauto.common.android.resources.JarFile(self.workload))
+        if not self.workload.uiauto_file:
+            raise ResourceError('No UI automation JAR file found for workload {}.'.format(self.workload.name))
+        self.workload.device_uiauto_file = self.device.path.join(self.device.working_directory, os.path.basename(self.workload.uiauto_file))
+        if not self.workload.uiauto_package:
+            self.workload.uiauto_package = os.path.splitext(os.path.basename(self.workload.uiauto_file))[0]
+
+    def validate(self):
+        super(Applaunch, self).validate()
+        self.workload.validate()
+        self.pass_parameters()
+
+    def pass_parameters(self):
+        self.uiauto_params['workload'] = self.workload.name
+        self.uiauto_params['package'] = self.workload.package
+        self.uiauto_params['binaries_directory'] = self.device.binaries_directory
+        self.uiauto_params.update(self.workload.uiauto_params)
+        if self.workload.activity:
+            self.uiauto_params['launch_activity'] = self.workload.activity
+        else:
+            self.uiauto_params['launch_activity'] = "None"
+        self.uiauto_params['applaunch_type'] = self.applaunch_type
+        self.uiauto_params['applaunch_iterations'] = self.applaunch_iterations
 
     def setup(self, context):
-        self.logger.debug('Creating script {}'.format(self.host_script_file))
-        with open(self.host_script_file, 'w') as wfh:
-            env = jinja2.Environment(loader=jinja2.FileSystemLoader(THIS_DIR))
-            template = env.get_template(TEMPLATE_NAME)
-            wfh.write(template.render(device=self.device,  # pylint: disable=maybe-no-member
-                                      sensors=self.sensors,
-                                      iterations=self.times,
-                                      io_stress=self.io_stress,
-                                      io_scheduler=self.io_scheduler,
-                                      cleanup=self.cleanup,
-                                      package=APP_CONFIG[self.app]['package'],
-                                      activity=APP_CONFIG[self.app]['activity'],
-                                      options=APP_CONFIG[self.app]['options'],
-                                      busybox=self.device.busybox,
-                                      ))
-        self.device_script_file = self.device.install(self.host_script_file)
-        if self.set_launcher_affinity:
-            self._set_launcher_affinity()
-        self.device.clear_logcat()
+        AndroidBenchmark.setup(self.workload, context)
+        if not self.workload.launch_main:
+            self.workload.launch_app()
+        UiAutomatorWorkload.setup(self, context)
+        self.workload.device.push_file(self.workload.uiauto_file, self.workload.device_uiauto_file)
 
     def run(self, context):
-        self.device.execute('sh {}'.format(self.device_script_file), timeout=300, as_root=self.io_stress)
+        UiAutomatorWorkload.run(self, context)
 
-    def update_result(self, context):  # pylint: disable=too-many-locals
-        result_files = ['time.result']
-        result_files += ['{}.result'.format(sensor.label) for sensor in self.sensors]
-        metric_suffix = ''
-        if self.io_stress:
-            host_scheduler_file = os.path.join(context.output_directory, 'scheduler')
-            device_scheduler_file = '/sys/block/mmcblk0/queue/scheduler'
-            self.device.pull_file(device_scheduler_file, host_scheduler_file)
-            with open(host_scheduler_file) as fh:
-                scheduler = fh.read()
-                scheduler_used = scheduler[scheduler.index("[") + 1:scheduler.index("]")]
-                metric_suffix = '_' + scheduler_used
-        for filename in result_files:
-            self._extract_results_from_file(context, filename, metric_suffix)
+    def update_result(self, context):
+        super(Applaunch, self).update_result(context)
+        if self.report_results:
+            parser = UxPerfParser(context, prefix='applaunch_')
+            logfile = os.path.join(context.output_directory, 'logcat.log')
+            parser.parse(logfile)
+            parser.add_action_timings()
 
     def teardown(self, context):
-        if self.set_launcher_affinity:
-            self._reset_launcher_affinity()
-        if self.cleanup:
-            self.device.delete_file(self.device_script_file)
-
-    def _set_launcher_affinity(self):
-        try:
-            self._launcher_pid = self.device.get_pids_of('com.android.launcher')[0]
-            result = self.device.execute('taskset -p {}'.format(self._launcher_pid), busybox=True, as_root=True)
-            self._old_launcher_affinity = int(result.split(':')[1].strip(), 16)
-
-            cpu_ids = [i for i, x in enumerate(self.device.core_names) if x == 'a15']
-            if not cpu_ids or len(cpu_ids) == len(self.device.core_names):
-                self.logger.debug('Cannot set affinity.')
-                return
-
-            new_mask = reduce(lambda x, y: x | y, cpu_ids, 0x0)
-            self.device.execute('taskset -p 0x{:X} {}'.format(new_mask, self._launcher_pid), busybox=True, as_root=True)
-        except IndexError:
-            raise WorkloadError('Could not set affinity of launcher: PID not found.')
-
-    def _reset_launcher_affinity(self):
-        command = 'taskset -p 0x{:X} {}'.format(self._old_launcher_affinity, self._launcher_pid)
-        self.device.execute(command, busybox=True, as_root=True)
-
-    def _extract_results_from_file(self, context, filename, metric_suffix):
-        host_result_file = os.path.join(context.output_directory, filename)
-        device_result_file = self.device.path.join(self.device.working_directory, filename)
-        self.device.pull_file(device_result_file, host_result_file)
-
-        with open(host_result_file) as fh:
-            if filename == 'time.result':
-                values = [v / 1000 for v in map(int, fh.read().split())]
-                _add_metric(context, 'time' + metric_suffix, values, 'Seconds')
-            else:
-                metric = filename.replace('.result', '').lower()
-                numbers = iter(map(int, fh.read().split()))
-                deltas = [(after - before) / 1000000 for before, after in zip(numbers, numbers)]
-                _add_metric(context, metric, deltas, 'Joules')
-
-
-def _add_metric(context, metric, values, units):
-    mean, sd = get_meansd(values)
-    context.result.add_metric(metric, mean, units)
-    context.result.add_metric(metric + ' sd', sd, units, lower_is_better=True)
+        super(Applaunch, self).teardown(context)
+        AndroidBenchmark.teardown(self.workload, context)
+        UiAutomatorWorkload.teardown(self.workload, context)
+        #Workload uses Dexclass loader while loading the jar file of the instrumented workload.
+        #Dexclassloader unzips and generates .dex file in the .jar directory during the run.
+        device_uiauto_dex_file = self.workload.device_uiauto_file.replace(".jar", ".dex")
+        self.workload.device.delete_file(self.device.path.join(self.device.binaries_directory, device_uiauto_dex_file))

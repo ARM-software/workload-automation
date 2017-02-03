@@ -29,6 +29,8 @@ GfxInfoFrame = collections.namedtuple('GfxInfoFrame', 'Flags IntendedVsync Vsync
 # Android M: WindowLayoutChanged | SurfaceCanvas
 GFXINFO_EXEMPT = 1 | 4
 
+VSYNC_INTERVAL = 16666667
+
 
 class FpsProcessor(object):
     """
