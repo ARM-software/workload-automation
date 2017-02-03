@@ -667,6 +667,8 @@ class AndroidUxPerfWorkload(AndroidUiAutoBenchmark):
         super(AndroidUxPerfWorkload, self).validate()
         self.uiauto_params['package'] = self.package
         self.uiauto_params['markers_enabled'] = self.markers_enabled
+        if not self.activity:
+            self.activity = 'None'
 
     def setup(self, context):
         super(AndroidUxPerfWorkload, self).setup(context)

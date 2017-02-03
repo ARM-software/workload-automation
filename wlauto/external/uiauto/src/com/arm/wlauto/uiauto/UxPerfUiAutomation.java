@@ -17,7 +17,7 @@ package com.arm.wlauto.uiauto;
 
 import java.util.logging.Logger;
 
-public class UxPerfUiAutomation extends BaseUiAutomation {
+public class UxPerfUiAutomation extends UxPerfApplaunch{
 
     private Logger logger = Logger.getLogger(UxPerfUiAutomation.class.getName());
 

@@ -16,6 +16,7 @@
 package com.arm.wlauto.uiauto.adobereader;
 
 import android.os.Bundle;
+import android.util.Log;
 
 // Import the uiautomator libraries
 import com.android.uiautomator.core.UiObject;
@@ -36,25 +37,19 @@ import java.util.Map.Entry;
 
 public class UiAutomation extends UxPerfUiAutomation {
 
-    protected Bundle parameters;
-    protected String packageName;
-    protected String packageID;
 
     private long networkTimeout =  TimeUnit.SECONDS.toMillis(20);
     private long searchTimeout =  TimeUnit.SECONDS.toMillis(20);
-
+    
     public void runUiAutomation() throws Exception {
-        parameters = getParams();
-        packageName = parameters.getString("package");
-        packageID = packageName + ":id/";
-
+        getParameters();
         String filename = parameters.getString("filename").replace("0space0", " ");
         String[] searchStrings =
             parameters.getString("search_string_list").replace("0space0", " ").split("0newline0");
 
         setScreenOrientation(ScreenOrientation.NATURAL);
+        clearDialogues();
 
-        dismissWelcomeView();
         openFile(filename);
         gesturesTest();
         searchPdfTest(searchStrings);
@@ -62,6 +57,20 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         unsetScreenOrientation();
     }
+	
+    
+	//Clear the initial run dialogues of the application launch.
+    public void clearDialogues() throws Exception {
+        getParameters();
+        dismissWelcomeView();
+    }
+    
+	//Sets the UiObject that marsk teh end of the application launch.
+	public void setUserBeginObject() {
+		userBeginObject = new UiObject(new UiSelector().textContains("RECENT")
+                                         .className("android.widget.TextView"));
+	}
+    
 
     private void dismissWelcomeView() throws Exception {
         UiObject welcomeView = getUiObjectByResourceId("android:id/content",
