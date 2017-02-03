@@ -24,16 +24,14 @@ import com.android.uiautomator.core.UiScrollable;
 import com.android.uiautomator.core.UiSelector;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
+import com.arm.wlauto.uiauto.ApplaunchInterface;
+import com.arm.wlauto.uiauto.UiAutoUtils;
 
 import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
 import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
 import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
 
-public class UiAutomation extends UxPerfUiAutomation {
-
-    public Bundle parameters;
-    public String packageName;
-    public String packageID;
+public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterface {
 
     public static final String SOURCE_MY_VIDEOS = "my_videos";
     public static final String SOURCE_SEARCH = "search";
@@ -45,8 +43,6 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void runUiAutomation() throws Exception {
         parameters = getParams();
-        packageName = parameters.getString("package");
-        packageID = packageName + ":id/";
 
         String videoSource = parameters.getString("video_source");
         String searchTerm = parameters.getString("search_term");
@@ -55,9 +51,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         }
 
         setScreenOrientation(ScreenOrientation.NATURAL);
+        runApplicationInitialization();
 
-        clearFirstRunDialogues();
-        disableAutoplay();
         testPlayVideo(videoSource, searchTerm);
         dismissAdvert();
         checkPlayerError();
@@ -66,6 +61,32 @@ public class UiAutomation extends UxPerfUiAutomation {
         scrollRelated();
 
         unsetScreenOrientation();
+    }
+
+    // Get application parameters and clear the initial run dialogues of the application launch.
+    public void runApplicationInitialization() throws Exception {
+        getPackageParameters();
+        clearFirstRunDialogues();
+        disableAutoplay();
+    }
+    
+    // Sets the UiObject that marks the end of the application launch.
+    public UiObject getLaunchEndObject() {
+        UiObject launchEndObject = new UiObject(new UiSelector()
+                                         .resourceId(packageID + "menu_search"));
+        return launchEndObject;
+    }
+    
+    // Returns the launch command for the application.
+    public String getLaunchCommand() {
+        String launch_command;
+        launch_command = UiAutoUtils.createLaunchCommand(parameters);
+        return launch_command;
+    }
+    
+    // Pass the workload parameters, used for applaunch
+    public void setWorkloadParameters(Bundle workload_parameters) {
+        parameters = workload_parameters;
     }
 
     public void clearFirstRunDialogues() throws Exception {
@@ -109,7 +130,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         if (autoplayToggle.waitForExists(WAIT_TIMEOUT_1SEC)) {
             autoplayToggle.click();
         }
-        getUiDevice().pressBack();
+        pressBack();
 
         // Tablet devices use a split with General in the left pane and Autoplay in the right so no
         // need to click back twice
@@ -117,7 +138,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             new UiObject(new UiSelector().textContains("General")
                                          .className("android.widget.TextView"));
         if (generalButton.exists()) {
-            getUiDevice().pressBack();
+            pressBack();
         }
     }
 
