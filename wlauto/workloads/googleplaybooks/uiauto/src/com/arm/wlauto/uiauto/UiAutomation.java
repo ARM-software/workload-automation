@@ -25,6 +25,8 @@ import com.android.uiautomator.core.UiWatcher;
 import com.android.uiautomator.core.UiScrollable;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
+import com.arm.wlauto.uiauto.ApplaunchInterface;
+import com.arm.wlauto.uiauto.UiAutoUtils;
 
 import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
 import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
@@ -38,11 +40,7 @@ import java.util.Map.Entry;
 
 import android.util.Log;
 
-public class UiAutomation extends UxPerfUiAutomation {
-
-    protected Bundle parameters;
-    protected String packageName;
-    protected String packageID;
+public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterface {
 
     private int viewTimeoutSecs = 10;
     private long viewTimeout =  TimeUnit.SECONDS.toMillis(viewTimeoutSecs);
@@ -52,22 +50,15 @@ public class UiAutomation extends UxPerfUiAutomation {
         this.uiAutoTimeout = TimeUnit.SECONDS.toMillis(8);
 
         parameters = getParams();
-        packageName = parameters.getString("package");
-        packageID = packageName + ":id/";
 
         String searchBookTitle = parameters.getString("search_book_title").replace("0space0", " ");
         String libraryBookTitle = parameters.getString("library_book_title").replace("0space0", " ");
         String chapterPageNumber = parameters.getString("chapter_page_number");
         String searchWord = parameters.getString("search_word");
         String noteText = "This is a test note";
-        String account = parameters.getString("account");
 
         setScreenOrientation(ScreenOrientation.NATURAL);
-
-        chooseAccount(account);
-        clearFirstRunDialogues();
-        dismissSendBooksAsGiftsDialog();
-        dismissSync();
+        runApplicationInitialization();
 
         searchForBook(searchBookTitle);
         addToLibrary();
@@ -90,6 +81,35 @@ public class UiAutomation extends UxPerfUiAutomation {
         pressBack();
 
         unsetScreenOrientation();
+    }
+    
+    // Get application parameters and clear the initial run dialogues of the application launch.
+    public void runApplicationInitialization() throws Exception {
+        getPackageParameters();
+        String account = parameters.getString("account");
+        chooseAccount(account);
+        clearFirstRunDialogues();
+        dismissSendBooksAsGiftsDialog();
+        dismissSync();
+    }
+    
+    // Sets the UiObject that marks the end of the application launch.
+    public UiObject getLaunchEndObject() {
+        UiObject launchEndObject = new UiObject(new UiSelector()
+                                         .className("android.widget.ImageButton"));
+        return launchEndObject;
+    }
+    
+    // Returns the launch command for the application.
+    public String getLaunchCommand() {
+        String launch_command;
+        launch_command = UiAutoUtils.createLaunchCommand(parameters);
+        return launch_command;
+    }
+    
+    // Pass the workload parameters, used for applaunch
+    public void setWorkloadParameters(Bundle workload_parameters) {
+        parameters = workload_parameters;
     }
 
     // If the device has more than one account setup, a prompt appears
