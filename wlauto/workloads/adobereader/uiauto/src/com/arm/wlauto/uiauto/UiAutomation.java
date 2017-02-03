@@ -116,8 +116,8 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
             tapDisplayCentre();
         }
 
-        UiObject actionBarTitle = getUiObjectByDescription("My Documents",
-                                                           "android.widget.LinearLayout");
+        UiObject actionBarTitle = new UiObject(new UiSelector().textContains("My Documents")
+                                                .className("android.widget.TextView"));
         actionBarTitle.waitForExists(uiAutoTimeout);
     }
 
