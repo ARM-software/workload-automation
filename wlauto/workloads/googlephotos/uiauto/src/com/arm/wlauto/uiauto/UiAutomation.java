@@ -25,6 +25,8 @@ import com.android.uiautomator.core.UiSelector;
 import com.android.uiautomator.core.UiScrollable;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
+import com.arm.wlauto.uiauto.ApplaunchInterface;
+import com.arm.wlauto.uiauto.UiAutoUtils;
 
 import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
 import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
@@ -36,23 +38,16 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public class UiAutomation extends UxPerfUiAutomation {
-
-    public Bundle parameters;
-    public String packageName;
-    public String packageID;
+public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterface {
 
     private long viewTimeout =  TimeUnit.SECONDS.toMillis(10);
 
     public void runUiAutomation() throws Exception {
         parameters = getParams();
-        packageName = parameters.getString("package");
-        packageID = packageName + ":id/";
 
         sleep(5); // Pause while splash screen loads
         setScreenOrientation(ScreenOrientation.NATURAL);
-        dismissWelcomeView();
-        closePromotionPopUp();
+        runApplicationInitialization();
 
         selectGalleryFolder("wa-1");
         selectFirstImage();
@@ -77,6 +72,32 @@ public class UiAutomation extends UxPerfUiAutomation {
         closeAndReturn(true);
 
         unsetScreenOrientation();
+    }
+
+    // Get application parameters and clear the initial run dialogues of the application launch.
+    public void runApplicationInitialization() throws Exception {
+        getPackageParameters();
+        dismissWelcomeView();
+        closePromotionPopUp();
+    }
+    
+    // Sets the UiObject that marks the end of the application launch.
+    public UiObject getLaunchEndObject() {
+        UiObject launchEndObject = new UiObject(new UiSelector().textContains("Photos")
+                                         .className("android.widget.TextView"));
+        return launchEndObject;
+    }
+    
+    // Returns the launch command for the application.
+    public String getLaunchCommand() {
+        String launch_command;
+        launch_command = UiAutoUtils.createLaunchCommand(parameters);
+        return launch_command;
+    }
+    
+    // Pass the workload parameters, used for applaunch
+    public void setWorkloadParameters(Bundle workload_parameters) {
+        parameters = workload_parameters;
     }
 
     public void dismissWelcomeView() throws Exception {
