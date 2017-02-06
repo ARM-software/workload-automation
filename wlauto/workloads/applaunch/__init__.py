@@ -115,6 +115,7 @@ class Applaunch(AndroidUxPerfWorkload):
         self.workload = loader.get_workload(self.workload_name, self.device,
                                             **self.workload_params)
         self.init_workload_resources(context)
+        self.package = self.workload.package
 
     def init_workload_resources(self, context):
         self.workload.uiauto_file = context.resolver.get(wlauto.common.android.resources.JarFile(self.workload))
