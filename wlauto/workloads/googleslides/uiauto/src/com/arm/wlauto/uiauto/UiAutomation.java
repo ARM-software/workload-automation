@@ -62,6 +62,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         // UI automation begins here
         skipWelcomeScreen();
         sleep(1);
+		dismissUpdateDialog();
+		sleep(1);
         dismissWorkOfflineBanner();
         sleep(1);
         enablePowerpointCompat();
@@ -83,6 +85,17 @@ public class UiAutomation extends UxPerfUiAutomation {
             clickUiObject(BY_TEXT, "Got it", "android.widget.Button");
         }
     }
+	
+	public void dismissUpdateDialog() throws Exception {
+		UiObject update = 
+			new UiObject(new UiSelector().textContains("App update recommended"));
+		if (update.waitForExists(WAIT_TIMEOUT_1SEC)) {
+			System.out.println("APP UPDATE FOUND");
+			UiObject dismiss = 
+			new UiObject(new UiSelector().textContains("Dismiss"));
+			dismiss.click();			
+		}
+	}
 
     public void enterTextInSlide(String viewName, String textToEnter) throws Exception {
         UiObject view =
@@ -202,6 +215,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         logger.start();
         clickUiObject(BY_DESC, "New presentation");
         clickUiObject(BY_TEXT, "New PowerPoint", true);
+		dismissUpdateDialog();
         logger.stop();
     }
 
@@ -210,9 +224,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         ActionLogger logger = new ActionLogger(testTag, parameters);
 
         UiObject saveActionButton =
-            new UiObject(new UiSelector().resourceId(packageID + "action"));
+            new UiObject(new UiSelector().text("save"));
         UiObject unsavedIndicator =
-            new UiObject(new UiSelector().textContains("Not saved"));
+            new UiObject(new UiSelector().textContains("Unsaved changes"));
         logger.start();
         if (saveActionButton.waitForExists(WAIT_TIMEOUT_1SEC)) {
             saveActionButton.click();
