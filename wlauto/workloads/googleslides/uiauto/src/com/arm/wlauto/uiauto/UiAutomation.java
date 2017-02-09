@@ -114,6 +114,12 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void insertSlide(String slideLayout) throws Exception {
+        //Window the application in order to bypass UXPERF-273 until this issue can be fixed by Google.
+        UiObject window =
+                new UiObject(new UiSelector().resourceId("android:id/restore_window"));
+        if (window.waitForExists(WAIT_TIMEOUT_1SEC)){
+            window.click();
+        }
         clickUiObject(BY_DESC, "Add slide", true);
         clickUiObject(BY_TEXT, slideLayout, true);
     }
