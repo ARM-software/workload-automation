@@ -51,7 +51,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     /** Timeout to wait for application launch to finish. */
     private Integer launch_timeout = 10;
     public String applaunchType;
-    public String applaunchIterations;
+    public int applaunchIterations;
     public String activityName;
     public ApplaunchInterface launch_workload;
 
@@ -90,15 +90,15 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Get parameters for application launch
         getPackageParameters();
         applaunchType = parameters.getString("applaunch_type");
-        applaunchIterations = parameters.getString("applaunch_iterations");
+        applaunchIterations = parameters.getInt("applaunch_iterations");
         activityName = parameters.getString("launch_activity");
 
         // Run the workload for application launch initialization
         runApplaunchSetup();
 
         // Run the workload for application launch measurement
-        for (int iteration = 0; iteration < Integer.parseInt(applaunchIterations); iteration++) {
-            Log.d("Applaunch iteration number: ", applaunchIterations);
+        for (int iteration = 0; iteration < applaunchIterations; iteration++) {
+            Log.d("Applaunch iteration number: ", String.valueOf(applaunchIterations));
             sleep(20);//sleep for a while before next iteration
             killBackground();
             runApplaunchIteration(iteration);

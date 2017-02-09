@@ -51,10 +51,10 @@ public class UiAutomation extends UxPerfUiAutomation {
         packageName = parameters.getString("package");
         packageID = packageName + ":id/";
 
-        String newDocumentName = parameters.getString("new_doc_name").replace("0space0", " ");
-        String pushedDocumentName = parameters.getString("test_file").replace("0space0", " ");
-        int slideCount = Integer.parseInt(parameters.getString("slide_count"));
-        boolean doTextEntry = Boolean.parseBoolean(parameters.getString("do_text_entry"));
+        String newDocumentName = parameters.getString("new_doc_name");
+        String pushedDocumentName = parameters.getString("test_file");
+        int slideCount = parameters.getInt("slide_count");
+        boolean doTextEntry = parameters.getBoolean("do_text_entry");
         String workingDirectoryName = parameters.getString("workdir_name");
 
         setScreenOrientation(ScreenOrientation.NATURAL);

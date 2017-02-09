@@ -38,7 +38,7 @@ public class UiAutomation extends BaseUiAutomation {
     public void runUiAutomation() throws Exception {
         Bundle status = new Bundle();
         Bundle params = getParams();
-        boolean hasGpu = Boolean.parseBoolean(params.getString("has_gpu").toLowerCase());
+        boolean hasGpu = params.getBoolean("has_gpu");
 
         clearLogcat();
         handleFtuInfoDialogIfNecessary();

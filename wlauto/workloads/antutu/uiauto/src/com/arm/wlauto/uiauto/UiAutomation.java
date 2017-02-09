@@ -45,9 +45,9 @@ public class UiAutomation extends BaseUiAutomation {
         Bundle parameters = getParams();
 
         String version = parameters.getString("version");
-        boolean enableSdTests = Boolean.parseBoolean(parameters.getString("enable_sd_tests"));
+        boolean enableSdTests = parameters.getBoolean("enable_sd_tests");
 
-        int times = Integer.parseInt(parameters.getString("times"));
+        int times = parameters.getInt("times");
         if (times < 1) {
                 times = 1;
         }

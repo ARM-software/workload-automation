@@ -62,9 +62,9 @@ class Videostreaming(AndroidUiAutoBenchmark):
         self.uiauto_params['tolerance'] = self.tolerance
         self.uiauto_params['sampling_interval'] = self.sampling_interval
         if self.video_name and self.video_name != "":
-            self.uiauto_params['video_name'] = self.video_name.replace(" ", "0space0")  # hack to get around uiautomator limitation
+            self.uiauto_params['video_name'] = self.video_name
         else:
-            self.uiauto_params['video_name'] = "abkk sathe {}".format(self.resolution).replace(" ", "0space0")
+            self.uiauto_params['video_name'] = "abkk sathe {}".format(self.resolution)
         self.apk_file = context.resolver.get(wlauto.common.android.resources.ApkFile(self))
         self.uiauto_file = context.resolver.get(wlauto.common.android.resources.JarFile(self))
         self.device_uiauto_file = self.device.path.join(self.device.working_directory,

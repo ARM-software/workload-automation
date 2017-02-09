@@ -45,8 +45,8 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
         parameters = getParams();
 
-        String contactName = parameters.getString("name").replace("0space0", " ");
-        int callDuration = Integer.parseInt(parameters.getString("duration"));
+        String contactName = parameters.getString("name");
+        int callDuration = parameters.getInt("duration");
         String callType = parameters.getString("action");
         String resultsFile = parameters.getString("results_file");
 

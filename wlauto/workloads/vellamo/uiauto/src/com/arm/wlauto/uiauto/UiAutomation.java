@@ -43,10 +43,10 @@ public class UiAutomation extends BaseUiAutomation {
     public void runUiAutomation() throws Exception {
         Bundle parameters = getParams();
         String version = parameters.getString("version");
-        Boolean browser = Boolean.parseBoolean(parameters.getString("browser"));
-        Boolean metal = Boolean.parseBoolean(parameters.getString("metal"));
-        Boolean multicore = Boolean.parseBoolean(parameters.getString("multicore"));
-        Integer browserToUse = Integer.parseInt(parameters.getString("browserToUse")) - 1;
+        Boolean browser = parameters.getBoolean("browser");
+        Boolean metal = parameters.getBoolean("metal");
+        Boolean multicore = parameters.getBoolean("multicore");
+        Integer browserToUse = parameters.getInt("browserToUse") - 1;
 
         dismissEULA();
 

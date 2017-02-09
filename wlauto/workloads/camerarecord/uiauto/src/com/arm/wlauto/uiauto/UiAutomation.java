@@ -45,10 +45,9 @@ public class UiAutomation extends BaseUiAutomation {
     public void runUiAutomation() throws Exception {
         Bundle parameters = getParams();
         if (parameters.size() > 0) {
-           recordingTime = Integer.parseInt(parameters
-                             .getString("recording_time"));
+           recordingTime = parameters.getInt("recording_time");
            recordingMode = parameters.getString("recording_mode");
-           api = Integer.parseInt(parameters.getString("api_level"));
+           api = parameters.getInt("api_level");
            String versionString = parameters.getString("version");
            version = splitVersion(versionString);
         }

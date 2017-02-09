@@ -90,7 +90,7 @@ class Skype(AndroidUxPerfWorkload):
         super(Skype, self).validate()
         self.uiauto_params['my_id'] = self.login_name
         self.uiauto_params['my_pwd'] = self.login_pass
-        self.uiauto_params['name'] = self.contact_name.replace(' ', '0space0')
+        self.uiauto_params['name'] = self.contact_name
         self.uiauto_params['duration'] = self.duration
         self.uiauto_params['action'] = self.action
 

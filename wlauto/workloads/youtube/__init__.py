@@ -86,7 +86,7 @@ class Youtube(AndroidUxPerfWorkload):
     def validate(self):
         super(Youtube, self).validate()
         self.uiauto_params['video_source'] = self.video_source
-        self.uiauto_params['search_term'] = self.search_term.replace(' ', '0space0')
+        self.uiauto_params['search_term'] = self.search_term
         # Make sure search term is set if video source is 'search'
         if (self.video_source == 'search') and not self.search_term:
             raise WorkloadError("Param 'search_term' must be specified when video source is 'search'")

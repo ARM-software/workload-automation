@@ -43,8 +43,8 @@ public class UiAutomation extends BaseUiAutomation {
         String version = parameters.getString("version");
         String useCase = parameters.getString("use_case").replace('_', ' ');
         String variant = parameters.getString("variant").replace('_', ' ');
-        int iterations = Integer.parseInt(parameters.getString("iterations"));
-	int testTimeoutSeconds = Integer.parseInt(parameters.getString("timeout"));
+        int iterations = parameters.getInt("iterations");
+        int testTimeoutSeconds = parameters.getInt("timeout");
         if (iterations < 1)
                 iterations = 1;
 
