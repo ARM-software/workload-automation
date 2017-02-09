@@ -27,13 +27,14 @@ from wlauto.common.android.resources import ApkFile, ReventFile
 from wlauto.common.resources import ExtensionAsset, Executable, File
 from wlauto.exceptions import WorkloadError, ResourceError, DeviceError
 from wlauto.utils.android import ApkInfo, ANDROID_NORMAL_PERMISSIONS, UNSUPPORTED_PACKAGES
-from wlauto.utils.types import boolean
+from wlauto.utils.types import boolean, ParameterDict
 from wlauto.utils.revent import ReventRecording
 import wlauto.utils.statedetect as state_detector
 import wlauto.common.android.resources
 
 
 DELAY = 5
+
 
 # Due to the way `super` works you have to call it at every level but WA executes some
 # methods conditionally and so has to call them directly via the class, this breaks super
@@ -81,7 +82,7 @@ class UiAutomatorWorkload(Workload):
         self.uiauto_file = None
         self.device_uiauto_file = None
         self.command = None
-        self.uiauto_params = {}
+        self.uiauto_params = ParameterDict()
 
     def init_resources(self, context):
         self.uiauto_file = context.resolver.get(wlauto.common.android.resources.JarFile(self))
@@ -98,7 +99,7 @@ class UiAutomatorWorkload(Workload):
         params_dict = self.uiauto_params
         params_dict['workdir'] = self.device.working_directory
         params = ''
-        for k, v in self.uiauto_params.iteritems():
+        for k, v in self.uiauto_params.iter_encoded_items():
             params += ' -e {} "{}"'.format(k, v)
         self.command = 'uiautomator runtest {}{} -c {}'.format(self.device_uiauto_file, params, method_string)
         self.device.push_file(self.uiauto_file, self.device_uiauto_file)
