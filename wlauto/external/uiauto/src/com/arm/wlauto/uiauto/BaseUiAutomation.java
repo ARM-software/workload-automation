@@ -84,7 +84,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
         public ActionLogger(String testTag, Bundle parameters) {
             this.testTag = testTag;
-            this.enabled = Boolean.parseBoolean(parameters.getString("markers_enabled"));
+            this.enabled = parameters.getBoolean("markers_enabled");
         }
 
         public void start() {
@@ -618,5 +618,97 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         } else {
             throw new UiObjectNotFoundException("Could not find folder : " + directory);
         }
+    }
+
+    // Override getParams function to decode a url encoded parameter bundle before
+    // passing it to workloads.
+    public Bundle getParams() {
+        // Get the original parameter bundle
+        Bundle parameters = super.getParams();
+
+        // Decode each parameter in the bundle, except null values and "jars", as this
+        // is automatically added and therefore not encoded.
+        for (String key : parameters.keySet()) {
+            String param = parameters.getString(key);
+            if (param != null && !key.equals("jars")) {
+                param = android.net.Uri.decode(param);
+                parameters = decode(parameters, key, param);
+            }
+        }
+        return parameters;
+    }
+
+    // Helper function to decode a string and insert it as an appropriate type
+    // into a provided bundle with its key.
+    // Each bundle parameter will be a urlencoded string with 2 characters prefixed to the value 
+    // used to store the original type information, e.g. 'fl' -> list of floats.
+    private Bundle decode(Bundle parameters, String key, String value) {
+        char value_type = value.charAt(0);
+        char value_dimension = value.charAt(1);
+        String param = value.substring(2);
+
+        if (value_dimension == 's') {
+            if (value_type == 's') {
+                parameters.putString(key, param);
+            } else if (value_type == 'f') {
+                parameters.putFloat(key, Float.parseFloat(param));
+            } else if (value_type == 'd') {
+                parameters.putDouble(key, Double.parseDouble(param));
+            } else if (value_type == 'b') {
+                parameters.putBoolean(key, Boolean.parseBoolean(param));
+            } else if (value_type == 'i') {
+                parameters.putInt(key, Integer.parseInt(param));
+            } else if (value_type == 'n') {
+                parameters.putString(key, "None");
+            } else {
+            throw new IllegalArgumentException("Error decoding:" + key + value
+                                                + " - unknown format");
+            }
+        } else if (value_dimension == 'l') {
+            return decodeArray(parameters, key, value_type, param);
+        } else {
+            throw new IllegalArgumentException("Error decoding:" + key + value
+                                                + " - unknown format");
+        }
+        return parameters;
+    }
+
+    // Helper function to deal with decoding arrays and update the bundle with
+    // an appropriate array type. The string "0newelement0" is used to distinguish 
+    // each element for each other in the array when encoded. 
+    private Bundle decodeArray(Bundle parameters, String key, char type, String value) {
+        String[] string_list = value.split("0newelement0");
+        if (type == 's') {
+                parameters.putStringArray(key, string_list);
+        }
+        else if (type == 'i') {
+            int[] int_list = new int[string_list.length];
+            for (int i = 0; i < string_list.length; i++){
+                int_list[i] = Integer.parseInt(string_list[i]);
+            }
+            parameters.putIntArray(key, int_list);
+        } else if (type == 'f') {
+            float[] float_list = new float[string_list.length];
+            for (int i = 0; i < string_list.length; i++){
+                float_list[i] = Float.parseFloat(string_list[i]);
+            }
+            parameters.putFloatArray(key, float_list);
+        } else if (type == 'd') {
+            double[] double_list = new double[string_list.length];
+            for (int i = 0; i < string_list.length; i++){
+                double_list[i] = Double.parseDouble(string_list[i]);
+            }
+            parameters.putDoubleArray(key, double_list);
+        } else if (type == 'b') {
+            boolean[] boolean_list = new boolean[string_list.length];
+            for (int i = 0; i < string_list.length; i++){
+                boolean_list[i] = Boolean.parseBoolean(string_list[i]);
+            }
+            parameters.putBooleanArray(key, boolean_list);
+        } else {
+            throw new IllegalArgumentException("Error decoding array: " +
+                                                value + " - unknown format");
+        }
+        return parameters;
     }
 }
