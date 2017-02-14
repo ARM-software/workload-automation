@@ -90,9 +90,8 @@ public class UiAutomation extends UxPerfUiAutomation {
 		UiObject update = 
 			new UiObject(new UiSelector().textContains("App update recommended"));
 		if (update.waitForExists(WAIT_TIMEOUT_1SEC)) {
-			System.out.println("APP UPDATE FOUND");
-			UiObject dismiss = 
-			new UiObject(new UiSelector().textContains("Dismiss"));
+			UiObject dismiss =
+			    new UiObject(new UiSelector().textContains("Dismiss"));
 			dismiss.click();			
 		}
 	}
@@ -114,12 +113,6 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     public void insertSlide(String slideLayout) throws Exception {
-        //Window the application in order to bypass UXPERF-273 until this issue can be fixed by Google.
-        UiObject window =
-                new UiObject(new UiSelector().resourceId("android:id/restore_window"));
-        if (window.waitForExists(WAIT_TIMEOUT_1SEC)){
-            window.click();
-        }
         clickUiObject(BY_DESC, "Add slide", true);
         clickUiObject(BY_TEXT, slideLayout, true);
     }
@@ -330,6 +323,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Slide 1 - Text
         if (doTextEntry) {
             enterTextInSlide(".*[Tt]itle.*", docName);
+            windowApplication();
             // Save
             saveDocument(docName);
             sleep(1);
@@ -460,6 +454,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject openArea = getUiObjectByResourceId(packageID + "punch_view_pager");
         Rect bounds = openArea.getVisibleBounds();
         // 10px from top of view, 10px from the right edge
-        tapDisplay(bounds.right - 10, bounds.top + 10);
+    }
+
+    public void windowApplication() throws Exception {
+        UiObject window =
+                new UiObject(new UiSelector().resourceId("android:id/restore_window"));
+        if (window.waitForExists(WAIT_TIMEOUT_1SEC)){
+            window.click();
+        }
     }
 }
