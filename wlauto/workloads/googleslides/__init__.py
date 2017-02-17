@@ -23,6 +23,7 @@ class GoogleSlides(AndroidUxPerfWorkload):
 
     name = 'googleslides'
     package = 'com.google.android.apps.docs.editors.slides'
+    
     activity = ''
     view = [package + '/com.google.android.apps.docs.quickoffice.filepicker.FilePickerActivity',
             package + '/com.google.android.apps.docs.editors.shared.filepicker.FilePickerActivity',
@@ -78,7 +79,7 @@ class GoogleSlides(AndroidUxPerfWorkload):
     It MAY NOT ALWAYS WORK on your device. If you do run into problems, it might help to
     set ``do_text_entry`` parameter to ``False``.
 
-    Known working APK version: 1.6.312.08
+    Known working APK version: 1.7.032.06
     '''
 
     parameters = [
