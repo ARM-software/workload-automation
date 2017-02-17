@@ -62,6 +62,8 @@ public class UiAutomation extends UxPerfUiAutomation {
         // UI automation begins here
         skipWelcomeScreen();
         sleep(1);
+        dismissUpdateDialog();
+        sleep(1);
         dismissWorkOfflineBanner();
         sleep(1);
         enablePowerpointCompat();
@@ -81,6 +83,14 @@ public class UiAutomation extends UxPerfUiAutomation {
             new UiObject(new UiSelector().textContains("Work offline"));
         if (banner.waitForExists(WAIT_TIMEOUT_1SEC)) {
             clickUiObject(BY_TEXT, "Got it", "android.widget.Button");
+        }
+    }
+
+    public void dismissUpdateDialog() throws Exception {
+    UiObject update = 
+        new UiObject(new UiSelector().textContains("App update recommended"));
+    if (update.waitForExists(WAIT_TIMEOUT_1SEC)) {
+        clickUiObject(BY_TEXT, "Dismiss");          
         }
     }
 
@@ -198,11 +208,11 @@ public class UiAutomation extends UxPerfUiAutomation {
     public void newDocument() throws Exception {
         String testTag = "document_new";
         ActionLogger logger = new ActionLogger(testTag, parameters);
-
         logger.start();
         clickUiObject(BY_DESC, "New presentation");
         clickUiObject(BY_TEXT, "New PowerPoint", true);
         logger.stop();
+        dismissUpdateDialog();
     }
 
     public void saveDocument(String docName) throws Exception {
@@ -210,9 +220,9 @@ public class UiAutomation extends UxPerfUiAutomation {
         ActionLogger logger = new ActionLogger(testTag, parameters);
 
         UiObject saveActionButton =
-            new UiObject(new UiSelector().resourceId(packageID + "action"));
+            new UiObject(new UiSelector().text("save"));
         UiObject unsavedIndicator =
-            new UiObject(new UiSelector().textContains("Not saved"));
+            new UiObject(new UiSelector().textContains("Unsaved changes"));
         logger.start();
         if (saveActionButton.waitForExists(WAIT_TIMEOUT_1SEC)) {
             saveActionButton.click();
@@ -293,7 +303,6 @@ public class UiAutomation extends UxPerfUiAutomation {
     protected void enablePowerpointCompat() throws Exception {
         String testTag = "enable_pptmode";
         ActionLogger logger = new ActionLogger(testTag, parameters);
-
         logger.start();
         clickUiObject(BY_DESC, "drawer");
         clickUiObject(BY_TEXT, "Settings", true);
@@ -310,6 +319,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Slide 1 - Text
         if (doTextEntry) {
             enterTextInSlide(".*[Tt]itle.*", docName);
+            windowApplication();
             // Save
             saveDocument(docName);
             sleep(1);
@@ -441,5 +451,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         Rect bounds = openArea.getVisibleBounds();
         // 10px from top of view, 10px from the right edge
         tapDisplay(bounds.right - 10, bounds.top + 10);
+    }
+
+    public void windowApplication() throws Exception {
+        UiObject window =
+                new UiObject(new UiSelector().resourceId("android:id/restore_window"));
+        if (window.waitForExists(WAIT_TIMEOUT_1SEC)){
+            window.click();
+        }
     }
 }
