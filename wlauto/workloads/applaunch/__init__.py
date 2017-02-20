@@ -35,7 +35,7 @@ class Applaunch(AndroidUxPerfWorkload):
     name = 'applaunch'
     description = '''
     This workload launches and measures the launch time of applications for supporting workloads.
-    
+
     Currently supported workloads are the ones that implement ``ApplaunchInterface``. For any
     workload to support this workload, it should implement the ``ApplaunchInterface``.
     The corresponding java file of the workload associated with the application being measured
@@ -62,7 +62,7 @@ class Applaunch(AndroidUxPerfWorkload):
 
     **Test Description:**
 
-    -   During the initialization and setup, the application being launched is launched 
+    -   During the initialization and setup, the application being launched is launched
         for the first time. The jar file of the workload of the application
         is moved to device at the location ``workdir`` which further implements the methods
         needed to measure the application launch time.
