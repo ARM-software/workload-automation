@@ -31,8 +31,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void runUiAutomation() throws Exception {
         // Override superclass value
-        this.uiAutoTimeout = TimeUnit.SECONDS.toMillis(10);
-        
+        this.uiAutoTimeout = TimeUnit.SECONDS.toMillis(10);    
         parameters = getParams();
 
         // Setup the three uiautomator classes with the correct information
@@ -62,8 +61,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         logIntoSkype(loginName, loginPass);
         // Skype won't allow us to login and share on first visit so invoke
         // once more from googlephotos
-        pressBack();
-        pressBack();
+        pressBack();        
         sendToSkype(contactName);
 
         unsetScreenOrientation();
@@ -90,7 +88,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             // to the launching app, so we need to share the photo once more and
             // wait for Gmail to sync.
             shareUsingApp("Gmail", "gmail_retry");
-            
+
             gmail.clearFirstRunDialogues();
         }
 
@@ -120,7 +118,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     private void shareUsingApp(String appName, String tagName) throws Exception {
         String testTag = "share";
         ActionLogger logger = new ActionLogger(testTag + "_" + tagName, parameters);
-        
+
         clickUiObject(BY_DESC, "Share", "android.widget.ImageView");
         UiScrollable applicationGrid =
             new UiScrollable(new UiSelector().resourceId(googlephotos.packageID + "application_grid"));
