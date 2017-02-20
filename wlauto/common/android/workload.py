@@ -238,13 +238,30 @@ class ApkWorkload(Workload):
             if self.apk_file or self.exact_abi:
                 break
 
+        host_version = self.check_host_version()
+        self.verify_apk_version(target_version, target_abi, host_version)
+
+        if self.force_install:
+            self.force_install_apk(context, host_version)
+        elif self.check_apk:
+            self.prefer_host_apk(context, host_version, target_version)
+        else:
+            self.prefer_target_apk(context, host_version, target_version)
+
+        self.reset(context)
+        self.apk_version = self.device.get_installed_package_version(self.package)
+        context.add_classifiers(apk_version=self.apk_version)
+
+    def check_host_version(self):
         host_version = None
         if self.apk_file is not None:
             host_version = ApkInfo(self.apk_file).version_name
             if host_version:
                 host_version = LooseVersion(host_version)
             self.logger.debug("Found version '{}' on host".format(host_version))
+        return host_version
 
+    def verify_apk_version(self, target_version, target_abi, host_version):
         # Error if apk was not found anywhere
         if target_version is None and host_version is None:
             msg = "Could not find APK for '{}' on the host or target device"
@@ -260,18 +277,6 @@ class ApkWorkload(Workload):
             if target_abi != self.device.abi:
                 msg = "APK abi '{}' not found on the host and target is '{}'"
                 raise ResourceError(msg.format(self.device.abi, target_abi))
-
-        # Ensure the apk is setup on the device
-        if self.force_install:
-            self.force_install_apk(context, host_version)
-        elif self.check_apk:
-            self.prefer_host_apk(context, host_version, target_version)
-        else:
-            self.prefer_target_apk(context, host_version, target_version)
-
-        self.reset(context)
-        self.apk_version = self.device.get_installed_package_version(self.package)
-        context.add_classifiers(apk_version=self.apk_version)
 
     def launch_application(self):
         if self.launch_main:
