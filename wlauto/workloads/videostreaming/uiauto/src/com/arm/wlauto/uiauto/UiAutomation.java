@@ -60,10 +60,9 @@ public class UiAutomation extends BaseUiAutomation {
         if (parameters.size() <= 0)
            return;
 
-        int tolerance = Integer.parseInt(parameters.getString("tolerance"));
-        int samplingInterval = Integer.parseInt(parameters
-                           .getString("sampling_interval"));
-        String videoName = parameters.getString("video_name").replace("0space0", " "); //Hack to get around uiautomator limitation
+        int tolerance = parameters.getInt("tolerance");
+        int samplingInterval = parameters.getInt("sampling_interval");
+        String videoName = parameters.getString("video_name");
 
         UiObject search = new UiObject(new UiSelector()
              .className("android.widget.ImageButton").index(0));

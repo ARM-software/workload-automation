@@ -76,8 +76,8 @@ class AdobeReader(AndroidUxPerfWorkload):
 
     def validate(self):
         super(AdobeReader, self).validate()
-        self.uiauto_params['filename'] = self.document_name.replace(' ', '0space0')
-        self.uiauto_params['search_string_list'] = '0newline0'.join([x.replace(' ', '0space0') for x in self.search_string_list])
+        self.uiauto_params['filename'] = self.document_name
+        self.uiauto_params['search_string_list'] = self.search_string_list
         # Only accept certain file formats
         if os.path.splitext(self.document_name.lower())[1] not in ['.pdf']:
             raise ValidationError('{} must be a PDF file'.format(self.document_name))

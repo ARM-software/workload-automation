@@ -43,11 +43,9 @@ public class UiAutomation extends BaseUiAutomation {
     public void runUiAutomation() throws Exception {
         Bundle parameters = getParams();
         if (parameters.size() > 0) {
-            iterations = Integer.parseInt(parameters
-                    .getString("no_of_captures"));
-            timeDurationBetweenEachCapture = Integer.parseInt(parameters
-                    .getString("time_between_captures"));
-            api = Integer.parseInt(parameters.getString("api_level"));
+            iterations = parameters.getInt("no_of_captures");
+            timeDurationBetweenEachCapture = parameters.getInt("time_between_captures");
+            api = parameters.getInt("api_level");
             String versionString = parameters.getString("version");
             version = splitVersion(versionString);
         }

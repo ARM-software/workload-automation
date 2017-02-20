@@ -46,9 +46,6 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
         String videoSource = parameters.getString("video_source");
         String searchTerm = parameters.getString("search_term");
-        if (searchTerm != null) {
-            searchTerm = searchTerm.replace("0space0", " ");
-        }
 
         setScreenOrientation(ScreenOrientation.NATURAL);
         runApplicationInitialization();

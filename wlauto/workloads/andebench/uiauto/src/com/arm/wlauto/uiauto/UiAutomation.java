@@ -41,7 +41,7 @@ public class UiAutomation extends BaseUiAutomation {
         Bundle status = new Bundle();
         Bundle params = getParams();
         String numThreads = params.getString("number_of_threads");
-        Boolean nativeOnly = Boolean.parseBoolean(params.getString("native_only"));
+        Boolean nativeOnly = params.getBoolean("native_only");
         status.putString("product", getUiDevice().getProductName());
 
         waitForStartButton();

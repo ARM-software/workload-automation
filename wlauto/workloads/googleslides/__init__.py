@@ -23,7 +23,7 @@ class GoogleSlides(AndroidUxPerfWorkload):
 
     name = 'googleslides'
     package = 'com.google.android.apps.docs.editors.slides'
-    
+
     activity = ''
     view = [package + '/com.google.android.apps.docs.quickoffice.filepicker.FilePickerActivity',
             package + '/com.google.android.apps.docs.editors.shared.filepicker.FilePickerActivity',
@@ -118,10 +118,10 @@ class GoogleSlides(AndroidUxPerfWorkload):
     def validate(self):
         super(GoogleSlides, self).validate()
         self.uiauto_params['workdir_name'] = self.device.path.basename(self.device.working_directory)
-        self.uiauto_params['test_file'] = self.test_file.replace(' ', '0space0')
+        self.uiauto_params['test_file'] = self.test_file
         self.uiauto_params['slide_count'] = self.slide_count
         self.uiauto_params['do_text_entry'] = self.do_text_entry
-        self.uiauto_params['new_doc_name'] = self.new_doc_name.replace(' ', '0space0')
+        self.uiauto_params['new_doc_name'] = self.new_doc_name
         # Only accept certain image formats
         if os.path.splitext(self.test_image.lower())[1] not in ['.jpg', '.jpeg', '.png']:
             raise ValidationError('{} must be a JPEG or PNG file'.format(self.test_image))

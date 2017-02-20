@@ -51,8 +51,8 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
         parameters = getParams();
 
-        String searchBookTitle = parameters.getString("search_book_title").replace("0space0", " ");
-        String libraryBookTitle = parameters.getString("library_book_title").replace("0space0", " ");
+        String searchBookTitle = parameters.getString("search_book_title");
+        String libraryBookTitle = parameters.getString("library_book_title");
         String chapterPageNumber = parameters.getString("chapter_page_number");
         String searchWord = parameters.getString("search_word");
         String noteText = "This is a test note";

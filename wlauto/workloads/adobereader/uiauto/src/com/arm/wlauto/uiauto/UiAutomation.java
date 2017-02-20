@@ -45,9 +45,8 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
     public void runUiAutomation() throws Exception {
         parameters = getParams();
 
-        String filename = parameters.getString("filename").replace("0space0", " ");
-        String[] searchStrings =
-            parameters.getString("search_string_list").replace("0space0", " ").split("0newline0");
+        String filename = parameters.getString("filename");
+        String[] searchStrings = parameters.getStringArray("search_string_list");
 
         setScreenOrientation(ScreenOrientation.NATURAL);
         runApplicationInitialization();

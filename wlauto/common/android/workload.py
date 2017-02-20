@@ -27,13 +27,14 @@ from wlauto.common.android.resources import ApkFile, ReventFile
 from wlauto.common.resources import ExtensionAsset, Executable, File
 from wlauto.exceptions import WorkloadError, ResourceError, DeviceError
 from wlauto.utils.android import ApkInfo, ANDROID_NORMAL_PERMISSIONS, UNSUPPORTED_PACKAGES
-from wlauto.utils.types import boolean
+from wlauto.utils.types import boolean, ParameterDict
 from wlauto.utils.revent import ReventRecording
 import wlauto.utils.statedetect as state_detector
 import wlauto.common.android.resources
 
 
 DELAY = 5
+
 
 # Due to the way `super` works you have to call it at every level but WA executes some
 # methods conditionally and so has to call them directly via the class, this breaks super
@@ -81,7 +82,7 @@ class UiAutomatorWorkload(Workload):
         self.uiauto_file = None
         self.device_uiauto_file = None
         self.command = None
-        self.uiauto_params = {}
+        self.uiauto_params = ParameterDict()
 
     def init_resources(self, context):
         self.uiauto_file = context.resolver.get(wlauto.common.android.resources.JarFile(self))
@@ -98,7 +99,7 @@ class UiAutomatorWorkload(Workload):
         params_dict = self.uiauto_params
         params_dict['workdir'] = self.device.working_directory
         params = ''
-        for k, v in self.uiauto_params.iteritems():
+        for k, v in self.uiauto_params.iter_encoded_items():
             params += ' -e {} "{}"'.format(k, v)
         self.command = 'uiautomator runtest {}{} -c {}'.format(self.device_uiauto_file, params, method_string)
         self.device.push_file(self.uiauto_file, self.device_uiauto_file)
@@ -238,13 +239,30 @@ class ApkWorkload(Workload):
             if self.apk_file or self.exact_abi:
                 break
 
+        host_version = self.check_host_version()
+        self.verify_apk_version(target_version, target_abi, host_version)
+
+        if self.force_install:
+            self.force_install_apk(context, host_version)
+        elif self.check_apk:
+            self.prefer_host_apk(context, host_version, target_version)
+        else:
+            self.prefer_target_apk(context, host_version, target_version)
+
+        self.reset(context)
+        self.apk_version = self.device.get_installed_package_version(self.package)
+        context.add_classifiers(apk_version=self.apk_version)
+
+    def check_host_version(self):
         host_version = None
         if self.apk_file is not None:
             host_version = ApkInfo(self.apk_file).version_name
             if host_version:
                 host_version = LooseVersion(host_version)
             self.logger.debug("Found version '{}' on host".format(host_version))
+        return host_version
 
+    def verify_apk_version(self, target_version, target_abi, host_version):
         # Error if apk was not found anywhere
         if target_version is None and host_version is None:
             msg = "Could not find APK for '{}' on the host or target device"
@@ -260,18 +278,6 @@ class ApkWorkload(Workload):
             if target_abi != self.device.abi:
                 msg = "APK abi '{}' not found on the host and target is '{}'"
                 raise ResourceError(msg.format(self.device.abi, target_abi))
-
-        # Ensure the apk is setup on the device
-        if self.force_install:
-            self.force_install_apk(context, host_version)
-        elif self.check_apk:
-            self.prefer_host_apk(context, host_version, target_version)
-        else:
-            self.prefer_target_apk(context, host_version, target_version)
-
-        self.reset(context)
-        self.apk_version = self.device.get_installed_package_version(self.package)
-        context.add_classifiers(apk_version=self.apk_version)
 
     def launch_application(self):
         if self.launch_main:
