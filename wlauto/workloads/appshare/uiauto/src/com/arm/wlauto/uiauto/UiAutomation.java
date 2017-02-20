@@ -76,9 +76,9 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     private void sendToGmail(String recipient) throws Exception {
         String gID = gmail.packageID;
-        
+
         shareUsingApp("Gmail", "gmail");
-        
+
         gmail.clearFirstRunDialogues();
 
         UiObject composeView =
@@ -88,7 +88,7 @@ public class UiAutomation extends UxPerfUiAutomation {
             // to the launching app, so we need to share the photo once more and
             // wait for Gmail to sync.
             shareUsingApp("Gmail", "gmail_retry");
-            
+
             gmail.clearFirstRunDialogues();
         }
 
@@ -100,7 +100,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     private void logIntoSkype(String loginName, String loginPass)  throws Exception {
         shareUsingApp("Skype", "skype_setup");
-        
+
         skype.handleLoginScreen(loginName, loginPass);
 
         sleep(10); // Pause while the app settles before returning
@@ -108,7 +108,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     private void sendToSkype(String contactName) throws Exception {
         shareUsingApp("Skype", "skype");
-        
+
         skype.searchForContact(contactName);
         skype.dismissUpdatePopupIfPresent();
 
@@ -118,7 +118,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     private void shareUsingApp(String appName, String tagName) throws Exception {
         String testTag = "share";
         ActionLogger logger = new ActionLogger(testTag + "_" + tagName, parameters);
-        
+
         clickUiObject(BY_DESC, "Share", "android.widget.ImageView");
         UiScrollable applicationGrid =
             new UiScrollable(new UiSelector().resourceId(googlephotos.packageID + "application_grid"));
