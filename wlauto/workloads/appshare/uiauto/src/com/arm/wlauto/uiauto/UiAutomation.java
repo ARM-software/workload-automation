@@ -31,8 +31,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void runUiAutomation() throws Exception {
         // Override superclass value
-        this.uiAutoTimeout = TimeUnit.SECONDS.toMillis(10);
-        
+        this.uiAutoTimeout = TimeUnit.SECONDS.toMillis(10);    
         parameters = getParams();
 
         // Setup the three uiautomator classes with the correct information
@@ -62,8 +61,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         logIntoSkype(loginName, loginPass);
         // Skype won't allow us to login and share on first visit so invoke
         // once more from googlephotos
-        pressBack();
-        pressBack();
+        pressBack();        
         sendToSkype(contactName);
 
         unsetScreenOrientation();
@@ -78,9 +76,9 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     private void sendToGmail(String recipient) throws Exception {
         String gID = gmail.packageID;
-
+        
         shareUsingApp("Gmail", "gmail");
-
+        
         gmail.clearFirstRunDialogues();
 
         UiObject composeView =
@@ -102,7 +100,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     private void logIntoSkype(String loginName, String loginPass)  throws Exception {
         shareUsingApp("Skype", "skype_setup");
-
+        
         skype.handleLoginScreen(loginName, loginPass);
 
         sleep(10); // Pause while the app settles before returning
@@ -110,7 +108,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     private void sendToSkype(String contactName) throws Exception {
         shareUsingApp("Skype", "skype");
-
+        
         skype.searchForContact(contactName);
         skype.dismissUpdatePopupIfPresent();
 
