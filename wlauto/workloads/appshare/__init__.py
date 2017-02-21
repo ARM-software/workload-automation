@@ -141,7 +141,7 @@ class AppShare(AndroidUxPerfWorkload):
         self.uiauto_params['recipient'] = self.email_recipient
         self.uiauto_params['my_id'] = self.skype_login_name
         self.uiauto_params['my_pwd'] = self.skype_login_pass
-        self.uiauto_params['name'] = self.skype_contact_name.replace(' ', '0space0')
+        self.uiauto_params['name'] = self.skype_contact_name
         # Only accept certain image formats
         if os.path.splitext(self.test_image.lower())[1] not in ['.jpg', '.jpeg', '.png']:
             raise ValidationError('{} must be a JPEG or PNG file'.format(self.test_image))

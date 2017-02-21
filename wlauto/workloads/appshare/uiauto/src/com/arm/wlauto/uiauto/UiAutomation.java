@@ -50,7 +50,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         String recipient = parameters.getString("recipient");
         String loginName = parameters.getString("my_id");
         String loginPass = parameters.getString("my_pwd");
-        String contactName = parameters.getString("name").replace("0space0", " ");
+        String contactName = parameters.getString("name");
 
         setScreenOrientation(ScreenOrientation.NATURAL);
 
