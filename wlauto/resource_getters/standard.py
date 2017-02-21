@@ -227,7 +227,8 @@ class DependencyFileGetter(ResourceGetter):
     def get(self, resource, **kwargs):
         force = kwargs.get('force')
         remote_path = os.path.join(self.mount_point, self.relative_path, resource.path)
-        local_path = os.path.join(resource.owner.dependencies_directory, os.path.basename(resource.path))
+        local_path = _f(os.path.join(settings.dependencies_directory, '__remote',
+                                     resource.owner.name, os.path.basename(resource.path)))
 
         if not os.path.exists(local_path) or force:
             if not os.path.exists(remote_path):
