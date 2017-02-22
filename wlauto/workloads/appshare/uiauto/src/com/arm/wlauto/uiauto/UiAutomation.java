@@ -135,7 +135,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         UiObject openApp =
             new UiObject(new UiSelector().text(appName)
                                          .className("android.widget.TextView"));
-        // On some devices the application_grid has many entries, se we have to swipe up to make
+        // On some devices the application_grid has many entries, so we have to swipe up to make
         // sure all the entries are visable.  This will also stop entries at the bottom being
         // obscured by the bottom action bar.
         applicationGrid.swipeUp(10);
