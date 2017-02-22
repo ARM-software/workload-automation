@@ -120,6 +120,10 @@ public class UiAutomation extends UxPerfUiAutomation {
         clickUiObject(BY_DESC, "Share", "android.widget.ImageView");
         UiScrollable applicationGrid =
             new UiScrollable(new UiSelector().resourceId(googlephotos.getPackageID() + "application_grid"));
+        if (!applicationGrid.exists()){
+            applicationGrid =
+                new UiScrollable(new UiSelector().resourceId(googlephotos.getPackageID() + "share_expander"));
+        }
         UiObject openApp =
             new UiObject(new UiSelector().text(appName)
                                          .className("android.widget.TextView"));
