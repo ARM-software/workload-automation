@@ -39,15 +39,13 @@ public class UiAutomation extends UxPerfUiAutomation {
         // should not log actions themselves.
         Bundle dummyParams = new Bundle();
         dummyParams.putString("markers_enabled", "false");
-        googlephotos.parameters = dummyParams;
-        googlephotos.packageName = parameters.getString("googlephotos_package");
-        googlephotos.packageID = googlephotos.packageName + ":id/";
-        gmail.parameters = dummyParams;
-        gmail.packageName = parameters.getString("gmail_package");
-        gmail.packageID = gmail.packageName + ":id/";
-        skype.parameters = dummyParams;
-        skype.packageName = parameters.getString("skype_package");
-        skype.packageID = skype.packageName + ":id/";
+
+        String packageName = parameters.getString("googlephotos_package");
+        googlephotos.setWorkloadParameters(dummyParams, packageName, packageName + ":id/");
+        packageName = parameters.getString("gmail_package");
+        gmail.setWorkloadParameters(dummyParams, packageName, packageName + ":id/");
+        packageName = parameters.getString("skype_package");
+        skype.setWorkloadParameters(dummyParams, packageName, packageName + ":id/");
 
         String recipient = parameters.getString("recipient");
         String loginName = parameters.getString("my_id");
@@ -61,7 +59,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         logIntoSkype(loginName, loginPass);
         // Skype won't allow us to login and share on first visit so invoke
         // once more from googlephotos
-        pressBack();        
+        pressBack();
         sendToSkype(contactName);
 
         unsetScreenOrientation();
@@ -75,7 +73,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void sendToGmail(String recipient) throws Exception {
-        String gID = gmail.packageID;
+        String gID = gmail.getPackageID();
 
         shareUsingApp("Gmail", "gmail");
 
@@ -121,7 +119,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         clickUiObject(BY_DESC, "Share", "android.widget.ImageView");
         UiScrollable applicationGrid =
-            new UiScrollable(new UiSelector().resourceId(googlephotos.packageID + "application_grid"));
+            new UiScrollable(new UiSelector().resourceId(googlephotos.getPackageID() + "application_grid"));
         UiObject openApp =
             new UiObject(new UiSelector().text(appName)
                                          .className("android.widget.TextView"));
