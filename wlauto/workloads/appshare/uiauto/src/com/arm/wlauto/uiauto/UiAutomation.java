@@ -60,6 +60,14 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Skype won't allow us to login and share on first visit so invoke
         // once more from googlephotos
         pressBack();
+
+        // On some devices the first back press only hides the keyboard, check if
+        // another is needed.
+        UiObject googlephotosShare = new UiObject(new UiSelector().packageName(
+                                      parameters.getString("googlephotos_package")));
+        if (!googlephotosShare.exists()){
+            pressBack();
+        }
         sendToSkype(contactName);
 
         unsetScreenOrientation();
