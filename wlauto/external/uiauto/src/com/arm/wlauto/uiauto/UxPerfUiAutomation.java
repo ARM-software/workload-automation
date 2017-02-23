@@ -30,6 +30,16 @@ public class UxPerfUiAutomation extends BaseUiAutomation {
         packageID = packageName + ":id/";
     }
 
+    public void setWorkloadParameters(Bundle parameters, String packageName, String packageID){
+        this.parameters = parameters;
+        this.packageName = packageName;
+        this.packageID = packageID;
+    }
+
+    public String getPackageID(){
+        return packageID;
+    }
+
     private Logger logger = Logger.getLogger(UxPerfUiAutomation.class.getName());
 
     public enum GestureType { UIDEVICE_SWIPE, UIOBJECT_SWIPE, PINCH };

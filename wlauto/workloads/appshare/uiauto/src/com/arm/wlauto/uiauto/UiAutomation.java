@@ -39,20 +39,18 @@ public class UiAutomation extends UxPerfUiAutomation {
         // should not log actions themselves.
         Bundle dummyParams = new Bundle();
         dummyParams.putString("markers_enabled", "false");
-        googlephotos.parameters = dummyParams;
-        googlephotos.packageName = parameters.getString("googlephotos_package");
-        googlephotos.packageID = googlephotos.packageName + ":id/";
-        gmail.parameters = dummyParams;
-        gmail.packageName = parameters.getString("gmail_package");
-        gmail.packageID = gmail.packageName + ":id/";
-        skype.parameters = dummyParams;
-        skype.packageName = parameters.getString("skype_package");
-        skype.packageID = skype.packageName + ":id/";
+
+        String packageName = parameters.getString("googlephotos_package");
+        googlephotos.setWorkloadParameters(dummyParams, packageName, packageName + ":id/");
+        packageName = parameters.getString("gmail_package");
+        gmail.setWorkloadParameters(dummyParams, packageName, packageName + ":id/");
+        packageName = parameters.getString("skype_package");
+        skype.setWorkloadParameters(dummyParams, packageName, packageName + ":id/");
 
         String recipient = parameters.getString("recipient");
         String loginName = parameters.getString("my_id");
         String loginPass = parameters.getString("my_pwd");
-        String contactName = parameters.getString("name").replace("0space0", " ");
+        String contactName = parameters.getString("name");
 
         setScreenOrientation(ScreenOrientation.NATURAL);
 
@@ -61,7 +59,15 @@ public class UiAutomation extends UxPerfUiAutomation {
         logIntoSkype(loginName, loginPass);
         // Skype won't allow us to login and share on first visit so invoke
         // once more from googlephotos
-        pressBack();        
+        pressBack();
+
+        // On some devices the first back press only hides the keyboard, check if
+        // another is needed.
+        UiObject googlephotosShare = new UiObject(new UiSelector().packageName(
+                                      parameters.getString("googlephotos_package")));
+        if (!googlephotosShare.exists()){
+            pressBack();
+        }
         sendToSkype(contactName);
 
         unsetScreenOrientation();
@@ -75,7 +81,7 @@ public class UiAutomation extends UxPerfUiAutomation {
     }
 
     private void sendToGmail(String recipient) throws Exception {
-        String gID = gmail.packageID;
+        String gID = gmail.getPackageID();
 
         shareUsingApp("Gmail", "gmail");
 
@@ -121,11 +127,15 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         clickUiObject(BY_DESC, "Share", "android.widget.ImageView");
         UiScrollable applicationGrid =
-            new UiScrollable(new UiSelector().resourceId(googlephotos.packageID + "application_grid"));
+            new UiScrollable(new UiSelector().resourceId(googlephotos.getPackageID() + "application_grid"));
+        if (!applicationGrid.exists()){
+            applicationGrid =
+                new UiScrollable(new UiSelector().resourceId(googlephotos.getPackageID() + "share_expander"));
+        }
         UiObject openApp =
             new UiObject(new UiSelector().text(appName)
                                          .className("android.widget.TextView"));
-        // On some devices the application_grid has many entries, se we have to swipe up to make
+        // On some devices the application_grid has many entries, so we have to swipe up to make
         // sure all the entries are visable.  This will also stop entries at the bottom being
         // obscured by the bottom action bar.
         applicationGrid.swipeUp(10);
