@@ -132,6 +132,12 @@ class FpsInstrument(Instrument):
                   android/services/surfaceflinger/FrameTracker.h (as of the time of writing
                   currently 128) and a frame rate of 60 fps that is applicable to most devices.
                   """),
+        Parameter('force_surfaceflinger', kind=boolean, default=False,
+                  description="""
+                  By default, the method to capture fps data is based on Android version.
+                  If this is set to true, force the instrument to use the SurfaceFlinger method
+                  regardless of its Android version.
+                  """),
     ]
 
     def __init__(self, device, **kwargs):
@@ -156,7 +162,7 @@ class FpsInstrument(Instrument):
             self.fps_outfile = os.path.join(context.output_directory, 'fps.csv')
             self.outfile = os.path.join(context.output_directory, 'frames.csv')
             # Android M brings a new method of collecting FPS data
-            if self.device.get_sdk_version() >= 23:
+            if not self.force_surfaceflinger and (self.device.get_sdk_version() >= 23):
                 # gfxinfo takes in the package name rather than a single view/activity
                 # so there is no 'list_command' to run and compare against a list of
                 # views/activities. Additionally, clearing the stats requires the package
