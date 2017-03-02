@@ -381,6 +381,19 @@ class Device(Extension):
         """
         raise NotImplementedError()
 
+    def sleep(self, seconds):
+        """Sleep for the specified time on the target device.
+
+        :param seconds: Time in seconds to sleep on the device
+
+        The sleep is executed on the device using self.execute(). We
+        set the timeout for this command to be 10 seconds longer than
+        the sleep itself to make sure the command has time to complete
+        before we timeout.
+
+        """
+        self.execute("sleep {}".format(seconds), timeout=seconds + 10)
+
     def set_sysfile_value(self, filepath, value, verify=True):
         """
         Write the specified value to the specified file on the device

@@ -15,7 +15,6 @@
 
 
 import os
-import time
 import sys
 
 from wlauto import AndroidUiAutoBenchmark
@@ -68,7 +67,7 @@ class Facebook(AndroidUiAutoBenchmark):
 
         #Start the disable update workload
         self.device.execute(command, self.du_run_timeout)
-        time.sleep(self.DELAY)
+        self.device.sleep(self.DELAY)
 
         #Stop the play store activity
         self.device.execute('am force-stop com.android.vending')

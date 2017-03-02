@@ -16,7 +16,6 @@
 
 import os
 import re
-import time
 
 from wlauto import AndroidBenchmark, Parameter
 
@@ -50,9 +49,9 @@ class Nenamark(AndroidBenchmark):
     regex = re.compile('.*NenaMark2.*Score.*?([0-9\.]*)fps')
 
     def run(self, context):
-        time.sleep(5)  # wait for nenamark menu to show up
+        self.device.sleep(5)  # wait for nenamark menu to show up
         self.device.execute('input keyevent 23')
-        time.sleep(self.duration)
+        self.device.sleep(self.duration)
 
     def update_result(self, context):
         super(Nenamark, self).update_result(context)

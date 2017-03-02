@@ -14,7 +14,6 @@
 #
 # pylint: disable=E1101,W0201
 import os
-import time
 import urllib
 import tarfile
 import shutil
@@ -107,11 +106,11 @@ class BBench(Workload):
 
         # Open the browser with default page
         self.device.execute('am start -n  {}/{} about:blank'.format(self.browser_package, self.browser_activity))
-        time.sleep(5)
+        self.device.sleep(5)
 
         # Stop the browser if already running and wait for it to stop
         self.device.execute('am force-stop {}'.format(self.browser_package))
-        time.sleep(5)
+        self.device.sleep(5)
 
         # Clear the logs
         self.device.clear_logcat()
@@ -134,7 +133,7 @@ class BBench(Workload):
     def run(self, context):
         # Launch the bbench
         self.device.execute('am start -n  {}/{} {}'.format(self.browser_package, self.browser_activity, self.index_noinput))
-        time.sleep(5)  # WA1 parity
+        self.device.sleep(5)  # WA1 parity
         # Launch the server waiting for Bbench to complete
         self.device.execute(self.luanch_server_command, self.server_timeout)
 

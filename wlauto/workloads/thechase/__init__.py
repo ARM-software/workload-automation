@@ -14,8 +14,6 @@
 #
 
 # pylint: disable=E1101
-import time
-
 from wlauto import ApkWorkload, Parameter
 
 
@@ -42,4 +40,4 @@ class TheChase(ApkWorkload):
     ]
 
     def run(self, context):
-        time.sleep(self.duration)
+        self.device.sleep(self.duration)

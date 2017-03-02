@@ -14,8 +14,6 @@
 #
 
 # pylint: disable=E1101
-import time
-
 from wlauto import GameWorkload, Parameter
 
 
@@ -41,4 +39,4 @@ class EpicCitadel(GameWorkload):
 
     def run(self, context):
         super(EpicCitadel, self).run(context)
-        time.sleep(self.duration)
+        self.device.sleep(self.duration)
