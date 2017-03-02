@@ -62,19 +62,12 @@ class Audio(Workload):
         # Clear the logs
         self.device.clear_logcat()
 
-        # Clear browser cache
-        self.device.execute('pm clear com.android.browser')
-
         if self.clear_file_cache:
             self.device.execute('sync')
             self.device.set_sysfile_value('/proc/sys/vm/drop_caches', 3)
 
         # Start the background music
         self.device.execute('am start -W -S -n com.android.music/.MediaPlaybackActivity -d {}'.format(self.on_device_file))
-
-        # Launch the browser to blank the screen
-        self.device.execute('am start -W -n  com.android.browser/.BrowserActivity about:blank')
-        time.sleep(5)  # Wait for browser to be properly launched
 
     def run(self, context):
         time.sleep(self.duration)
