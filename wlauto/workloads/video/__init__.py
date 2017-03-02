@@ -109,10 +109,6 @@ class VideoWorkload(Workload):
         if self.force_dependency_push or not self.device.file_exists(on_device_video_file):
             self.logger.debug('Copying {} to device.'.format(self.host_video_file))
             self.device.push_file(self.host_video_file, on_device_video_file, timeout=120)
-        self.device.execute('am start -n  com.android.browser/.BrowserActivity about:blank')
-        time.sleep(5)
-        self.device.execute('am force-stop com.android.browser')
-        time.sleep(5)
         self.device.clear_logcat()
         command = 'am start -W -S -n com.android.gallery3d/.app.MovieActivity -d {}'.format(on_device_video_file)
         self.device.execute(command)

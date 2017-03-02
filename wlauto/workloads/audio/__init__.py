@@ -59,14 +59,6 @@ class Audio(Workload):
 
         self.device.push_file(self.audio_file, self.on_device_file, timeout=120)
 
-        # Open the browser with default page
-        self.device.execute('am start -n  com.android.browser/.BrowserActivity about:blank')
-        time.sleep(5)
-
-        # Stop the browser if already running and wait for it to stop
-        self.device.execute('am force-stop com.android.browser')
-        time.sleep(5)
-
         # Clear the logs
         self.device.clear_logcat()
 
@@ -88,8 +80,6 @@ class Audio(Workload):
         time.sleep(self.duration)
 
     def update_result(self, context):
-        # Stop the browser
-        self.device.execute('am force-stop com.android.browser')
         # Stop the audio
         self.device.execute('am force-stop com.android.music')
 
