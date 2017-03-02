@@ -16,7 +16,6 @@
 # pylint: disable=attribute-defined-outside-init
 
 import os
-import time
 
 from wlauto import settings, Workload, Executable, Parameter
 from wlauto.exceptions import ConfigError, WorkloadError

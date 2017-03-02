@@ -14,7 +14,6 @@
 #
 # pylint: disable=E1101,W0201
 import os
-import time
 import urllib
 
 from wlauto import settings, Workload, Parameter
@@ -70,7 +69,7 @@ class Audio(Workload):
         self.device.execute('am start -W -S -n com.android.music/.MediaPlaybackActivity -d {}'.format(self.on_device_file))
 
     def run(self, context):
-        time.sleep(self.duration)
+        self.device.sleep(self.duration)
 
     def update_result(self, context):
         # Stop the audio

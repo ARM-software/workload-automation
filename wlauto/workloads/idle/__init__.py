@@ -15,8 +15,6 @@
 
 # pylint: disable=E1101
 
-import time
-
 from wlauto import Workload, Parameter
 from wlauto.exceptions import WorkloadError, ConfigError
 
@@ -56,13 +54,13 @@ class IdleWorkload(Workload):
             self.device.execute('stop && sleep {} && start'.format(self.duration),
                                 timeout=timeout, as_root=True)
         else:
-            time.sleep(self.duration)
+            self.device.sleep(self.duration)
 
     def teardown(self, context):
         if self.stop_android:
             self.logger.debug('Waiting for Android restart to complete...')
             # Wait for the boot animation to start and then to finish.
             while self.device.execute('getprop init.svc.bootanim').strip() == 'stopped':
-                time.sleep(0.2)
+                self.device.sleep(0.2)
             while self.device.execute('getprop init.svc.bootanim').strip() == 'running':
-                time.sleep(1)
+                self.device.sleep(1)

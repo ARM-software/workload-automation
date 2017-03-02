@@ -16,7 +16,6 @@
 # pylint: disable=E1101,E0203,W0201
 
 import os
-import time
 import urllib
 from collections import defaultdict
 
@@ -114,7 +113,7 @@ class VideoWorkload(Workload):
         self.device.execute(command)
 
     def run(self, context):
-        time.sleep(self.play_duration)
+        self.device.sleep(self.play_duration)
 
     def update_result(self, context):
         self.device.execute('am force-stop com.android.gallery3d')

@@ -18,7 +18,6 @@
 from __future__ import division
 import os
 import re
-import time
 import select
 import json
 import threading
@@ -122,7 +121,7 @@ class GlbCorp(ApkWorkload):
                 raise WorkloadError(result)
             else:
                 self.logger.debug(result)
-            time.sleep(DELAY)
+            self.device.sleep(DELAY)
             self.monitor.wait_for_run_end(self.run_timeout)
 
     def update_result(self, context):  # NOQA
@@ -209,7 +208,7 @@ class GlbRunMonitor(threading.Thread):
         proc = subprocess.Popen(self.command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         while not self.stop_event.is_set():
             if self.run_ended.is_set():
-                time.sleep(DELAY)
+                self.device.sleep(DELAY)
             else:
                 ready, _, _ = select.select([proc.stdout, proc.stderr], [], [], 2)
                 if ready:

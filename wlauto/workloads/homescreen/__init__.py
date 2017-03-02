@@ -15,8 +15,6 @@
 
 # pylint: disable=E1101
 
-import time
-
 from wlauto import Workload, Parameter
 
 
@@ -40,4 +38,4 @@ class HomeScreen(Workload):
         self.device.execute('input keyevent 3')  # press the home key
 
     def run(self, context):
-        time.sleep(self.duration)
+        self.device.sleep(self.duration)

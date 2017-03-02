@@ -15,8 +15,6 @@
 # pylint: disable=attribute-defined-outside-init
 import os
 
-from time import sleep
-
 from wlauto import Workload, AndroidBenchmark, AndroidUxPerfWorkload, UiAutomatorWorkload
 from wlauto import Parameter
 from wlauto import ExtensionLoader

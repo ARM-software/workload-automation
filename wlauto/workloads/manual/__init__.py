@@ -14,7 +14,6 @@
 #
 # pylint: disable=E1101,W0201,E0203
 import os
-import time
 
 from wlauto import Workload, Parameter
 from wlauto.exceptions import ConfigError
@@ -74,7 +73,7 @@ class ManualWorkload(Workload):
     def run(self, context):
         self.logger.info('START NOW!')
         if self.duration:
-            time.sleep(self.duration)
+            self.device.sleep(self.duration)
         elif self.user_triggered:
             self.logger.info('')
             self.logger.info('hit any key to end your workload execution...')

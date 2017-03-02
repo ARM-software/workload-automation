@@ -15,8 +15,6 @@
 # pylint: disable=attribute-defined-outside-init
 import os
 
-from time import sleep
-
 from wlauto import Workload, Parameter
 from wlauto import File
 from wlauto.exceptions import ConfigError
@@ -51,7 +49,7 @@ class ApkLaunchWorkload(Workload):
         self.device.execute('am start -W {}'.format(self.package))
 
         self.logger.info('Waiting {} seconds'.format(self.wait_time_seconds))
-        sleep(self.wait_time_seconds)
+        self.device.sleep(self.wait_time_seconds)
 
     def update_result(self, context):
         app_is_running = bool([p for p in self.device.ps() if p.name == self.package])
