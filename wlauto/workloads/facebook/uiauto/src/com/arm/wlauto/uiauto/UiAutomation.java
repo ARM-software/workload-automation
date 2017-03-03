@@ -117,11 +117,9 @@ public class UiAutomation extends BaseUiAutomation {
              .className("android.widget.ImageButton").index(0)))));
         clickNotificationsLogo.clickAndWaitForNewWindow(timeout);
 
-        //Click on latest notification
+        //Click on a 'do you know' notification.
         UiObject clickNotify = new UiObject(new UiSelector()
-             .className("android.support.v4.view.ViewPager").index(0)
-             .childSelector(new UiSelector()
-             .className("android.widget.LinearLayout").index(1)));
+             .textContains("do you know"));
         clickNotify.clickAndWaitForNewWindow(timeout);
 
         sleep(timeout);
@@ -189,18 +187,8 @@ public class UiAutomation extends BaseUiAutomation {
         sleep(timeout);
 
         //Update the status
-        UiObject updateStatus = new UiObject(new UiSelector()
-             .className("android.widget.FrameLayout").index(1)
-             .childSelector(new UiSelector()
-             .className("android.widget.FrameLayout").index(1)
-             .childSelector(new UiSelector()
-             .className("android.widget.RelativeLayout").index(0)
-             .childSelector(new UiSelector()
-             .className("android.widget.LinearLayout").index(0)
-             .childSelector(new UiSelector()
-             .className("android.widget.LinearLayout").index(0)
-             .childSelector(new UiSelector()
-             .className("android.widget.LinearLayout").index(0)))))));
+        UiObject updateStatus = new UiObject(new UiSelector().resourceId(
+                                             "com.facebook.katana:id/publisher_status"));
 
         updateStatus.clickAndWaitForNewWindow(timeout);
 
