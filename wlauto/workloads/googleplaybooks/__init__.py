@@ -67,7 +67,7 @@ class Googleplaybooks(AndroidUxPerfWorkload):
                   The Library name can differ (usually shorter) to the Store name.
                   If left blank, the ``search_book_title`` will be used.
                   """),
-        Parameter('select_chapter_page_number', kind=int, default=4,
+        Parameter('select_chapter_page_number', kind=str, default="4",
                   description="""
                   The Page Number to search for within a selected book's Chapter list.
                   Note: Accepts integers only.
@@ -99,6 +99,6 @@ class Googleplaybooks(AndroidUxPerfWorkload):
         if not self.library_book_title:  # pylint: disable=access-member-before-definition
             self.library_book_title = self.search_book_title  # pylint: disable=attribute-defined-outside-init
         self.uiauto_params['library_book_title'] = self.library_book_title.replace(' ', '0space0')
-        self.uiauto_params['chapter_page_number'] = str(elf.select_chapter_page_number)
+        self.uiauto_params['chapter_page_number'] = self.select_chapter_page_number
         self.uiauto_params['search_word'] = self.search_word
         self.uiauto_params['account'] = self.account
