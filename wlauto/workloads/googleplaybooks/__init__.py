@@ -99,6 +99,6 @@ class Googleplaybooks(AndroidUxPerfWorkload):
         if not self.library_book_title:  # pylint: disable=access-member-before-definition
             self.library_book_title = self.search_book_title  # pylint: disable=attribute-defined-outside-init
         self.uiauto_params['library_book_title'] = self.library_book_title.replace(' ', '0space0')
-        self.uiauto_params['chapter_page_number'] = self.select_chapter_page_number
+        self.uiauto_params['chapter_page_number'] = str(elf.select_chapter_page_number)
         self.uiauto_params['search_word'] = self.search_word
         self.uiauto_params['account'] = self.account
