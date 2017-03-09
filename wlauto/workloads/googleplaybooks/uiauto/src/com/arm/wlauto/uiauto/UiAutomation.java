@@ -53,7 +53,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
         String searchBookTitle = parameters.getString("search_book_title");
         String libraryBookTitle = parameters.getString("library_book_title");
-        String chapterPageNumber = parameters.getString("chapter_page_number");
+        int chapterPageNumber = parameters.getInt("chapter_page_number");
         String searchWord = parameters.getString("search_word");
         String noteText = "This is a test note";
 
@@ -341,7 +341,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         return pageSyncPopUpWatcher;
     }
 
-    private void selectChapter(final String chapterPageNumber) throws Exception {
+    private void selectChapter(final int chapterPageNumber) throws Exception {
         getDropdownMenu();
 
         UiObject contents = getUiObjectByResourceId(packageID + "menu_reader_toc");
@@ -349,7 +349,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         UiObject toChapterView = getUiObjectByResourceId(packageID + "toc_list_view",
                                                          "android.widget.ExpandableListView");
         // Navigate to top of chapter view
-        searchPage(toChapterView, "1", Direction.UP, 10);
+        searchPage(toChapterView, 1, Direction.UP, 10);
         // Search for chapter page number
         UiObject page = searchPage(toChapterView, chapterPageNumber, Direction.DOWN, 10);
         // Go to the page
@@ -621,14 +621,14 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         }
     }
 
-    private UiObject searchPage(final UiObject view, final String pagenum, final Direction updown,
+    private UiObject searchPage(final UiObject view, final int pagenum, final Direction updown,
                                 final int attempts) throws Exception {
         if (attempts <= 0) {
             throw new UiObjectNotFoundException("Could not find \"page number\" after several attempts.");
         }
 
         UiObject page =
-            new UiObject(new UiSelector().description(String.format("page " + pagenum))
+            new UiObject(new UiSelector().description(String.format("page " + Integer.toString(pagenum)))
                                          .className("android.widget.TextView"));
         if (!page.exists()) {
             // Scroll up by swiping down
