@@ -5,6 +5,7 @@ class MeizuMX6(AndroidDevice):
 
     name = 'meizumx6'
 
+    @property
     def is_rooted(self):
         # "su" executable on a rooted Meizu MX6 is targeted
         # specifically towards Android application and cannot
