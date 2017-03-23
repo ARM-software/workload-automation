@@ -340,6 +340,36 @@ def gather_core_states(system_state_stream, freq_dependent_idle_states=None):  #
         yield (system_state.timestamp, core_states)
 
 
+def record_state_transitions(reporter, stream):
+    for event in stream:
+        if event.kind == 'transition':
+            reporter.record_transition(event)
+        yield event
+
+
+class PowerStateTransitions(object):
+
+    def __init__(self, filepath ):
+        self.filepath = filepath
+        self._wfh = open(filepath, 'w')
+        self.writer = csv.writer(self._wfh)
+        headers = ['timestamp', 'cpu_id', 'frequency', 'idle_state']
+        self.writer.writerow(headers)
+
+    def update(self, timestamp, core_states):  # NOQA
+        # Just recording transitions, not doing anything
+        # with states.
+        pass
+
+    def record_transition(self, transition):
+        row = [transition.timestamp, transition.cpu_id,
+               transition.frequency, transition.idle_state]
+        self.writer.writerow(row)
+
+    def report(self):
+        self._wfh.close()
+
+
 class PowerStateTimeline(object):
 
     def __init__(self, filepath, core_names, idle_state_names):
@@ -626,7 +656,8 @@ def report_power_stats(trace_file, idle_state_names, core_names, core_clusters,
                        num_idle_states, first_cluster_state=sys.maxint,
                        first_system_state=sys.maxint, use_ratios=False,
                        timeline_csv_file=None, cpu_utilisation=None,
-                       max_freq_list=None, start_marker_handling='error'):
+                       max_freq_list=None, start_marker_handling='error',
+                       transitions_csv_file=None):
     # pylint: disable=too-many-locals,too-many-branches
     trace = TraceCmdTrace(trace_file,
                           filter_markers=False,
@@ -663,7 +694,13 @@ def report_power_stats(trace_file, idle_state_names, core_names, core_clusters,
 
     event_stream = trace.parse()
     transition_stream = stream_cpu_power_transitions(event_stream)
-    power_state_stream = ps_processor.process(transition_stream)
+    if transitions_csv_file:
+        trans_reporter = PowerStateTransitions(transitions_csv_file)
+        reporters.append(trans_reporter)
+        recorded_trans_stream = record_state_transitions(trans_reporter, transition_stream)
+        power_state_stream = ps_processor.process(recorded_trans_stream)
+    else:
+        power_state_stream = ps_processor.process(transition_stream)
     core_state_stream = gather_core_states(power_state_stream)
 
     for timestamp, states in core_state_stream:
@@ -700,6 +737,7 @@ def main():
         cpu_utilisation=args.cpu_utilisation,
         max_freq_list=args.max_freq_list,
         start_marker_handling=args.start_marker_handling,
+        transitions_csv_file=args.transitions_file,
     )
 
     parallel_report = reports.pop(0)
@@ -772,6 +810,11 @@ def parse_arguments():  # NOQA
                         help='''
                         A timeline of core power states will be written to the specified file in
                         CSV format.
+                        ''')
+    parser.add_argument('-T', '--transitions-file', metavar='FILE',
+                        help='''
+                        A timeline of core power state transitions will be
+                        written to the specified file in CSV format.
                         ''')
     parser.add_argument('-u', '--cpu-utilisation', metavar='FILE',
                         help='''
