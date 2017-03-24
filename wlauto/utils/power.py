@@ -156,7 +156,7 @@ class PowerStateProcessor(object):
                  first_cluster_state=sys.maxint, first_system_state=sys.maxint,
                  wait_for_start_marker=False):
         self.power_state = SystemPowerState(len(core_clusters))
-        self.requested_states = defaultdict(lambda: -1)  # cpu_id -> requeseted state
+        self.requested_states = {}  # cpu_id -> requeseted state
         self.wait_for_start_marker = wait_for_start_marker
         self._saw_start_marker = False
         self._saw_stop_marker = False
@@ -230,6 +230,7 @@ class PowerStateProcessor(object):
     def _process_idle_entry(self, event):
         if self.cpu_states[event.cpu_id].is_idling:
             raise ValueError('Got idle state entry event for an idling core: {}'.format(event))
+        self.requested_states[event.cpu_id] = event.idle_state
         self._try_transition_to_idle_state(event.cpu_id, event.idle_state)
 
     def _process_idle_exit(self, event):
@@ -250,17 +251,10 @@ class PowerStateProcessor(object):
 
     def _try_transition_to_idle_state(self, cpu_id, idle_state):
         related_ids = self.idle_related_cpus[(cpu_id, idle_state)]
-        idle_state = idle_state
 
         # Tristate: True - can transition, False - can't transition,
         #           None - unknown idle state on at least one related cpu
         transition_check = self._can_enter_state(related_ids, idle_state)
-
-        if not transition_check:
-            # If we can't enter an idle state right now, record that we've
-            # requested it, so that we may enter it later (once all related
-            # cpus also want a state at least as deep).
-            self.requested_states[cpu_id] = idle_state
 
         if transition_check is None:
             # Unknown state on a related cpu means we're not sure whether we're
@@ -276,8 +270,6 @@ class PowerStateProcessor(object):
         self.cpu_states[cpu_id].idle_state = idle_state
         for rid in related_ids:
             self.cpu_states[rid].idle_state = idle_state
-            if self.requested_states[rid] == idle_state:
-                del self.requested_states[rid]  # request satisfied, so remove
 
     def _can_enter_state(self, related_ids, state):
         """
@@ -288,12 +280,13 @@ class PowerStateProcessor(object):
 
         """
         for rid in related_ids:
-            rid_requested_state = self.requested_states[rid]
+            rid_requested_state = self.requested_states.get(rid, None)
             rid_current_state = self.cpu_states[rid].idle_state
             if rid_current_state is None:
                 return None
-            if rid_current_state < state and rid_requested_state < state:
-                return False
+            if rid_current_state < state:
+                if rid_requested_state is None or rid_requested_state < state:
+                    return False
         return True
 
 
