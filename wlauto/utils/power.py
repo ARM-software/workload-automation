@@ -156,7 +156,7 @@ class PowerStateProcessor(object):
                  first_cluster_state=sys.maxint, first_system_state=sys.maxint,
                  wait_for_start_marker=False):
         self.power_state = SystemPowerState(len(core_clusters))
-        self.requested_states = defaultdict(lambda: -1)  # cpu_id -> requeseted state
+        self.requested_states = {}  # cpu_id -> requeseted state
         self.wait_for_start_marker = wait_for_start_marker
         self._saw_start_marker = False
         self._saw_stop_marker = False
@@ -230,6 +230,7 @@ class PowerStateProcessor(object):
     def _process_idle_entry(self, event):
         if self.cpu_states[event.cpu_id].is_idling:
             raise ValueError('Got idle state entry event for an idling core: {}'.format(event))
+        self.requested_states[event.cpu_id] = event.idle_state
         self._try_transition_to_idle_state(event.cpu_id, event.idle_state)
 
     def _process_idle_exit(self, event):
@@ -250,17 +251,10 @@ class PowerStateProcessor(object):
 
     def _try_transition_to_idle_state(self, cpu_id, idle_state):
         related_ids = self.idle_related_cpus[(cpu_id, idle_state)]
-        idle_state = idle_state
 
         # Tristate: True - can transition, False - can't transition,
         #           None - unknown idle state on at least one related cpu
         transition_check = self._can_enter_state(related_ids, idle_state)
-
-        if not transition_check:
-            # If we can't enter an idle state right now, record that we've
-            # requested it, so that we may enter it later (once all related
-            # cpus also want a state at least as deep).
-            self.requested_states[cpu_id] = idle_state
 
         if transition_check is None:
             # Unknown state on a related cpu means we're not sure whether we're
@@ -276,8 +270,6 @@ class PowerStateProcessor(object):
         self.cpu_states[cpu_id].idle_state = idle_state
         for rid in related_ids:
             self.cpu_states[rid].idle_state = idle_state
-            if self.requested_states[rid] == idle_state:
-                del self.requested_states[rid]  # request satisfied, so remove
 
     def _can_enter_state(self, related_ids, state):
         """
@@ -288,12 +280,13 @@ class PowerStateProcessor(object):
 
         """
         for rid in related_ids:
-            rid_requested_state = self.requested_states[rid]
+            rid_requested_state = self.requested_states.get(rid, None)
             rid_current_state = self.cpu_states[rid].idle_state
             if rid_current_state is None:
                 return None
-            if rid_current_state < state and rid_requested_state < state:
-                return False
+            if rid_current_state < state:
+                if rid_requested_state is None or rid_requested_state < state:
+                    return False
         return True
 
 
@@ -338,6 +331,36 @@ def gather_core_states(system_state_stream, freq_dependent_idle_states=None):  #
             else:
                 core_states.append((cpu.idle_state, None))
         yield (system_state.timestamp, core_states)
+
+
+def record_state_transitions(reporter, stream):
+    for event in stream:
+        if event.kind == 'transition':
+            reporter.record_transition(event)
+        yield event
+
+
+class PowerStateTransitions(object):
+
+    def __init__(self, filepath ):
+        self.filepath = filepath
+        self._wfh = open(filepath, 'w')
+        self.writer = csv.writer(self._wfh)
+        headers = ['timestamp', 'cpu_id', 'frequency', 'idle_state']
+        self.writer.writerow(headers)
+
+    def update(self, timestamp, core_states):  # NOQA
+        # Just recording transitions, not doing anything
+        # with states.
+        pass
+
+    def record_transition(self, transition):
+        row = [transition.timestamp, transition.cpu_id,
+               transition.frequency, transition.idle_state]
+        self.writer.writerow(row)
+
+    def report(self):
+        self._wfh.close()
 
 
 class PowerStateTimeline(object):
@@ -626,7 +649,8 @@ def report_power_stats(trace_file, idle_state_names, core_names, core_clusters,
                        num_idle_states, first_cluster_state=sys.maxint,
                        first_system_state=sys.maxint, use_ratios=False,
                        timeline_csv_file=None, cpu_utilisation=None,
-                       max_freq_list=None, start_marker_handling='error'):
+                       max_freq_list=None, start_marker_handling='error',
+                       transitions_csv_file=None):
     # pylint: disable=too-many-locals,too-many-branches
     trace = TraceCmdTrace(trace_file,
                           filter_markers=False,
@@ -663,7 +687,13 @@ def report_power_stats(trace_file, idle_state_names, core_names, core_clusters,
 
     event_stream = trace.parse()
     transition_stream = stream_cpu_power_transitions(event_stream)
-    power_state_stream = ps_processor.process(transition_stream)
+    if transitions_csv_file:
+        trans_reporter = PowerStateTransitions(transitions_csv_file)
+        reporters.append(trans_reporter)
+        recorded_trans_stream = record_state_transitions(trans_reporter, transition_stream)
+        power_state_stream = ps_processor.process(recorded_trans_stream)
+    else:
+        power_state_stream = ps_processor.process(transition_stream)
     core_state_stream = gather_core_states(power_state_stream)
 
     for timestamp, states in core_state_stream:
@@ -700,6 +730,7 @@ def main():
         cpu_utilisation=args.cpu_utilisation,
         max_freq_list=args.max_freq_list,
         start_marker_handling=args.start_marker_handling,
+        transitions_csv_file=args.transitions_file,
     )
 
     parallel_report = reports.pop(0)
@@ -772,6 +803,11 @@ def parse_arguments():  # NOQA
                         help='''
                         A timeline of core power states will be written to the specified file in
                         CSV format.
+                        ''')
+    parser.add_argument('-T', '--transitions-file', metavar='FILE',
+                        help='''
+                        A timeline of core power state transitions will be
+                        written to the specified file in CSV format.
                         ''')
     parser.add_argument('-u', '--cpu-utilisation', metavar='FILE',
                         help='''
