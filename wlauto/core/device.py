@@ -394,7 +394,7 @@ class Device(Extension):
         """
         self.execute("sleep {}".format(seconds), timeout=seconds + 10)
 
-    def set_sysfile_value(self, filepath, value, verify=True):
+    def set_sysfile_value(self, filepath, value, verify=True, binary=False):
         """
         Write the specified value to the specified file on the device
         and verify that the value has actually been written.
@@ -403,13 +403,14 @@ class Device(Extension):
         :param value: The value to be written to the file. Must be
                       an int or a string convertable to an int.
         :param verify: Specifies whether the value should be verified, once written.
+        :param binary: Specifies whether the value should be written as binary data.
 
         Should raise DeviceError if could write value.
 
         """
         raise NotImplementedError()
 
-    def get_sysfile_value(self, sysfile, kind=None):
+    def get_sysfile_value(self, sysfile, kind=None, binary=False):
         """
         Get the contents of the specified sysfile.
 
@@ -419,6 +420,8 @@ class Device(Extension):
                      be any Python callable that takes a single str argument.
                      If not specified or is None, the contents will be returned
                      as a string.
+        :param binary: Whether the value should be encoded into base64 for reading
+                       to deal with binary format.
 
         """
         raise NotImplementedError()
