@@ -147,6 +147,8 @@ class FreqSweep(Instrument):
                 spec.id = '{}_{}_{}'.format(spec.id, sweep_spec['label'], freq)
                 spec.classifiers['core'] = sweep_spec['cluster']
                 spec.classifiers['freq'] = freq
+                for k, v in sweep_spec['classifiers'].iteritems():
+                    spec.classifiers[k] = v
                 spec.load(self.device, context.config.ext_loader)
                 spec.workload.init_resources(context)
                 spec.workload.validate()
