@@ -17,6 +17,7 @@
 import os
 import re
 import time
+import base64
 import socket
 from collections import namedtuple
 from subprocess import CalledProcessError
@@ -241,7 +242,7 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
                 self.logger.debug('Could not pull property file "{}"'.format(propfile))
         return {}
 
-    def get_sysfile_value(self, sysfile, kind=None):
+    def get_sysfile_value(self, sysfile, kind=None, binary=False):
         """
         Get the contents of the specified sysfile.
 
@@ -251,28 +252,49 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
                      be any Python callable that takes a single str argument.
                      If not specified or is None, the contents will be returned
                      as a string.
+        :param binary: Whether the value should be encoded into base64 for reading
+                       to deal with binary format.
 
         """
-        output = self.execute('cat \'{}\''.format(sysfile), as_root=self.is_rooted).strip()  # pylint: disable=E1103
+        if binary:
+            output = self.execute('{} base64 {}'.format(self.busybox, sysfile), as_root=self.is_rooted).strip()
+            output = output.decode('base64')
+        else:
+            output = self.execute('cat \'{}\''.format(sysfile), as_root=self.is_rooted).strip()  # pylint: disable=E1103
         if kind:
             return kind(output)
         else:
             return output
 
-    def set_sysfile_value(self, sysfile, value, verify=True):
+    def set_sysfile_value(self, sysfile, value, verify=True, binary=False):
         """
         Set the value of the specified sysfile. By default, the value will be checked afterwards.
-        Can be overridden by setting ``verify`` parameter to ``False``.
+        Can be overridden by setting ``verify`` parameter to ``False``. By default binary values
+        will not be written correctly this can be changed by setting the ``binary`` parameter to
+        ``True``.
 
         """
         value = str(value)
-        self.execute('echo {} > \'{}\''.format(value, sysfile), check_exit_code=False, as_root=True)
+        if binary:
+            # Value is already string encoded, so need to decode before encoding in base64
+            try:
+                value = str(value.decode('string_escape'))
+            except ValueError as e:
+                msg = 'Can not interpret value "{}" for "{}": {}'
+                raise ValueError(msg.format(value, sysfile, e.message))
+
+            encoded_value = base64.b64encode(value)
+            cmd = 'echo {} | {} base64 -d > \'{}\''.format(encoded_value, self.busybox, sysfile)
+        else:
+            cmd = 'echo {} > \'{}\''.format(value, sysfile)
+        self.execute(cmd, check_exit_code=False, as_root=True)
+
         if verify:
-            output = self.get_sysfile_value(sysfile)
+            output = self.get_sysfile_value(sysfile, binary=binary)
             if output.strip() != value:  # pylint: disable=E1103
                 message = 'Could not set the value of {} to {}'.format(sysfile, value)
                 raise DeviceError(message)
-        self._written_sysfiles.append(sysfile)
+        self._written_sysfiles.append((sysfile, binary))
 
     def get_sysfile_values(self):
         """
@@ -281,21 +303,24 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
 
         """
         values = {}
-        for sysfile in self._written_sysfiles:
-            values[sysfile] = self.get_sysfile_value(sysfile)
+        for sysfile, binary in self._written_sysfiles:
+            values[sysfile] = self.get_sysfile_value(sysfile, binary=binary)
         return values
 
     def set_sysfile_values(self, params):
         """
         The plural version of ``set_sysfile_value``. Takes a single parameter which is a mapping of
-        file paths to values to be set. By default, every value written will be verified. The can
-        be disabled for individual paths by appending ``'!'`` to them.
+        file paths to values to be set. By default, every value written will be verified. This can
+        be disabled for individual paths by appending ``'!'`` to them. To enable values being
+        written as binary data, a ``'^'`` can be prefixed to the path.
 
         """
         for sysfile, value in params.iteritems():
             verify = not sysfile.endswith('!')
             sysfile = sysfile.rstrip('!')
-            self.set_sysfile_value(sysfile, value, verify=verify)
+            binary = sysfile.startswith('^')
+            sysfile = sysfile.lstrip('^')
+            self.set_sysfile_value(sysfile, value, verify=verify, binary=binary)
 
     def deploy_busybox(self, context, force=False):
         """
