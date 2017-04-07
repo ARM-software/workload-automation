@@ -178,10 +178,10 @@ class RtApp(Workload):
 
     def update_result(self, context):
         self._pull_rt_app_logs(context)
-        context.result.classifiers = dict(
+        context.result.classifiers.update(dict(
             duration=self.duration,
             task_count=self.task_count,
-        )
+        ))
 
         outfile = os.path.join(context.output_directory, RAW_OUTPUT_FILENAME)
         with open(outfile, 'w') as wfh:
