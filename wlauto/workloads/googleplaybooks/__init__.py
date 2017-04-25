@@ -67,7 +67,7 @@ class Googleplaybooks(AndroidUxPerfWorkload):
                   The Library name can differ (usually shorter) to the Store name.
                   If left blank, the ``search_book_title`` will be used.
                   """),
-        Parameter('select_chapter_page_number', kind=int, default=4,
+        Parameter('select_chapter_page_number', kind=str, default="4",
                   description="""
                   The Page Number to search for within a selected book's Chapter list.
                   Note: Accepts integers only.
