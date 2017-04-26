@@ -43,7 +43,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         String[] version = params.getString("version").split("\\.");
         int majorVersion = Integer.parseInt(version[0]);
         int minorVersion = Integer.parseInt(version[1]);
-        int times = Integer.parseInt(params.getString("times"));
+        int times = params.getInt("times");
 
         dismissEula();
 
