@@ -122,6 +122,11 @@ class PackageApkGetter(PackageFileGetter):
         return get_from_location_by_extension(resource, resource_dir, self.extension, version, variant=variant)
 
 
+class PackageUiautoApkGetter(PackageApkGetter):
+    name = 'uiautoapk'
+    extension = 'uiautoapk'
+
+
 class PackageJarGetter(PackageFileGetter):
     name = 'package_jar'
     extension = 'jar'
@@ -407,7 +412,7 @@ class HttpGetter(ResourceGetter):
         assets = self.index.get(resource.owner.name, {})
         if not assets:
             return {}
-        if resource.name in ['apk', 'jar']:
+        if resource.name in ['apk', 'jar', 'uiautoapk']:
             paths = [a['path'] for a in assets]
             version = getattr(resource, 'version', None)
             found = get_from_list_by_extension(resource, paths, resource.name, version)
@@ -452,7 +457,7 @@ class RemoteFilerGetter(ResourceGetter):
 
     """
     priority = GetterPriority.remote
-    resource_type = ['apk', 'file', 'jar', 'revent']
+    resource_type = ['apk', 'file', 'jar', 'revent', 'uiautoapk']
 
     parameters = [
         Parameter('remote_path', global_alias='remote_assets_path', default='',
@@ -500,7 +505,7 @@ class RemoteFilerGetter(ResourceGetter):
 
     def get_from(self, resource, version, location):  # pylint: disable=no-self-use
         # pylint: disable=too-many-branches
-        if resource.name in ['apk', 'jar']:
+        if resource.name in ['apk', 'jar', 'uiautoapk']:
             return get_from_location_by_extension(resource, location, resource.name, version)
         elif resource.name == 'file':
             filepath = os.path.join(location, resource.path)
@@ -553,15 +558,15 @@ def get_from_location_by_extension(resource, location, extension, version=None, 
 
 
 def get_from_list_by_extension(resource, filelist, extension, version=None, variant=None):
-    filelist = [ff for ff in filelist if os.path.splitext(ff)[1].lower().endswith(extension)]
+    filelist = [ff for ff in filelist if os.path.splitext(ff)[1].lower().endswith('.' + extension)]
     if variant:
         filelist = [ff for ff in filelist if variant.lower() in os.path.basename(ff).lower()]
     if version:
-        if extension == 'apk':
+        if extension in ['apk', 'uiautoapk']:
             filelist = [ff for ff in filelist if version.lower() in ApkInfo(ff).version_name.lower()]
         else:
             filelist = [ff for ff in filelist if version.lower() in os.path.basename(ff).lower()]
-    if extension == 'apk':
+    if extension in ['apk', 'uiautoapk']:
         filelist = [ff for ff in filelist if not ApkInfo(ff).native_code or resource.platform in ApkInfo(ff).native_code]
     if len(filelist) == 1:
         return filelist[0]
