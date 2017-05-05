@@ -653,20 +653,26 @@ class AndroidUxPerfWorkload(AndroidUiAutoBenchmark):
 
     def push_assets(self, context):
         pushed = False
+        file_list = []
         for f in self.deployable_assets:
             fpath = context.resolver.get(File(self, f))
             device_path = self._path_on_device(fpath)
             if self.force_push_assets or not self.device.file_exists(device_path):
                 self.device.push_file(fpath, device_path, timeout=300)
+                file_list.append(device_path)
                 pushed = True
         if pushed:
-            self.device.broadcast_media_mounted(self.device.working_directory)
+            self.device.refresh_device_files(file_list)
 
     def delete_assets(self):
         if self.deployable_assets:
+            file_list = []
             for f in self.deployable_assets:
-                self.device.delete_file(self._path_on_device(f))
-            self.device.broadcast_media_mounted(self.device.working_directory)
+                f = self._path_on_device(f)
+                self.device.delete_file(f)
+                file_list.append(f)
+                self.device.delete_file(f)
+            self.device.refresh_device_files(file_list)
 
     def __init__(self, device, **kwargs):
         super(AndroidUxPerfWorkload, self).__init__(device, **kwargs)
