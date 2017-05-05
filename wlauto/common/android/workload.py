@@ -44,12 +44,12 @@ DELAY = 5
 
 class UiAutomatorWorkload(Workload):
     """
-    Base class for all workloads that rely on a UI Automator JAR file.
+    Base class for all workloads that rely on a UI Automator APK file.
 
     This class should be subclassed by workloads that rely on android UiAutomator
-    to work. This class handles transferring the UI Automator JAR file to the device
-    and invoking it to run the workload. By default, it will look for the JAR file in
-    the same directory as the .py file for the workload (this can be changed by overriding
+    to work. This class handles installing the UI Automator APK to the device
+    and invoking it to run the workload. By default, it will look for the ``*.uiautoapk`` file
+    in the same directory as the .py file for the workload (this can be changed by overriding
     the ``uiauto_file`` property in the subclassing workload).
 
     To inintiate UI Automation, the fully-qualified name of the Java class and the
@@ -61,7 +61,7 @@ class UiAutomatorWorkload(Workload):
     match what is expected, or you could override ``uiauto_package``, ``uiauto_class`` and
     ``uiauto_method`` class attributes with the value that match your Java code.
 
-    You can also pass parameters to the JAR file. To do this add the parameters to
+    You can also pass parameters to the APK file. To do this add the parameters to
     ``self.uiauto_params`` dict inside your class's ``__init__`` or ``setup`` methods.
 
     """
@@ -70,8 +70,7 @@ class UiAutomatorWorkload(Workload):
 
     uiauto_package = ''
     uiauto_class = 'UiAutomation'
-    uiauto_method = 'runUiAutomation'
-
+    uiauto_method = 'android.support.test.runner.AndroidJUnitRunner'
     # Can be overidden by subclasses to adjust to run time of specific
     # benchmarks.
     run_timeout = 4 * 60  # seconds
@@ -80,29 +79,31 @@ class UiAutomatorWorkload(Workload):
         if _call_super:
             Workload.__init__(self, device, **kwargs)
         self.uiauto_file = None
-        self.device_uiauto_file = None
         self.command = None
         self.uiauto_params = ParameterDict()
 
     def init_resources(self, context):
-        self.uiauto_file = context.resolver.get(wlauto.common.android.resources.JarFile(self))
+        self.uiauto_file = context.resolver.get(wlauto.common.android.resources.uiautoApkFile(self))
         if not self.uiauto_file:
-            raise ResourceError('No UI automation JAR file found for workload {}.'.format(self.name))
-        self.device_uiauto_file = self.device.path.join(self.device.working_directory,
-                                                        os.path.basename(self.uiauto_file))
+            raise ResourceError('No UI automation APK file found for workload {}.'.format(self.name))
+
         if not self.uiauto_package:
             self.uiauto_package = os.path.splitext(os.path.basename(self.uiauto_file))[0]
 
     def setup(self, context):
         Workload.setup(self, context)
-        method_string = '{}.{}#{}'.format(self.uiauto_package, self.uiauto_class, self.uiauto_method)
         params_dict = self.uiauto_params
         params_dict['workdir'] = self.device.working_directory
         params = ''
         for k, v in self.uiauto_params.iter_encoded_items():
             params += ' -e {} "{}"'.format(k, v)
-        self.command = 'uiautomator runtest {}{} -c {}'.format(self.device_uiauto_file, params, method_string)
-        self.device.push_file(self.uiauto_file, self.device_uiauto_file)
+
+        self.device.install_apk(self.uiauto_file, replace=True, force=True)
+
+        instrumention_string = 'am instrument -w -r {}  -e class {}.{} {}/{}'
+        self.command = instrumention_string.format(params, self.uiauto_package,
+                                                   self.uiauto_class, self.uiauto_package,
+                                                   self.uiauto_method)
         self.device.killall('uiautomator')
 
     def run(self, context):
@@ -117,11 +118,11 @@ class UiAutomatorWorkload(Workload):
         pass
 
     def teardown(self, context):
-        self.device.delete_file(self.device_uiauto_file)
+        self.device.uninstall(self.uiauto_package)
 
     def validate(self):
         if not self.uiauto_file:
-            raise WorkloadError('No UI automation JAR file found for workload {}.'.format(self.name))
+            raise WorkloadError('No UI automation APK file found for workload {}.'.format(self.name))
         if not self.uiauto_package:
             raise WorkloadError('No UI automation package specified for workload {}.'.format(self.name))
 
