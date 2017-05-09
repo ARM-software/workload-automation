@@ -16,36 +16,41 @@
 
 package com.arm.wlauto.uiauto.linpack;
 
-import java.util.concurrent.TimeUnit;
-
 import android.app.Activity;
 import android.os.Bundle;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiSelector;
 import android.util.Log;
 
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 import com.arm.wlauto.uiauto.BaseUiAutomation;
 
- 
-public class UiAutomation extends BaseUiAutomation {   
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.util.concurrent.TimeUnit;
+
+// Import the uiautomator libraries
+
+
+@RunWith(AndroidJUnit4.class)
+public class UiAutomation extends BaseUiAutomation {
 
     public static String TAG = "linpack";
 
-    public void runUiAutomation() throws Exception{
+@Test
+public void runUiAutomation() throws Exception{
+        initialize_instrumentation();
         UiSelector selector = new UiSelector();
-        UiObject runSingleButton = new UiObject(selector.text("Run Single Thread"));
+        UiObject runSingleButton = mDevice.findObject(selector.text("Run Single Thread"));
         runSingleButton.click();
         runSingleButton.waitUntilGone(500);
         runSingleButton.waitForExists(TimeUnit.SECONDS.toMillis(30));
 
-        UiObject mflops = new UiObject(new UiSelector().className("android.widget.TextView").instance(2));
+        UiObject mflops = mDevice.findObject(new UiSelector().className("android.widget.TextView").instance(2));
         Log.v(TAG, String.format("LINPACK RESULT: ST %s", mflops.getText()));
 
-        UiObject runMultiButton = new UiObject(selector.text("Run Multi-Thread"));
+        UiObject runMultiButton = mDevice.findObject(selector.text("Run Multi-Thread"));
         runMultiButton.click();
         runMultiButton.waitUntilGone(500);
         runMultiButton.waitForExists(TimeUnit.SECONDS.toMillis(30));
@@ -53,7 +58,7 @@ public class UiAutomation extends BaseUiAutomation {
         Log.v(TAG, String.format("LINPACK RESULT: MT %s", mflops.getText()));
 
         Bundle status = new Bundle();
-        getAutomationSupport().sendStatus(Activity.RESULT_OK, status);
+        mInstrumentation.sendStatus(Activity.RESULT_OK, status);
     }
 
 }
