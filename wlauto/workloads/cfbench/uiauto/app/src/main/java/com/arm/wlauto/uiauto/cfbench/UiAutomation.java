@@ -18,38 +18,42 @@ package com.arm.wlauto.uiauto.cfbench;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.util.Log;
-
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiScrollable;
+import android.support.test.uiautomator.UiSelector;
 
 import com.arm.wlauto.uiauto.BaseUiAutomation;
 
-public class UiAutomation extends BaseUiAutomation {   
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+// Import the uiautomator libraries
+
+@RunWith(AndroidJUnit4.class)
+public class UiAutomation extends BaseUiAutomation {
 
     public static String TAG = "cfbench";
 
-    public void runUiAutomation() throws Exception{
+@Test
+public void runUiAutomation() throws Exception{
+        initialize_instrumentation();
         Bundle status = new Bundle();
-        status.putString("product", getUiDevice().getProductName());
+        status.putString("product", mDevice.getProductName());
         UiSelector selector = new UiSelector();
-        UiObject text_bench = new UiObject(selector.text("Full Benchmark")
+        UiObject text_bench = mDevice.findObject(selector.text("Full Benchmark")
                                                    .className("android.widget.TextView"));
 
         text_bench.click();
         sleep(2);
 
-        try{
-            UiObject stop_text = new UiObject(selector.textContains("Benchmarking ...")
+        try {
+            UiObject stop_text = mDevice.findObject(selector.textContains("Benchmarking ...")
                                                       .className("android.widget.TextView"));
             waitUntilNoObject(stop_text, 600);
 
             sleep(2);
-        }finally{
+        } finally {
             takeScreenshot("cf-bench");
         }
 
@@ -57,7 +61,7 @@ public class UiAutomation extends BaseUiAutomation {
         res.flingToEnd(10);
         sleep(2);
 
-        getAutomationSupport().sendStatus(Activity.RESULT_OK, status);
+        mInstrumentation.sendStatus(Activity.RESULT_OK, status);
     }
 
 }
