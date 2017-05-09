@@ -18,28 +18,33 @@ package com.arm.wlauto.uiauto.caffeinemark;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiObjectNotFoundException;
+import android.support.test.uiautomator.UiSelector;
 import android.util.Log;
-
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
 import com.arm.wlauto.uiauto.BaseUiAutomation;
 
-public class UiAutomation extends BaseUiAutomation {   
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+// Import the uiautomator libraries
+
+@RunWith(AndroidJUnit4.class)
+public class UiAutomation extends BaseUiAutomation {
 
     public static String TAG = "caffeinemark";
     public String[] categories = {"Sieve", "Loop", "Logic", "String", "Float", "Method"};
 
-    public void runUiAutomation() throws Exception {
+@Test
+public void runUiAutomation() throws Exception {
+        initialize_instrumentation();
         Bundle status = new Bundle();
-        status.putString("product", getUiDevice().getProductName());
+        status.putString("product", mDevice.getProductName());
 
         UiSelector selector = new UiSelector();
-        UiObject runButton = new UiObject(selector.text("Run benchmark")
+        UiObject runButton = mDevice.findObject(selector.text("Run benchmark")
                                                   .className("android.widget.Button"));
         runButton.click();
 
@@ -53,13 +58,13 @@ public class UiAutomation extends BaseUiAutomation {
             takeScreenshot("caffeine-error");
         }
 
-        getAutomationSupport().sendStatus(Activity.RESULT_OK, status);
+        mInstrumentation.sendStatus(Activity.RESULT_OK, status);
     }
 
     public void extractOverallScore() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject linearLayoutOverallScore = new UiObject(selector.className("android.widget.LinearLayout")
-                                                                 .instance(1));
+        UiObject linearLayoutOverallScore = mDevice.findObject(selector.className("android.widget.LinearLayout")
+                                                                        .instance(1));
         UiObject overallScore = linearLayoutOverallScore.getChild(selector.className("android.widget.TextView")
                                                                           .instance(2));
         Log.v(TAG, "CAFFEINEMARK RESULT: OverallScore " + overallScore.getText());
@@ -67,15 +72,15 @@ public class UiAutomation extends BaseUiAutomation {
 
     public void extractDetailedScores() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject detailsButton = new UiObject(selector.text("Details")
+        UiObject detailsButton = mDevice.findObject(selector.text("Details")
                                                       .className("android.widget.Button"));
-        detailsButton.click(); 
+        detailsButton.click();
         sleep(2);
 
         UiObject linearObject;
         UiObject detailedScore;
         for (int i = 1; i <= 6; i++) {
-          linearObject = new UiObject(selector.className("android.widget.LinearLayout")
+          linearObject = mDevice.findObject(selector.className("android.widget.LinearLayout")
                                               .instance(i));
           detailedScore = linearObject.getChild(selector.className("android.widget.TextView")
                                                         .instance(1));
