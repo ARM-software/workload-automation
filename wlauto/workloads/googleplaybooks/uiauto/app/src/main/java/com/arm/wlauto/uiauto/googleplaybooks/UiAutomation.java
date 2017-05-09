@@ -16,39 +16,44 @@
 package com.arm.wlauto.uiauto.googleplaybooks;
 
 import android.os.Bundle;
-
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.core.UiWatcher;
-import com.android.uiautomator.core.UiScrollable;
-
-import com.arm.wlauto.uiauto.UxPerfUiAutomation;
-import com.arm.wlauto.uiauto.ApplaunchInterface;
-import com.arm.wlauto.uiauto.UiAutoUtils;
-
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
-
-import java.util.concurrent.TimeUnit;
-import java.util.LinkedHashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiObjectNotFoundException;
+import android.support.test.uiautomator.UiSelector;
+import android.support.test.uiautomator.UiWatcher;
 import android.util.Log;
 
+import com.arm.wlauto.uiauto.ApplaunchInterface;
+import com.arm.wlauto.uiauto.UiAutoUtils;
+import com.arm.wlauto.uiauto.UxPerfUiAutomation;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
+
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
+
+// Import the uiautomator libraries
+
+@RunWith(AndroidJUnit4.class)
 public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterface {
 
     private int viewTimeoutSecs = 10;
     private long viewTimeout =  TimeUnit.SECONDS.toMillis(viewTimeoutSecs);
 
-    public void runUiAutomation() throws Exception {
+@Test
+public void runUiAutomation() throws Exception {
         // Override superclass value
         this.uiAutoTimeout = TimeUnit.SECONDS.toMillis(8);
 
+        initialize_instrumentation();
         parameters = getParams();
 
         String searchBookTitle = parameters.getString("search_book_title");
@@ -82,7 +87,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
         unsetScreenOrientation();
     }
-    
+
     // Get application parameters and clear the initial run dialogues of the application launch.
     public void runApplicationInitialization() throws Exception {
         getPackageParameters();
@@ -92,21 +97,21 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         dismissSendBooksAsGiftsDialog();
         dismissSync();
     }
-    
+
     // Sets the UiObject that marks the end of the application launch.
     public UiObject getLaunchEndObject() {
-        UiObject launchEndObject = new UiObject(new UiSelector()
+        UiObject launchEndObject = mDevice.findObject(new UiSelector()
                                          .className("android.widget.ImageButton"));
         return launchEndObject;
     }
-    
+
     // Returns the launch command for the application.
     public String getLaunchCommand() {
         String launch_command;
         launch_command = UiAutoUtils.createLaunchCommand(parameters);
         return launch_command;
     }
-    
+
     // Pass the workload parameters, used for applaunch
     public void setWorkloadParameters(Bundle workload_parameters) {
         parameters = workload_parameters;
@@ -117,13 +122,13 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
     // has been specified as a parameter, otherwise select `account`.
     private void chooseAccount(String account) throws Exception {
         UiObject accountPopup =
-            new UiObject(new UiSelector().textContains("Choose an account")
+            mDevice.findObject(new UiSelector().textContains("Choose an account")
                                          .className("android.widget.TextView"));
         if (accountPopup.exists()) {
             if ("None".equals(account)) {
                 // If no account has been specified, pick the first entry in the list
                 UiObject list =
-                    new UiObject(new UiSelector().className("android.widget.ListView"));
+                    mDevice.findObject(new UiSelector().className("android.widget.ListView"));
                 UiObject first = list.getChild(new UiSelector().index(0));
                 if (!first.exists()) {
                     // Some devices are not zero indexed. If 0 doesnt exist, pick 1
@@ -136,7 +141,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
             }
             // Click OK to proceed
             UiObject ok =
-                new UiObject(new UiSelector().textContains("OK")
+                mDevice.findObject(new UiSelector().textContains("OK")
                                              .className("android.widget.Button")
                                              .enabled(true));
             ok.clickAndWaitForNewWindow();
@@ -148,14 +153,14 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
     // pick a random sample book.
     private void clearFirstRunDialogues() throws Exception {
         UiObject startButton =
-            new UiObject(new UiSelector().resourceId(packageID + "start_button"));
+            mDevice.findObject(new UiSelector().resourceId(packageID + "start_button"));
         // First try and skip the sample book selection
         if (startButton.exists()) {
             startButton.click();
         }
 
         UiObject endButton =
-            new UiObject(new UiSelector().resourceId(packageID + "end_button"));
+            mDevice.findObject(new UiSelector().resourceId(packageID + "end_button"));
         // Click next button if it exists
         if (endButton.exists()) {
             endButton.click();
@@ -172,7 +177,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
     private void dismissSendBooksAsGiftsDialog() throws Exception {
         UiObject gotIt =
-            new UiObject(new UiSelector().textContains("GOT IT!"));
+            mDevice.findObject(new UiSelector().textContains("GOT IT"));
         if (gotIt.exists()) {
             gotIt.click();
         }
@@ -180,7 +185,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
     private void dismissSync() throws Exception {
         UiObject keepSyncOff =
-            new UiObject(new UiSelector().textContains("Keep sync off")
+            mDevice.findObject(new UiSelector().textContains("Keep sync off")
                                          .className("android.widget.Button"));
         if (keepSyncOff.exists()) {
             keepSyncOff.click();
@@ -190,21 +195,21 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
     // Searches for a "free" or "purchased" book title in Google play
     private void searchForBook(final String bookTitle) throws Exception {
         UiObject search =
-            new UiObject(new UiSelector().resourceId(packageID + "menu_search"));
+            mDevice.findObject(new UiSelector().resourceId(packageID + "menu_search"));
         if (!search.exists()) {
             search =
-                new UiObject(new UiSelector().resourceId(packageID + "search_box_active_text_view"));
+                mDevice.findObject(new UiSelector().resourceId(packageID + "search_box_active_text_view"));
         }
         search.click();
 
         UiObject searchText =
-            new UiObject(new UiSelector().textContains("Search")
+            mDevice.findObject(new UiSelector().textContains("Search")
                                          .className("android.widget.EditText"));
         searchText.setText(bookTitle);
         pressEnter();
 
         UiObject resultList =
-            new UiObject(new UiSelector().resourceId("com.android.vending:id/search_results_list"));
+            mDevice.findObject(new UiSelector().resourceId("com.android.vending:id/search_results_list"));
         if (!resultList.waitForExists(viewTimeout)) {
             throw new UiObjectNotFoundException("Could not find \"search results list view\".");
         }
@@ -212,7 +217,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         // Create a selector so that we can search for siblings of the desired
         // book that contains a "free" or "purchased" book identifier
         UiObject label =
-            new UiObject(new UiSelector().fromParent(new UiSelector()
+            mDevice.findObject(new UiSelector().fromParent(new UiSelector()
                                          .description(String.format("Book: " + bookTitle))
                                          .className("android.widget.TextView"))
                                          .resourceId("com.android.vending:id/li_label")
@@ -239,7 +244,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
     private void addToLibrary() throws Exception {
         UiObject add =
-            new UiObject(new UiSelector().textContains("ADD TO LIBRARY")
+            mDevice.findObject(new UiSelector().textContains("ADD TO LIBRARY")
                                          .className("android.widget.Button"));
         if (add.exists()) {
             // add to My Library and opens book by default
@@ -253,7 +258,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         waitForPage();
 
         UiObject navigationButton =
-            new UiObject(new UiSelector().description("Navigate up"));
+            mDevice.findObject(new UiSelector().description("Navigate up"));
 
         // Return to main app window
         pressBack();
@@ -274,9 +279,8 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         clickUiObject(BY_DESC, "Show navigation drawer");
         // To correctly find the UiObject we need to specify the index also here
         UiObject myLibrary =
-            new UiObject(new UiSelector().className("android.widget.TextView")
-                                         .text("My library")
-                                         .index(3));
+            mDevice.findObject(new UiSelector().className("android.widget.TextView")
+                                         .textMatches(".*[lL]ibrary"));
         myLibrary.clickAndWaitForNewWindow(uiAutoTimeout);
         logger.stop();
     }
@@ -291,7 +295,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         UiSelector bookSelector =
             new UiSelector().text(bookTitle)
                             .className("android.widget.TextView");
-        UiObject book = new UiObject(bookSelector);
+        UiObject book = mDevice.findObject(bookSelector);
         // Check that books are sorted by time added to library. This way we
         // can assume any newly downloaded books will be visible on the first
         // screen.
@@ -301,7 +305,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         // cardsGrid until it has been fully downloaded. Wait for fully
         // downloaded books
         UiObject downloadComplete =
-            new UiObject(new UiSelector().fromParent(bookSelector)
+            mDevice.findObject(new UiSelector().fromParent(bookSelector)
                                          .description("100% downloaded"));
         if (!downloadComplete.waitForExists(maxWaitTime)) {
                 throw new UiObjectNotFoundException(
@@ -321,13 +325,13 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
             @Override
             public boolean checkForCondition() {
                 UiObject popUpDialogue =
-                    new UiObject(new UiSelector().textStartsWith("You're on page")
+                    mDevice.findObject(new UiSelector().textStartsWith("You're on page")
                                                  .resourceId("android:id/message"));
                 // Don't sync and stay on the current page
                 if (popUpDialogue.exists()) {
                     try {
                         UiObject stayOnPage =
-                            new UiObject(new UiSelector().text("Yes")
+                            mDevice.findObject(new UiSelector().text("Yes")
                                                          .className("android.widget.Button"));
                         stayOnPage.click();
                     } catch (UiObjectNotFoundException e) {
@@ -408,9 +412,12 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
         hideDropDownMenu();
 
-        UiObject clickable = new UiObject(new UiSelector().longClickable(true));
-        if (!clickable.exists()){ 
-            clickable = new UiObject(new UiSelector().resourceIdMatches(".*/main_page"));
+        UiObject clickable = mDevice.findObject(new UiSelector().longClickable(true));
+        if (!clickable.exists()){
+            clickable = mDevice.findObject(new UiSelector().resourceIdMatches(".*/main_page"));
+        }
+        if (!clickable.exists()){
+            clickable = mDevice.findObject(new UiSelector().resourceIdMatches(".*/reader"));
         }
 
         logger.start();
@@ -418,7 +425,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         uiObjectPerformLongClick(clickable, 100);
 
         UiObject addNoteButton =
-            new UiObject(new UiSelector().resourceId(packageID + "add_note_button"));
+            mDevice.findObject(new UiSelector().resourceId(packageID + "add_note_button"));
         addNoteButton.click();
 
         UiObject noteEditText = getUiObjectByResourceId(packageID + "note_edit_text",
@@ -437,9 +444,12 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         String testTag = "note_remove";
         ActionLogger logger = new ActionLogger(testTag, parameters);
 
-        UiObject clickable = new UiObject(new UiSelector().longClickable(true));
-        if (!clickable.exists()){ 
-            clickable = new UiObject(new UiSelector().resourceIdMatches(".*/main_page"));
+        UiObject clickable = mDevice.findObject(new UiSelector().longClickable(true));
+        if (!clickable.exists()){
+            clickable = mDevice.findObject(new UiSelector().resourceIdMatches(".*/main_page"));
+        }
+        if (!clickable.exists()){
+            clickable = mDevice.findObject(new UiSelector().resourceIdMatches(".*/reader"));
         }
 
         logger.start();
@@ -447,7 +457,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         uiObjectPerformLongClick(clickable, 100);
 
         UiObject removeButton =
-            new UiObject(new UiSelector().resourceId(packageID + "remove_highlight_button"));
+            mDevice.findObject(new UiSelector().resourceId(packageID + "remove_highlight_button"));
         removeButton.click();
 
         clickUiObject(BY_TEXT, "Remove", "android.widget.Button");
@@ -467,11 +477,11 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         getDropdownMenu();
 
         UiObject search =
-            new UiObject(new UiSelector().resourceId(packageID + "menu_search"));
+            mDevice.findObject(new UiSelector().resourceId(packageID + "menu_search"));
         search.click();
 
         UiObject searchText =
-            new UiObject(new UiSelector().resourceId(packageID + "search_src_text"));
+            mDevice.findObject(new UiSelector().resourceId(packageID + "search_src_text"));
 
         logger.start();
 
@@ -479,13 +489,13 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         pressEnter();
 
         UiObject resultList =
-            new UiObject(new UiSelector().resourceId(packageID + "search_results_list"));
+            mDevice.findObject(new UiSelector().resourceId(packageID + "search_results_list"));
         if (!resultList.waitForExists(searchTimeout)) {
             throw new UiObjectNotFoundException("Could not find \"search results list view\".");
         }
 
         UiObject searchWeb =
-            new UiObject(new UiSelector().text("Search web")
+            mDevice.findObject(new UiSelector().textMatches("Search web|SEARCH WEB")
                                          .className("android.widget.TextView"));
         if (!searchWeb.waitForExists(searchTimeout)) {
             throw new UiObjectNotFoundException("Could not find \"Search web view\".");
@@ -505,7 +515,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
         // Check for lighting option button on newer versions
         UiObject lightingOptionsButton =
-            new UiObject(new UiSelector().resourceId(packageID + "lighting_options_button"));
+            mDevice.findObject(new UiSelector().resourceId(packageID + "lighting_options_button"));
         if (lightingOptionsButton.exists()) {
             lightingOptionsButton.click();
         }
@@ -515,7 +525,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
             try {
                 ActionLogger logger = new ActionLogger(testTag + "_" + style, parameters);
                 UiObject pageStyle =
-                    new UiObject(new UiSelector().description(style));
+                    mDevice.findObject(new UiSelector().description(style));
 
                 logger.start();
                 pageStyle.clickAndWaitForNewWindow(viewTimeout);
@@ -549,9 +559,9 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         bookInfo.clickAndWaitForNewWindow(uiAutoTimeout);
 
         UiObject detailsPanel =
-            new UiObject(new UiSelector().resourceId("com.android.vending:id/item_details_panel"));
+            mDevice.findObject(new UiSelector().resourceId("com.android.vending:id/item_details_panel"));
         waitObject(detailsPanel, viewTimeoutSecs);
-        
+
         logger.stop();
 
         pressBack();
@@ -560,7 +570,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
     // Helper for waiting on a page between actions
     private UiObject waitForPage() throws Exception {
         UiObject activityReader =
-            new UiObject(new UiSelector().resourceId(packageID + "activity_reader")
+            mDevice.findObject(new UiSelector().resourceId(packageID + "activity_reader")
                                          .childSelector(new UiSelector()
                                          .focusable(true)));
         // On some devices the object in the view hierarchy is found before it
@@ -577,14 +587,14 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
     // Helper for accessing the drop down menu
     private void getDropdownMenu() throws Exception {
         UiObject actionBar =
-            new UiObject(new UiSelector().resourceId(packageID + "action_bar"));
+            mDevice.findObject(new UiSelector().resourceId(packageID + "action_bar"));
         if (!actionBar.exists()) {
             tapDisplayCentre();
             sleep(1); // Allow previous views to settle
         }
-        
+
         UiObject card =
-            new UiObject(new UiSelector().resourceId(packageID + "cards")
+            mDevice.findObject(new UiSelector().resourceId(packageID + "cards")
                                          .className("android.view.ViewGroup"));
         if (card.exists()) {
             // On rare occasions tapping a certain word that appears in the centre
@@ -598,7 +608,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
                 tapDisplay(x, y);
                 sleep(1);
             }
-            
+
             tapDisplay(x, y);
             sleep(1); // Allow previous views to settle
         }
@@ -610,7 +620,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
     private void hideDropDownMenu() throws Exception {
         UiObject actionBar =
-            new UiObject(new UiSelector().resourceId(packageID + "action_bar"));
+            mDevice.findObject(new UiSelector().resourceId(packageID + "action_bar"));
         if (actionBar.exists()) {
             tapDisplayCentre();
             sleep(1); // Allow previous views to settle
@@ -628,7 +638,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         }
 
         UiObject page =
-            new UiObject(new UiSelector().description(String.format("page " + Integer.toString(pagenum)))
+            mDevice.findObject(new UiSelector().description(String.format("page " + Integer.toString(pagenum)))
                                          .className("android.widget.TextView"));
         if (!page.exists()) {
             // Scroll up by swiping down
