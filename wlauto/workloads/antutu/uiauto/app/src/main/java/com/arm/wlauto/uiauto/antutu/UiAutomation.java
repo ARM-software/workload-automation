@@ -16,24 +16,27 @@
 
 package com.arm.wlauto.uiauto.antutu;
 
-import java.util.Set;
-import java.util.HashSet;
-import java.util.concurrent.TimeUnit;
-
 import android.app.Activity;
 import android.os.Bundle;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiObjectNotFoundException;
+import android.support.test.uiautomator.UiScrollable;
+import android.support.test.uiautomator.UiSelector;
 import android.util.Log;
-
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.core.UiCollection;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
 import com.arm.wlauto.uiauto.BaseUiAutomation;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+// Import the uiautomator libraries
+
+@RunWith(AndroidJUnit4.class)
 public class UiAutomation extends BaseUiAutomation {
 
     public static String TAG = "antutu";
@@ -41,7 +44,9 @@ public class UiAutomation extends BaseUiAutomation {
     public static String TestButton6 = "com.antutu.ABenchMark:id/start_test_text";
     private static int initialTimeoutSeconds = 20;
 
-    public void runUiAutomation() throws Exception{
+@Test
+public void runUiAutomation() throws Exception{
+        initialize_instrumentation();
         Bundle parameters = getParams();
 
         String version = parameters.getString("version");
@@ -74,16 +79,15 @@ public class UiAutomation extends BaseUiAutomation {
                         hitTestButton();
                         hitTestButton();
                     }
-                    else
+                    else {
                         hitTestButton();
+                    }
 
-                    if(version.equals("6.0.1"))
-                    {
+                    if(version.equals("6.0.1")) {
                         waitForVersion6Results();
                         extractResults6();
                     }
-                    else
-                    {
+                    else {
                         waitForVersion4Results();
                         viewDetails();
                         extractResults();
@@ -101,12 +105,12 @@ public class UiAutomation extends BaseUiAutomation {
         }
 
         Bundle status = new Bundle();
-        getAutomationSupport().sendStatus(Activity.RESULT_OK, status);
+        mInstrumentation.sendStatus(Activity.RESULT_OK, status);
     }
 
     public boolean dismissNewVersionNotificationIfNecessary() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject closeButton = new UiObject(selector.text("Cancel"));
+        UiObject closeButton = mDevice.findObject(selector.text("Cancel"));
         if (closeButton.waitForExists(TimeUnit.SECONDS.toMillis(initialTimeoutSeconds))) {
             closeButton.click();
             sleep(1); // diaglog dismissal
@@ -118,7 +122,7 @@ public class UiAutomation extends BaseUiAutomation {
 
     public boolean dismissReleaseNotesDialogIfNecessary() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject closeButton = new UiObject(selector.text("Close"));
+        UiObject closeButton = mDevice.findObject(selector.text("Close"));
         if (closeButton.waitForExists(TimeUnit.SECONDS.toMillis(initialTimeoutSeconds))) {
             closeButton.click();
             sleep(1); // diaglog dismissal
@@ -130,7 +134,7 @@ public class UiAutomation extends BaseUiAutomation {
 
     public boolean dismissRateDialogIfNecessary() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject closeButton = new UiObject(selector.text("NOT NOW"));
+        UiObject closeButton = mDevice.findObject(selector.text("NOT NOW"));
         boolean dismissed = false;
         // Sometimes, dismissing the dialog the first time does not work properly --
         // it starts to disappear but is then immediately re-created; so may need to
@@ -145,7 +149,7 @@ public class UiAutomation extends BaseUiAutomation {
 
     public void hitTestButton() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject test = new UiObject(selector.text("Test")
+        UiObject test = mDevice.findObject(selector.text("Test")
                                              .className("android.widget.Button"));
         test.waitForExists(initialTimeoutSeconds);
         test.click();
@@ -156,7 +160,7 @@ public class UiAutomation extends BaseUiAutomation {
 
    public void hitTestButtonVersion5(String id) throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject test = new UiObject(selector.resourceId(id)
+        UiObject test = mDevice.findObject(selector.resourceId(id)
                                              .className("android.widget.TextView"));
         test.waitForExists(initialTimeoutSeconds);
         test.click();
@@ -166,25 +170,25 @@ public class UiAutomation extends BaseUiAutomation {
 
     public void hitTest() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject test = new UiObject(selector.text("Test"));
+        UiObject test = mDevice.findObject(selector.text("Test"));
         test.click();
         sleep(1); // possible tab transtion
     }
 
     public void disableSdCardTests() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject custom = new UiObject(selector.textContains("Custom"));
+        UiObject custom = mDevice.findObject(selector.textContains("Custom"));
         custom.click();
         sleep(1); // tab transition
 
-        UiObject sdCardButton = new UiObject(selector.text("SD card IO"));
+        UiObject sdCardButton = mDevice.findObject(selector.text("SD card IO"));
         sdCardButton.click();
     }
 
     public void hitStart() throws Exception {
         UiSelector selector = new UiSelector();
         Log.v(TAG, "Start the test");
-        UiObject startButton = new UiObject(selector.text("Start Test")
+        UiObject startButton = mDevice.findObject(selector.text("Start Test")
                                                     .className("android.widget.Button"));
         startButton.click();
     }
@@ -195,10 +199,10 @@ public class UiAutomation extends BaseUiAutomation {
         // details screen. So we have to wait for either and then act appropriatesl (on the barchart
         // screen a back button press is required to get to the details screen.
         UiSelector selector = new UiSelector();
-        UiObject barChart = new UiObject(new UiSelector().className("android.widget.TextView")
-                                                         .text("Bar Chart"));
-        UiObject detailsButton = new UiObject(new UiSelector().className("android.widget.Button")
-                                                              .text("Details"));
+        UiObject barChart = mDevice.findObject(new UiSelector().className("android.widget.TextView")
+                                                               .text("Bar Chart"));
+        UiObject detailsButton = mDevice.findObject(new UiSelector().className("android.widget.Button")
+                                                                    .text("Details"));
         for (int i = 0; i < 60; i++) {
             if (detailsButton.exists() || barChart.exists()) {
                 break;
@@ -207,15 +211,17 @@ public class UiAutomation extends BaseUiAutomation {
         }
 
         if (barChart.exists()) {
-            getUiDevice().pressBack();
+            mDevice.pressBack();
         }
     }
 
     public void waitForVersion6Results() throws Exception {
-        UiObject qrText = new UiObject(new UiSelector().className("android.widget.TextView")
-                                                       .text("QRCode of result"));
+        UiObject qrText = mDevice.findObject(new UiSelector().className("android.widget.TextView")
+                                                             .text("QRCode of result"));
+        UiObject testAgain = mDevice.findObject(new UiSelector().className("android.widget.TextView")
+                .resourceIdMatches(".*tv_score.*"));
         for (int i = 0; i < 120; i++) {
-            if (qrText.exists()) {
+            if (qrText.exists() || testAgain.exists()) {
                 break;
             }
             sleep(5);
@@ -224,14 +230,14 @@ public class UiAutomation extends BaseUiAutomation {
 
     public void viewDetails() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject detailsButton = new UiObject(new UiSelector().className("android.widget.Button")
-                                                              .text("Details"));
+        UiObject detailsButton = mDevice.findObject(new UiSelector().className("android.widget.Button")
+                                                                    .text("Details"));
         detailsButton.clickAndWaitForNewWindow();
     }
 
     public void extractResults6() throws Exception {
         //Overal result
-        UiObject result = new UiObject(new UiSelector().resourceId("com.antutu.ABenchMark:id/tv_score_name"));
+        UiObject result = mDevice.findObject(new UiSelector().resourceId("com.antutu.ABenchMark:id/tv_score_name"));
         if (result.exists()) {
             Log.v(TAG, String.format("ANTUTU RESULT: Overall Score: %s", result.getText()));
         }
@@ -245,7 +251,7 @@ public class UiAutomation extends BaseUiAutomation {
 
     public void extractSectionResults6(String section) throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject resultLayout = new UiObject(selector.resourceId("com.antutu.ABenchMark:id/hcf_" + section));
+        UiObject resultLayout = mDevice.findObject(selector.resourceId("com.antutu.ABenchMark:id/hcf_" + section));
         UiObject result = resultLayout.getChild(selector.resourceId("com.antutu.ABenchMark:id/tv_score_value"));
 
         if (result.exists()) {
@@ -262,7 +268,7 @@ public class UiAutomation extends BaseUiAutomation {
         UiSelector selector = new UiSelector();
         UiSelector resultTextSelector = selector.className("android.widget.TextView").index(0);
         UiSelector relativeLayoutSelector = selector.className("android.widget.RelativeLayout").index(1);
-        UiObject result = new UiObject(selector.className("android.widget.LinearLayout")
+        UiObject result = mDevice.findObject(selector.className("android.widget.LinearLayout")
                                                .childSelector(relativeLayoutSelector)
                                                .childSelector(resultTextSelector));
         if (result.exists()) {
@@ -289,7 +295,7 @@ public class UiAutomation extends BaseUiAutomation {
         UiSelector selector = new UiSelector();
 
         for (int i = 1; i < 8; i += 2) {
-            UiObject table = new UiObject(selector.className("android.widget.TableLayout").index(i));
+            UiObject table = mDevice.findObject(selector.className("android.widget.TableLayout").index(i));
             for (int j = 0; j < 3; j += 2) {
                 UiObject row = table.getChild(selector.className("android.widget.TableRow").index(j));
                 UiObject metric =  row.getChild(selector.className("android.widget.TextView").index(0));
@@ -307,23 +313,23 @@ public class UiAutomation extends BaseUiAutomation {
     }
 
     public void returnToTestScreen(String version) throws Exception {
-        getUiDevice().pressBack();
+        mDevice.pressBack();
         if (version.equals("5.3.0"))
         {
             UiSelector selector = new UiSelector();
-            UiObject detailsButton = new UiObject(new UiSelector().className("android.widget.Button")
+            UiObject detailsButton = mDevice.findObject(new UiSelector().className("android.widget.Button")
                                                                   .text("Details"));
             sleep(1);
-            getUiDevice().pressBack();
+            mDevice.pressBack();
         }
     }
 
     public void testAgain() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject retestButton = new UiObject(selector.text("Test Again")
+        UiObject retestButton = mDevice.findObject(selector.text("Test Again")
                                                      .className("android.widget.Button"));
         if (!retestButton.waitForExists(TimeUnit.SECONDS.toMillis(2))) {
-            getUiDevice().pressBack();
+            mDevice.pressBack();
             retestButton.waitForExists(TimeUnit.SECONDS.toMillis(2));
         }
         retestButton.clickAndWaitForNewWindow();
@@ -331,11 +337,11 @@ public class UiAutomation extends BaseUiAutomation {
 
     public void waitForAndViewResults() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject submitTextView = new UiObject(selector.text("Submit Scores")
+        UiObject submitTextView = mDevice.findObject(selector.text("Submit Scores")
                                                        .className("android.widget.TextView"));
-        UiObject detailTextView = new UiObject(selector.text("Detailed Scores")
+        UiObject detailTextView = mDevice.findObject(selector.text("Detailed Scores")
                                                        .className("android.widget.TextView"));
-        UiObject commentTextView = new UiObject(selector.text("User comment")
+        UiObject commentTextView = mDevice.findObject(selector.text("User comment")
                                                         .className("android.widget.TextView"));
         boolean foundResults = false;
         for (int i = 0; i < 60; i++) {
@@ -351,25 +357,25 @@ public class UiAutomation extends BaseUiAutomation {
         }
 
         if (commentTextView.exists()) {
-            getUiDevice().pressBack();
+            mDevice.pressBack();
         }
         // Yes, sometimes, it needs to be done twice...
         if (commentTextView.exists()) {
-            getUiDevice().pressBack();
+            mDevice.pressBack();
         }
 
         if (detailTextView.exists()) {
             detailTextView.click();
             sleep(1); // tab transition
 
-            UiObject testTextView = new UiObject(selector.text("Test")
+            UiObject testTextView = mDevice.findObject(selector.text("Test")
                                                     .className("android.widget.TextView"));
             if (testTextView.exists()) {
             testTextView.click();
             sleep(1); // tab transition
             }
 
-            UiObject scoresTextView = new UiObject(selector.text("Scores")
+            UiObject scoresTextView = mDevice.findObject(selector.text("Scores")
                                                     .className("android.widget.TextView"));
             if (scoresTextView.exists()) {
             scoresTextView.click();
