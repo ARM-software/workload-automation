@@ -15,34 +15,41 @@
 
 package com.arm.wlauto.uiauto.googlephotos;
 
-import android.os.Bundle;
+import android.content.Intent;
 import android.graphics.Rect;
+import android.os.Bundle;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiObjectNotFoundException;
+import android.support.test.uiautomator.UiSelector;
 
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.core.UiScrollable;
-
-import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 import com.arm.wlauto.uiauto.ApplaunchInterface;
 import com.arm.wlauto.uiauto.UiAutoUtils;
+import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-import java.util.concurrent.TimeUnit;
-import java.util.LinkedHashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
+
+// Import the uiautomator libraries
+
+@RunWith(AndroidJUnit4.class)
 public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterface {
 
     private long viewTimeout =  TimeUnit.SECONDS.toMillis(10);
 
-    public void runUiAutomation() throws Exception {
+@Test
+public void runUiAutomation() throws Exception {
+        initialize_instrumentation();
         parameters = getParams();
 
         sleep(5); // Pause while splash screen loads
@@ -80,21 +87,25 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         dismissWelcomeView();
         closePromotionPopUp();
     }
-    
+
     // Sets the UiObject that marks the end of the application launch.
     public UiObject getLaunchEndObject() {
-        UiObject launchEndObject = new UiObject(new UiSelector().textContains("Photos")
-                                         .className("android.widget.TextView"));
+        UiObject launchEndObject = mDevice.findObject(new UiSelector().textContains("Photos")
+                                          .className("android.widget.TextView"));
         return launchEndObject;
     }
-    
+
     // Returns the launch command for the application.
     public String getLaunchCommand() {
         String launch_command;
         launch_command = UiAutoUtils.createLaunchCommand(parameters);
         return launch_command;
     }
-    
+
+    public Intent getLaunchIntent(){
+        return new Intent();
+    }
+
     // Pass the workload parameters, used for applaunch
     public void setWorkloadParameters(Bundle workload_parameters) {
         parameters = workload_parameters;
@@ -105,8 +116,8 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         // in to our google account. This ensures the same set of photographs
         // are placed in the camera directory for each run.
         UiObject getStartedButton =
-            new UiObject(new UiSelector().textContains("Get started")
-                                         .className("android.widget.Button"));
+            mDevice.findObject(new UiSelector().textContains("Get started")
+                                               .className("android.widget.Button"));
         if (getStartedButton.waitForExists(viewTimeout)) {
             getStartedButton.click();
         }
@@ -116,7 +127,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         // connection is required for sharing content. Handle the different UI
         // pathways when dismissing welcome views here.
         UiObject doNotSignInButton =
-            new UiObject(new UiSelector().resourceId(packageID + "dont_sign_in_button"));
+            mDevice.findObject(new UiSelector().resourceId(packageID + "dont_sign_in_button"));
         if (doNotSignInButton.exists()) {
             doNotSignInButton.click();
         } else {
@@ -125,8 +136,8 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
             //Some devices get popup asking for confirmation to not use backup.
             UiObject keepBackupOff =
-            new UiObject(new UiSelector().textContains("Keep Off")
-                                         .className("android.widget.Button"));
+            mDevice.findObject(new UiSelector().textContains("Keep Off")
+                                               .className("android.widget.Button"));
             if (keepBackupOff.exists()){
                 keepBackupOff.click();
             }
@@ -135,7 +146,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
             // for the existence of the wa-working directory before attempting
             // to dismiss welcome views promoting app features
             UiObject workingFolder =
-                new UiObject(new UiSelector().text("wa-working"));
+                mDevice.findObject(new UiSelector().text("wa-working"));
             if (!workingFolder.exists()) {
                 sleep(1);
                 uiDeviceSwipeLeft(10);
@@ -148,7 +159,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         }
 
         UiObject nextButton =
-            new UiObject(new UiSelector().resourceId(packageID + "next_button")
+            mDevice.findObject(new UiSelector().resourceId(packageID + "next_button")
                                          .className("android.widget.ImageView"));
         if (nextButton.exists()) {
             nextButton.clickAndWaitForNewWindow();
@@ -157,7 +168,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
     public void closePromotionPopUp() throws Exception {
         UiObject promoCloseButton =
-            new UiObject(new UiSelector().resourceId(packageID + "promo_close_button"));
+            mDevice.findObject(new UiSelector().resourceId(packageID + "promo_close_button"));
         if (promoCloseButton.exists()) {
             promoCloseButton.click();
         }
@@ -166,9 +177,9 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
     // Helper to click on the first image
     public void selectFirstImage() throws Exception {
         UiObject photo =
-            new UiObject(new UiSelector().resourceId(packageID + "recycler_view")
-                                         .childSelector(new UiSelector()
-                                         .index(1)));
+            mDevice.findObject(new UiSelector().resourceId(packageID + "recycler_view")
+                                               .childSelector(new UiSelector()
+                                               .index(1)));
         if (photo.exists()) {
             photo.click();
         } else {
@@ -176,9 +187,9 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
             // photographs position while on other versions a zero index is used.
             // Try both possiblities before throwing an exception.
             photo =
-                new UiObject(new UiSelector().resourceId(packageID + "recycler_view")
-                                             .childSelector(new UiSelector()
-                                             .index(0)));
+                mDevice.findObject(new UiSelector().resourceId(packageID + "recycler_view")
+                                                   .childSelector(new UiSelector()
+                                                   .index(0)));
             photo.click();
         }
     }
@@ -189,10 +200,10 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         long timeout =  TimeUnit.SECONDS.toMillis(3);
 
         UiObject accept =
-            new UiObject(new UiSelector().description("Accept"));
+            mDevice.findObject(new UiSelector().description("Accept"));
         UiObject done =
-            new UiObject(new UiSelector().resourceId(packageID + "cpe_save_button")
-                         .textContains("Done"));
+            mDevice.findObject(new UiSelector().resourceId(packageID + "cpe_save_button")
+                                               .textContains("Done"));
 
         // On some edit operations we can either confirm an edit with "Accept", "DONE" or neither.
         if (accept.waitForExists(timeout)) {
@@ -242,7 +253,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
             int percent = pair.getValue().percent;
 
             UiObject view =
-                new UiObject(new UiSelector().enabled(true));
+                mDevice.findObject(new UiSelector().enabled(true));
             if (!view.waitForExists(viewTimeout)) {
                 throw new UiObjectNotFoundException("Could not find \"photo view\".");
             }
@@ -294,13 +305,13 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
         // Manage potential different spelling of UI element
         UiObject editCol =
-            new UiObject(new UiSelector().textMatches("Colou?r"));
+            mDevice.findObject(new UiSelector().textMatches("Colou?r"));
         if (editCol.waitForExists(timeout)) {
             editCol.click();
         } else {
             UiObject adjustTool =
-                new UiObject(new UiSelector().resourceId(packageID + "cpe_adjustments_tool")
-                             .className("android.widget.ImageView"));
+                mDevice.findObject(new UiSelector().resourceId(packageID + "cpe_adjustments_tool")
+                                                   .className("android.widget.ImageView"));
             if (adjustTool.waitForExists(timeout)){
                 adjustTool.click();
             } else {
@@ -309,12 +320,12 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         }
 
         UiObject seekBar =
-            new UiObject(new UiSelector().resourceId(packageID + "cpe_strength_seek_bar")
-                         .className("android.widget.SeekBar"));
+            mDevice.findObject(new UiSelector().resourceId(packageID + "cpe_strength_seek_bar")
+                                               .className("android.widget.SeekBar"));
         if (!(seekBar.exists())){
             seekBar =
-            new UiObject(new UiSelector().resourceIdMatches(".*/cpe_adjustments_section_slider")
-                         .className("android.widget.SeekBar").descriptionMatches("Colou?r"));
+            mDevice.findObject(new UiSelector().resourceIdMatches(".*/cpe_adjustments_section_slider")
+                                               .className("android.widget.SeekBar").descriptionMatches("Colou?r"));
         }
 
         while (it.hasNext()) {
@@ -421,7 +432,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
                 break;
         }
 
-        getUiDevice().drag(startX, rect.centerY(), endX, rect.centerY(), steps);
+        mDevice.drag(startX, rect.centerY(), endX, rect.centerY(), steps);
     }
 
     // Helper to slide the slidebar during photo edit.
@@ -431,14 +442,14 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
         switch (pos) {
             case LEFT:
-                getUiDevice().drag(rect.left + SWIPE_MARGIN_LIMIT, rect.centerY(),
-                                   rect.left + (rect.width() / 4), rect.centerY(),
-                                   steps);
+                mDevice.drag(rect.left + SWIPE_MARGIN_LIMIT, rect.centerY(),
+                             rect.left + (rect.width() / 4), rect.centerY(),
+                             steps);
                 break;
             case RIGHT:
-                getUiDevice().drag(rect.right - SWIPE_MARGIN_LIMIT, rect.centerY(),
-                                   rect.right - (rect.width() / 4), rect.centerY(),
-                                   steps);
+                mDevice.drag(rect.right - SWIPE_MARGIN_LIMIT, rect.centerY(),
+                             rect.right - (rect.width() / 4), rect.centerY(),
+                             steps);
                 break;
             default:
                 break;

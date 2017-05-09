@@ -1,0 +1,46 @@
+apply plugin: 'com.android.application'
+
+def packageName = "com.arm.wlauto.uiauto.googlephotos"
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion "25.0.3"
+    defaultConfig {
+        applicationId "${packageName}"
+        minSdkVersion 18
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        applicationVariants.all { variant ->
+            variant.outputs.each { output ->
+                output.outputFile = file("$project.buildDir/apk/${packageName}.apk")
+            }
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+//    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+//        exclude group: 'com.android.support', module: 'support-annotations'
+//    })
+    compile 'com.android.support:appcompat-v7:25.3.1'
+    compile(name: 'uiauto', ext:'aar')
+    compile 'com.android.support:support-annotations:25.3.1'
+    compile 'com.android.support.test:runner:0.5'
+    compile 'com.android.support.test:rules:0.5'
+    compile 'com.android.support.test.uiautomator:uiautomator-v18:2.1.2'
+}
+
+repositories {
+    flatDir {
+        dirs 'libs'
+    }
+}
