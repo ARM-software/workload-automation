@@ -17,20 +17,25 @@ package com.arm.wlauto.uiauto.youtube;
 
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiScrollable;
+import android.support.test.uiautomator.UiSelector;
 
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiScrollable;
-import com.android.uiautomator.core.UiSelector;
-
-import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 import com.arm.wlauto.uiauto.ApplaunchInterface;
 import com.arm.wlauto.uiauto.UiAutoUtils;
+import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
 import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
 import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
 
+// Import the uiautomator libraries
+
+@RunWith(AndroidJUnit4.class)
 public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterface {
 
     public static final String SOURCE_MY_VIDEOS = "my_videos";
@@ -41,7 +46,9 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
     public static final int VIDEO_SLEEP_SECONDS = 3;
     public static final int LIST_SWIPE_COUNT = 5;
 
-    public void runUiAutomation() throws Exception {
+@Test
+public void runUiAutomation() throws Exception {
+        initialize_instrumentation();
         parameters = getParams();
 
         String videoSource = parameters.getString("video_source");
@@ -66,21 +73,21 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         clearFirstRunDialogues();
         disableAutoplay();
     }
-    
+
     // Sets the UiObject that marks the end of the application launch.
     public UiObject getLaunchEndObject() {
-        UiObject launchEndObject = new UiObject(new UiSelector()
+        UiObject launchEndObject =mDevice.findObject(new UiSelector()
                                          .resourceId(packageID + "menu_search"));
         return launchEndObject;
     }
-    
+
     // Returns the launch command for the application.
     public String getLaunchCommand() {
         String launch_command;
         launch_command = UiAutoUtils.createLaunchCommand(parameters);
         return launch_command;
     }
-    
+
     // Pass the workload parameters, used for applaunch
     public void setWorkloadParameters(Bundle workload_parameters) {
         parameters = workload_parameters;
@@ -88,28 +95,28 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
     public void clearFirstRunDialogues() throws Exception {
         UiObject laterButton =
-            new UiObject(new UiSelector().textContains("Later")
+           mDevice.findObject(new UiSelector().textContains("Later")
                                          .className("android.widget.TextView"));
         if (laterButton.waitForExists(WAIT_TIMEOUT_1SEC)) {
            laterButton.click();
         }
 
         UiObject cancelButton =
-            new UiObject(new UiSelector().textContains("Cancel")
+           mDevice.findObject(new UiSelector().textContains("Cancel")
                                          .className("android.widget.Button"));
         if (cancelButton.waitForExists(WAIT_TIMEOUT_1SEC)) {
             cancelButton.click();
         }
 
         UiObject skipButton =
-            new UiObject(new UiSelector().textContains("Skip")
+           mDevice.findObject(new UiSelector().textContains("Skip")
                                          .className("android.widget.TextView"));
         if (skipButton.waitForExists(WAIT_TIMEOUT_1SEC)) {
             skipButton.click();
         }
 
         UiObject gotItButton =
-            new UiObject(new UiSelector().textContains("Got it")
+           mDevice.findObject(new UiSelector().textContains("Got it")
                                          .className("android.widget.Button"));
         if (gotItButton.waitForExists(WAIT_TIMEOUT_1SEC)) {
             gotItButton.click();
@@ -123,7 +130,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
         // Don't fail fatally if autoplay toggle cannot be found
         UiObject autoplayToggle =
-            new UiObject(new UiSelector().textContains("Autoplay"));
+           mDevice.findObject(new UiSelector().textContains("Autoplay"));
         if (autoplayToggle.waitForExists(WAIT_TIMEOUT_1SEC)) {
             autoplayToggle.click();
         }
@@ -132,7 +139,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         // Tablet devices use a split with General in the left pane and Autoplay in the right so no
         // need to click back twice
         UiObject generalButton =
-            new UiObject(new UiSelector().textContains("General")
+           mDevice.findObject(new UiSelector().textContains("General")
                                          .className("android.widget.TextView"));
         if (generalButton.exists()) {
             pressBack();
@@ -147,11 +154,11 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
             clickUiObject(BY_DESC, "Search");
             UiObject textField = getUiObjectByResourceId(packageID + "search_edit_text");
             textField.setText(searchTerm);
-            getUiDevice().pressEnter();
+            mDevice.pressEnter();
             // If a video exists whose title contains the exact search term, then play it
             // Otherwise click the first video in the search results
             UiObject thumbnail =
-                new UiObject(new UiSelector().resourceId(packageID + "thumbnail"));
+               mDevice.findObject(new UiSelector().resourceId(packageID + "thumbnail"));
             UiObject matchedVideo =
                 thumbnail.getFromParent(new UiSelector().textContains(searchTerm));
 
@@ -194,10 +201,10 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
     public void dismissAdvert() throws Exception {
         UiObject advert =
-            new UiObject(new UiSelector().textContains("Visit advertiser"));
+           mDevice.findObject(new UiSelector().textContains("Visit advertiser"));
         if (advert.exists()) {
             UiObject skip =
-                new UiObject(new UiSelector().textContains("Skip ad"));
+               mDevice.findObject(new UiSelector().textContains("Skip ad"));
             if (skip.waitForExists(WAIT_TIMEOUT_1SEC*5)) {
                 skip.click();
                 sleep(VIDEO_SLEEP_SECONDS);
@@ -207,9 +214,9 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
     public void checkPlayerError() throws Exception {
         UiObject playerError =
-            new UiObject(new UiSelector().resourceId(packageID + "player_error_view"));
+           mDevice.findObject(new UiSelector().resourceId(packageID + "player_error_view"));
         UiObject tapToRetry =
-            new UiObject(new UiSelector().textContains("Tap to retry"));
+           mDevice.findObject(new UiSelector().textContains("Tap to retry"));
         if (playerError.waitForExists(WAIT_TIMEOUT_1SEC) || tapToRetry.waitForExists(WAIT_TIMEOUT_1SEC)) {
             throw new RuntimeException("Video player encountered an error and cannot continue.");
         }
@@ -226,7 +233,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
     public void checkVideoInfo() throws Exception {
         UiObject expandButton =
-            new UiObject(new UiSelector().resourceId(packageID + "expand_button"));
+           mDevice.findObject(new UiSelector().resourceId(packageID + "expand_button"));
         if (!expandButton.waitForExists(WAIT_TIMEOUT_1SEC)) {
             return;
         }
