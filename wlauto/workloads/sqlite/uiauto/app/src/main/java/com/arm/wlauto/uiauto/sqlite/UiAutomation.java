@@ -16,35 +16,39 @@
 
 package com.arm.wlauto.uiauto.sqlite;
 
-import android.app.Activity;
 import android.os.Bundle;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiObjectNotFoundException;
+import android.support.test.uiautomator.UiScrollable;
+import android.support.test.uiautomator.UiSelector;
 import android.util.Log;
-import android.view.KeyEvent;
-
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
 import com.arm.wlauto.uiauto.BaseUiAutomation;
 
-public class UiAutomation extends BaseUiAutomation {   
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+// Import the uiautomator libraries
+
+@RunWith(AndroidJUnit4.class)
+public class UiAutomation extends BaseUiAutomation {
 
     public static String TAG = "sqlite";
 
-    public void runUiAutomation() throws Exception {
+@Test
+public void runUiAutomation() throws Exception {
+        initialize_instrumentation();
         Bundle status = new Bundle();
-        status.putString("product", getUiDevice().getProductName());
+        status.putString("product", mDevice.getProductName());
         UiSelector selector = new UiSelector();
 
-        UiObject text_start = new UiObject(selector.text("Start")
+        UiObject text_start = mDevice.findObject(selector.text("Start")
                                                    .className("android.widget.Button"));
         text_start.click();
 
         try {
-            UiObject stop_text = new UiObject(selector.textContains("Stop")
+            UiObject stop_text = mDevice.findObject(selector.textContains("Stop")
                                                       .className("android.widget.Button"));
             waitUntilNoObject(stop_text, 600);
 
@@ -61,14 +65,14 @@ public class UiAutomation extends BaseUiAutomation {
         selector = resultList.getSelector();
         int index = 0;
         while (true){
-            UiObject lastEntry = new UiObject(selector.childSelector(new UiSelector()
+            UiObject lastEntry = mDevice.findObject(selector.childSelector(new UiSelector()
                                                                     .className("android.widget.LinearLayout")
                                                                     .childSelector(new UiSelector()
                                                                     .index(index)
                                                                     .childSelector(new UiSelector()
                                                                     .className("android.widget.LinearLayout")))));
             if (lastEntry.exists()){
-                UiObject value = new UiObject(selector.childSelector(new UiSelector()
+                UiObject value = mDevice.findObject(selector.childSelector(new UiSelector()
                                                                     .className("android.widget.LinearLayout")
                                                                     .childSelector(new UiSelector()
                                                                     .index(index)
@@ -78,13 +82,13 @@ public class UiAutomation extends BaseUiAutomation {
                 break;
             }
 
-            UiObject label = new UiObject(selector.childSelector(new UiSelector()
+            UiObject label = mDevice.findObject(selector.childSelector(new UiSelector()
                                                                 .className("android.widget.LinearLayout")
                                                                 .childSelector(new UiSelector()
                                                                 .index(index)
                                                                 .childSelector(new UiSelector()
                                                                 .index(0)))));
-            UiObject value = new UiObject(selector.childSelector(new UiSelector()
+            UiObject value = mDevice.findObject(selector.childSelector(new UiSelector()
                                                                 .className("android.widget.LinearLayout")
                                                                 .childSelector(new UiSelector()
                                                                 .index(index)
