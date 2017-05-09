@@ -1,3 +1,4 @@
+
 /*    Copyright 2014-2015 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,31 +17,34 @@
 
 package com.arm.wlauto.uiauto.vellamo;
 
-import android.app.Activity;
 import android.os.Bundle;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiObjectNotFoundException;
+import android.support.test.uiautomator.UiSelector;
+import android.support.test.uiautomator.UiWatcher;
 import android.util.Log;
-import android.view.KeyEvent;
-import java.util.concurrent.TimeUnit;
-import java.util.ArrayList;
-
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.core.UiDevice;
-import com.android.uiautomator.core.UiWatcher;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
 import com.arm.wlauto.uiauto.BaseUiAutomation;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
+
+// Import the uiautomator libraries
+
+@RunWith(AndroidJUnit4.class)
 public class UiAutomation extends BaseUiAutomation {
 
     public static String TAG = "vellamo";
     public static ArrayList<String> scores = new ArrayList();
     public static Boolean wasError = false;
 
-    public void runUiAutomation() throws Exception {
+@Test
+public void runUiAutomation() throws Exception {
+        initialize_instrumentation();
         Bundle parameters = getParams();
         String version = parameters.getString("version");
         Boolean browser = parameters.getBoolean("browser");
@@ -86,10 +90,10 @@ public class UiAutomation extends BaseUiAutomation {
 
     public void startTest() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject runButton = new UiObject(selector.textContains("Run All Chapters"));
+        UiObject runButton = mDevice.findObject(selector.textContains("Run All Chapters"));
 
         if (!runButton.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
-            UiObject pager = new UiObject(selector.className("android.support.v4.view.ViewPager"));
+            UiObject pager = mDevice.findObject(selector.className("android.support.v4.view.ViewPager"));
             pager.swipeLeft(2);
             if (!runButton.exists()) {
                 throw new UiObjectNotFoundException("Could not find \"Run All Chapters\" button.");
@@ -101,9 +105,9 @@ public class UiAutomation extends BaseUiAutomation {
     public void startBrowserTest(int browserToUse, String version) throws Exception {
         //Ensure chrome is selected as "browser" fails to run the benchmark
         UiSelector selector = new UiSelector();
-        UiObject browserToUseButton = new UiObject(selector.className("android.widget.ImageButton")
+        UiObject browserToUseButton = mDevice.findObject(selector.className("android.widget.ImageButton")
                                                .longClickable(true).instance(browserToUse));
-        UiObject browserButton = new UiObject(selector.className("android.widget.ImageButton")
+        UiObject browserButton = mDevice.findObject(selector.className("android.widget.ImageButton")
                                                .longClickable(true).selected(true));
         //Disable browsers
         while(browserButton.exists()) browserButton.click();
@@ -117,10 +121,10 @@ public class UiAutomation extends BaseUiAutomation {
         UiWatcher stoppedWorkingDialogWatcher = new UiWatcher() {
             @Override
             public boolean checkForCondition() {
-                UiObject stoppedWorkingDialog = new UiObject(new UiSelector().textStartsWith("Unfortunately"));
+                UiObject stoppedWorkingDialog = mDevice.findObject(new UiSelector().textStartsWith("Unfortunately"));
                 if(stoppedWorkingDialog.exists()){
                     wasError = true;
-                    UiObject okButton = new UiObject(new UiSelector().className("android.widget.Button").text("OK"));
+                    UiObject okButton = mDevice.findObject(new UiSelector().className("android.widget.Button").text("OK"));
                     try {
                         okButton.click();
                     } catch (UiObjectNotFoundException e) {
@@ -133,10 +137,10 @@ public class UiAutomation extends BaseUiAutomation {
             }
         };
         // Register watcher
-        UiDevice.getInstance().registerWatcher("stoppedWorkingDialogWatcher", stoppedWorkingDialogWatcher);
+        mDevice.registerWatcher("stoppedWorkingDialogWatcher", stoppedWorkingDialogWatcher);
 
         // Run watcher
-        UiDevice.getInstance().runWatchers();
+        mDevice.runWatchers();
 
         startTestV3(0, version);
     }
@@ -144,7 +148,7 @@ public class UiAutomation extends BaseUiAutomation {
     public void startTestV3(int run, String version) throws Exception {
         UiSelector selector = new UiSelector();
 
-        UiObject thirdRunButton = new UiObject(selector.resourceId("com.quicinc.vellamo:id/card_launcher_run_button").instance(2));
+        UiObject thirdRunButton = mDevice.findObject(selector.resourceId("com.quicinc.vellamo:id/card_launcher_run_button").instance(2));
         if (!thirdRunButton.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
             if (!thirdRunButton.exists()) {
                 throw new UiObjectNotFoundException("Could not find three \"Run\" buttons.");
@@ -152,7 +156,7 @@ public class UiAutomation extends BaseUiAutomation {
         }
 
         //Run benchmarks
-        UiObject runButton = new UiObject(selector.resourceId("com.quicinc.vellamo:id/card_launcher_run_button").instance(run));
+        UiObject runButton = mDevice.findObject(selector.resourceId("com.quicinc.vellamo:id/card_launcher_run_button").instance(run));
         if (!runButton.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
             if (!runButton.exists()) {
                 throw new UiObjectNotFoundException("Could not find correct \"Run\" button.");
@@ -162,7 +166,7 @@ public class UiAutomation extends BaseUiAutomation {
 
         //Skip tutorial screen
         if (version.equals("3.2.4")) {
-            UiObject gotItButton = new UiObject(selector.textContains("Got it"));
+            UiObject gotItButton = mDevice.findObject(selector.textContains("Got it"));
             if (!gotItButton.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
                 if (!gotItButton.exists()) {
                     throw new UiObjectNotFoundException("Could not find correct \"GOT IT\" button.");
@@ -172,7 +176,7 @@ public class UiAutomation extends BaseUiAutomation {
         }
 
         else {
-            UiObject swipeScreen = new UiObject(selector.textContains("Swipe left to continue"));
+            UiObject swipeScreen = mDevice.findObject(selector.textContains("Swipe left to continue"));
             if (!swipeScreen.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
                 if (!swipeScreen.exists()) {
                     throw new UiObjectNotFoundException("Could not find \"Swipe screen\".");
@@ -190,17 +194,17 @@ public class UiAutomation extends BaseUiAutomation {
         waitForTestCompletion(15 * 60, "com.quicinc.vellamo:id/button_no");
 
         //Remove watcher
-        UiDevice.getInstance().removeWatcher("stoppedWorkingDialogWatcher");
+        mDevice.removeWatcher("stoppedWorkingDialogWatcher");
 
         getScore(metric, "com.quicinc.vellamo:id/card_score_score");
-        getUiDevice().pressBack();
-        getUiDevice().pressBack();
-        getUiDevice().pressBack();
+        mDevice.pressBack();
+        mDevice.pressBack();
+        mDevice.pressBack();
     }
 
     public void getScore(String metric, String resourceID) throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject score = new UiObject(selector.resourceId(resourceID));
+        UiObject score = mDevice.findObject(selector.resourceId(resourceID));
         if (!score.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
             if (!score.exists()) {
                 throw new UiObjectNotFoundException("Could not find score on screen.");
@@ -211,7 +215,7 @@ public class UiAutomation extends BaseUiAutomation {
 
     public void waitForTestCompletion(int timeout, String resourceID) throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject resultsNoButton = new UiObject(selector.resourceId(resourceID));
+        UiObject resultsNoButton = mDevice.findObject(selector.resourceId(resourceID));
         if (!resultsNoButton.waitForExists(TimeUnit.SECONDS.toMillis(timeout))) {
             throw new UiObjectNotFoundException("Did not see results screen.");
         }
@@ -221,7 +225,7 @@ public class UiAutomation extends BaseUiAutomation {
     public void dismissEULA() throws Exception {
         UiSelector selector = new UiSelector();
         waitText("Vellamo EULA");
-        UiObject acceptButton = new UiObject(selector.text("Accept")
+        UiObject acceptButton = mDevice.findObject(selector.textMatches("Accept|ACCEPT")
                                                      .className("android.widget.Button"));
         if (acceptButton.exists()) {
             acceptButton.click();
@@ -230,9 +234,9 @@ public class UiAutomation extends BaseUiAutomation {
 
     public void dissmissWelcomebanner() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject welcomeBanner = new UiObject(selector.textContains("WELCOME"));
+        UiObject welcomeBanner = mDevice.findObject(selector.textContains("WELCOME"));
         if (welcomeBanner.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
-            UiObject pager = new UiObject(selector.className("android.support.v4.view.ViewPager"));
+            UiObject pager = mDevice.findObject(selector.className("android.support.v4.view.ViewPager"));
             pager.swipeLeft(2);
             pager.swipeLeft(2);
         }
@@ -240,12 +244,12 @@ public class UiAutomation extends BaseUiAutomation {
 
     public void dismissLetsRoll() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject letsRollButton = new UiObject(selector.className("android.widget.Button")
+        UiObject letsRollButton = mDevice.findObject(selector.className("android.widget.Button")
                                                        .textContains("LET'S ROLL"));
         if (!letsRollButton.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
             if (!letsRollButton.exists()) {
 		    // As a fall-back look for the old capitalization
-		    letsRollButton = new UiObject(selector.className("android.widget.Button")
+		    letsRollButton = mDevice.findObject(selector.className("android.widget.Button")
 							  .textContains("Let's Roll"));
 		    if (!letsRollButton.exists()) {
 			throw new UiObjectNotFoundException("Could not find \"Let's Roll\" button.");
@@ -257,21 +261,20 @@ public class UiAutomation extends BaseUiAutomation {
 
     public void dismissArrow() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject cardContainer = new UiObject(selector.resourceId("com.quicinc.vellamo:id/cards_container")) ;
+        UiObject cardContainer = mDevice.findObject(selector.resourceId("com.quicinc.vellamo:id/cards_container")) ;
         if (!cardContainer.waitForExists(TimeUnit.SECONDS.toMillis(5))) {
             if (!cardContainer.exists()) {
                 throw new UiObjectNotFoundException("Could not find vellamo main screen");
             }
         }
-        cardContainer.click();
     }
 
     public void dismissNetworkConnectionDialogIfNecessary() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject dialog = new UiObject(selector.className("android.widget.TextView")
+        UiObject dialog = mDevice.findObject(selector.className("android.widget.TextView")
                                                .textContains("No Network Connection"));
         if (dialog.exists()) {
-            UiObject yesButton = new UiObject(selector.className("android.widget.Button")
+            UiObject yesButton = mDevice.findObject(selector.className("android.widget.Button")
                                                       .text("Yes"));
             yesButton.click();
         }
@@ -279,10 +282,10 @@ public class UiAutomation extends BaseUiAutomation {
 
     public void dismissExplanationDialogIfNecessary() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject dialog = new UiObject(selector.className("android.widget.TextView")
+        UiObject dialog = mDevice.findObject(selector.className("android.widget.TextView")
                                                .textContains("Benchmarks Explanation"));
         if (dialog.exists()) {
-            UiObject noButton = new UiObject(selector.className("android.widget.Button")
+            UiObject noButton = mDevice.findObject(selector.className("android.widget.Button")
                                                      .text("No"));
             noButton.click();
         }
