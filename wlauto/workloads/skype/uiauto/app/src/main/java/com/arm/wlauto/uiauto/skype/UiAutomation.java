@@ -1,3 +1,5 @@
+package com.arm.wlauto.uiauto.skype;
+
 /*    Copyright 2014-2016 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,36 +15,38 @@
  * limitations under the License.
  */
 
-package com.arm.wlauto.uiauto.skype;
-
 import android.os.Bundle;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiObjectNotFoundException;
+import android.support.test.uiautomator.UiSelector;
+import android.support.test.uiautomator.UiWatcher;
 
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.core.UiWatcher;
-
-import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 import com.arm.wlauto.uiauto.ApplaunchInterface;
-import com.arm.wlauto.uiauto.UiAutoUtils;
+import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
+
+// Import the uiautomator libraries
+
+@RunWith(AndroidJUnit4.class)
 public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterface {
 
     public static final String ACTION_VOICE = "voice";
     public static final String ACTION_VIDEO = "video";
 
+    @Test
     public void runUiAutomation() throws Exception {
-        
+
         // Override superclass value
         this.uiAutoTimeout = TimeUnit.SECONDS.toMillis(10);
 
+        initialize_instrumentation();
         parameters = getParams();
 
         String contactName = parameters.getString("name");
@@ -64,13 +68,13 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         removeWatcher("infoPopUpWatcher");
         unsetScreenOrientation();
     }
-    
+
     // Get application parameters and clear the initial run dialogues of the application launch.
     public void runApplicationInitialization() throws Exception {
         getPackageParameters();
         String loginName = parameters.getString("my_id");
         String loginPass = parameters.getString("my_pwd");
-        
+
         UiWatcher infoPopUpWatcher = createInfoPopUpWatcher();
         registerWatcher("infoPopUpWatcher", infoPopUpWatcher);
         UiWatcher nextPopUpWatcher = createNextPopUpWatcher();
@@ -81,23 +85,23 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         handleLoginScreen(loginName, loginPass);
         dismissUpdatePopupIfPresent();
     }
-    
+
     // Sets the UiObject that marks the end of the application launch.
     public UiObject getLaunchEndObject() {
-        UiObject launchEndObject = new UiObject(new UiSelector()
-                                                .resourceId(packageID + "menu_search"));
+        UiObject launchEndObject = mDevice.findObject(new UiSelector()
+                .resourceId(packageID + "menu_search"));
         return launchEndObject;
     }
-    
+
     // Returns the launch command for the application.
     public String getLaunchCommand() {
         String launch_command;
         String actionName = "android.intent.action.VIEW";
         String dataURI = "skype:dummy?dummy";
-        launch_command = String.format("am start -a %s -d %s", actionName, dataURI);    
+        launch_command = String.format("am start -a %s -d %s", actionName, dataURI);
         return launch_command;
     }
-    
+
     // Pass the workload parameters, used for applaunch
     public void setWorkloadParameters(Bundle workload_parameters) {
         parameters = workload_parameters;
@@ -105,9 +109,9 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
     public void handleLoginScreen(String username, String password) throws Exception {
         UiObject useridField =
-            new UiObject(new UiSelector().resourceId(packageID + "sign_in_userid"));
+                mDevice.findObject(new UiSelector().resourceId(packageID + "sign_in_userid"));
         UiObject nextButton =
-            new UiObject(new UiSelector().resourceId(packageID + "sign_in_next_btn"));
+                mDevice.findObject(new UiSelector().resourceId(packageID + "sign_in_next_btn"));
 
         // Wait for login screen to appear
         waitObject(useridField, 20);
@@ -116,16 +120,16 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         nextButton.clickAndWaitForNewWindow();
 
         UiObject passwordField =
-            new UiObject(new UiSelector().resourceId(packageID + "signin_password"));
+                mDevice.findObject(new UiSelector().resourceId(packageID + "signin_password"));
         UiObject signinButton =
-            new UiObject(new UiSelector().resourceId(packageID + "sign_in_btn"));
+                mDevice.findObject(new UiSelector().resourceId(packageID + "sign_in_btn"));
         passwordField.setText(password);
         signinButton.clickAndWaitForNewWindow();
     }
 
     public void dismissUpdatePopupIfPresent() throws Exception {
         UiObject updateNotice =
-            new UiObject(new UiSelector().resourceId(packageID + "update_notice_dont_show_again"));
+                mDevice.findObject(new UiSelector().resourceId(packageID + "update_notice_dont_show_again"));
         //Detect if the update notice popup is present
         if (updateNotice.waitForExists(TimeUnit.SECONDS.toMillis(30))) {
             //Stop the notice from reappearing
@@ -137,7 +141,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
     public void searchForContact(String name) throws Exception {
         boolean sharingResource = false;
         UiObject menuSearch =
-            new UiObject(new UiSelector().resourceId(packageID + "menu_search"));
+                mDevice.findObject(new UiSelector().resourceId(packageID + "menu_search"));
         if (menuSearch.waitForExists(uiAutoTimeout)) {
             // If searching for a contact from Skype directly we need
             // to click the menu search button to display the contact search box.
@@ -153,20 +157,21 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         waitObject(search, 10);
         search.setText(name);
 
-        UiObject peopleItem = new UiObject(new UiSelector().textContains(name)
-                                           .resourceId(packageID + "people_item_full_name"));
+        UiObject peopleItem = mDevice.findObject(new UiSelector().textContains(name)
+                .resourceId(packageID + "people_item_full_name"));
+        UiObject search_item_icon =
+                mDevice.findObject(new UiSelector().resourceId(packageID + "search_item_icon"));
+        UiObject confirm =
+                mDevice.findObject(new UiSelector().resourceId(packageID + "fab"));
+
         peopleItem.click();
 
-        UiObject search_item_icon =
-            new UiObject(new UiSelector().resourceId(packageID + "search_item_icon"));
-
-        UiObject confirm =
-            new UiObject(new UiSelector().resourceId(packageID + "fab"));
-
-        // On some devices two clicks are needed to select a contact.
-        if (!search_item_icon.waitUntilGone(uiAutoTimeout)) {
-            if (!sharingResource || !confirm.exists()) {
-                peopleItem.click();
+        if (!sharingResource){
+            // On some devices two clicks are needed to select a contact.
+            if (!search_item_icon.waitUntilGone(uiAutoTimeout)) {
+                if (!sharingResource || !confirm.exists()) {
+                    peopleItem.click();
+                }
             }
         }
 
@@ -183,7 +188,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
             @Override
             public boolean checkForCondition() {
                 UiObject dismissButton =
-                    new UiObject(new UiSelector().resourceId(packageID + "dismiss_button"));
+                        mDevice.findObject(new UiSelector().resourceId(packageID + "dismiss_button"));
 
                 if (dismissButton.exists()) {
                     try {
@@ -199,14 +204,14 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         };
         return infoPopUpWatcher;
     }
-    
+
     // Creates a watcher for when a pop up dialog appears with a next button on subsequent launch.
     private UiWatcher createNextPopUpWatcher() throws Exception {
         UiWatcher nextPopUpWatcher = new UiWatcher() {
             @Override
             public boolean checkForCondition() {
                 UiObject nextButton =
-                    new UiObject(new UiSelector().resourceId(packageID + "next_button"));
+                        mDevice.findObject(new UiSelector().resourceId(packageID + "next_button"));
 
                 if (nextButton.exists()) {
                     pressBack();
@@ -223,11 +228,11 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         String description = video ? "Video call" : "Call options";
 
         UiObject callButton =
-            new UiObject(new UiSelector().descriptionContains(description));
+                mDevice.findObject(new UiSelector().descriptionContains(description));
         UiObject muteButton =
-            new UiObject(new UiSelector().descriptionContains("mute"));
+                mDevice.findObject(new UiSelector().descriptionContains("mute"));
         UiObject endButton =
-            new UiObject(new UiSelector().descriptionContains("end"));
+                mDevice.findObject(new UiSelector().descriptionMatches("Hang [uU]p|End call"));
 
         // Start the call and log how long that takes
         ActionLogger logger = new ActionLogger(testTag + "_start", parameters);
