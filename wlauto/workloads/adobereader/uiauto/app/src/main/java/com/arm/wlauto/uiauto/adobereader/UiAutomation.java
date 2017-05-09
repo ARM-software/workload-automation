@@ -1,3 +1,5 @@
+package com.arm.wlauto.uiauto.adobereader;
+
 /*    Copyright 2014-2016 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,36 +15,40 @@
  * limitations under the License.
  */
 
-package com.arm.wlauto.uiauto.adobereader;
 
 import android.os.Bundle;
-import android.util.Log;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiObjectNotFoundException;
+import android.support.test.uiautomator.UiSelector;
 
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiSelector;
-
-import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 import com.arm.wlauto.uiauto.ApplaunchInterface;
 import com.arm.wlauto.uiauto.UiAutoUtils;
+import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-import java.util.concurrent.TimeUnit;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
+
+// Import the uiautomator libraries
+
+@RunWith(AndroidJUnit4.class)
 public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterface {
 
     private long networkTimeout =  TimeUnit.SECONDS.toMillis(20);
     private long searchTimeout =  TimeUnit.SECONDS.toMillis(20);
 
-    public void runUiAutomation() throws Exception {
+@Test
+public void runUiAutomation() throws Exception {
+        initialize_instrumentation();
         parameters = getParams();
 
         String filename = parameters.getString("filename");
@@ -58,27 +64,27 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
         unsetScreenOrientation();
     }
-    
+
     // Get application parameters and clear the initial run dialogues of the application launch.
     public void runApplicationInitialization() throws Exception {
         getPackageParameters();
         dismissWelcomeView();
     }
-    
+
     // Sets the UiObject that marks the end of the application launch.
     public UiObject getLaunchEndObject() {
-        UiObject launchEndObject = new UiObject(new UiSelector().textContains("RECENT")
-                                         .className("android.widget.TextView"));
+        UiObject launchEndObject = mDevice.findObject(new UiSelector().textContains("RECENT")
+                                               .className("android.widget.TextView"));
         return launchEndObject;
     }
-    
+
     // Returns the launch command for the application.
     public String getLaunchCommand() {
         String launch_command;
         launch_command = UiAutoUtils.createLaunchCommand(parameters);
         return launch_command;
     }
-    
+
     // Pass the workload parameters, used for applaunch
     public void setWorkloadParameters(Bundle workload_parameters) {
         parameters = workload_parameters;
@@ -91,7 +97,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         welcomeView.swipeLeft(10);
 
         UiObject onboarding_finish_button =
-            new UiObject(new UiSelector().resourceId("com.adobe.reader:id/onboarding_finish_button"));
+            mDevice.findObject(new UiSelector().resourceId("com.adobe.reader:id/onboarding_finish_button"));
 
         if (!onboarding_finish_button.exists()) {
             welcomeView.swipeLeft(10);
@@ -101,22 +107,22 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
         // Deal with popup dialog message promoting Dropbox access
         UiObject dropBoxDialog =
-            new UiObject(new UiSelector().text("Now you can access your Dropbox files.")
-                                         .className("android.widget.TextView"));
+                mDevice.findObject(new UiSelector().text("Now you can access your Dropbox files.")
+                        .className("android.widget.TextView"));
         if (dropBoxDialog.exists()) {
             clickUiObject(BY_TEXT, "Remind Me Later", "android.widget.Button");
         }
 
         // Also deal with the Dropbox CoachMark blue hint popup
         UiObject dropBoxcoachMark =
-            new UiObject(new UiSelector().description("CoachMark")
-                                         .className("android.widget.LinearLayout"));
+                mDevice.findObject(new UiSelector().description("CoachMark")
+                                                   .className("android.widget.LinearLayout"));
         if (dropBoxcoachMark.exists()) {
             tapDisplayCentre();
         }
 
-        UiObject actionBarTitle = new UiObject(new UiSelector().textContains("My Documents")
-                                                .className("android.widget.TextView"));
+        UiObject actionBarTitle = mDevice.findObject(new UiSelector().textContains("My Documents")
+                                                            .className("android.widget.TextView"));
         actionBarTitle.waitForExists(uiAutoTimeout);
     }
 
@@ -127,14 +133,14 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         // Select the local files list from the My Documents view
         clickUiObject(BY_TEXT, "LOCAL", "android.widget.TextView");
         UiObject directoryPath =
-            new UiObject(new UiSelector().resourceId(packageID + "directoryPath"));
+                mDevice.findObject(new UiSelector().resourceId(packageID + "directoryPath"));
         if (!directoryPath.waitForExists(TimeUnit.SECONDS.toMillis(60))) {
             throw new UiObjectNotFoundException("Could not find any local files");
         }
 
         // Click the button to search from the present file list view
         UiObject searchButton =
-            new UiObject(new UiSelector().resourceId(packageID + "split_pane_search"));
+                mDevice.findObject(new UiSelector().resourceId(packageID + "split_pane_search"));
         if (!searchButton.waitForExists(TimeUnit.SECONDS.toMillis(10))) {
             throw new UiObjectNotFoundException("Could not find search button");
         }
@@ -142,8 +148,8 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
         // Enter search text into the file searchBox.  This will automatically filter the list.
         UiObject searchBox =
-            new UiObject(new UiSelector().resourceIdMatches(".*search_src_text")
-                                         .classNameMatches("android.widget.Edit.*"));
+                mDevice.findObject(new UiSelector().resourceIdMatches(".*search_src_text")
+                                                   .classNameMatches("android.widget.Edit.*"));
 
         searchBox.setText(filename);
 
@@ -155,7 +161,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         fileObject.clickAndWaitForNewWindow(uiAutoTimeout);
         // Wait for the doc to open by waiting for the viewPager UiObject to exist
         UiObject viewPager =
-            new UiObject(new UiSelector().resourceId(packageID + "viewPager"));
+                mDevice.findObject(new UiSelector().resourceId(packageID + "viewPager"));
         if (!viewPager.waitForExists(uiAutoTimeout)) {
             throw new UiObjectNotFoundException("Could not find \"viewPager\".");
         };
@@ -182,13 +188,13 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         uiDeviceSwipe(Direction.DOWN, 200);
 
         UiObject view =
-            new UiObject(new UiSelector().resourceId(packageID + "pageView"));
+                mDevice.findObject(new UiSelector().resourceId(packageID + "pageView"));
         if (!view.waitForExists(TimeUnit.SECONDS.toMillis(10))) {
             throw new UiObjectNotFoundException("Could not find page view");
         }
 
         while (it.hasNext()) {
-            Map.Entry<String, GestureTestParams> pair = it.next();
+            Entry<String, GestureTestParams> pair = it.next();
             GestureType type = pair.getValue().gestureType;
             Direction dir = pair.getValue().gestureDirection;
             PinchType pinch = pair.getValue().pinchType;
@@ -225,14 +231,14 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         // and if not, tap again before continuing
         tapDisplayCentre();
         UiObject searchIcon =
-            new UiObject(new UiSelector().resourceId(packageID + "document_view_search_icon"));
+                mDevice.findObject(new UiSelector().resourceId(packageID + "document_view_search_icon"));
         if (!searchIcon.waitForExists(uiAutoTimeout)) {
             tapDisplayCentre();
         }
 
         if (!searchIcon.waitForExists(uiAutoTimeout)) {
             searchIcon =
-                new UiObject(new UiSelector().resourceId(packageID + "document_view_search"));
+                    mDevice.findObject(new UiSelector().resourceId(packageID + "document_view_search"));
             if (!searchIcon.waitForExists(uiAutoTimeout)) {
                 tapDisplayCentre();
             }
@@ -247,20 +253,20 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
             searchIcon.clickAndWaitForNewWindow();
 
             UiObject searchBox =
-                new UiObject(new UiSelector().resourceIdMatches(".*search_src_text")
-                                             .className("android.widget.EditText"));
+                    mDevice.findObject(new UiSelector().resourceIdMatches(".*search_src_text")
+                                                       .className("android.widget.EditText"));
 
             searchBox.setText(searchStrings[i]);
 
             logger.start();
 
-            getUiDevice().getInstance().pressSearch();
+            mDevice.pressSearch();
             pressEnter();
 
             // Check the progress bar icon.  When this disappears the search is complete.
             UiObject progressBar =
-                new UiObject(new UiSelector().resourceId(packageID + "searchProgress")
-                                                         .className("android.widget.ProgressBar"));
+                    mDevice.findObject(new UiSelector().resourceId(packageID + "searchProgress")
+                                                       .className("android.widget.ProgressBar"));
             progressBar.waitForExists(uiAutoTimeout);
             progressBar.waitUntilGone(searchTimeout);
 
@@ -268,8 +274,8 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
             // Get back to the main document view by clicking twice on the close button
             UiObject searchCloseButton =
-                 new UiObject(new UiSelector().resourceIdMatches(".*search_close_btn")
-                                              .className("android.widget.ImageView"));
+                    mDevice.findObject(new UiSelector().resourceIdMatches(".*search_close_btn")
+                                                       .className("android.widget.ImageView"));
             searchCloseButton.click();
 
             if (searchCloseButton.exists()){
@@ -285,39 +291,35 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
 
     private void exitDocument() throws Exception {
         // Return from the document view to the file list view by pressing home and my documents.
-        UiObject actionBar =
-                new UiObject(new UiSelector().resourceIdMatches(".*action_bar.*")
-                                             .classNameMatches("android.view.View.*"));
-        if (!actionBar.exists()){
+        UiObject homeButton =
+                mDevice.findObject(new UiSelector().resourceId("android:id/home")
+                        .className("android.widget.ImageView"));
+        // Newer version of app have a menu button instead of home button.
+        UiObject menuButton =
+                mDevice.findObject(new UiSelector().description("Navigate up"));
+
+        if (!(homeButton.exists() || menuButton.exists())){
             tapDisplayCentre();
         }
 
-        UiObject homeButton =
-            new UiObject(new UiSelector().resourceId("android:id/home")
-                                         .className("android.widget.ImageView"));
-        // Newer version of app have a menu button instead of home button.
-        UiObject menuButton =
-            new UiObject(new UiSelector().description("Navigate up")
-                                         .classNameMatches("android.widget.Image.*"));
-
         if (homeButton.exists()){
-            homeButton.clickAndWaitForNewWindow();
+            homeButton.click();
         }
         else if (menuButton.exists()){
-            menuButton.clickAndWaitForNewWindow();
+            menuButton.click();
         }
         else {
             menuButton =
-                new UiObject(new UiSelector().resourceIdMatches(".*up.*")
-                                             .classNameMatches("android.widget.Image.*"));
-            menuButton.clickAndWaitForNewWindow();
+                    mDevice.findObject(new UiSelector().resourceIdMatches(".*up.*")
+                                            .classNameMatches("android.widget.Image.*"));
+            menuButton.click();
         }
 
         clickUiObject(BY_DESC, "My Documents", "android.widget.LinearLayout", true);
 
         UiObject searchBackButton =
-                    new UiObject(new UiSelector().description("Collapse")
-                                                 .className("android.widget.ImageButton"));
+                mDevice.findObject(new UiSelector().description("Collapse")
+                                                   .className("android.widget.ImageButton"));
         if (searchBackButton.exists()){
             searchBackButton.click();
         }
