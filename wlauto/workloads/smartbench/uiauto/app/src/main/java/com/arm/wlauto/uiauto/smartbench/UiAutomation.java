@@ -18,35 +18,38 @@ package com.arm.wlauto.uiauto.smartbench;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.util.Log;
-
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiSelector;
 
 import com.arm.wlauto.uiauto.BaseUiAutomation;
 
-public class UiAutomation extends BaseUiAutomation {   
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+// Import the uiautomator libraries
+
+@RunWith(AndroidJUnit4.class)
+public class UiAutomation extends BaseUiAutomation {
 
     public static String TAG = "smartbench";
 
-    public void runUiAutomation() throws Exception {
+@Test
+public void runUiAutomation() throws Exception {
+        initialize_instrumentation();
         Bundle status = new Bundle();
-        status.putString("product", getUiDevice().getProductName());
+        status.putString("product", mDevice.getProductName());
         UiSelector selector = new UiSelector();
         sleep(3);
-        UiObject text_bench = new UiObject(selector.text("Run SmartBench")
+        UiObject text_bench = mDevice.findObject(selector.text("Run SmartBench")
                                                    .className("android.widget.TextView"));
         text_bench.click();
 
         try{
-            UiObject complete_text = new UiObject(selector .textContains("Display Index Scores")
+            UiObject complete_text = mDevice.findObject(selector .textContains("Display Index Scores")
                                                            .className("android.widget.TextView"));
 
-            waitObject(complete_text);            
+            waitObject(complete_text);
 
             sleep(2);
             complete_text.click();
@@ -56,7 +59,7 @@ public class UiAutomation extends BaseUiAutomation {
 
         sleep(5);
         takeScreenshot("SmartBench");
-        getAutomationSupport().sendStatus(Activity.RESULT_OK, status);
+        mInstrumentation.sendStatus(Activity.RESULT_OK, status);
     }
 
 }
