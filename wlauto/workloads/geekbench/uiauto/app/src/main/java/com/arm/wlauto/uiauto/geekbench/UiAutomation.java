@@ -18,27 +18,31 @@ package com.arm.wlauto.uiauto.geekbench;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.util.Log;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiObjectNotFoundException;
+import android.support.test.uiautomator.UiSelector;
 import android.view.KeyEvent;
-
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.concurrent.TimeUnit;
 
+// Import the uiautomator libraries
+
+@RunWith(AndroidJUnit4.class)
 public class UiAutomation extends UxPerfUiAutomation {
 
     public static String TAG = "geekbench";
     public static final long WAIT_TIMEOUT_5SEC = TimeUnit.SECONDS.toMillis(5);
     public static final long WAIT_TIMEOUT_20MIN = TimeUnit.SECONDS.toMillis(20 * 60);
 
-    public void runUiAutomation() throws Exception {
+@Test
+public void runUiAutomation() throws Exception {
+        initialize_instrumentation();
         Bundle params = getParams();
         String[] version = params.getString("version").split("\\.");
         int majorVersion = Integer.parseInt(version[0]);
@@ -78,19 +82,19 @@ public class UiAutomation extends UxPerfUiAutomation {
             }
 
             if (i < (times - 1)) {
-                getUiDevice().pressBack();
-                getUiDevice().pressBack();  // twice
+                mDevice.pressBack();
+                mDevice.pressBack();  // twice
             }
         }
 
         Bundle status = new Bundle();
-        getAutomationSupport().sendStatus(Activity.RESULT_OK, status);
+        mInstrumentation.sendStatus(Activity.RESULT_OK, status);
     }
 
     public void dismissEula() throws Exception {
         UiObject acceptButton =
-            // new UiObject(new UiSelector().textContains("Accept")
-            new UiObject(new UiSelector().resourceId("android:id/button1")
+            //mDevice.findObject(new UiSelector().textContains("Accept")
+           mDevice.findObject(new UiSelector().resourceId("android:id/button1")
                                          .className("android.widget.Button"));
         if (!acceptButton.waitForExists(WAIT_TIMEOUT_5SEC)) {
             throw new UiObjectNotFoundException("Could not find Accept button");
@@ -100,7 +104,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void runBenchmarks() throws Exception {
         UiObject runButton =
-            new UiObject(new UiSelector().textContains("Run Benchmarks")
+           mDevice.findObject(new UiSelector().textContains("Run Benchmarks")
                                          .className("android.widget.Button"));
         if (!runButton.waitForExists(WAIT_TIMEOUT_5SEC)) {
             throw new UiObjectNotFoundException("Could not find Run button");
@@ -113,7 +117,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         uiDeviceSwipe(Direction.DOWN, 50);
 
         UiObject runButton =
-            new UiObject(new UiSelector().resourceId("com.primatelabs.geekbench:id/runCpuBenchmarks")
+           mDevice.findObject(new UiSelector().resourceId("com.primatelabs.geekbench:id/runCpuBenchmarks")
                                          .className("android.widget.Button"));
         if (!runButton.waitForExists(WAIT_TIMEOUT_5SEC)) {
             throw new UiObjectNotFoundException("Could not find Run button");
@@ -123,7 +127,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void waitForResultsv2() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject resultsWebview = new UiObject(selector.className("android.webkit.WebView"));
+        UiObject resultsWebview = mDevice.findObject(selector.className("android.webkit.WebView"));
         if (!resultsWebview.waitForExists(WAIT_TIMEOUT_20MIN)) {
             throw new UiObjectNotFoundException("Did not see Geekbench results screen.");
         }
@@ -131,7 +135,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void waitForResultsv3onwards() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject runningTextView = new UiObject(selector.text("Running Benchmarks...")
+        UiObject runningTextView = mDevice.findObject(selector.text("Running Benchmarks...")
                                                         .className("android.widget.TextView"));
 
         if (!runningTextView.waitUntilGone(WAIT_TIMEOUT_20MIN)) {
@@ -141,20 +145,20 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public void scrollThroughResults() throws Exception {
         UiSelector selector = new UiSelector();
-        getUiDevice().pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
+        mDevice.pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
         sleep(1);
-        getUiDevice().pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
+        mDevice.pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
         sleep(1);
-        getUiDevice().pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
+        mDevice.pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
         sleep(1);
-        getUiDevice().pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
+        mDevice.pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
     }
 
     public void shareResults() throws Exception {
         sleep(2); // transition
         UiSelector selector = new UiSelector();
-        getUiDevice().pressMenu();
-        UiObject shareButton = new UiObject(selector.text("Share")
+        mDevice.pressMenu();
+        UiObject shareButton = mDevice.findObject(selector.text("Share")
                                                     .className("android.widget.TextView"));
         shareButton.waitForExists(WAIT_TIMEOUT_5SEC);
         shareButton.click();
