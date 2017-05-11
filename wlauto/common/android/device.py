@@ -30,7 +30,7 @@ from wlauto.common.resources import Executable
 from wlauto.core.resource import NO_ONE
 from wlauto.common.linux.device import BaseLinuxDevice, PsEntry
 from wlauto.exceptions import DeviceError, WorkerThreadError, TimeoutError, DeviceNotRespondingError
-from wlauto.utils.misc import convert_new_lines, ABI_MAP
+from wlauto.utils.misc import convert_new_lines, ABI_MAP, commonprefix
 from wlauto.utils.types import boolean, regex
 from wlauto.utils.android import (adb_shell, adb_background_shell, adb_list_devices,
                                   adb_command, AndroidProperties, ANDROID_VERSION_MAP)
@@ -715,6 +715,19 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
             return self.getprop(prop='ro.product.device')
         except KeyError:
             return None
+
+    def refresh_device_files(self, file_list):
+        """
+        Depending on the devices android version and root status, determine the
+        appropriate method of forcing a re-index of the mediaserver cache for a given
+        list of files.
+        """
+        if self.device.is_rooted or self.device.get_sdk_version() < 24: # MM and below
+            common_path = commonprefix(file_list, sep=self.device.path.sep)
+            self.broadcast_media_mounted(common_path, self.device.is_rooted)
+        else:
+            for f in file_list:
+                self.broadcast_media_scan_file(f)
 
     def broadcast_media_scan_file(self, filepath):
         """
