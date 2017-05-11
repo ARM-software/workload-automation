@@ -848,3 +848,16 @@ def memoized(func):
         return __memo_cache[id_string]
 
     return memoize_wrapper
+
+
+def commonprefix(file_list, sep=os.sep):
+    """
+    Find the lowest common base folder of a passed list of files.
+    """
+    common_path = os.path.commonprefix(file_list)
+    cp_split = common_path.split(sep)
+    other_split = file_list[0].split(sep)
+    last = len(cp_split) - 1
+    if cp_split[last] != other_split[last]:
+        cp_split = cp_split[:-1]
+    return sep.join(cp_split)
