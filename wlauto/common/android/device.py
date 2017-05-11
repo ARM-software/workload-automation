@@ -716,6 +716,13 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         except KeyError:
             return None
 
+    def broadcast_media_scan_file(self, filepath):
+        """
+        Force a re-index of the mediaserver cache for the specified file.
+        """
+        command = 'am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file://'
+        self.execute(command + filepath)
+
     def broadcast_media_mounted(self, dirpath, as_root=False):
         """
         Force a re-index of the mediaserver cache for the specified directory.
