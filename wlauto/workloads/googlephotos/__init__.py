@@ -83,17 +83,22 @@ class Googlephotos(AndroidUxPerfWorkload):
         # This is to guarantee ordering and allows the workload to select a specific
         # image by subfolder, as filenames are not shown easily within the app
         d = self.device.working_directory
+        file_list = []
         for i, f in enumerate(self.test_images):
             self.device.execute('mkdir -p {0}/wa-{1}'.format(d, i + 1))
             self.device.execute('mv {0}/{2} {0}/wa-{1}/{2}'.format(d, i + 1, f))
+            file_list.append('{0}/wa-{1}/{2}'.format(d, i + 1, f))
         # Force rescan
-        self.device.broadcast_media_mounted(self.device.working_directory)
+        self.device.refresh_device_files(file_list)
 
     def teardown(self, context):
         super(Googlephotos, self).teardown(context)
         # Remove the subfolders and its content
         d = self.device.working_directory
+        file_list = []
         for i in xrange(len(self.test_images)):
-            self.device.execute('rm -rf {0}/wa-{1}'.format(d, i + 1))
+            f = '{0}/wa-{1}'.format(d, i + 1)
+            self.device.execute('rm -rf {}'.format(f))
+            file_list.append(f)
         # Force rescan
-        self.device.broadcast_media_mounted(self.device.working_directory)
+        self.device.refresh_device_files(file_list)

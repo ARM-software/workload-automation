@@ -38,6 +38,9 @@ logger = logging.getLogger('android')
 # See:
 # http://developer.android.com/guide/topics/manifest/uses-sdk-element.html#ApiLevels
 ANDROID_VERSION_MAP = {
+    25: 'NOUGAT_MR1',
+    24: 'NOUGAT',
+    23: 'MARSHMALLOW',
     22: 'LOLLIPOP_MR1',
     21: 'LOLLIPOP',
     20: 'KITKAT_WATCH',
