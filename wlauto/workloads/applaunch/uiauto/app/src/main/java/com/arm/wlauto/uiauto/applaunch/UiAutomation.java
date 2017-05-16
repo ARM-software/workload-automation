@@ -15,35 +15,25 @@
 
 package com.arm.wlauto.uiauto.applaunch;
 
-import android.os.Bundle;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
 import android.util.Log;
-
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiSelector;
 
 import com.arm.wlauto.uiauto.ApplaunchInterface;
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-import java.util.concurrent.TimeUnit;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.Map.Entry;
+
 import dalvik.system.DexClassLoader;
-import java.lang.reflect.Method;
 
 
+@RunWith(AndroidJUnit4.class)
 public class UiAutomation extends UxPerfUiAutomation {
 
-    /** 
+    /**
      * Uiobject that marks the end of launch of an application, which is workload
      * specific and added in the workload Java file by a method called getLaunchEndObject().
      */
@@ -56,23 +46,26 @@ public class UiAutomation extends UxPerfUiAutomation {
     public ApplaunchInterface launch_workload;
 
     /** Uiautomator function called by the applaunch workload. */
-    public void runUiAutomation() throws Exception{
+@Test
+public void runUiAutomation() throws Exception{
+        initialize_instrumentation();
         parameters = getParams();
 
-        // Get workload jar file parameters
+        // Get workload apk file parameters
         String workload = parameters.getString("workload");
-        String binariesDirectory = parameters.getString("binaries_directory");
-        String workloadJarPath = parameters.getString("workdir");
-        String workloadJarName = String.format("com.arm.wlauto.uiauto.%1s.jar",workload);
-        String workloadJarFile = String.format("%1s/%2s",workloadJarPath, workloadJarName);
+        String workloadAPKPath = parameters.getString("workdir");
+        String workloadName = String.format("com.arm.wlauto.uiauto.%1s.uiautoapk",workload);
+        String workloadAPKFile = String.format("%1s/%2s",workloadAPKPath, workloadName);
 
-        // Load the jar file
-        File jarFile = new File(workloadJarFile);
-        if(!jarFile.exists()) {
-            throw new Exception(String.format("Jar file not found: %s", workloadJarFile));
+        // Load the apk file
+        File apkFile = new File(workloadAPKFile);
+        File dexLocation = mContext.getDir("outdex", 0);
+        if(!apkFile.exists()) {
+            throw new Exception(String.format("APK file not found: %s ", workloadAPKFile));
         }
-        DexClassLoader classloader = new DexClassLoader(jarFile.toURI().toURL().toString(),
-                                     binariesDirectory, null, ClassLoader.getSystemClassLoader());
+        DexClassLoader classloader = new DexClassLoader(apkFile.toURI().toURL().toString(),
+        dexLocation.getAbsolutePath(), null, mContext.getClassLoader());
+
         Class uiautomation = null;
         Object uiautomation_interface = null;
         String workloadClass = String.format("com.arm.wlauto.uiauto.%1s.UiAutomation",workload);
@@ -81,6 +74,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
+
         Log.d("Class loaded:", uiautomation.getCanonicalName());
         uiautomation_interface = uiautomation.newInstance();
 
@@ -112,6 +106,7 @@ public class UiAutomation extends UxPerfUiAutomation {
      */
     public void runApplaunchSetup() throws Exception{
         setScreenOrientation(ScreenOrientation.NATURAL);
+        launch_workload.initialize_instrumentation();
         launch_workload.setWorkloadParameters(parameters);
         launch_workload.runApplicationInitialization();
         launchEndObject = launch_workload.getLaunchEndObject();
@@ -172,7 +167,6 @@ public class UiAutomation extends UxPerfUiAutomation {
         // Launches the application.
         public void launchMain() throws Exception{
             launch_p = Runtime.getRuntime().exec(launchCommand);
-
             launchValidate(launch_p);
         }
 
@@ -197,7 +191,8 @@ public class UiAutomation extends UxPerfUiAutomation {
     // Kills the application process
     public void killApplication() throws Exception{
         Process kill_p;
-        kill_p = Runtime.getRuntime().exec(String.format("am force-stop %s", packageName));
+        String command = String.format("am force-stop %s", packageName);
+        kill_p = Runtime.getRuntime().exec(new String[] { "su", "-c", command});
         kill_p.waitFor();
         kill_p.destroy();
     }
@@ -212,8 +207,14 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     // Drop the caches
     public void dropCaches() throws Exception{
+        Process sync;
+        sync = Runtime.getRuntime().exec(new String[] { "su", "-c", "sync"});
+        sync.waitFor();
+        sync.destroy();
+
         Process drop_cache;
-        drop_cache = Runtime.getRuntime().exec("su sync; su echo 3 > /proc/sys/vm/drop_caches");
+        String command = "echo 3 > /proc/sys/vm/drop_caches";
+        drop_cache = Runtime.getRuntime().exec(new String[] { "su", "-c", command});
         drop_cache.waitFor();
         drop_cache.destroy();
     }

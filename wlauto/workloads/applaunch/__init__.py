@@ -116,9 +116,9 @@ class Applaunch(AndroidUxPerfWorkload):
         self.package = self.workload.package
 
     def init_workload_resources(self, context):
-        self.workload.uiauto_file = context.resolver.get(wlauto.common.android.resources.JarFile(self.workload))
+        self.workload.uiauto_file = context.resolver.get(wlauto.common.android.resources.uiautoApkFile(self.workload))
         if not self.workload.uiauto_file:
-            raise ResourceError('No UI automation JAR file found for workload {}.'.format(self.workload.name))
+            raise ResourceError('No UI automation Uiauto APK file found for workload {}.'.format(self.workload.name))
         self.workload.device_uiauto_file = self.device.path.join(self.device.working_directory, os.path.basename(self.workload.uiauto_file))
         if not self.workload.uiauto_package:
             self.workload.uiauto_package = os.path.splitext(os.path.basename(self.workload.uiauto_file))[0]
@@ -130,8 +130,7 @@ class Applaunch(AndroidUxPerfWorkload):
 
     def pass_parameters(self):
         self.uiauto_params['workload'] = self.workload.name
-        self.uiauto_params['package'] = self.workload.package
-        self.uiauto_params['binaries_directory'] = self.device.binaries_directory
+        self.uiauto_params['package_name'] = self.workload.package
         self.uiauto_params.update(self.workload.uiauto_params)
         if self.workload.activity:
             self.uiauto_params['launch_activity'] = self.workload.activity
@@ -162,7 +161,3 @@ class Applaunch(AndroidUxPerfWorkload):
         super(Applaunch, self).teardown(context)
         AndroidBenchmark.teardown(self.workload, context)
         UiAutomatorWorkload.teardown(self.workload, context)
-        #Workload uses Dexclass loader while loading the jar file of the instrumented workload.
-        #Dexclassloader unzips and generates .dex file in the .jar directory during the run.
-        device_uiauto_dex_file = self.workload.device_uiauto_file.replace(".jar", ".dex")
-        self.workload.device.delete_file(self.device.path.join(self.device.binaries_directory, device_uiauto_dex_file))
