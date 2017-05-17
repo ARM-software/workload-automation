@@ -16,29 +16,34 @@
 
 package com.arm.wlauto.uiauto.quadrant;
 
-import java.util.concurrent.TimeUnit;
-
 import android.app.Activity;
 import android.os.Bundle;
-import android.util.Log;
-
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiSelector;
 
 import com.arm.wlauto.uiauto.BaseUiAutomation;
 
-public class UiAutomation extends BaseUiAutomation {   
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.util.concurrent.TimeUnit;
+
+// Import the uiautomator libraries
+
+@RunWith(AndroidJUnit4.class)
+public class UiAutomation extends BaseUiAutomation {
 
     public static String TAG = "quadrant";
 
-    public void runUiAutomation() throws Exception {
+@Test
+public void runUiAutomation() throws Exception {
+        initialize_instrumentation();
+        parameters = getParams();
+
+
         Bundle status = new Bundle();
-        Bundle params = getParams();
-        boolean hasGpu = params.getBoolean("has_gpu");
+        boolean hasGpu = parameters.getBoolean("has_gpu");
 
         clearLogcat();
         handleFtuInfoDialogIfNecessary();
@@ -48,15 +53,15 @@ public class UiAutomation extends BaseUiAutomation {
         handleWarningIfNecessary();
         waitForResults();
 
-        getAutomationSupport().sendStatus(Activity.RESULT_OK, status);
+        mInstrumentation.sendStatus(Activity.RESULT_OK, status);
     }
 
     public void handleFtuInfoDialogIfNecessary() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject infoText = new UiObject(selector.text("Information"));
+        UiObject infoText = mDevice.findObject(selector.text("Information"));
         if (infoText.waitForExists(TimeUnit.SECONDS.toMillis(10)))
         {
-            UiObject okButton = new UiObject(selector.text("OK")
+            UiObject okButton = mDevice.findObject(selector.text("OK")
                                                      .className("android.widget.Button"));
             okButton.click();
         }
@@ -68,29 +73,29 @@ public class UiAutomation extends BaseUiAutomation {
 
     public void goToRunCustomBenchmark() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject runCustom = new UiObject(selector.text("Run custom benchmark")
+        UiObject runCustom = mDevice.findObject(selector.text("Run custom benchmark")
                                                   .className("android.widget.TextView"));
-        runCustom.clickAndWaitForNewWindow();
-    }
+        runCustom.clickAndWaitForNewWindow()
+;    }
 
     // By default, all tests are selected. However, if our device does not have a GPU, then
     // running graphics tests may cause a crash, so we disable those.
     public void selectTestsToRun(boolean hasGpu) throws Exception {
         if(!hasGpu) {
             UiSelector selector = new UiSelector();
-            UiObject gfx2d = new UiObject(selector.text("2D graphics")
+            UiObject gfx2d = mDevice.findObject(selector.text("2D graphics")
                                                   .className("android.widget.CheckBox"));
             gfx2d.click();
 
-            UiObject gfx3d = new UiObject(selector.text("3D graphics")
+            UiObject gfx3d = mDevice.findObject(selector.text("3D graphics")
                                                   .className("android.widget.CheckBox"));
             gfx3d.click();
-        }       
+        }
     }
 
     public void hitStart() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject startButton = new UiObject(selector.text("Start")
+        UiObject startButton = mDevice.findObject(selector.text("Start")
                                                     .className("android.widget.Button")
                                                     .packageName("com.aurorasoftworks.quadrant.ui.professional"));
         startButton.click();
@@ -100,9 +105,9 @@ public class UiAutomation extends BaseUiAutomation {
     // with software rendering.
     public void handleWarningIfNecessary() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject  warning = new UiObject(selector.text("Warning"));
+        UiObject  warning = mDevice.findObject(selector.text("Warning"));
         if (warning.waitForExists(TimeUnit.SECONDS.toMillis(2))) {
-            UiObject closeButton = new UiObject(selector.text("Close")
+            UiObject closeButton = mDevice.findObject(selector.text("Close")
                                                         .className("android.widget.Button"));
             if (closeButton.exists()) {
                 closeButton.click();
