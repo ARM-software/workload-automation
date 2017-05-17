@@ -16,17 +16,18 @@
 
 package com.arm.wlauto.uiauto.facebook;
 
-import android.app.Activity;
-import android.os.Bundle;
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiObjectNotFoundException;
+import android.support.test.uiautomator.UiSelector;
 
-import com.arm.wlauto.uiauto.BaseUiAutomation;
+import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
-public class UiAutomation extends BaseUiAutomation {
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(AndroidJUnit4.class)
+public class UiAutomation extends UxPerfUiAutomation {
 
     public static String TAG = "facebook";
 
@@ -39,20 +40,22 @@ public class UiAutomation extends BaseUiAutomation {
      * Go to find friends.
      * Update the facebook status
      */
-    public void runUiAutomation() throws Exception {
+@Test
+public void runUiAutomation() throws Exception {
+        initialize_instrumentation();
         final int timeout = 5;
         UiSelector selector = new UiSelector();
 
-        UiObject logInButton = new UiObject(selector
+        UiObject logInButton = mDevice.findObject(selector
              .className("android.widget.Button").index(3).text("Log In"));
 
-        UiObject emailField = new UiObject(selector
-        .className("android.widget.EditText").index(1));
+        UiObject emailField = mDevice.findObject(selector
+                                     .className("android.widget.EditText").index(1));
         emailField.clearTextField();
         emailField.setText("abkksathe@gmail.com");
 
-        UiObject passwordField = new UiObject(selector
-             .className("android.widget.EditText").index(2));
+        UiObject passwordField = mDevice.findObject(selector
+                                        .className("android.widget.EditText").index(2));
         passwordField.clearTextField();
         passwordField.setText("highelymotivated");
 
@@ -61,7 +64,7 @@ public class UiAutomation extends BaseUiAutomation {
         sleep(timeout);
 
         //Click on message logo
-        UiObject messageLogo = new UiObject(new UiSelector()
+        UiObject messageLogo = mDevice.findObject(new UiSelector()
              .className("android.widget.RelativeLayout").index(0)
              .childSelector(new UiSelector()
              .className("android.widget.LinearLayout").index(3)
@@ -72,7 +75,7 @@ public class UiAutomation extends BaseUiAutomation {
         messageLogo.clickAndWaitForNewWindow(timeout);
 
         //send message
-        UiObject clickMessage = new UiObject(new UiSelector()
+        UiObject clickMessage = mDevice.findObject(new UiSelector()
             .className("android.support.v4.view.ViewPager").index(0)
             .childSelector(new UiSelector()
             .className("android.widget.RelativeLayout").index(1)));
@@ -80,7 +83,7 @@ public class UiAutomation extends BaseUiAutomation {
 
         sleep(timeout);
 
-        UiObject sendMessage = new UiObject(new UiSelector()
+        UiObject sendMessage = mDevice.findObject(new UiSelector()
             .className("android.widget.FrameLayout").index(4)
             .childSelector(new UiSelector()
             .className("android.widget.LinearLayout").index(2))
@@ -91,23 +94,23 @@ public class UiAutomation extends BaseUiAutomation {
 
         sleep(timeout);
 
-        UiObject editMessage = new UiObject(new UiSelector()
+        UiObject editMessage = mDevice.findObject(new UiSelector()
             .className("android.widget.EditText").text("Write a message"));
 
         editMessage.setText("Hi how are you?????");
 
-        UiObject sendButton = new UiObject(new UiSelector()
-             .className("android.widget.TextView").text("Send"));
+        UiObject sendButton = mDevice.findObject(new UiSelector(
+            ).resourceIdMatches(".*compose_button_send"));
         sendButton.click();
 
-        getUiDevice().pressDPadDown();
+        mDevice.pressDPadDown();
         sleep(timeout);
-        getUiDevice().pressBack();
+        mDevice.pressBack();
         sleep(timeout);
-        getUiDevice().pressBack();
+        mDevice.pressBack();
 
         //Check for notifications
-        UiObject clickNotificationsLogo = new UiObject(new UiSelector()
+        UiObject clickNotificationsLogo = mDevice.findObject(new UiSelector()
              .className("android.widget.RelativeLayout").index(0)
              .childSelector(new UiSelector()
              .className("android.widget.LinearLayout").index(3)
@@ -118,22 +121,22 @@ public class UiAutomation extends BaseUiAutomation {
         clickNotificationsLogo.clickAndWaitForNewWindow(timeout);
 
         //Click on a 'do you know' notification.
-        UiObject clickNotify = new UiObject(new UiSelector()
-             .textContains("do you know"));
+        UiObject clickNotify = mDevice.findObject(new UiSelector()
+             .textContains("You have a new friend suggestion"));
         clickNotify.clickAndWaitForNewWindow(timeout);
 
         sleep(timeout);
-        getUiDevice().pressBack();
+        mDevice.pressBack();
         sleep(timeout);
-        getUiDevice().pressBack();
+        mDevice.pressBack();
 
         //Search for the facebook account
-        UiObject clickBar = new UiObject(new UiSelector()
+        UiObject clickBar = mDevice.findObject(new UiSelector()
              .className("android.widget.ImageButton").index(0)
              .description("Main navigation menu"));
         clickBar.clickAndWaitForNewWindow(timeout);
 
-        UiObject clickSearch = new UiObject(new UiSelector()
+        UiObject clickSearch = mDevice.findObject(new UiSelector()
              .className("android.widget.FrameLayout").index(0)
              .childSelector(new UiSelector()
              .className("android.widget.LinearLayout").index(0)
@@ -146,29 +149,29 @@ public class UiAutomation extends BaseUiAutomation {
              .text("Search"))))));
         clickSearch.clickAndWaitForNewWindow(timeout);
 
-        UiObject editSearch = new UiObject(new UiSelector()
+        UiObject editSearch = mDevice.findObject(new UiSelector()
              .className("android.widget.EditText").index(0).text("Search"));
 
         editSearch.clearTextField();
         editSearch.setText("amol kamble");
         sleep(timeout);
 
-        UiObject clickOnSearchResult = new UiObject(new UiSelector()
+        UiObject clickOnSearchResult = mDevice.findObject(new UiSelector()
              .className("android.webkit.WebView").index(0));
         clickOnSearchResult.clickTopLeft();
 
         sleep(2 * timeout);
 
-        getUiDevice().pressBack();
+        mDevice.pressBack();
         sleep(timeout);
-        getUiDevice().pressBack();
+        mDevice.pressBack();
 
         clickBar.click();
 
         sleep(timeout);
 
         //Click on find friends
-        UiObject clickFriends = new UiObject(new UiSelector()
+        UiObject clickFriends = mDevice.findObject(new UiSelector()
              .className("android.widget.FrameLayout").index(0)
              .childSelector(new UiSelector()
              .className("android.widget.LinearLayout").index(0)
@@ -187,56 +190,56 @@ public class UiAutomation extends BaseUiAutomation {
         sleep(timeout);
 
         //Update the status
-        UiObject updateStatus = new UiObject(new UiSelector().resourceId(
+        UiObject updateStatus = mDevice.findObject(new UiSelector().resourceId(
                                              "com.facebook.katana:id/publisher_status"));
 
         updateStatus.clickAndWaitForNewWindow(timeout);
 
-        UiObject editUpdateStatus = new UiObject(new UiSelector()
+        UiObject editUpdateStatus = mDevice.findObject(new UiSelector()
              .className("android.widget.EditText")
              .text("What's on your mind?"));
         editUpdateStatus.clearTextField();
         editUpdateStatus.setText("hellllooooooo its done!!");
 
-        UiObject clickPost = new UiObject(new UiSelector()
+        UiObject clickPost = mDevice.findObject(new UiSelector()
              .className("android.widget.RelativeLayout").index(0)
              .childSelector(new UiSelector()
              .className("android.widget.LinearLayout").index(3)));
         clickPost.clickAndWaitForNewWindow(timeout);
-        getUiDevice().pressHome();
+        mDevice.pressHome();
     }
 
     //disable update using playstore
     public void disableUpdate() throws UiObjectNotFoundException {
 
-        UiObject accountSelect = new UiObject(new UiSelector()
+        UiObject accountSelect = mDevice.findObject(new UiSelector()
                  .className("android.widget.Button").text("Accept"));
 
         if (accountSelect.exists())
              accountSelect.click();
 
-        UiObject moreOptions = new UiObject(new UiSelector()
+        UiObject moreOptions = mDevice.findObject(new UiSelector()
                  .className("android.widget.ImageButton")
                  .description("More options"));
         moreOptions.click();
 
-        UiObject settings = new UiObject(new UiSelector()
+        UiObject settings = mDevice.findObject(new UiSelector()
                  .className("android.widget.TextView").text("Settings"));
         settings.clickAndWaitForNewWindow();
 
-        UiObject autoUpdate = new UiObject(new UiSelector()
+        UiObject autoUpdate = mDevice.findObject(new UiSelector()
                  .className("android.widget.TextView")
                  .text("Auto-update apps"));
 
         autoUpdate.clickAndWaitForNewWindow();
 
-        UiObject clickAutoUpdate = new UiObject(new UiSelector()
+        UiObject clickAutoUpdate = mDevice.findObject(new UiSelector()
                   .className("android.widget.CheckedTextView")
                   .text("Do not auto-update apps"));
 
         clickAutoUpdate.clickAndWaitForNewWindow();
 
-        getUiDevice().pressBack();
-        getUiDevice().pressHome();
+        mDevice.pressBack();
+        mDevice.pressHome();
     }
 }

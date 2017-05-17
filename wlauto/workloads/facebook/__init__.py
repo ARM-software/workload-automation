@@ -48,7 +48,7 @@ class Facebook(AndroidUiAutoBenchmark):
     #'du' specify 'disable update'
     du_activity = 'com.android.vending/.AssetBrowserActivity'
     du_method_string = 'com.arm.wlauto.uiauto.facebook.UiAutomation#disableUpdate'
-    du_jar_file = '/data/local/wa_usecases/com.arm.wlauto.uiauto.facebook.jar'
+    du_jar_file = '/data/local/wa_usecases/com.arm.wlauto.uiauto.facebook.apk'
     du_run_timeout = 4 * 60
     du_working_dir = '/data/local/wa_usecases'
     du_apk_file = '/disableupdateapk/com.android.vending-4.3.10.apk'
