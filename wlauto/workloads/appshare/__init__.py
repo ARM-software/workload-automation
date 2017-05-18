@@ -134,7 +134,7 @@ class AppShare(AndroidUxPerfWorkload):
         super(AppShare, self).validate()
         # Set package to None as it doesnt allow it to be a list,
         # and we are not using it in the java side, only in wa itself.
-        self.uiauto_params['package'] = None
+        self.uiauto_params['package_name'] = None
         self.uiauto_params['googlephotos_package'] = self.wl_googlephotos.package
         self.uiauto_params['gmail_package'] = self.wl_gmail.package
         self.uiauto_params['skype_package'] = self.wl_skype.package

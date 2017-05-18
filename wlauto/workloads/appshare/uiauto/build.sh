@@ -8,42 +8,46 @@ fi
 script_dir=`dirname $script_path`
 cd $script_dir
 
-# Ensure build.xml exists before starting
-if [[ ! -f build.xml ]]; then
-    echo 'Ant build.xml file not found! Check that you are in the right directory.'
+# Ensure gradelw exists before starting
+if [[ ! -f gradlew ]]; then
+    echo 'gradlew file not found! Check that you are in the right directory.'
     exit 9
 fi
 
-# Copy base classes from wlauto dist
-class_dir=bin/classes/com/arm/wlauto/uiauto
-base_classes=`python -c "import os, wlauto; print os.path.join(os.path.dirname(wlauto.__file__), 'common', 'android', '*.class')"`
-mkdir -p $class_dir
-cp $base_classes $class_dir
+# Copy base class library from wlauto dist
+libs_dir=app/libs
+base_classes=`python -c "import os, wlauto; print os.path.join(os.path.dirname(wlauto.__file__), 'common', 'android', '*.aar')"`
+mkdir -p $libs_dir
+cp $base_classes $libs_dir
 
 # Add appshare workload dependencies
 apps=("googlephotos" "gmail" "skype")
 
+# Copy the dependant workload classes source code.
 for app in "${apps[@]}"; do
   module_path="wlauto.workloads.${app}"
-  app_path="'uiauto/bin/classes/com/arm/wlauto/uiauto/${app}'"
-  app_class_dir=`python -c "import os, ${module_path}; print os.path.join(os.path.dirname(${module_path}.__file__), ${app_path})"`
-  cp -r $app_class_dir $class_dir
+  app_path="'uiauto/app/src/main/java/com/arm/wlauto/uiauto/${app}'"
+  app_libs_dir=`python -c "import os, ${module_path}; print os.path.join(os.path.dirname(${module_path}.__file__), ${app_path})"`
+  cp -r $app_libs_dir "app/src/main/java/com/arm/wlauto/uiauto"
 done
 
+
+
 # Build and return appropriate exit code if failed
-ant build
+# gradle build
+./gradlew clean :app:assembleDebug
 exit_code=$?
 if [[ $exit_code -ne 0 ]]; then
-    echo "ERROR: 'ant build' exited with code $exit_code"
+    echo "ERROR: 'gradle build' exited with code $exit_code"
     exit $exit_code
 fi
 
-# If successful move JAR file to workload folder (overwrite previous)
-package=com.arm.wlauto.uiauto.appshare.jar
+# If successful move APK file to workload folder (overwrite previous)
+package=com.arm.wlauto.uiauto.appshare
 rm -f ../$package
-if [[ -f bin/$package ]]; then
-    cp bin/$package ..
+if [[ -f app/build/apk/$package.apk ]]; then
+    cp app/build/apk/$package.apk ../$package.uiautoapk
 else
-    echo 'ERROR: UiAutomator JAR could not be found!'
+    echo 'ERROR: UiAutomator apk could not be found!'
     exit 9
 fi

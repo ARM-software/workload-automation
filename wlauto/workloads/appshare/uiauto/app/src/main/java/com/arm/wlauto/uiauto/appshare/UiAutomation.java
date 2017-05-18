@@ -1,20 +1,23 @@
 package com.arm.wlauto.uiauto.appshare;
 
 import android.os.Bundle;
-
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiScrollable;
-import com.android.uiautomator.core.UiSelector;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiScrollable;
+import android.support.test.uiautomator.UiSelector;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_ID;
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_TEXT;
-import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 
+import static com.arm.wlauto.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
+
+// Import the uiautomator libraries
+
+@RunWith(AndroidJUnit4.class)
 public class UiAutomation extends UxPerfUiAutomation {
 
     // Create UIAutomation objects
@@ -29,9 +32,11 @@ public class UiAutomation extends UxPerfUiAutomation {
 
     public Bundle parameters;
 
-    public void runUiAutomation() throws Exception {
+@Test
+public void runUiAutomation() throws Exception {
         // Override superclass value
-        this.uiAutoTimeout = TimeUnit.SECONDS.toMillis(10);    
+        this.uiAutoTimeout = TimeUnit.SECONDS.toMillis(10);
+        initialize_instrumentation();
         parameters = getParams();
 
         // Setup the three uiautomator classes with the correct information
@@ -40,7 +45,11 @@ public class UiAutomation extends UxPerfUiAutomation {
         Bundle dummyParams = new Bundle();
         dummyParams.putString("markers_enabled", "false");
 
-        String packageName = parameters.getString("googlephotos_package");
+        googlephotos.initialize_instrumentation();
+        skype.initialize_instrumentation();
+        gmail.initialize_instrumentation();
+
+    String packageName = parameters.getString("googlephotos_package");
         googlephotos.setWorkloadParameters(dummyParams, packageName, packageName + ":id/");
         packageName = parameters.getString("gmail_package");
         gmail.setWorkloadParameters(dummyParams, packageName, packageName + ":id/");
@@ -63,7 +72,7 @@ public class UiAutomation extends UxPerfUiAutomation {
 
         // On some devices the first back press only hides the keyboard, check if
         // another is needed.
-        UiObject googlephotosShare = new UiObject(new UiSelector().packageName(
+        UiObject googlephotosShare = mDevice.findObject(new UiSelector().packageName(
                                       parameters.getString("googlephotos_package")));
         if (!googlephotosShare.exists()){
             pressBack();
@@ -88,7 +97,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         gmail.clearFirstRunDialogues();
 
         UiObject composeView =
-            new UiObject(new UiSelector().resourceId(gID + "compose"));
+            mDevice.findObject(new UiSelector().resourceId(gID + "compose"));
         if (!composeView.waitForExists(uiAutoTimeout)) {
             // After the initial share request on some devices Gmail returns back
             // to the launching app, so we need to share the photo once more and
@@ -133,8 +142,8 @@ public class UiAutomation extends UxPerfUiAutomation {
                 new UiScrollable(new UiSelector().resourceId(googlephotos.getPackageID() + "share_expander"));
         }
         UiObject openApp =
-            new UiObject(new UiSelector().text(appName)
-                                         .className("android.widget.TextView"));
+            mDevice.findObject(new UiSelector().text(appName)
+                                               .className("android.widget.TextView"));
         // On some devices the application_grid has many entries, so we have to swipe up to make
         // sure all the entries are visable.  This will also stop entries at the bottom being
         // obscured by the bottom action bar.
@@ -143,7 +152,6 @@ public class UiAutomation extends UxPerfUiAutomation {
             // In the rare case the grid is larger than the screen swipe up
             applicationGrid.swipeUp(10);
         }
-
         logger.start();
         openApp.clickAndWaitForNewWindow();
         logger.stop();
