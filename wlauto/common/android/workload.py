@@ -26,7 +26,8 @@ from wlauto.core.resource import NO_ONE
 from wlauto.common.android.resources import ApkFile, ReventFile
 from wlauto.common.resources import ExtensionAsset, Executable, File
 from wlauto.exceptions import WorkloadError, ResourceError, DeviceError
-from wlauto.utils.android import ApkInfo, ANDROID_NORMAL_PERMISSIONS, UNSUPPORTED_PACKAGES
+from wlauto.utils.android import (ApkInfo, ANDROID_NORMAL_PERMISSIONS,
+                                  ANDROID_UNCHANGEABLE_PERMISSIONS, UNSUPPORTED_PACKAGES)
 from wlauto.utils.types import boolean, ParameterDict
 from wlauto.utils.revent import ReventRecording
 import wlauto.utils.statedetect as state_detector
@@ -446,16 +447,18 @@ class ApkWorkload(Workload):
             # "Normal" Permisions are automatically granted and cannot be changed
             permission_name = permission.rsplit('.', 1)[1]
             if permission_name not in ANDROID_NORMAL_PERMISSIONS:
-                # On some API 23+ devices, this may fail with a SecurityException
-                # on previously granted permissions. In that case, just skip as it
-                # is not fatal to the workload execution
-                try:
-                    self.device.execute("pm grant {} {}".format(self.package, permission))
-                except DeviceError as e:
-                    if "changeable permission" in e.message or "Unknown permission" in e.message:
-                        self.logger.debug(e)
-                    else:
-                        raise e
+                # Some permissions are not allowed to be "changed"
+                if permission_name not in ANDROID_UNCHANGEABLE_PERMISSIONS:
+                    # On some API 23+ devices, this may fail with a SecurityException
+                    # on previously granted permissions. In that case, just skip as it
+                    # is not fatal to the workload execution
+                    try:
+                        self.device.execute("pm grant {} {}".format(self.package, permission))
+                    except DeviceError as e:
+                        if "changeable permission" in e.message or "Unknown permission" in e.message:
+                            self.logger.debug(e)
+                        else:
+                            raise e
 
     def do_post_install(self, context):
         """ May be overwritten by derived classes."""
