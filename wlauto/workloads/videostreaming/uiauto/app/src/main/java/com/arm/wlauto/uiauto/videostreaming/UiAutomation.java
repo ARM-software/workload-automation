@@ -17,19 +17,23 @@
 package com.arm.wlauto.uiauto.videostreaming;
 
 import android.app.Activity;
-import java.util.Date;
 import android.os.Bundle;
-import java.util.concurrent.TimeUnit;
-
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiObjectNotFoundException;
+import android.support.test.uiautomator.UiSelector;
 
 import com.arm.wlauto.uiauto.BaseUiAutomation;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
+// Import the uiautomator libraries
+
+@RunWith(AndroidJUnit4.class)
 public class UiAutomation extends BaseUiAutomation {
 
     public static String TAG = "videostreaming";
@@ -50,12 +54,14 @@ public class UiAutomation extends BaseUiAutomation {
         return totalTime;
     }
 
-    public void runUiAutomation() throws Exception {
+@Test
+public void runUiAutomation() throws Exception {
         final int timeout = 5;
         int currentTime = 0, timeAfter20Sec = 0, videoTime = 0;
         long timeBeforeGetText = 0, timeAfterGetText = 0, timeForGetText = 0;
         Bundle status = new Bundle();
 
+        initialize_instrumentation();
         Bundle parameters = getParams();
         if (parameters.size() <= 0)
            return;
@@ -64,27 +70,27 @@ public class UiAutomation extends BaseUiAutomation {
         int samplingInterval = parameters.getInt("sampling_interval");
         String videoName = parameters.getString("video_name");
 
-        UiObject search = new UiObject(new UiSelector()
+        UiObject search =mDevice.findObject(new UiSelector()
              .className("android.widget.ImageButton").index(0));
         if (search.exists()) {
            search.clickAndWaitForNewWindow(timeout);
         }
 
-        UiObject clickVideoTab = new UiObject(new UiSelector()
+        UiObject clickVideoTab =mDevice.findObject(new UiSelector()
              .className("android.widget.Button").text("Video"));
         clickVideoTab.click();
 
-        UiObject enterKeyword = new UiObject(new UiSelector()
+        UiObject enterKeyword =mDevice.findObject(new UiSelector()
              .className("android.widget.EditText")
              .text("Please input the keywords"));
         enterKeyword.clearTextField();
         enterKeyword.setText(videoName);
 
         UiSelector selector = new UiSelector();
-        UiObject clickSearch = new UiObject(selector.resourceId("tw.com.freedi.youtube.player:id/startSearchBtn"));
+        UiObject clickSearch = mDevice.findObject(selector.resourceId("tw.com.freedi.youtube.player:id/startSearchBtn"));
         clickSearch.clickAndWaitForNewWindow(timeout);
 
-        UiObject clickVideo = new UiObject(new UiSelector().className("android.widget.TextView").textContains(videoName));
+        UiObject clickVideo =mDevice.findObject(new UiSelector().className("android.widget.TextView").textContains(videoName));
         if (!clickVideo.waitForExists(TimeUnit.SECONDS.toMillis(10))) {
             if (!clickVideo.exists()) {
                 throw new UiObjectNotFoundException("Could not find video.");
@@ -93,10 +99,10 @@ public class UiAutomation extends BaseUiAutomation {
 
         clickVideo.clickAndWaitForNewWindow(timeout);
 
-        UiObject totalVideoTime = new UiObject(new UiSelector()
+        UiObject totalVideoTime =mDevice.findObject(new UiSelector()
              .className("android.widget.TextView").index(2));
 
-        UiObject rewind = new UiObject(new UiSelector()
+        UiObject rewind =mDevice.findObject(new UiSelector()
              .className("android.widget.RelativeLayout")
              .index(0).childSelector(new UiSelector()
              .className("android.widget.LinearLayout")
@@ -117,7 +123,7 @@ public class UiAutomation extends BaseUiAutomation {
          */
         if (videoTime > samplingInterval) {
            for (int i = 0; i < (videoTime / samplingInterval); i++) {
-              UiObject videoCurrentTime = new UiObject(new UiSelector()
+              UiObject videoCurrentTime =mDevice.findObject(new UiSelector()
                  .className("android.widget.TextView").index(0));
 
               sleep(samplingInterval);
@@ -129,15 +135,15 @@ public class UiAutomation extends BaseUiAutomation {
               timeForGetText = timeAfterGetText - timeBeforeGetText;
 
               if (timeAfter20Sec == -1) {
-                 getUiDevice().pressHome();
+                 mDevice.pressHome();
                  return;
               }
 
               if ((timeAfter20Sec - (currentTime + timeForGetText)) <
                          (samplingInterval - tolerance)) {
-                 getUiDevice().pressHome();
+                 mDevice.pressHome();
 
-                 getAutomationSupport().sendStatus(Activity.RESULT_CANCELED,
+                 mInstrumentation.sendStatus(Activity.RESULT_CANCELED,
                       status);
                  return;
               }
@@ -147,8 +153,8 @@ public class UiAutomation extends BaseUiAutomation {
        } else {
             sleep(videoTime);
        }
-       getUiDevice().pressBack();
-       getUiDevice().pressHome();
-       getAutomationSupport().sendStatus(Activity.RESULT_OK, status);
+       mDevice.pressBack();
+       mDevice.pressHome();
+       mInstrumentation.sendStatus(Activity.RESULT_OK, status);
     }
 }
