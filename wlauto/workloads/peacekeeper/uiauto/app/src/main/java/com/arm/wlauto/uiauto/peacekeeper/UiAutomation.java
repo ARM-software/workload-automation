@@ -16,40 +16,32 @@
 
 package com.arm.wlauto.uiauto.peacekeeper;
 
-import java.io.File;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.io.PrintWriter;
-import android.app.Activity;
 import android.os.Bundle;
-import android.util.Log;
-import android.app.Activity;
-import android.os.Bundle;
-import android.util.Log;
-import android.view.KeyEvent;
-
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiSelector;
 
 import com.arm.wlauto.uiauto.BaseUiAutomation;
 
-public class UiAutomation extends BaseUiAutomation { 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.io.PrintWriter;
+
+// Import the uiautomator libraries
+
+@RunWith(AndroidJUnit4.class)
+public class UiAutomation extends BaseUiAutomation {
 
     public static String TAG = "peacekeeper";
 
-    public void runUiAutomation() throws Exception {
+@Test
+public void runUiAutomation() throws Exception {
         // maximum time for running peacekeeper benchmark 80 * 10 sec
         final int TIMEOUT = 80;
 
         // reading the input parameter
+        initialize_instrumentation();
         Bundle parameters = getParams();
         String browser = parameters.getString("browser");
         String outputFile = parameters.getString("output_file");
@@ -62,36 +54,39 @@ public class UiAutomation extends BaseUiAutomation {
         // firefox browser uiautomator code
         if (browser.equals("firefox")) {
 
-            UiObject addressBar = new UiObject(new UiSelector()
+            UiObject addressBar = mDevice.findObject(new UiSelector()
                                   .className("android.widget.TextView")
                                   .text("Enter Search or Address"));
             if (!addressBar.exists()) {
-                addressBar = new UiObject(new UiSelector()
+                addressBar = mDevice.findObject(new UiSelector()
                              .resourceIdMatches(".*/url_bar_title"));
             }
             addressBar.click();
-            UiObject setUrl = new UiObject(new UiSelector()
+            UiObject setUrl = mDevice.findObject(new UiSelector()
                               .className("android.widget.EditText"));
             setUrl.clearTextField();
             setUrl.setText(peacekeeperUrl);
-            getUiDevice().pressEnter();
+            mDevice.pressEnter();
 
             // Allow time for UI to update
             sleep(1);
 
-            if (!setUrl.exists()){
-                setUrl = addressBar;
-            }
 
-            UiObject currentUrl = new UiObject(new UiSelector()
+            UiObject currentUrl = mDevice.findObject(new UiSelector()
                                .className("android.widget.TextView").index(1));
+
+            if (!currentUrl.getText().contains("run.action")) {
+                currentUrl = addressBar;
+            }
             for (int i = 0; i < TIMEOUT; i++) {
 
-                if (currentUrl.getText()
-                   .equals("Peacekeeper - free universal browser test for HTML5 from Futuremark")) {
+                if (!currentUrl.getText().contains("run.action")) {
 
                     // write url address to peacekeeper.txt file
                     currentUrl.click();
+                    if (!setUrl.exists()){
+                        setUrl = addressBar;
+                    }
                     urlAddress = setUrl.getText();
                     writer.println(urlAddress);
                     break;
@@ -101,12 +96,12 @@ public class UiAutomation extends BaseUiAutomation {
         } else if (browser.equals("chrome")) { // Code for Chrome browser
 
             //Check for welcome screen and dismiss if present.
-            UiObject acceptTerms = new UiObject(new UiSelector()
+            UiObject acceptTerms = mDevice.findObject(new UiSelector()
                                    .className("android.widget.Button")
                                    .textContains("Accept & continue"));
             if (acceptTerms.exists()){
                 acceptTerms.click();
-                UiObject dismiss = new UiObject(new UiSelector()
+                UiObject dismiss = mDevice.findObject(new UiSelector()
                                    .className("android.widget.Button")
                                    .resourceIdMatches(".*/negative_button"));
                 if (dismiss.exists()){
@@ -114,20 +109,25 @@ public class UiAutomation extends BaseUiAutomation {
                 }
             }
 
-            UiObject addressBar = new UiObject(new UiSelector()
+            UiObject addressBar = mDevice.findObject(new UiSelector()
                                   .className("android.widget.EditText")
-                                  .descriptionContains("Search or type url"));
+                                  .descriptionMatches("Search or type url"));
+            if (!addressBar.exists()){
+                addressBar = mDevice.findObject(new UiSelector()
+                        .className("android.widget.EditText")
+                        .text("Search or type URL"));
+            }
 
-            addressBar.clickAndWaitForNewWindow();
+            addressBar.click();
             addressBar.clearTextField();
             addressBar.setText(peacekeeperUrl);
-            getUiDevice().pressEnter();
+            mDevice.pressEnter();
 
             // Allow time for UI to update
-            sleep(1);
+            sleep(5);
 
             if (!addressBar.exists()){
-                addressBar = new UiObject(new UiSelector()
+                addressBar = mDevice.findObject(new UiSelector()
                              .resourceIdMatches(".*/url_bar"));
             }
             for (int i = 0; i < TIMEOUT; i++) {
@@ -140,11 +140,11 @@ public class UiAutomation extends BaseUiAutomation {
                     urlAddress = "http://" + urlAddress;
                     writer.println(urlAddress);
                     break;
-                    }
+                }
             sleep(10);
             }
         }
         writer.close();
-        getUiDevice().pressHome();
+        mDevice.pressHome();
     }
 }
