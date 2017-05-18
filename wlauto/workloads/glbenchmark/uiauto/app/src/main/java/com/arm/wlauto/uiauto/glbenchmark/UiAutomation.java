@@ -14,31 +14,33 @@
 */
 
 
-package com.arm.wlauto.uiauto.glb;
-
-import java.lang.Runtime;
-import java.lang.Process;
-import java.util.concurrent.TimeUnit;
+package com.arm.wlauto.uiauto.glbenchmark;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiObjectNotFoundException;
+import android.support.test.uiautomator.UiScrollable;
+import android.support.test.uiautomator.UiSelector;
 import android.util.Log;
-import android.view.KeyEvent;
-
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
 
 import com.arm.wlauto.uiauto.BaseUiAutomation;
 
-public class UiAutomation extends BaseUiAutomation {   
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.util.concurrent.TimeUnit;
+
+@RunWith(AndroidJUnit4.class)
+public class UiAutomation extends BaseUiAutomation {
 
     public static String TAG = "glb";
     public static int maxScrolls = 15;
 
-    public void runUiAutomation() throws Exception {
+@Test
+public void runUiAutomation() throws Exception {
+        initialize_instrumentation();
         Bundle parameters = getParams();
         String version = parameters.getString("version");
         String useCase = parameters.getString("use_case").replace('_', ' ');
@@ -56,21 +58,21 @@ public class UiAutomation extends BaseUiAutomation {
         iterations -= 1;
 
         while (iterations > 0) {
-                getUiDevice().pressBack();
+                mDevice.pressBack();
                 goToPreformanceTestsMenu();
                 hitStart();
                 waitForResults(version, useCase, testTimeoutSeconds);
                 extractResults();
                 iterations -= 1;
         }
-        
+
         Bundle status = new Bundle();
-        getAutomationSupport().sendStatus(Activity.RESULT_OK, status);
+        mInstrumentation.sendStatus(Activity.RESULT_OK, status);
     }
 
     public void goToPreformanceTestsMenu() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject choosePerfTest = new UiObject(selector.text("Performance Tests")
+        UiObject choosePerfTest = mDevice.findObject(selector.text("Performance Tests")
                                                        .className("android.widget.TextView"));
         choosePerfTest.clickAndWaitForNewWindow();
     }
@@ -78,12 +80,12 @@ public class UiAutomation extends BaseUiAutomation {
     public void selectUseCase(String version, String useCase, String variant) throws Exception {
         UiSelector selector = new UiSelector();
         UiScrollable testList = new UiScrollable(selector.className("android.widget.ListView"));
-        UiObject useCaseText = new UiObject(selector.className("android.widget.TextView")
+        UiObject useCaseText = mDevice.findObject(selector.className("android.widget.TextView")
                                                     .text(useCase)
                                            );
         if (version.equals("2.7")){
                 UiObject variantText =  useCaseText.getFromParent(selector.className("android.widget.TextView")
-                                                                          .text(variant));    
+                                                                          .text(variant));
                 int scrolls = 0;
                 while(!variantText.exists()) {
                         testList.scrollForward();
@@ -104,19 +106,18 @@ public class UiAutomation extends BaseUiAutomation {
                         }
                 }
                 useCaseText.click();
-                //UiSelector selector = new UiSelector();
                 UiObject modeDisableModeButton = null;
                 if (variant.contains("Onscreen"))
-                        modeDisableModeButton = new UiObject(selector.text("Offscreen"));
+                        modeDisableModeButton = mDevice.findObject(selector.text("Offscreen"));
                 else
-                        modeDisableModeButton = new UiObject(selector.text("Onscreen"));
+                        modeDisableModeButton = mDevice.findObject(selector.text("Onscreen"));
                 modeDisableModeButton.click();
         }
     }
 
     public void hitStart() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject startButton = new UiObject(selector.text("Start"));
+        UiObject startButton = mDevice.findObject(selector.text("Start"));
         startButton.clickAndWaitForNewWindow();
     }
 
@@ -124,9 +125,9 @@ public class UiAutomation extends BaseUiAutomation {
         UiSelector selector = new UiSelector();
         UiObject results = null;
         if (version.equals("2.7"))
-                results = new UiObject(selector.text("Results").className("android.widget.TextView"));
+                results = mDevice.findObject(selector.text("Results").className("android.widget.TextView"));
         else
-                results =  new UiObject(selector.text(useCase).className("android.widget.TextView"));
+                results =  mDevice.findObject(selector.text(useCase).className("android.widget.TextView"));
 	Log.v(TAG, "Waiting for results screen.");
 	// On some devices, the results screen sometimes gets "backgrounded" (or
 	// rather, doesn't seem to come to foreground to begin with). This code
@@ -135,7 +136,7 @@ public class UiAutomation extends BaseUiAutomation {
 	// starting GLB.
         if (!results.waitForExists(TimeUnit.SECONDS.toMillis(timeout))) {
 		Log.v(TAG, "Results screen not found. Attempting to bring to foreground.");
-		String[] commandLine = {"am", "start", 
+		String[] commandLine = {"am", "start",
 					"-a", "android.intent.action.MAIN",
 					"-c", "android.intent.category.LAUNCHER",
 					"-n", "com.glbenchmark.glbenchmark27/com.glbenchmark.activities.GLBenchmarkDownloaderActivity"};
@@ -153,7 +154,7 @@ public class UiAutomation extends BaseUiAutomation {
             Log.v(TAG, "Extracting results.");
 	    sleep(2); // wait for the results screen to fully load.
             UiSelector selector = new UiSelector();
-            UiObject fpsText = new UiObject(selector.className("android.widget.TextView")
+            UiObject fpsText = mDevice.findObject(selector.className("android.widget.TextView")
                                                     .textContains("fps")
                                            );
             UiObject otherText = fpsText.getFromParent(selector.className("android.widget.TextView").index(0));

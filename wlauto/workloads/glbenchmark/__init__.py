@@ -131,14 +131,6 @@ class Glb(AndroidUiAutoBenchmark):
         self.uiauto_params['timeout'] = self.timeout
         self.package = self.packages[self.version]
 
-    def init_resources(self, context):
-        self.apk_file = context.resolver.get(wlauto.common.android.resources.ApkFile(self), version=self.version)
-        self.uiauto_file = context.resolver.get(wlauto.common.android.resources.JarFile(self))
-        self.device_uiauto_file = self.device.path.join(self.device.working_directory,
-                                                        os.path.basename(self.uiauto_file))
-        if not self.uiauto_package:
-            self.uiauto_package = os.path.splitext(os.path.basename(self.uiauto_file))[0]
-
     def update_result(self, context):
         super(Glb, self).update_result(context)
         match_count = 0
