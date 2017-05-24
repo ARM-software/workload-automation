@@ -129,8 +129,7 @@ public void runUiAutomation() throws Exception {
         ActionLogger logger = new ActionLogger(testTag, parameters);
 
         UiObject conversationView =
-            mDevice.findObject(new UiSelector().resourceId(packageID + "conversation_list_view")
-                                               .className("android.widget.ListView"));
+            mDevice.findObject(new UiSelector().resourceIdMatches(packageID + "conversation_list.*"));
         if (!conversationView.waitForExists(networkTimeout)) {
             throw new UiObjectNotFoundException("Could not find \"conversationView\".");
         }
@@ -185,6 +184,12 @@ public void runUiAutomation() throws Exception {
                                                .className("android.widget.GridView")
                                                .childSelector(new UiSelector().index(0)
                                                .className("android.widget.FrameLayout")));
+        if (!imageFileButton.exists()){
+            imageFileButton =
+                    mDevice.findObject(new UiSelector().resourceId("com.android.documentsui:id/dir_list")
+                            .childSelector(new UiSelector().index(0)
+                                    .classNameMatches("android.widget..*Layout")));
+        }
         imageFileButton.click();
         imageFileButton.waitUntilGone(uiAutoTimeout);
 
@@ -219,9 +224,15 @@ public void runUiAutomation() throws Exception {
         String testTag = "text_body";
         ActionLogger logger = new ActionLogger(testTag, parameters);
 
-        UiObject composeField = getUiObjectByText("Compose email", "android.widget.EditText");
+        UiObject composeField = mDevice.findObject(new UiSelector().text("Compose email")
+                                                   .classNameMatches("android.widget.EditText"));
+        if (!composeField.exists()){
+            composeField = mDevice.findObject(new UiSelector().description("Compose email")
+                                                              .classNameMatches("android.view.View"));
+        }
+
         logger.start();
-        composeField.setText("This is a test composition");
+        composeField.legacySetText("This is a test composition");
         mDevice.pressEnter();
         logger.stop();
     }
