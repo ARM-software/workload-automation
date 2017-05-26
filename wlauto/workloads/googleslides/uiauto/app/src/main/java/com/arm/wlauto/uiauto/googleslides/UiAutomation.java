@@ -308,7 +308,10 @@ public class UiAutomation extends UxPerfUiAutomation {
         ActionLogger logger = new ActionLogger(testTag, parameters);
         logger.start();
 
-        clickUiObject(BY_DESC, "Open navigation drawer");
+        // Work around to open navigation drawer via swipe.
+        uiDeviceSwipeHorizontal(0, getDisplayCentreWidth(), getDisplayCentreHeight() / 2, 10);
+
+        // clickUiObject(BY_DESC, "Open navigation drawer");
         clickUiObject(BY_TEXT, "Settings", true);
         clickUiObject(BY_TEXT, "Create PowerPoint");
         mDevice.pressBack();
