@@ -342,7 +342,7 @@ def record_state_transitions(reporter, stream):
 
 class PowerStateTransitions(object):
 
-    def __init__(self, filepath ):
+    def __init__(self, filepath):
         self.filepath = filepath
         self._wfh = open(filepath, 'w')
         self.writer = csv.writer(self._wfh)
