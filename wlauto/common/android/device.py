@@ -722,7 +722,7 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         appropriate method of forcing a re-index of the mediaserver cache for a given
         list of files.
         """
-        if self.device.is_rooted or self.device.get_sdk_version() < 24: # MM and below
+        if self.device.is_rooted or self.device.get_sdk_version() < 24:  # MM and below
             common_path = commonprefix(file_list, sep=self.device.path.sep)
             self.broadcast_media_mounted(common_path, self.device.is_rooted)
         else:
@@ -743,9 +743,7 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         command = 'am broadcast -a  android.intent.action.MEDIA_MOUNTED -d file://'
         self.execute(command + dirpath, as_root=as_root)
 
-
     # Internal methods: do not use outside of the class.
-
     def _update_build_properties(self, props):
         try:
             def strip(somestring):
