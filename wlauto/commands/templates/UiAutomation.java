@@ -2,23 +2,30 @@ package ${package_name};
 
 import android.app.Activity;
 import android.os.Bundle;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import android.support.test.runner.AndroidJUnit4;
+
 import android.util.Log;
 import android.view.KeyEvent;
 
 // Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiObjectNotFoundException;
+import android.support.test.uiautomator.UiScrollable;
+import android.support.test.uiautomator.UiSelector;
+
 
 import com.arm.wlauto.uiauto.BaseUiAutomation;
 
-public class UiAutomation extends BaseUiAutomation {   
+@RunWith(AndroidJUnit4.class)
+public class UiAutomation extends BaseUiAutomation {
 
     public static String TAG = "${name}";
 
-    public void runUiAutomation() throws Exception {
+@Test
+public void runUiAutomation() throws Exception {
+    initialize_instrumentation();
 	// UI Automation code goes here
     }
 

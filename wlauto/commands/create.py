@@ -22,7 +22,6 @@ import textwrap
 import argparse
 import shutil
 import getpass
-import subprocess
 from collections import OrderedDict
 
 import yaml
@@ -30,8 +29,9 @@ import yaml
 from wlauto import ExtensionLoader, Command, settings
 from wlauto.exceptions import CommandError, ConfigError
 from wlauto.utils.cli import init_argument_parser
-from wlauto.utils.misc import (capitalize, check_output,
-                               ensure_file_directory_exists as _f, ensure_directory_exists as _d)
+from wlauto.utils.misc import (capitalize,
+                               ensure_file_directory_exists as _f,
+                               ensure_directory_exists as _d)
 from wlauto.utils.types import identifier
 from wlauto.utils.doc import format_body
 
@@ -40,20 +40,6 @@ __all__ = ['create_workload']
 
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), 'templates')
-
-UIAUTO_BUILD_SCRIPT = """#!/bin/bash
-
-class_dir=bin/classes/com/arm/wlauto/uiauto
-base_class=`python -c "import os, wlauto; print os.path.join(os.path.dirname(wlauto.__file__), 'common', 'android', 'BaseUiAutomation.class')"`
-mkdir -p $$class_dir
-cp $$base_class $$class_dir
-
-ant build
-
-if [[ -f bin/${package_name}.jar ]]; then
-    cp bin/${package_name}.jar ..
-fi
-"""
 
 
 class CreateSubcommand(object):
@@ -321,7 +307,7 @@ def create_basic_workload(path, name, class_name):
 
 
 def create_uiautomator_workload(path, name, class_name):
-    uiauto_path = _d(os.path.join(path, 'uiauto'))
+    uiauto_path = os.path.join(path, 'uiauto')
     create_uiauto_project(uiauto_path, name)
     source_file = os.path.join(path, '__init__.py')
     with open(source_file, 'w') as wfh:
@@ -335,37 +321,34 @@ def create_android_benchmark(path, name, class_name):
 
 
 def create_android_uiauto_benchmark(path, name, class_name):
-    uiauto_path = _d(os.path.join(path, 'uiauto'))
+    uiauto_path = os.path.join(path, 'uiauto')
     create_uiauto_project(uiauto_path, name)
     source_file = os.path.join(path, '__init__.py')
     with open(source_file, 'w') as wfh:
         wfh.write(render_template('android_uiauto_benchmark', {'name': name, 'class_name': class_name}))
 
 
-def create_uiauto_project(path, name, target='1'):
-    sdk_path = get_sdk_path()
-    android_path = os.path.join(sdk_path, 'tools', 'android')
+def create_uiauto_project(path, name):
     package_name = 'com.arm.wlauto.uiauto.' + name.lower()
 
-    # ${ANDROID_HOME}/tools/android create uitest-project -n com.arm.wlauto.uiauto.linpack -t 1 -p ../test2
-    command = '{} create uitest-project --name {} --target {} --path {}'.format(android_path,
-                                                                                package_name,
-                                                                                target,
-                                                                                path)
-    try:
-        check_output(command, shell=True)
-    except subprocess.CalledProcessError as e:
-        if 'is is not valid' in e.output:
-            message = 'No Android SDK target found; have you run "{} update sdk" and download a platform?'
-            raise CommandError(message.format(android_path))
+    shutil.copytree(os.path.join(TEMPLATES_DIR, 'uiauto_template'), path)
+
+    manifest_path = os.path.join(path, 'app', 'src', 'main')
+    mainifest = os.path.join(_d(manifest_path), 'AndroidManifest.xml')
+    with open(mainifest, 'w') as wfh:
+        wfh.write(render_template('uiauto_AndroidManifest.xml', {'package_name': package_name}))
+
+    build_gradle_path = os.path.join(path, 'app')
+    build_gradle = os.path.join(_d(build_gradle_path), 'build.gradle')
+    with open(build_gradle, 'w') as wfh:
+        wfh.write(render_template('uiauto_build.gradle', {'package_name': package_name}))
 
     build_script = os.path.join(path, 'build.sh')
     with open(build_script, 'w') as wfh:
-        template = string.Template(UIAUTO_BUILD_SCRIPT)
-        wfh.write(template.substitute({'package_name': package_name}))
+        wfh.write(render_template('uiauto_build_script', {'package_name': package_name}))
     os.chmod(build_script, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
 
-    source_file = _f(os.path.join(path, 'src',
+    source_file = _f(os.path.join(path, 'app', 'src', 'main', 'java',
                                   os.sep.join(package_name.split('.')[:-1]),
                                   'UiAutomation.java'))
     with open(source_file, 'w') as wfh:
