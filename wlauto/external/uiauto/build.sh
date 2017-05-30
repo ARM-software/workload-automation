@@ -14,14 +14,18 @@
 # limitations under the License.
 #
 
-
+# Ensure gradelw exists before starting
+if [[ ! -f gradlew ]]; then
+    echo 'gradlew file not found! Check that you are in the right directory.'
+    exit 9
+fi
 
 # Build and return appropriate exit code if failed
-ant build
+./gradlew clean :app:assembleDebug
 exit_code=$?
 if [ $exit_code -ne 0 ]; then
-    echo "ERROR: 'ant build' exited with code $exit_code"
+    echo "ERROR: 'gradle build' exited with code $exit_code"
     exit $exit_code
 fi
 
-cp bin/classes/com/arm/wlauto/uiauto/*.class ../../common/android
+cp app/build/outputs/aar/app-debug.aar ../../common/android/uiauto.aar

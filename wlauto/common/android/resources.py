@@ -43,12 +43,12 @@ class ApkFile(FileResource):
         return '<{}\'s {} APK>'.format(self.owner, self.platform)
 
 
-class UiautoApkFile(FileResource):
+class uiautoApkFile(FileResource):
 
     name = 'uiautoapk'
 
     def __init__(self, owner, platform=None):
-        super(UiautoApkFile, self).__init__(owner)
+        super(uiautoApkFile, self).__init__(owner)
         self.platform = platform
 
     def __str__(self):

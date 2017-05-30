@@ -1,4 +1,4 @@
-/*    Copyright 2013-2015 ARM Limited
+/*    Copyright 2013-2016 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,36 +13,37 @@
  * limitations under the License.
 */
 
-
 package com.arm.wlauto.uiauto;
 
-import java.io.File;
+import android.app.Instrumentation;
+import android.content.Context;
+import android.support.test.InstrumentationRegistry;
+import android.support.test.uiautomator.UiDevice;
+import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiSelector;
+
+import android.graphics.Point;
+import android.graphics.Rect;
+import android.os.Bundle;
+import android.os.SystemClock;
+import android.support.test.uiautomator.UiObjectNotFoundException;
+import android.support.test.uiautomator.UiScrollable;
+import android.support.test.uiautomator.UiWatcher;
+import android.util.Log;
+
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.TimeUnit;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import android.app.Activity;
-import android.os.Bundle;
-import android.os.SystemClock;
-import android.graphics.Point;
-import android.graphics.Rect;
-import android.util.Log;
+import static android.support.test.InstrumentationRegistry.getArguments;
 
-// Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
-import com.android.uiautomator.core.UiObjectNotFoundException;
-import com.android.uiautomator.core.UiScrollable;
-import com.android.uiautomator.core.UiSelector;
-import com.android.uiautomator.core.UiDevice;
-import com.android.uiautomator.core.UiWatcher;
-import com.android.uiautomator.testrunner.UiAutomatorTestCase;
-
-public class BaseUiAutomation extends UiAutomatorTestCase {
+public class BaseUiAutomation {
 
     public long uiAutoTimeout = TimeUnit.SECONDS.toMillis(4);
 
@@ -52,6 +53,18 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
     public static final int CLICK_REPEAT_INTERVAL_MINIMUM = 5;
     public static final int CLICK_REPEAT_INTERVAL_DEFAULT = 50;
+
+    public Bundle parameters;
+
+    public Instrumentation mInstrumentation;
+    public Context mContext;
+    public UiDevice mDevice;
+
+    public void initialize_instrumentation(){
+        mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        mDevice = UiDevice.getInstance(mInstrumentation);
+        mContext = mInstrumentation.getTargetContext();
+    }
 
     /*
      * Used by clickUiObject() methods in order to provide a consistent API
@@ -101,7 +114,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     }
 
     public void sleep(int second) {
-        super.sleep(second * 1000);
+        SystemClock.sleep(second * 1000);
     }
 
     public boolean takeScreenshot(String name) {
@@ -109,7 +122,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
         String pngDir = params.getString("workdir");
 
         try {
-            return getUiDevice().takeScreenshot(new File(pngDir, name + ".png"));
+            return mDevice.takeScreenshot(new File(pngDir, name + ".png"));
         } catch (NoSuchMethodError e) {
             return true;
         }
@@ -121,8 +134,8 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
     public void waitText(String text, int second) throws UiObjectNotFoundException {
         UiSelector selector = new UiSelector();
-        UiObject textObj = new UiObject(selector.text(text)
-                                       .className("android.widget.TextView"));
+        UiObject textObj = mDevice.findObject(selector.text(text)
+                                              .className("android.widget.TextView"));
         waitObject(textObj, second);
     }
 
@@ -213,51 +226,51 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     }
 
     public void registerWatcher(String name, UiWatcher watcher) {
-        UiDevice.getInstance().registerWatcher(name, watcher);
+        mDevice.registerWatcher(name, watcher);
     }
 
     public void runWatchers() {
-        UiDevice.getInstance().runWatchers();
+        mDevice.runWatchers();
     }
 
     public void removeWatcher(String name) {
-        UiDevice.getInstance().removeWatcher(name);
+        mDevice.removeWatcher(name);
     }
 
     public void pressEnter() {
-        UiDevice.getInstance().pressEnter();
+        mDevice.pressEnter();
     }
 
     public void pressHome() {
-        UiDevice.getInstance().pressHome();
+        mDevice.pressHome();
     }
 
     public void pressBack() {
-        UiDevice.getInstance().pressBack();
+        mDevice.pressBack();
     }
 
     public void pressDPadUp() {
-        UiDevice.getInstance().pressDPadUp();
+        mDevice.pressDPadUp();
     }
 
     public void pressDPadDown() {
-        UiDevice.getInstance().pressDPadDown();
+        mDevice.pressDPadDown();
     }
 
     public void pressDPadLeft() {
-        UiDevice.getInstance().pressDPadLeft();
+        mDevice.pressDPadLeft();
     }
 
     public void pressDPadRight() {
-        UiDevice.getInstance().pressDPadRight();
+        mDevice.pressDPadRight();
     }
 
     public int getDisplayHeight() {
-        return UiDevice.getInstance().getDisplayHeight();
+        return mDevice.getDisplayHeight();
     }
 
     public int getDisplayWidth() {
-        return UiDevice.getInstance().getDisplayWidth();
+        return mDevice.getDisplayWidth();
     }
 
     public int getDisplayCentreWidth() {
@@ -273,11 +286,11 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     }
 
     public void tapDisplay(int x, int y) {
-        UiDevice.getInstance().click(x, y);
+        mDevice.click(x, y);
     }
 
     public void uiDeviceSwipeUp(int steps) {
-        UiDevice.getInstance().swipe(
+        mDevice.swipe(
             getDisplayCentreWidth(),
             (getDisplayCentreHeight() + (getDisplayCentreHeight() / 2)),
             getDisplayCentreWidth(),
@@ -286,7 +299,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     }
 
     public void uiDeviceSwipeDown(int steps) {
-        UiDevice.getInstance().swipe(
+        mDevice.swipe(
             getDisplayCentreWidth(),
             (getDisplayCentreHeight() / 2),
             getDisplayCentreWidth(),
@@ -295,7 +308,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     }
 
     public void uiDeviceSwipeLeft(int steps) {
-        UiDevice.getInstance().swipe(
+        mDevice.swipe(
             (getDisplayCentreWidth() + (getDisplayCentreWidth() / 2)),
             getDisplayCentreHeight(),
             (getDisplayCentreWidth() / 2),
@@ -304,7 +317,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     }
 
     public void uiDeviceSwipeRight(int steps) {
-        UiDevice.getInstance().swipe(
+        mDevice.swipe(
             (getDisplayCentreWidth() / 2),
             getDisplayCentreHeight(),
             (getDisplayCentreWidth() + (getDisplayCentreWidth() / 2)),
@@ -409,13 +422,13 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     public void setScreenOrientation(ScreenOrientation orientation) throws Exception {
         switch (orientation) {
             case RIGHT:
-                getUiDevice().setOrientationRight();
+                mDevice.setOrientationRight();
                 break;
             case NATURAL:
-                getUiDevice().setOrientationNatural();
+                mDevice.setOrientationNatural();
                 break;
             case LEFT:
-                getUiDevice().setOrientationLeft();
+                mDevice.setOrientationLeft();
                 break;
             default:
                 throw new Exception("No orientation specified");
@@ -423,25 +436,25 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     }
 
     public void unsetScreenOrientation() throws Exception {
-        getUiDevice().unfreezeRotation();
+        mDevice.unfreezeRotation();
     }
 
-   public void uiObjectPerformLongClick(UiObject view, int steps) throws Exception {
+    public void uiObjectPerformLongClick(UiObject view, int steps) throws Exception {
         Rect rect = view.getBounds();
-        UiDevice.getInstance().swipe(rect.centerX(), rect.centerY(),
-                                     rect.centerX(), rect.centerY(), steps);
+        mDevice.swipe(rect.centerX(), rect.centerY(),
+                rect.centerX(), rect.centerY(), steps);
     }
 
     public void uiDeviceSwipeVertical(int startY, int endY, int xCoordinate, int steps) {
-        getUiDevice().swipe(startY, xCoordinate, endY, xCoordinate, steps);
+        mDevice.swipe(startY, xCoordinate, endY, xCoordinate, steps);
     }
 
     public void uiDeviceSwipeHorizontal(int startX, int endX, int yCoordinate, int steps) {
-        getUiDevice().swipe(startX, yCoordinate, endX, yCoordinate, steps);
+        mDevice.swipe(startX, yCoordinate, endX, yCoordinate, steps);
     }
 
     public void uiObjectPinch(UiObject view, PinchType direction, int steps,
-                                  int percent) throws Exception {
+                              int percent) throws Exception {
         if (direction.equals(PinchType.IN)) {
             view.pinchIn(percent, steps);
         } else if (direction.equals(PinchType.OUT)) {
@@ -450,7 +463,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     }
 
     public void uiObjectVertPinch(UiObject view, PinchType direction,
-                                       int steps, int percent) throws Exception {
+                                  int steps, int percent) throws Exception {
         if (direction.equals(PinchType.IN)) {
             uiObjectVertPinchIn(view, steps, percent);
         } else if (direction.equals(PinchType.OUT)) {
@@ -515,20 +528,20 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     }
 
     public UiObject getUiObjectByResourceId(String resourceId, String className, long timeout) throws Exception {
-        UiObject object = new UiObject(new UiSelector().resourceId(resourceId)
-                                                       .className(className));
+        UiObject object = mDevice.findObject(new UiSelector().resourceId(resourceId)
+                .className(className));
         if (!object.waitForExists(timeout)) {
-           throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
-                                                              resourceId, className));
+            throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
+                    resourceId, className));
         }
         return object;
     }
 
     public UiObject getUiObjectByResourceId(String id) throws Exception {
-        UiObject object = new UiObject(new UiSelector().resourceId(id));
+        UiObject object = mDevice.findObject(new UiSelector().resourceId(id));
 
         if (!object.waitForExists(uiAutoTimeout)) {
-           throw new UiObjectNotFoundException("Could not find view with resource ID: " + id);
+            throw new UiObjectNotFoundException("Could not find view with resource ID: " + id);
         }
         return object;
     }
@@ -538,20 +551,20 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     }
 
     public UiObject getUiObjectByDescription(String description, String className, long timeout) throws Exception {
-        UiObject object = new UiObject(new UiSelector().descriptionContains(description)
-                                                       .className(className));
+        UiObject object = mDevice.findObject(new UiSelector().descriptionContains(description)
+                                                             .className(className));
         if (!object.waitForExists(timeout)) {
             throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
-                                                              description, className));
+                    description, className));
         }
         return object;
     }
 
     public UiObject getUiObjectByDescription(String desc) throws Exception {
-        UiObject object = new UiObject(new UiSelector().descriptionContains(desc));
+        UiObject object = mDevice.findObject(new UiSelector().descriptionContains(desc));
 
         if (!object.waitForExists(uiAutoTimeout)) {
-           throw new UiObjectNotFoundException("Could not find view with description: " + desc);
+            throw new UiObjectNotFoundException("Could not find view with description: " + desc);
         }
         return object;
     }
@@ -561,8 +574,8 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     }
 
     public UiObject getUiObjectByText(String text, String className, long timeout) throws Exception {
-        UiObject object = new UiObject(new UiSelector().textContains(text)
-                                                       .className(className));
+        UiObject object = mDevice.findObject(new UiSelector().textContains(text)
+                                                             .className(className));
         if (!object.waitForExists(timeout)) {
             throw new UiObjectNotFoundException(String.format("Could not find \"%s\" \"%s\"",
                                                               text, className));
@@ -571,10 +584,10 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     }
 
     public UiObject getUiObjectByText(String text) throws Exception {
-        UiObject object = new UiObject(new UiSelector().textContains(text));
+        UiObject object = mDevice.findObject(new UiSelector().textContains(text));
 
         if (!object.waitForExists(uiAutoTimeout)) {
-           throw new UiObjectNotFoundException("Could not find view with text: " + text);
+            throw new UiObjectNotFoundException("Could not find view with text: " + text);
         }
         return object;
     }
@@ -582,10 +595,10 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     // Helper to select a folder in the gallery
     public void selectGalleryFolder(String directory) throws Exception {
         UiObject workdir =
-            new UiObject(new UiSelector().text(directory)
-                                         .className("android.widget.TextView"));
+                mDevice.findObject(new UiSelector().text(directory)
+                                                   .className("android.widget.TextView"));
         UiScrollable scrollView =
-            new UiScrollable(new UiSelector().scrollable(true));
+                new UiScrollable(new UiSelector().scrollable(true));
 
         // If the folder is not present wait for a short time for
         // the media server to refresh its index.
@@ -624,13 +637,13 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
     // passing it to workloads.
     public Bundle getParams() {
         // Get the original parameter bundle
-        Bundle parameters = super.getParams();
+        parameters = getArguments();
 
-        // Decode each parameter in the bundle, except null values and "jars", as this
-        // is automatically added and therefore not encoded.
+        // Decode each parameter in the bundle, except null values and "class", as this
+        // used to control instrumentation and therefore not encoded.
         for (String key : parameters.keySet()) {
             String param = parameters.getString(key);
-            if (param != null && !key.equals("jars")) {
+            if (param != null && !key.equals("class")) {
                 param = android.net.Uri.decode(param);
                 parameters = decode(parameters, key, param);
             }
@@ -640,7 +653,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
 
     // Helper function to decode a string and insert it as an appropriate type
     // into a provided bundle with its key.
-    // Each bundle parameter will be a urlencoded string with 2 characters prefixed to the value 
+    // Each bundle parameter will be a urlencoded string with 2 characters prefixed to the value
     // used to store the original type information, e.g. 'fl' -> list of floats.
     private Bundle decode(Bundle parameters, String key, String value) {
         char value_type = value.charAt(0);
@@ -661,25 +674,25 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
             } else if (value_type == 'n') {
                 parameters.putString(key, "None");
             } else {
-            throw new IllegalArgumentException("Error decoding:" + key + value
-                                                + " - unknown format");
+                throw new IllegalArgumentException("Error decoding:" + key + value
+                                                   + " - unknown format");
             }
         } else if (value_dimension == 'l') {
             return decodeArray(parameters, key, value_type, param);
         } else {
             throw new IllegalArgumentException("Error decoding:" + key + value
-                                                + " - unknown format");
+                    + " - unknown format");
         }
         return parameters;
     }
 
     // Helper function to deal with decoding arrays and update the bundle with
-    // an appropriate array type. The string "0newelement0" is used to distinguish 
-    // each element for each other in the array when encoded. 
+    // an appropriate array type. The string "0newelement0" is used to distinguish
+    // each element for each other in the array when encoded.
     private Bundle decodeArray(Bundle parameters, String key, char type, String value) {
         String[] string_list = value.split("0newelement0");
         if (type == 's') {
-                parameters.putStringArray(key, string_list);
+            parameters.putStringArray(key, string_list);
         }
         else if (type == 'i') {
             int[] int_list = new int[string_list.length];
@@ -707,7 +720,7 @@ public class BaseUiAutomation extends UiAutomatorTestCase {
             parameters.putBooleanArray(key, boolean_list);
         } else {
             throw new IllegalArgumentException("Error decoding array: " +
-                                                value + " - unknown format");
+                                               value + " - unknown format");
         }
         return parameters;
     }

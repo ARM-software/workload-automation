@@ -17,10 +17,10 @@
 package com.arm.wlauto.uiauto;
 
 import android.os.Bundle;
-import android.util.Log;
+import android.support.test.uiautomator.UiObject;
 
 // Import the uiautomator libraries
-import com.android.uiautomator.core.UiObject;
+
 
 /**
  * ApplaunchInterface.java
@@ -51,4 +51,8 @@ public interface ApplaunchInterface {
 
     /** Passes the workload parameters. */
     public void setWorkloadParameters(Bundle parameters);
-}
+
+    /** Initialize the instrumentation for the workload */
+    public void initialize_instrumentation();
+
+    }

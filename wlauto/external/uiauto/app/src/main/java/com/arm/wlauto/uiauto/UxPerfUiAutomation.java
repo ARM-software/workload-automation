@@ -15,18 +15,19 @@
 
 package com.arm.wlauto.uiauto;
 
-import java.util.logging.Logger;
 import android.os.Bundle;
 
+import java.util.logging.Logger;
+
 public class UxPerfUiAutomation extends BaseUiAutomation {
-    
+
     protected Bundle parameters;
     protected String packageName;
     protected String packageID;
 
     //Get application package parameters and create package ID
     public void getPackageParameters() {
-        packageName = parameters.getString("package");
+        packageName = parameters.getString("package_name");
         packageID = packageName + ":id/";
     }
 

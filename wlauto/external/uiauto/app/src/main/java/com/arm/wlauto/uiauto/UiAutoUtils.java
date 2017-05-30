@@ -16,20 +16,19 @@
 package com.arm.wlauto.uiauto;
 
 import android.os.Bundle;
-import java.util.logging.Logger;
 
 public final class UiAutoUtils {
-    
+
     /** Construct launch command of an application. */
     public static String createLaunchCommand(Bundle parameters) {
         String launchCommand;
         String activityName = parameters.getString("launch_activity");
-        String packageName = parameters.getString("package");
+        String packageName = parameters.getString("package_name");
         if (activityName.equals("None")) {
-            launchCommand = String.format("am start %s", packageName);
-        } 
+            launchCommand = String.format("am start --user -3 %s", packageName);
+        }
         else {
-            launchCommand = String.format("am start -n %s/%s", packageName, activityName);
+            launchCommand = String.format("am start --user -3 -n %s/%s", packageName, activityName);
         }
         return launchCommand;
     }
