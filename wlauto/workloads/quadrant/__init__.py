@@ -18,6 +18,7 @@ import re
 from collections import defaultdict
 
 from wlauto import AndroidUiAutoBenchmark
+from wlauto.exceptions import DeviceError
 
 
 TEST_TYPES = {
@@ -93,6 +94,18 @@ class Quadrant(AndroidUiAutoBenchmark):
         super(Quadrant, self).__init__(device, **kwargs)
         self.uiauto_params['has_gpu'] = self.device.has_gpu
         self.regex = {}
+
+    def setup(self, context):
+        super(Quadrant, self).setup(context)
+        # In lower android versions permissions are not usually required and
+        # therefore are not granted automatically, however on some devices in order
+        # to read logcat the READ_LOGS permission is required to be explicitly granted.
+        if self.device.get_sdk_version() < 23:
+            try:
+                cmd = "pm grant {} android.permission.READ_LOGS"
+                self.device.execute(cmd.format(self.uiauto_package))
+            except DeviceError:
+                self.logger.debug("failed to grant READ_LOGS, continuing")
 
     def update_result(self, context):
         super(Quadrant, self).update_result(context)

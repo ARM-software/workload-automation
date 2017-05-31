@@ -132,5 +132,6 @@ class GoogleSlides(AndroidUxPerfWorkload):
     def teardown(self, context):
         super(GoogleSlides, self).teardown(context)
         # Remove the newly created file
-        self.device.delete_file(self.device.path.join(self.device.working_directory, self.new_doc_name))
-        self.device.broadcast_media_mounted(self.device.working_directory)
+        f = self.device.path.join(self.device.working_directory, self.new_doc_name)
+        self.device.delete_file(f)
+        self.device.broadcast_media_scan_file(f)

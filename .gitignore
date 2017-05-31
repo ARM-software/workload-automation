@@ -3,6 +3,7 @@
 *.bak
 *.o
 *.cmd
+*.iml
 Module.symvers
 modules.order
 *~
@@ -14,9 +15,12 @@ wa_output/
 doc/source/api/
 doc/source/extensions/
 MANIFEST
-wlauto/external/uiauto/bin/
+wlauto/external/uiauto/**/build/
 wlauto/external/uiauto/*.properties
-wlauto/external/uiauto/build.xml
+wlauto/external/uiauto/app/libs/
+wlauto/external/uiauto/app/proguard-rules.pro
+wlauto/external/uiauto/**/.gradle
+wlauto/external/uiauto/**/.idea
 *.orig
 local.properties
 wlauto/external/revent/libs/
@@ -27,4 +31,9 @@ pmu_logger.mod.c
 .tmp_versions
 obj/
 libs/armeabi
-wlauto/workloads/*/uiauto/bin/
+wlauto/workloads/*/uiauto/**/build/
+wlauto/workloads/*/uiauto/*.properties
+wlauto/workloads/*/uiauto/app/libs/
+wlauto/workloads/*/uiauto/app/proguard-rules.pro
+wlauto/workloads/*/uiauto/**/.gradle
+wlauto/workloads/*/uiauto/**/.idea

@@ -75,7 +75,7 @@ class Camerarecord(UiAutomatorWorkload):
                             .format(self.package, framestats_file))
         self.device.pull_file(framestats_file,
                               context.output_directory,
-                              as_root=True)
+                              as_root=self.device.is_rooted)
         self.device.delete_file(framestats_file)
 
         # Stop the activity

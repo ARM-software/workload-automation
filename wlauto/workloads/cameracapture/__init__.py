@@ -46,7 +46,7 @@ class Cameracapture(UiAutomatorWorkload):
         self.uiauto_params['time_between_captures'] = self.time_between_captures
         self.uiauto_params['api_level'] = api
         self.package = self.api_packages[api]
-        version = self.device.get_installed_package_version(self.package)
+        version = self.device.get_installed_package_version(self.package) or ''
         version = version.replace(' ', '_')
         self.uiauto_params['version'] = version
 
