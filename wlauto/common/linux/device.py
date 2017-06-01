@@ -477,8 +477,8 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
         else:
             raise ValueError(c)
 
-    def get_number_of_online_cpus(self, c):
-        return len(self.get_online_cpus(c))
+    def get_number_of_online_cpus(self, core):
+        return len(self.get_online_cpus(core))
 
     def set_number_of_online_cpus(self, core, number):
         core_ids = [i for i, c in enumerate(self.core_names) if c == core]
