@@ -34,7 +34,7 @@ package=com.arm.wlauto.uiauto.applaunch
 
 rm -f ../$package
 if [[ -f app/build/apk/$package.apk ]]; then
-    cp app/build/apk/$package.apk ../$package.uiautoapk
+    cp app/build/apk/$package.apk ../$package.apk
 else
     echo 'ERROR: UiAutomator apk could not be found!'
     exit 9

@@ -116,7 +116,7 @@ class Applaunch(AndroidUxPerfWorkload):
         self.package = self.workload.package
 
     def init_workload_resources(self, context):
-        self.workload.uiauto_file = context.resolver.get(wlauto.common.android.resources.uiautoApkFile(self.workload))
+        self.workload.uiauto_file = context.resolver.get(wlauto.common.android.resources.ApkFile(self.workload, uiauto=True))
         if not self.workload.uiauto_file:
             raise ResourceError('No UI automation Uiauto APK file found for workload {}.'.format(self.workload.name))
         self.workload.device_uiauto_file = self.device.path.join(self.device.working_directory, os.path.basename(self.workload.uiauto_file))
