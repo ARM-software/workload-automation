@@ -35,12 +35,14 @@ class ApkFile(FileResource):
 
     name = 'apk'
 
-    def __init__(self, owner, platform=None):
+    def __init__(self, owner, platform=None, uiauto=False):
         super(ApkFile, self).__init__(owner)
         self.platform = platform
+        self.uiauto = uiauto
 
     def __str__(self):
-        return '<{}\'s {} APK>'.format(self.owner, self.platform)
+        apk_type = 'uiautomator ' if self.uiauto else ''
+        return '<{}\'s {} {}APK>'.format(self.owner, self.platform, apk_type)
 
 
 class uiautoApkFile(FileResource):
