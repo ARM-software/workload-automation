@@ -84,7 +84,7 @@ class UiAutomatorWorkload(Workload):
         self.uiauto_params = ParameterDict()
 
     def init_resources(self, context):
-        self.uiauto_file = context.resolver.get(wlauto.common.android.resources.uiautoApkFile(self))
+        self.uiauto_file = context.resolver.get(ApkFile(self, uiauto=True))
         if not self.uiauto_file:
             raise ResourceError('No UI automation APK file found for workload {}.'.format(self.name))
 
@@ -99,7 +99,7 @@ class UiAutomatorWorkload(Workload):
         for k, v in self.uiauto_params.iter_encoded_items():
             params += ' -e {} "{}"'.format(k, v)
 
-        self.device.install_apk(self.uiauto_file, replace=True, force=True)
+        self.device.install_apk(self.uiauto_file, replace=True)
 
         instrumention_string = 'am instrument -w -r {}  -e class {}.{} {}/{}'
         self.command = instrumention_string.format(params, self.uiauto_package,
