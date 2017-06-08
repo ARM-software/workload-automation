@@ -54,7 +54,7 @@ public void runUiAutomation() throws Exception{
         // Get workload apk file parameters
         String workload = parameters.getString("workload");
         String workloadAPKPath = parameters.getString("workdir");
-        String workloadName = String.format("com.arm.wlauto.uiauto.%1s.uiautoapk",workload);
+        String workloadName = String.format("com.arm.wlauto.uiauto.%1s.apk",workload);
         String workloadAPKFile = String.format("%1s/%2s",workloadAPKPath, workloadName);
 
         // Load the apk file
