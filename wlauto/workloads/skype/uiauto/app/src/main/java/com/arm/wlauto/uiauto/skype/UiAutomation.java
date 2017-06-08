@@ -98,7 +98,7 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         String launch_command;
         String actionName = "android.intent.action.VIEW";
         String dataURI = "skype:dummy?dummy";
-        launch_command = String.format("am start -a %s -d %s", actionName, dataURI);
+        launch_command = String.format("am start --user -3 -a %s -d %s", actionName, dataURI);
         return launch_command;
     }
 
