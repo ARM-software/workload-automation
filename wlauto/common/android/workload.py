@@ -49,7 +49,7 @@ class UiAutomatorWorkload(Workload):
 
     This class should be subclassed by workloads that rely on android UiAutomator
     to work. This class handles installing the UI Automator APK to the device
-    and invoking it to run the workload. By default, it will look for the ``*.uiautoapk`` file
+    and invoking it to run the workload. By default, it will look for the ``*.apk`` file
     in the same directory as the .py file for the workload (this can be changed by overriding
     the ``uiauto_file`` property in the subclassing workload).
 
