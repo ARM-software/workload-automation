@@ -17,6 +17,7 @@
 import os
 
 from wlauto import AndroidUiAutoBenchmark, Parameter
+from wlauto.common.android.resources import ApkFile
 import wlauto.common.android.resources
 
 
@@ -65,8 +66,8 @@ class Videostreaming(AndroidUiAutoBenchmark):
             self.uiauto_params['video_name'] = self.video_name
         else:
             self.uiauto_params['video_name'] = "abkk sathe {}".format(self.resolution)
-        self.apk_file = context.resolver.get(wlauto.common.android.resources.ApkFile(self))
-        self.uiauto_file = context.resolver.get(wlauto.common.android.resources.uiautoApkFile(self))
+        self.apk_file = context.resolver.get(ApkFile(self))
+        self.uiauto_file = context.resolver.get(ApkFile(self, uiauto=True))
         self.device_uiauto_file = self.device.path.join(self.device.working_directory,
                                                         os.path.basename(self.uiauto_file))
         if not self.uiauto_package:
