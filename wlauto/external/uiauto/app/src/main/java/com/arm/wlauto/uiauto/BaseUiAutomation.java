@@ -45,7 +45,8 @@ import static android.support.test.InstrumentationRegistry.getArguments;
 
 public class BaseUiAutomation {
 
-    public long uiAutoTimeout = TimeUnit.SECONDS.toMillis(4);
+    // Time in milliseconds
+    public long uiAutoTimeout = 4000;
 
     public enum ScreenOrientation { RIGHT, NATURAL, LEFT };
     public enum Direction { UP, DOWN, LEFT, RIGHT, NULL };

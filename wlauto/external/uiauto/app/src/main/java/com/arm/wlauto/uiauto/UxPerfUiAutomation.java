@@ -21,7 +21,6 @@ import java.util.logging.Logger;
 
 public class UxPerfUiAutomation extends BaseUiAutomation {
 
-    protected Bundle parameters;
     protected String packageName;
     protected String packageID;
 
