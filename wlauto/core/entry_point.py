@@ -18,6 +18,7 @@ import sys
 import argparse
 import logging
 import os
+import signal
 import subprocess
 import warnings
 
@@ -41,6 +42,9 @@ def load_commands(subparsers):
     for command in ext_loader.list_commands():
         settings.commands[command.name] = ext_loader.get_command(command.name, subparsers=subparsers)
 
+def convert_TERM_into_INT_handler(signal, frame):
+    logger.critical("TERM received, aborting")
+    raise KeyboardInterrupt()
 
 def main():
     try:
@@ -62,6 +66,7 @@ def main():
             settings.update(args.config)
         init_logging(settings.verbosity)
 
+        signal.signal(signal.SIGTERM, convert_TERM_into_INT_handler)
         command = settings.commands[args.command]
         sys.exit(command.execute(args))
 
