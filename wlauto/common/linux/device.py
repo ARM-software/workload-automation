@@ -106,7 +106,7 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
 
     runtime_parameters = [
         RuntimeParameter('sysfile_values', 'get_sysfile_values', 'set_sysfile_values', value_name='params'),
-        CoreParameter('${core}_cores', 'get_number_of_online_cpus', 'set_number_of_online_cpus',
+        CoreParameter('${core}_cores', 'get_number_of_online_cores', 'set_number_of_online_cores',
                       value_name='number'),
         CoreParameter('${core}_min_frequency', 'get_core_min_frequency', 'set_core_min_frequency',
                       value_name='freq'),
@@ -477,20 +477,6 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
         else:
             raise ValueError(c)
 
-    def get_number_of_online_cpus(self, core):
-        return len(self.get_online_cpus(core))
-
-    def set_number_of_online_cpus(self, core, number):
-        core_ids = [i for i, c in enumerate(self.core_names) if c == core]
-        max_cores = len(core_ids)
-        if number > max_cores:
-            message = 'Attempting to set the number of active {} to {}; maximum is {}'
-            raise ValueError(message.format(core, number, max_cores))
-        for i in xrange(0, number):
-            self.enable_cpu(core_ids[i])
-        for i in xrange(number, max_cores):
-            self.disable_cpu(core_ids[i])
-
     # hotplug
 
     def enable_cpu(self, cpu):
@@ -529,7 +515,7 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
         sysfile = '/sys/devices/system/cpu/{}/online'.format(cpu)
         self.set_sysfile_value(sysfile, status)
 
-    def get_number_of_active_cores(self, core):
+    def get_number_of_online_cores(self, core):
         if core not in self.core_names:
             raise ValueError('Unexpected core: {}; must be in {}'.format(core, list(set(self.core_names))))
         active_cpus = self.active_cpus
@@ -539,7 +525,7 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
                 num_active_cores += 1
         return num_active_cores
 
-    def set_number_of_active_cores(self, core, number):  # NOQA
+    def set_number_of_online_cores(self, core, number):  # NOQA
         if core not in self.core_names:
             raise ValueError('Unexpected core: {}; must be in {}'.format(core, list(set(self.core_names))))
         core_ids = [i for i, c in enumerate(self.core_names) if c == core]
