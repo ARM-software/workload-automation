@@ -538,8 +538,7 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
             # make sure at least one other core is enabled to avoid trying to
             # hotplug everything.
             for i, c in enumerate(self.core_names):
-                if c != core:
-                    self.enable_cpu(i)
+                if c != core and i in self.online_cpus:
                     break
             else:  # did not find one
                 raise ValueError('Cannot hotplug all cpus on the device!')
