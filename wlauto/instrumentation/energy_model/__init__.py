@@ -650,7 +650,7 @@ class EnergyModelInstrument(Instrument):
     def enable_all_cores(self):
         counter = Counter(self.device.core_names)
         for core, number in counter.iteritems():
-            self.device.set_number_of_online_cpus(core, number)
+            self.device.set_number_of_online_cores(core, number)
         self.big_cpus = self.device.get_online_cpus(self.big_core)
         self.little_cpus = self.device.get_online_cpus(self.little_core)
 
