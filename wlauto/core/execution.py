@@ -642,7 +642,7 @@ class Runner(object):
         job.iteration = self.context.current_iteration
         if job.result.status in self.config.retry_on_status:
             if job.retry >= self.config.max_retries:
-                self.logger.error('Exceeded maxium number of retries. Abandoning job.')
+                self.logger.error('Exceeded maximum number of retries. Abandoning job.')
             else:
                 self.logger.info('Job status was {}. Retrying...'.format(job.result.status))
                 retry_job = RunnerJob(job.spec, job.retry + 1)

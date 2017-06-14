@@ -518,10 +518,10 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
     def get_number_of_online_cores(self, core):
         if core not in self.core_names:
             raise ValueError('Unexpected core: {}; must be in {}'.format(core, list(set(self.core_names))))
-        active_cpus = self.active_cpus
+        online_cpus = self.online_cpus
         num_active_cores = 0
         for i, c in enumerate(self.core_names):
-            if c == core and i in active_cpus:
+            if c == core and i in online_cpus:
                 num_active_cores += 1
         return num_active_cores
 
