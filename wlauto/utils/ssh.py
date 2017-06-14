@@ -22,6 +22,7 @@ import re
 import threading
 import tempfile
 import shutil
+import time
 
 from pexpect import EOF, TIMEOUT, spawn, pxssh
 
@@ -36,21 +37,34 @@ sshpass = None
 logger = logging.getLogger('ssh')
 
 
-def ssh_get_shell(host, username, password=None, keyfile=None, port=None, timeout=10, telnet=False):
+def ssh_get_shell(host, username, password=None, keyfile=None, port=None, timeout=10, telnet=False, original_prompt=None):
     _check_env()
-    if telnet:
-        if keyfile:
-            raise ConfigError('keyfile may not be used with a telnet connection.')
-        conn = TelnetConnection()
-    else:  # ssh
-        conn = pxssh.pxssh()  # pylint: disable=redefined-variable-type
-    try:
-        if keyfile:
-            conn.login(host, username, ssh_key=keyfile, port=port, login_timeout=timeout)
-        else:
-            conn.login(host, username, password, port=port, login_timeout=timeout)
-    except EOF:
-        raise DeviceError('Could not connect to {}; is the host name correct?'.format(host))
+    start_time = time.time()
+    while True:
+        if telnet:
+            if keyfile:
+                raise ValueError('keyfile may not be used with a telnet connection.')
+            conn = TelnetPxssh(original_prompt=original_prompt)
+        else:  # ssh
+            conn = pxssh.pxssh()
+
+        try:
+            if keyfile:
+                conn.login(host, username, ssh_key=keyfile, port=port, login_timeout=timeout)
+            else:
+                conn.login(host, username, password, port=port, login_timeout=timeout)
+            break
+        except EOF:
+            timeout -= time.time() - start_time
+            if timeout <= 0:
+                message = 'Could not connect to {}; is the host name correct?'
+                raise TargetError(message.format(host))
+            time.sleep(5)
+
+    conn.setwinsize(500,200)
+    conn.sendline('')
+    conn.prompt()
+    conn.setecho(False)
     return conn
 
 
