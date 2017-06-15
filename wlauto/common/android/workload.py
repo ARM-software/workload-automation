@@ -74,7 +74,7 @@ class UiAutomatorWorkload(Workload):
     uiauto_method = 'android.support.test.runner.AndroidJUnitRunner'
     # Can be overidden by subclasses to adjust to run time of specific
     # benchmarks.
-    run_timeout = 4 * 60  # seconds
+    run_timeout = 10 * 60  # seconds
 
     def __init__(self, device, _call_super=True, **kwargs):  # pylint: disable=W0613
         if _call_super:
