@@ -21,8 +21,10 @@ import android.os.SystemClock;
 import android.support.test.runner.AndroidJUnit4;
 import android.support.test.uiautomator.Configurator;
 import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiObject2;
 import android.support.test.uiautomator.UiScrollable;
 import android.support.test.uiautomator.UiSelector;
+import android.support.test.uiautomator.By;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
@@ -312,7 +314,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         uiDeviceSwipeHorizontal(0, getDisplayCentreWidth(), getDisplayCentreHeight() / 2, 10);
 
         // clickUiObject(BY_DESC, "Open navigation drawer");
-        clickUiObject(BY_TEXT, "Settings", true);
+        mDevice.findObject(By.text("Settings")).click();
         clickUiObject(BY_TEXT, "Create PowerPoint");
         mDevice.pressBack();
         logger.stop();
