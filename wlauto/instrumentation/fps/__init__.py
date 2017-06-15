@@ -392,6 +392,8 @@ class LatencyCollector(threading.Thread):
         if match:
             data = match.group(0)[:-1]
             data = map(int, data.split(','))
+            # Ignore additional fields
+            data = data[:len(self.header)]
             frame = GfxInfoFrame(*data)
             if frame not in self.frames:
                 if frame.Flags & GFXINFO_EXEMPT:
