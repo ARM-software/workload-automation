@@ -18,9 +18,11 @@ package com.arm.wlauto.uiauto.googleplaybooks;
 import android.os.Bundle;
 import android.support.test.runner.AndroidJUnit4;
 import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiObject2;
 import android.support.test.uiautomator.UiObjectNotFoundException;
 import android.support.test.uiautomator.UiSelector;
 import android.support.test.uiautomator.UiWatcher;
+import android.support.test.uiautomator.By;
 import android.util.Log;
 
 import com.arm.wlauto.uiauto.ApplaunchInterface;
@@ -280,7 +282,8 @@ public void runUiAutomation() throws Exception {
         // To correctly find the UiObject we need to specify the index also here
         UiObject myLibrary =
             mDevice.findObject(new UiSelector().className("android.widget.TextView")
-                                         .textMatches(".*[lL]ibrary"));
+                                               .textMatches(".*[lL]ibrary")
+                                               .index(3));
         myLibrary.clickAndWaitForNewWindow(uiAutoTimeout);
         logger.stop();
     }
@@ -299,7 +302,7 @@ public void runUiAutomation() throws Exception {
         // Check that books are sorted by time added to library. This way we
         // can assume any newly downloaded books will be visible on the first
         // screen.
-        clickUiObject(BY_ID, packageID + "menu_sort", "android.widget.TextView");
+        mDevice.findObject(By.res(packageID + "menu_sort")).click();
         clickUiObject(BY_TEXT, "Recent", "android.widget.TextView");
         // When the book is first added to library it may not appear in
         // cardsGrid until it has been fully downloaded. Wait for fully
