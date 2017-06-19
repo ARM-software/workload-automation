@@ -135,7 +135,22 @@ public class UiAutomation extends UxPerfUiAutomation {
         if (!imagesFolder.waitForExists(WAIT_TIMEOUT_1SEC*10)) {
             clickUiObject(BY_DESC, "Show roots");
         }
-        imagesFolder.click();
+        if (imagesFolder.exists()) {
+            imagesFolder.click();
+        } else {
+            // On some chromebooks the images tabs is missing so we need select the local storage.
+            UiObject localDevice = mDevice.findObject(new UiSelector().textContains("Chromebook"));
+
+            // The local storage can hidden by default so we need to enable showing it.
+            if (!localDevice.exists()){
+                clickUiObject(BY_DESC, "More Options");
+                clickUiObject(BY_DESC, "More Options");
+                clickUiObject(BY_TEXT, "Show internal storage");
+                clickUiObject(BY_DESC, "Show roots");
+            }
+            localDevice.click();
+        }
+
 
         UiObject folderEntry = mDevice.findObject(new UiSelector().textContains(workingDirectoryName));
         UiScrollable list = new UiScrollable(new UiSelector().scrollable(true));
@@ -145,7 +160,9 @@ public class UiAutomation extends UxPerfUiAutomation {
             folderEntry.waitForExists(WAIT_TIMEOUT_1SEC*10);
         }
         folderEntry.clickAndWaitForNewWindow();
-        clickUiObject(BY_ID, "com.android.documentsui:id/date", true);
+
+        UiObject picture = mDevice.findObject(new UiSelector().resourceId("com.android.documentsui:id/date").enabled(true));
+        picture.click();
     }
 
     public void insertShape(String shapeName) throws Exception {
