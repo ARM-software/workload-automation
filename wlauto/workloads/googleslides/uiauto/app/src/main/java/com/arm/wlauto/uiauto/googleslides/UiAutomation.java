@@ -21,8 +21,10 @@ import android.os.SystemClock;
 import android.support.test.runner.AndroidJUnit4;
 import android.support.test.uiautomator.Configurator;
 import android.support.test.uiautomator.UiObject;
+import android.support.test.uiautomator.UiObject2;
 import android.support.test.uiautomator.UiScrollable;
 import android.support.test.uiautomator.UiSelector;
+import android.support.test.uiautomator.By;
 
 import com.arm.wlauto.uiauto.UxPerfUiAutomation;
 
@@ -133,7 +135,22 @@ public class UiAutomation extends UxPerfUiAutomation {
         if (!imagesFolder.waitForExists(WAIT_TIMEOUT_1SEC*10)) {
             clickUiObject(BY_DESC, "Show roots");
         }
-        imagesFolder.click();
+        if (imagesFolder.exists()) {
+            imagesFolder.click();
+        } else {
+            // On some chromebooks the images tabs is missing so we need select the local storage.
+            UiObject localDevice = mDevice.findObject(new UiSelector().textContains("Chromebook"));
+
+            // The local storage can hidden by default so we need to enable showing it.
+            if (!localDevice.exists()){
+                clickUiObject(BY_DESC, "More Options");
+                clickUiObject(BY_DESC, "More Options");
+                clickUiObject(BY_TEXT, "Show internal storage");
+                clickUiObject(BY_DESC, "Show roots");
+            }
+            localDevice.click();
+        }
+
 
         UiObject folderEntry = mDevice.findObject(new UiSelector().textContains(workingDirectoryName));
         UiScrollable list = new UiScrollable(new UiSelector().scrollable(true));
@@ -143,7 +160,9 @@ public class UiAutomation extends UxPerfUiAutomation {
             folderEntry.waitForExists(WAIT_TIMEOUT_1SEC*10);
         }
         folderEntry.clickAndWaitForNewWindow();
-        clickUiObject(BY_ID, "com.android.documentsui:id/date", true);
+
+        UiObject picture = mDevice.findObject(new UiSelector().resourceId("com.android.documentsui:id/date").enabled(true));
+        picture.click();
     }
 
     public void insertShape(String shapeName) throws Exception {
@@ -312,7 +331,7 @@ public class UiAutomation extends UxPerfUiAutomation {
         uiDeviceSwipeHorizontal(0, getDisplayCentreWidth(), getDisplayCentreHeight() / 2, 10);
 
         // clickUiObject(BY_DESC, "Open navigation drawer");
-        clickUiObject(BY_TEXT, "Settings", true);
+        mDevice.findObject(By.text("Settings")).click();
         clickUiObject(BY_TEXT, "Create PowerPoint");
         mDevice.pressBack();
         logger.stop();
