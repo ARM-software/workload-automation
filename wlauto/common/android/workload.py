@@ -99,7 +99,9 @@ class UiAutomatorWorkload(Workload):
         for k, v in self.uiauto_params.iter_encoded_items():
             params += ' -e {} "{}"'.format(k, v)
 
-        self.device.install_apk(self.uiauto_file, replace=True)
+        if self.device.package_is_installed(self.uiauto_package):
+            self.device.uninstall(self.uiauto_package)
+        self.device.install_apk(self.uiauto_file)
 
         instrumention_string = 'am instrument -w -r {}  -e class {}.{} {}/{}'
         self.command = instrumention_string.format(params, self.uiauto_package,
