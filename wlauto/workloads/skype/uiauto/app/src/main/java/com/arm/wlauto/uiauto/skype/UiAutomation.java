@@ -257,12 +257,15 @@ public class UiAutomation extends UxPerfUiAutomation implements ApplaunchInterfa
         // Hang up the call and log how long that takes
         logger = new ActionLogger(testTag + "_stop", parameters);
         logger.start();
-        if (!(tryButton(endButton, 500))){
+        if (!(tryButton(endButton))){
             throw new UiObjectNotFoundException("Could not find end call button on screen.");
         }
         logger.stop();
     }
 
+    private boolean tryButton(UiObject button) throws Exception {
+        return tryButton(button, uiAutoTimeout);
+    }
     private boolean tryButton(UiObject button, long timeout) throws Exception {
         if (button.waitForExists(timeout)) {
             button.click();
