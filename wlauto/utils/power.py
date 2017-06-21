@@ -212,8 +212,6 @@ class PowerStateProcessor(object):
         self.current_time = event.timestamp
         if event.idle_state is None:
             self.cpu_states[event.cpu_id].frequency = event.frequency
-            if self.cpu_states[event.cpu_id].idle_state is None:
-                self.cpu_states[event.cpu_id].idle_state = -1
         else:
             if event.idle_state == -1:
                 self._process_idle_exit(event)
