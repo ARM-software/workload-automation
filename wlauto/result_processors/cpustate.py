@@ -122,6 +122,20 @@ class CpuStatesProcessor(ResultProcessor):
                   :`error`: An error will be raised if the start marker is not found in the trace.
                   :`try`: If the start marker is not found, all events in the trace will be used.
                   """)
+        Parameter('no_idle', kind=bool, default=False,
+                  description="""
+                  Indicate that there will be no idle transitions in the trace. By default, a core
+                  will be reported as being in an "unknown" state until the first idle transtion for
+                  that core. Normally, this is not an issue, as cores are "nudged" as part of the setup
+                  to ensure that there is an idle transtion before the meassured region. However, if all
+                  idle states for the core have been disabled, or if the kernel does not have cpuidle,
+                  the nudge will not result in an idle transition, which would cause the cores to be
+                  reported to be in "unknown" state for the entire execution.
+
+                  If this parameter is set to ``True``, the processor will assuming that cores are
+                  running prior to the begining of the issue, and they will leave unknown state on
+                  the first frequency transition.
+                  """),
     ]
 
     def validate(self):
@@ -215,6 +229,7 @@ class CpuStatesProcessor(ResultProcessor):
             cpu_utilisation=cpu_utilisation,
             max_freq_list=self.max_freq_list,
             start_marker_handling=self.start_marker_handling,
+            no_idle=self.no_idle,
         )
         parallel_report = reports.pop(0)
         powerstate_report = reports.pop(0)

@@ -113,11 +113,12 @@ class SystemPowerState(object):
     def num_cores(self):
         return len(self.cpus)
 
-    def __init__(self, num_cores):
+    def __init__(self, num_cores, no_idle=False):
         self.timestamp = None
         self.cpus = []
+        idle_state = -1 if no_idle else None
         for _ in xrange(num_cores):
-            self.cpus.append(CpuPowerState())
+            self.cpus.append(CpuPowerState(idle_state=idle_state))
 
     def copy(self):
         new = SystemPowerState(self.num_cores)
@@ -154,8 +155,8 @@ class PowerStateProcessor(object):
 
     def __init__(self, core_clusters, num_idle_states,
                  first_cluster_state=sys.maxint, first_system_state=sys.maxint,
-                 wait_for_start_marker=False):
-        self.power_state = SystemPowerState(len(core_clusters))
+                 wait_for_start_marker=False, no_idle=False):
+        self.power_state = SystemPowerState(len(core_clusters), no_idle=no_idle)
         self.requested_states = {}  # cpu_id -> requeseted state
         self.wait_for_start_marker = wait_for_start_marker
         self._saw_start_marker = False
@@ -650,7 +651,7 @@ def report_power_stats(trace_file, idle_state_names, core_names, core_clusters,
                        first_system_state=sys.maxint, use_ratios=False,
                        timeline_csv_file=None, cpu_utilisation=None,
                        max_freq_list=None, start_marker_handling='error',
-                       transitions_csv_file=None):
+                       transitions_csv_file=None, no_idle=False):
     # pylint: disable=too-many-locals,too-many-branches
     trace = TraceCmdTrace(trace_file,
                           filter_markers=False,
@@ -671,7 +672,8 @@ def report_power_stats(trace_file, idle_state_names, core_names, core_clusters,
                                        num_idle_states=num_idle_states,
                                        first_cluster_state=first_cluster_state,
                                        first_system_state=first_system_state,
-                                       wait_for_start_marker=wait_for_start_marker)
+                                       wait_for_start_marker=wait_for_start_marker,
+                                       no_idle=no_idle)
     reporters = [
         ParallelStats(core_clusters, use_ratios),
         PowerStateStats(core_names, idle_state_names, use_ratios)
@@ -731,6 +733,7 @@ def main():
         max_freq_list=args.max_freq_list,
         start_marker_handling=args.start_marker_handling,
         transitions_csv_file=args.transitions_file,
+        no_idle=args.no_idle,
     )
 
     parallel_report = reports.pop(0)
@@ -832,6 +835,13 @@ def parse_arguments():  # NOQA
                          ignore:  The start marker will be ignored. All events in the trace will be used.
                          error:   An error will be raised if the start marker is not found in the trace.
                          try:     If the start marker is not found, all events in the trace will be used.
+                        ''')
+    parser.add_argument('-N', '--no-idle', action='store_true',
+                        help='''
+                        Assume that cpuidle is not present or disabled on the system, and therefore that the
+                        initial state of the cores is that they are running. This flag is necessary because
+                        the processor assumes the cores are in an unknown state until it sees the first idle
+                        transition, which will never come if cpuidle is absent.
                         ''')
 
     args = parser.parse_args()
