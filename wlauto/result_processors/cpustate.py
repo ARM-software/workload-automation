@@ -121,7 +121,7 @@ class CpuStatesProcessor(ResultProcessor):
                   :`ignore`: The start marker will be ignored. All events in the trace will be used.
                   :`error`: An error will be raised if the start marker is not found in the trace.
                   :`try`: If the start marker is not found, all events in the trace will be used.
-                  """)
+                  """),
         Parameter('no_idle', kind=bool, default=False,
                   description="""
                   Indicate that there will be no idle transitions in the trace. By default, a core
@@ -135,7 +135,7 @@ class CpuStatesProcessor(ResultProcessor):
                   If this parameter is set to ``True``, the processor will assuming that cores are
                   running prior to the begining of the issue, and they will leave unknown state on
                   the first frequency transition.
-                  """),
+                  """)
     ]
 
     def validate(self):
