@@ -414,7 +414,7 @@ class ApkWorkload(Workload):
 
     def install_apk(self, context, replace=False):
         success = False
-        if replace:
+        if replace and self.device.package_is_installed(self.package):
             self.device.uninstall(self.package)
         output = self.device.install_apk(self.apk_file, timeout=self.install_timeout,
                                          replace=replace, allow_downgrade=True)
