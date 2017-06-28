@@ -746,12 +746,10 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
     # Internal methods: do not use outside of the class.
     def _update_build_properties(self, props):
         try:
-            def strip(somestring):
-                return somestring.strip().replace('[', '').replace(']', '')
-            for line in self.execute("getprop").splitlines():
-                key, value = line.split(':', 1)
-                key = strip(key)
-                value = strip(value)
+            regex = re.compile(r'\[([^\]]+)\]\s*:\s*\[([^\]]+)\]')
+            for match in regex.finditer(self.execute("getprop")):
+                key = match.group(1).strip()
+                value = match.group(2).strip()
                 props[key] = value
         except ValueError:
             self.logger.warning('Could not parse build.prop.')
