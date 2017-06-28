@@ -75,6 +75,7 @@ class AcmeCapeInstrument(Instrument):
             outfile=self.outfile,
         )
         self.command = IIOCAP_CMD_TEMPLATE.substitute(**params)
+        self.logger.debug('ACME cape command: {}'.format(self.command))
 
     def very_fast_start(self, context):  # pylint: disable=unused-argument
         self.subprocess = Popen(self.command.split(), stdout=PIPE, stderr=STDOUT)
