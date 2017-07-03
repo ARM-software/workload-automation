@@ -58,7 +58,7 @@ def ssh_get_shell(host, username, password=None, keyfile=None, port=None, timeou
             timeout -= time.time() - start_time
             if timeout <= 0:
                 message = 'Could not connect to {}; is the host name correct?'
-                raise TargetError(message.format(host))
+                raise DeviceError(message.format(host))
             time.sleep(5)
 
     conn.setwinsize(500,200)
