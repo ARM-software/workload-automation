@@ -68,7 +68,7 @@ class Geekbench(AndroidUiAutoBenchmark):
             'package': 'com.primatelabs.geekbench',
             'activity': '.HomeActivity',
         },
-        '3': {
+        '3.0.0': {
             'package': 'com.primatelabs.geekbench3',
             'activity': '.HomeActivity',
         },
