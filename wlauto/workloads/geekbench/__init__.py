@@ -97,6 +97,8 @@ class Geekbench(AndroidUiAutoBenchmark):
                                'manually later.')),
     ]
 
+    is_corporate = False
+
     @property
     def activity(self):
         return self.versions[self.version]['activity']
@@ -109,6 +111,7 @@ class Geekbench(AndroidUiAutoBenchmark):
         super(Geekbench, self).__init__(device, **kwargs)
         self.uiauto_params['version'] = self.version
         self.uiauto_params['times'] = self.times
+        self.uiauto_params['is_corporate'] = self.is_corporate
         self.run_timeout = self.timeout * self.times
         self.exact_apk_version = self.version
 
@@ -383,6 +386,22 @@ class GBScoreCalculator(object):
             context.result.add_metric(capitalize(category) + ' Score', int(category_score))
         context.result.add_metric('Geekbench Score', int(overall_score))
 
+
+class GeekbenchCorproate(Geekbench):
+    name = "geekbench-corporate"
+    is_corporate = True
+
+    versions = ['4.1.0']
+
+    # The activity name for this version doesn't match the package name
+    activity = 'com.primatelabs.geekbench.HomeActivity'
+    package = 'com.primatelabs.geekbench4.corporate'
+
+    parameters = [
+        Parameter('version',
+                  default=sorted(versions)[-1], allowed_values=versions,
+                  override=True)
+    ]
 
 def namemify(basename, i):
     return basename + (' {}'.format(i) if i else '')
