@@ -92,7 +92,7 @@ class TraceCmdInstrument(Instrument):
     """
 
     parameters = [
-        Parameter('events', kind=list, default=['sched*', 'irq*', 'power*', 'cpufreq_interactive*'],
+        Parameter('events', kind=list, default=['sched*', 'irq*', 'power*'],
                   global_alias='trace_events',
                   description="""
                   Specifies the list of events to be traced. Each event in the list will be passed to
