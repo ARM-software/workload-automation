@@ -54,7 +54,6 @@ class TraceCmdInstrument(Instrument):
         - sched*
         - irq*
         - power*
-        - cpufreq_interactive*
 
     The list of available events can be obtained by rooting and running the following
     command line on the device ::
