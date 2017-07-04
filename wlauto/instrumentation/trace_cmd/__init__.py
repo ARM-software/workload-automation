@@ -35,13 +35,13 @@ class TraceCmdInstrument(Instrument):
 
     name = 'trace-cmd'
     description = """
-    trace-cmd is an instrument which interacts with Ftrace Linux kernel internal
+    trace-cmd is an instrument which interacts with ftrace Linux kernel internal
     tracer
 
     From trace-cmd man page:
 
-    trace-cmd command interacts with the Ftrace tracer that is built inside the
-    Linux kernel. It interfaces with the Ftrace specific files found in the
+    trace-cmd command interacts with the ftrace tracer that is built inside the
+    Linux kernel. It interfaces with the ftrace specific files found in the
     debugfs file system under the tracing directory.
 
     trace-cmd reads a list of events it will trace, which can be specified in
@@ -49,12 +49,8 @@ class TraceCmdInstrument(Instrument):
 
         trace_events = ['irq*', 'power*']
 
-    If no event is specified in the config file, trace-cmd traces the following events:
-
-        - sched*
-        - irq*
-        - power*
-        - cpufreq_interactive*
+    If no event is specified, a default set of events that are generally considered useful
+    for debugging/profiling purposes will be enabled.
 
     The list of available events can be obtained by rooting and running the following
     command line on the device ::
@@ -67,7 +63,7 @@ class TraceCmdInstrument(Instrument):
         trace_cmd_buffer_size = 8000
 
     The maximum buffer size varies from device to device, but there is a maximum and trying
-    to set buffer size beyound that will fail. If you plan on collecting a lot of trace over
+    to set buffer size beyond that will fail. If you plan on collecting a lot of trace over
     long periods of time, the buffer size will not be enough and you will only get trace for
     the last portion of your run. To deal with this you can set the ``trace_mode`` setting to
     ``'record'`` (the default is ``'start'``)::
@@ -76,18 +72,23 @@ class TraceCmdInstrument(Instrument):
 
     This will cause trace-cmd to trace into file(s) on disk, rather than the buffer, and so the
     limit for the max size of the trace is set by the storage available on device. Bear in mind
-    that ``'record'`` mode *is* more instrusive than the default, so if you do not plan on
+    that ``'record'`` mode *is* more intrusive than the default, so if you do not plan on
     generating a lot of trace, it is best to use the default ``'start'`` mode.
 
-    .. note:: Mode names correspend to the underlying trace-cmd exectuable's command used to
+    .. note:: Mode names correspond to the underlying trace-cmd executable's command used to
               implement them. You can find out more about what is happening in each case from
               trace-cmd documentation: https://lwn.net/Articles/341902/.
 
-    This instrument comes with an Android trace-cmd binary that will be copied and used on the
-    device, however post-processing will be done on-host and you must have trace-cmd installed and
-    in your path. On Ubuntu systems, this may be done with::
+    This instrument comes with an trace-cmd binary that will be copied and used
+    on the device, however post-processing will be, by default, done on-host and you must
+    have trace-cmd installed and in your path. On Ubuntu systems, this may be
+    done with::
 
         sudo apt-get install trace-cmd
+
+    Alternatively, you may set ``report_on_target`` parameter to ``True`` to enable on-target
+    processing (this is useful when running on non-Linux hosts, but is likely to take longer
+    and may fail on particularly resource-constrained targets).
 
     """
 
