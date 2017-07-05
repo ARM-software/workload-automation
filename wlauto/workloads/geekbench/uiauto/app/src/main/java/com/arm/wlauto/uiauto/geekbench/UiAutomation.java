@@ -47,9 +47,11 @@ public void runUiAutomation() throws Exception {
         String[] version = params.getString("version").split("\\.");
         int majorVersion = Integer.parseInt(version[0]);
         int minorVersion = Integer.parseInt(version[1]);
+        boolean isCorporate = params.getBoolean("is_corporate");
         int times = params.getInt("times");
 
-        dismissEula();
+        if (!isCorporate)
+            dismissEula();
 
         for (int i = 0; i < times; i++) {
             switch (majorVersion) {
@@ -74,7 +76,7 @@ public void runUiAutomation() throws Exception {
                     }
                     break;
                 case 4:
-                    runCpuBenchmarks();
+                    runCpuBenchmarks(isCorporate);
                     waitForResultsv3onwards();
                     break;
                 default :
@@ -112,12 +114,14 @@ public void runUiAutomation() throws Exception {
         runButton.click();
     }
 
-    public void runCpuBenchmarks() throws Exception {
+    public void runCpuBenchmarks(boolean isCorporate) throws Exception {
         // The run button is at the bottom of the view and may be off the screen so swipe to be sure
         uiDeviceSwipe(Direction.DOWN, 50);
 
+        String packageName = isCorporate ? "com.primatelabs.geekbench4.corporate"
+                                         : "com.primatelabs.geekbench";
         UiObject runButton =
-           mDevice.findObject(new UiSelector().resourceId("com.primatelabs.geekbench:id/runCpuBenchmarks")
+           mDevice.findObject(new UiSelector().resourceId(packageName + ":id/runCpuBenchmarks")
                                          .className("android.widget.Button"));
         if (!runButton.waitForExists(WAIT_TIMEOUT_5SEC)) {
             throw new UiObjectNotFoundException("Could not find Run button");
@@ -135,7 +139,7 @@ public void runUiAutomation() throws Exception {
 
     public void waitForResultsv3onwards() throws Exception {
         UiSelector selector = new UiSelector();
-        UiObject runningTextView = mDevice.findObject(selector.text("Running Benchmarks...")
+        UiObject runningTextView = mDevice.findObject(selector.textContains("Running")
                                                         .className("android.widget.TextView"));
 
         if (!runningTextView.waitUntilGone(WAIT_TIMEOUT_20MIN)) {
