@@ -85,7 +85,8 @@ public void runUiAutomation() throws Exception {
 
             if (i < (times - 1)) {
                 mDevice.pressBack();
-                mDevice.pressBack();  // twice
+                if (majorVersion < 4)
+                    mDevice.pressBack();  // twice
             }
         }
 
