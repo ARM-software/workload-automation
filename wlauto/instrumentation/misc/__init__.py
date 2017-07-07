@@ -46,14 +46,7 @@ from wlauto.utils.types import list_of_strings
 logger = logging.getLogger(__name__)
 
 
-class SysfsExtractor(Instrument):
-
-    name = 'sysfs_extractor'
-    description = """
-    Collects the contest of a set of directories, before and after workload execution
-    and diffs the result.
-
-    """
+class FsExtractor(Instrument):
 
     mount_command = 'mount -t tmpfs -o size={} tmpfs {}'
     extract_timeout = 30
@@ -81,12 +74,11 @@ class SysfsExtractor(Instrument):
                   description="""Size of the tempfs partition."""),
     ]
 
-    def initialize(self, context):
+    def initialize_tmpfs(self, context):
         if not self.device.is_rooted and self.use_tmpfs:  # pylint: disable=access-member-before-definition
             raise ConfigError('use_tempfs must be False for an unrooted device.')
         elif self.use_tmpfs is None:  # pylint: disable=access-member-before-definition
             self.use_tmpfs = self.device.is_rooted
-
         if self.use_tmpfs:
             self.on_device_before = self.device.path.join(self.tmpfs_mount_point, 'before')
             self.on_device_after = self.device.path.join(self.tmpfs_mount_point, 'after')
@@ -197,6 +189,19 @@ class SysfsExtractor(Instrument):
         return os.path.dirname(as_relative(directory).replace(self.device.path.sep, os.sep))
 
 
+class SysfsExtractor(FsExtractor):
+
+    name = 'sysfs_extractor'
+    description = """
+    Collects the contest of a set of directories, before and after workload execution
+    and diffs the result.
+
+    """
+
+    def initialize(self, context):
+        self.initialize_tmpfs(context)
+
+
 class ExecutionTimeInstrument(Instrument):
 
     name = 'execution_time'
@@ -261,7 +266,7 @@ class InterruptStatsInstrument(Instrument):
             _diff_interrupt_files(self.before_file, self.after_file, _f(self.diff_file))
 
 
-class DynamicFrequencyInstrument(SysfsExtractor):
+class DynamicFrequencyInstrument(FsExtractor):
 
     name = 'cpufreq'
     description = """
@@ -274,6 +279,9 @@ class DynamicFrequencyInstrument(SysfsExtractor):
     parameters = [
         Parameter('paths', mandatory=False, override=True),
     ]
+
+    def initialize(self, context):
+        self.initialize_tmpfs(context)
 
     def setup(self, context):
         self.paths = ['/sys/devices/system/cpu']
