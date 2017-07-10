@@ -420,7 +420,7 @@ class ParameterDict(dict):
         return self.__iter__()
 
     def get(self, name):
-        return self[name]
+        return self._decode(dict.get(self, name))
 
     def pop(self, key):
         return self._decode(dict.pop(self, key))
