@@ -260,7 +260,6 @@ public void runUiAutomation() throws Exception {
 
             logger.start();
 
-            mDevice.pressSearch();
             pressEnter();
 
             // Check the progress bar icon.  When this disappears the search is complete.
