@@ -205,7 +205,6 @@ class ApkWorkload(Workload):
         self.apk_version = None
         self.logcat_log = None
         self.exact_apk_version = None
-        self.exact_abi = kwargs.get('exact_abi')
 
     def setup(self, context):  # pylint: disable=too-many-branches
         Workload.setup(self, context)
