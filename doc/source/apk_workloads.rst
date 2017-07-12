@@ -7,8 +7,8 @@ APK resolution
 --------------
 
 WA has various resource getters that can be configured to locate APK files but for most people APK files
-should be kept in the ``$WA_HOME/dependencies/SOME_WORKLOAD/`` directory. (by default 
-``~/.workload_automation/dependencies/SOME_WORKLOAD/``). The ``WA_HOME`` enviroment variable can be used
+should be kept in the ``$WA_USER_DIRECTORY/dependencies/SOME_WORKLOAD/`` directory. (by default 
+``~/.workload_automation/dependencies/SOME_WORKLOAD/``). The ``WA_USER_DIRECTORY`` enviroment variable can be used
 to chnage the location of this folder. The APK files need to be put into the corresponding directories
 for the workload they belong to. The name of the file can be anything but as explained below may need
 to contain certain peices of information.
