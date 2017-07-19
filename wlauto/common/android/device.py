@@ -390,7 +390,7 @@ class AndroidDevice(BaseLinuxDevice):  # pylint: disable=W0223
         else:
             return self.install_executable(filepath, with_name)
 
-    def install_apk(self, filepath, timeout=default_timeout, replace=False, allow_downgrade=False):  # pylint: disable=W0221
+    def install_apk(self, filepath, timeout=300, replace=False, allow_downgrade=False):  # pylint: disable=W0221
         self._check_ready()
         ext = os.path.splitext(filepath)[1].lower()
         if ext == '.apk':
