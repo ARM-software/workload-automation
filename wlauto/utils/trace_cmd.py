@@ -232,9 +232,6 @@ EVENT_PARSER_MAP = {
     'sched_wakeup_new': sched_wakeup_parser,
 }
 
-TRACE_EVENT_REGEX = re.compile(r'^\s+(?P<thread>\S+.*?\S+)\s+\[(?P<cpu_id>\d+)\]\s+(?P<ts>[\d.]+):\s+'
-                               r'(?P<name>[^:]+):\s+(?P<body>.*?)\s*$')
-
 HEADER_REGEX = re.compile(r'^\s*(?:version|cpus)\s*=\s*([\d.]+)\s*$')
 
 DROPPED_EVENTS_REGEX = re.compile(r'CPU:(?P<cpu_id>\d+) \[\d*\s*EVENTS DROPPED\]')
@@ -292,12 +289,12 @@ class TraceCmdTrace(object):
                 if matched:
                     continue
 
-                match = TRACE_EVENT_REGEX.search(line)
-                if not match:
-                    logger.warning('Invalid trace event: "{}"'.format(line))
+                # <thread/cpu/timestamp>: <event name>: <event body>
+                parts = line.split(': ', 2)
+                if len(parts) != 3:
                     continue
 
-                event_name = match.group('name')
+                event_name = parts[1].strip()
 
                 if filters:
                     found = False
@@ -308,10 +305,22 @@ class TraceCmdTrace(object):
                     if not found:
                         continue
 
+                thread_string, rest = parts[0].split(' [')
+                cpu_id, ts_string = rest.split('] ')
+                body = parts[2].strip()
+
                 body_parser = EVENT_PARSER_MAP.get(event_name, default_body_parser)
                 if isinstance(body_parser, basestring) or isinstance(body_parser, re._pattern_type):  # pylint: disable=protected-access
                     body_parser = regex_body_parser(body_parser)
-                yield TraceCmdEvent(parser=body_parser, **match.groupdict())
+
+                yield TraceCmdEvent(
+                    thread=thread_string.strip(),
+                    cpu_id=cpu_id,
+                    ts=ts_string.strip(),
+                    name=event_name,
+                    body=body,
+                    parser=body_parser,
+                )
             else:
                 if self.filter_markers and inside_marked_region:
                     logger.warning('Did not encounter a stop marker in trace')
