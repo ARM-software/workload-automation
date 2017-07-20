@@ -274,20 +274,23 @@ class TraceCmdTrace(object):
                     elif TRACE_MARKER_STOP in line:
                         break
 
-                match = DROPPED_EVENTS_REGEX.search(line)
-                if match:
-                    yield DroppedEventsEvent(match.group('cpu_id'))
-                    continue
-
-                matched = False
-                for rx in [HEADER_REGEX, EMPTY_CPU_REGEX]:
-                    match = rx.search(line)
+                if 'EVENTS DROPPED' in line:
+                    match = DROPPED_EVENTS_REGEX.search(line)
                     if match:
-                        logger.debug(line.strip())
-                        matched = True
-                        break
-                if matched:
-                    continue
+                        yield DroppedEventsEvent(match.group('cpu_id'))
+                        continue
+
+                if line.startswith('version') or line.startswith('cpus') or\
+                        line.startswith('CPU:'):
+                    matched = False
+                    for rx in [HEADER_REGEX, EMPTY_CPU_REGEX]:
+                        match = rx.search(line)
+                        if match:
+                            logger.debug(line.strip())
+                            matched = True
+                            break
+                    if matched:
+                        continue
 
                 # <thread/cpu/timestamp>: <event name>: <event body>
                 parts = line.split(': ', 2)
