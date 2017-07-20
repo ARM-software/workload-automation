@@ -41,7 +41,22 @@ class TraceCmdEvent(object):
 
     """
 
-    __slots__ = ['thread', 'reporting_cpu_id', 'timestamp', 'name', 'text', 'fields']
+    __slots__ = ['thread', 'reporting_cpu_id', 'timestamp', 'name', 'text', '_fields', '_parser']
+
+    @property
+    def fields(self):
+        if self._fields is not None:
+            return self._fields
+        self._fields = {}
+
+        if self._parser:
+            try:
+                self._parser(self, self.text)
+            except Exception:  # pylint: disable=broad-except
+                # unknown format assume user does not care or know how to
+                # parse self.text
+                pass
+        return self._fields
 
     def __init__(self, thread, cpu_id, ts, name, body, parser=None):
         """
@@ -70,15 +85,8 @@ class TraceCmdEvent(object):
         self.timestamp = numeric(ts)
         self.name = name
         self.text = body
-        self.fields = {}
-
-        if parser:
-            try:
-                parser(self, self.text)
-            except Exception:  # pylint: disable=broad-except
-                # unknown format assume user does not care or know how to
-                # parse self.text
-                pass
+        self._fields = None
+        self._parser = parser
 
     def __getattr__(self, name):
         try:
@@ -143,7 +151,7 @@ def default_body_parser(event, text):
                 v = int(v)
             except ValueError:
                 pass
-            event.fields[k] = v
+            event._fields[k] = v
 
 
 def regex_body_parser(regex, flags=0):
@@ -166,9 +174,9 @@ def regex_body_parser(regex, flags=0):
         if match:
             for k, v in match.groupdict().iteritems():
                 try:
-                    event.fields[k] = int(v)
+                    event._fields[k] = int(v)
                 except ValueError:
-                    event.fields[k] = v
+                    event._fields[k] = v
 
     return regex_parser_func
 
@@ -224,9 +232,6 @@ EVENT_PARSER_MAP = {
     'sched_wakeup_new': sched_wakeup_parser,
 }
 
-TRACE_EVENT_REGEX = re.compile(r'^\s+(?P<thread>\S+.*?\S+)\s+\[(?P<cpu_id>\d+)\]\s+(?P<ts>[\d.]+):\s+'
-                               r'(?P<name>[^:]+):\s+(?P<body>.*?)\s*$')
-
 HEADER_REGEX = re.compile(r'^\s*(?:version|cpus)\s*=\s*([\d.]+)\s*$')
 
 DROPPED_EVENTS_REGEX = re.compile(r'CPU:(?P<cpu_id>\d+) \[\d*\s*EVENTS DROPPED\]')
@@ -269,27 +274,30 @@ class TraceCmdTrace(object):
                     elif TRACE_MARKER_STOP in line:
                         break
 
-                match = DROPPED_EVENTS_REGEX.search(line)
-                if match:
-                    yield DroppedEventsEvent(match.group('cpu_id'))
-                    continue
-
-                matched = False
-                for rx in [HEADER_REGEX, EMPTY_CPU_REGEX]:
-                    match = rx.search(line)
+                if 'EVENTS DROPPED' in line:
+                    match = DROPPED_EVENTS_REGEX.search(line)
                     if match:
-                        logger.debug(line.strip())
-                        matched = True
-                        break
-                if matched:
+                        yield DroppedEventsEvent(match.group('cpu_id'))
+                        continue
+
+                if line.startswith('version') or line.startswith('cpus') or\
+                        line.startswith('CPU:'):
+                    matched = False
+                    for rx in [HEADER_REGEX, EMPTY_CPU_REGEX]:
+                        match = rx.search(line)
+                        if match:
+                            logger.debug(line.strip())
+                            matched = True
+                            break
+                    if matched:
+                        continue
+
+                # <thread/cpu/timestamp>: <event name>: <event body>
+                parts = line.split(': ', 2)
+                if len(parts) != 3:
                     continue
 
-                match = TRACE_EVENT_REGEX.search(line)
-                if not match:
-                    logger.warning('Invalid trace event: "{}"'.format(line))
-                    continue
-
-                event_name = match.group('name')
+                event_name = parts[1].strip()
 
                 if filters:
                     found = False
@@ -300,10 +308,22 @@ class TraceCmdTrace(object):
                     if not found:
                         continue
 
+                thread_string, rest = parts[0].split(' [')
+                cpu_id, ts_string = rest.split('] ')
+                body = parts[2].strip()
+
                 body_parser = EVENT_PARSER_MAP.get(event_name, default_body_parser)
                 if isinstance(body_parser, basestring) or isinstance(body_parser, re._pattern_type):  # pylint: disable=protected-access
                     body_parser = regex_body_parser(body_parser)
-                yield TraceCmdEvent(parser=body_parser, **match.groupdict())
+
+                yield TraceCmdEvent(
+                    thread=thread_string.strip(),
+                    cpu_id=cpu_id,
+                    ts=ts_string.strip(),
+                    name=event_name,
+                    body=body,
+                    parser=body_parser,
+                )
             else:
                 if self.filter_markers and inside_marked_region:
                     logger.warning('Did not encounter a stop marker in trace')
