@@ -41,7 +41,22 @@ class TraceCmdEvent(object):
 
     """
 
-    __slots__ = ['thread', 'reporting_cpu_id', 'timestamp', 'name', 'text', 'fields']
+    __slots__ = ['thread', 'reporting_cpu_id', 'timestamp', 'name', 'text', '_fields', '_parser']
+
+    @property
+    def fields(self):
+        if self._fields is not None:
+            return self._fields
+        self._fields = {}
+
+        if self._parser:
+            try:
+                self._parser(self, self.text)
+            except Exception:  # pylint: disable=broad-except
+                # unknown format assume user does not care or know how to
+                # parse self.text
+                pass
+        return self._fields
 
     def __init__(self, thread, cpu_id, ts, name, body, parser=None):
         """
@@ -70,15 +85,8 @@ class TraceCmdEvent(object):
         self.timestamp = numeric(ts)
         self.name = name
         self.text = body
-        self.fields = {}
-
-        if parser:
-            try:
-                parser(self, self.text)
-            except Exception:  # pylint: disable=broad-except
-                # unknown format assume user does not care or know how to
-                # parse self.text
-                pass
+        self._fields = None
+        self._parser = parser
 
     def __getattr__(self, name):
         try:
@@ -143,7 +151,7 @@ def default_body_parser(event, text):
                 v = int(v)
             except ValueError:
                 pass
-            event.fields[k] = v
+            event._fields[k] = v
 
 
 def regex_body_parser(regex, flags=0):
@@ -166,9 +174,9 @@ def regex_body_parser(regex, flags=0):
         if match:
             for k, v in match.groupdict().iteritems():
                 try:
-                    event.fields[k] = int(v)
+                    event._fields[k] = int(v)
                 except ValueError:
-                    event.fields[k] = v
+                    event._fields[k] = v
 
     return regex_parser_func
 
