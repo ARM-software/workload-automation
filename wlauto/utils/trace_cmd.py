@@ -308,7 +308,7 @@ class TraceCmdTrace(object):
                     if not found:
                         continue
 
-                thread_string, rest = parts[0].split(' [')
+                thread_string, rest = parts[0].rsplit(' [', 1)
                 cpu_id, ts_string = rest.split('] ')
                 body = parts[2].strip()
 
