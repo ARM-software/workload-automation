@@ -239,6 +239,28 @@ DROPPED_EVENTS_REGEX = re.compile(r'CPU:(?P<cpu_id>\d+) \[\d*\s*EVENTS DROPPED\]
 EMPTY_CPU_REGEX = re.compile(r'CPU \d+ is empty')
 
 
+def split_trace_event_line(line):
+    """
+    Split a trace-cmd event line into the preamble (containing the task, cpu id
+    and timestamp), the event name, and the event body. Each of these is
+    delimited by a ': ' (optionally followed by more whitespace), however ': '
+    may also appear in the body of the event and in the thread name. This
+    attempts to identify the correct split by ensureing the there is a '['
+    (used to mark the cpu id and not a valid character for a task name) in the
+    peramble.
+
+    """
+    parts = line.split(': ')
+    if len(parts) <= 3:
+        return parts
+
+    preamble = parts.pop(0)
+    while '[' not in preamble:
+        preamble += ': ' + parts.pop(0)
+    event_name = parts.pop(0)
+    return (preamble, event_name, ': '.join(parts))
+
+
 class TraceCmdTrace(object):
 
     @property
@@ -293,7 +315,7 @@ class TraceCmdTrace(object):
                         continue
 
                 # <thread/cpu/timestamp>: <event name>: <event body>
-                parts = line.split(': ', 2)
+                parts = split_trace_event_line(line)
                 if len(parts) != 3:
                     continue
 
