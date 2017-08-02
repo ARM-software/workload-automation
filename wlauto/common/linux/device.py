@@ -599,7 +599,7 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
 
     def _check_ready(self):
         if not self._is_ready:
-            raise AttributeError('Device not ready.')
+            raise RuntimeError('Device not ready (has connect() been called?)')
 
     def _get_core_cluster(self, core):
         """Returns the first cluster that has cores of the specified type. Raises
