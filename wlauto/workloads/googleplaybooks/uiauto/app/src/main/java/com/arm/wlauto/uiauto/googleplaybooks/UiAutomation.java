@@ -200,7 +200,7 @@ public void runUiAutomation() throws Exception {
             mDevice.findObject(new UiSelector().resourceId(packageID + "menu_search"));
         if (!search.exists()) {
             search =
-                mDevice.findObject(new UiSelector().resourceId(packageID + "search_box_active_text_view"));
+                mDevice.findObject(new UiSelector().resourceId(packageID + "search_box_idle_text"));
         }
         search.click();
 
@@ -278,15 +278,21 @@ public void runUiAutomation() throws Exception {
         ActionLogger logger = new ActionLogger(testTag, parameters);
 
         logger.start();
-        clickUiObject(BY_DESC, "Show navigation drawer");
+        //clickUiObject(BY_DESC, "Show navigation drawer");
         // To correctly find the UiObject we need to specify the index also here
         UiObject myLibrary =
             mDevice.findObject(new UiSelector().className("android.widget.TextView")
                                                .textMatches(".*[lL]ibrary")
                                                .index(3));
-        myLibrary.clickAndWaitForNewWindow(uiAutoTimeout);
-        logger.stop();
-    }
+        if (myLibrary.exists()) {
+			myLibrary.clickAndWaitForNewWindow(uiAutoTimeout);
+		} else if (!myLibrary.exists()) {          
+			UiObject library =
+				getUiObjectByResourceId("com.google.android.apps.books:id/jump_text");
+			library.click();        
+		}
+		logger.stop();
+	}
 
     private void openBook(final String bookTitle) throws Exception {
         String testTag = "open_book";
@@ -316,7 +322,7 @@ public void runUiAutomation() throws Exception {
         }
 
         logger.start();
-        book.click();
+        book.click();      
         waitForPage();
         logger.stop();
     }

@@ -52,7 +52,7 @@ class Googleplaybooks(AndroidUxPerfWorkload):
           Tip: Install the 'Google Opinion Rewards' app to bypass the need to enter valid
           card/bank detail.
 
-    Known working APK version: 3.9.37
+    Known working APK version: 3.13.17
     '''
 
     parameters = [

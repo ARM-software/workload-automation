@@ -39,7 +39,7 @@ class Gmail(AndroidUxPerfWorkload):
     6. Enter text in the Compose field
     7. Click the Send mail button
 
-    Known working APK version: 6.7.128801648
+    Known working APK version: 7.6.18.160170480 
     '''
 
     parameters = [
@@ -58,6 +58,10 @@ class Gmail(AndroidUxPerfWorkload):
     # This workload relies on the internet so check that there is a working
     # internet connection
     requires_network = True
+
+    def initialize(self, context):
+        if self.device.get_sdk_version() >= 24 and 'com.google.android.apps.photos' not in self.device.list_packages():
+            raise WorkloadError('gmail workload requires Google Photos to be installed for Android N onwards')
 
     def __init__(self, device, **kwargs):
         super(Gmail, self).__init__(device, **kwargs)

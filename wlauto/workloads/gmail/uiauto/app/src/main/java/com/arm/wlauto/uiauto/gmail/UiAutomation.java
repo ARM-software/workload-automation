@@ -155,44 +155,65 @@ public void runUiAutomation() throws Exception {
             getUiObjectByText("Attach file", "android.widget.TextView");
         attachFile.clickAndWaitForNewWindow(uiAutoTimeout);
 
-        UiObject waFolder =
-            mDevice.findObject(new UiSelector().textContains("wa-working")
+        // Show Roots menu
+        UiObject rootMenu =
+            mDevice.findObject(new UiSelector().descriptionContains("Show roots")
+                                               .className("android.widget.ImageButton"));
+        if (rootMenu.exists()){
+            rootMenu.click();
+        }
+        // Check for Photos
+        UiObject photos =
+            mDevice.findObject(new UiSelector().text("Photos")
                                                .className("android.widget.TextView"));
-        // Some devices use a FrameLayout as oppoised to a view Group so treat them differently
-        if (!waFolder.waitForExists(uiAutoTimeout)) {
-            UiObject rootMenu =
-                mDevice.findObject(new UiSelector().descriptionContains("Show roots")
-                                                   .className("android.widget.ImageButton"));
-            // Portrait devices will roll the menu up so click the root menu icon
-            if (rootMenu.exists()) {
-               rootMenu.click();
-            }
-
+        // If Photos does not exist use the images folder
+        if (!photos.waitForExists (uiAutoTimeout)) {
             UiObject imagesEntry =
                 mDevice.findObject(new UiSelector().textContains("Images")
                                                    .className("android.widget.TextView"));
-            // Go to the 'Images' section
             if (imagesEntry.waitForExists(uiAutoTimeout)) {
                 imagesEntry.click();
             }
-            // Find and select the folder
             selectGalleryFolder("wa-working");
-        }
 
-        UiObject imageFileButton =
+            UiObject imageButton =
             mDevice.findObject(new UiSelector().resourceId("com.android.documentsui:id/grid")
-                                               .className("android.widget.GridView")
+                                               .className("android.widget.Gridview")
                                                .childSelector(new UiSelector().index(0)
                                                .className("android.widget.FrameLayout")));
-        if (!imageFileButton.exists()){
-            imageFileButton =
+            if (!imageButton.exists()){
+                imageButton =
                     mDevice.findObject(new UiSelector().resourceId("com.android.documentsui:id/dir_list")
-                            .childSelector(new UiSelector().index(0)
-                                    .classNameMatches("android.widget..*Layout")));
+                                                       .childSelector(new UiSelector().index(0)
+                                                       .classNameMatches("android.widget..*Layout")));
+                }
+            imageButton.click();
+            imageButton.waitUntilGone(uiAutoTimeout);
+        } else {
+            photos.click();
+            //Click wa folder image
+            UiObject waFolder =
+            mDevice.findObject(new UiSelector().textContains("wa-working")
+                                               .className("android.widget.TextView"));
+            if (!waFolder.waitForExists (uiAutoTimeout)) {
+                UiObject refresh =
+                    getUiObjectByResourceId("com.google.android.apps.photos:id/image");
+                    refresh.clickAndWaitForNewWindow();
+                UiObject back =
+                    getUiObjectByResourceId("com.google.android.apps.photos:id/action_mode_close_button");
+                    back.clickAndWaitForNewWindow();
+            }
+            waFolder.waitForExists (uiAutoTimeout);
+            waFolder.click();
+            //Click test image
+            UiObject imageFileButton =
+                mDevice.findObject(new UiSelector().descriptionContains("Photo"));
+            imageFileButton.click();
+            UiObject accept = getUiObjectByText("DONE");
+            if (accept.waitForExists (uiAutoTimeout)) {
+                accept.click();
+            }
         }
-        imageFileButton.click();
-        imageFileButton.waitUntilGone(uiAutoTimeout);
-
         logger.stop();
     }
 
