@@ -99,7 +99,8 @@ class RtApp(Workload):
             }
         }
 
-    Please refer to the exising configs in ``%s`` for more examples.
+    Please refer to the existing configs in ``$WA_ROOT/wlauto/workloads/rt_app/use_case``
+    for more examples.
 
     The version of rt-app currently used with this workload contains enhancements and
     modifications done by Linaro. The source code for this version may be obtained here:
@@ -110,7 +111,7 @@ class RtApp(Workload):
 
     https://github.com/scheduler-tools/rt-app
 
-    """ % PACKAGED_USE_CASE_DIRECTORY
+    """
 
     parameters = [
         Parameter('config', kind=str, default='taskset',
