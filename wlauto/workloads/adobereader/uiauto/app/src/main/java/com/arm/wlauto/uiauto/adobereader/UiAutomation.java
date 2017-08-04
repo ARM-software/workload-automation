@@ -102,8 +102,10 @@ public void runUiAutomation() throws Exception {
         if (!onboarding_finish_button.exists()) {
             welcomeView.swipeLeft(10);
         }
-
-        clickUiObject(BY_ID, packageID + "onboarding_finish_button", "android.widget.Button");
+        
+        if (onboarding_finish_button.exists()) {
+            clickUiObject(BY_ID, packageID + "onboarding_finish_button", "android.widget.Button");
+        }
 
         // Deal with popup dialog message promoting Dropbox access
         UiObject dropBoxDialog =
