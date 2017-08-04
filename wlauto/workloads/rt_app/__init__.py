@@ -40,7 +40,7 @@ class RtApp(Workload):
 
     name = 'rt-app'
     description = """
-    A test application that simulates cofigurable real-time periodic load.
+    A test application that simulates configurable real-time periodic load.
 
     rt-app is a test application that starts multiple periodic threads in order to
     simulate a real-time periodic load. It supports SCHED_OTHER, SCHED_FIFO,
@@ -117,19 +117,19 @@ class RtApp(Workload):
         Parameter('config', kind=str, default='taskset',
                   description='''
                   Use case configuration file to run with rt-app. This may be
-                  either the name of one of the "standard" configuratons included
+                  either the name of one of the "standard" configurations included
                   with the workload. or a path to a custom JSON file provided by
                   the user. Either way, the ".json" extension is implied and will
                   be added automatically if not specified in the argument.
 
-                  The following is th list of standard configuraionts currently
+                  The following is the list of standard configurations currently
                   included with the workload: {}
 
                   '''.format(', '.join(os.listdir(PACKAGED_USE_CASE_DIRECTORY)))),
         Parameter('duration', kind=int,
                   description='''
                   Duration of the workload execution in Seconds. If specified, this
-                  will override the corresponing parameter in the JSON config.
+                  will override the corresponding parameter in the JSON config.
                   '''),
         Parameter('taskset_mask', kind=int,
                   description='Constrain execution to specific CPUs.'),
@@ -141,7 +141,7 @@ class RtApp(Workload):
         Parameter('force_install', kind=bool, default=False,
                   description="""
                   If set to ``True``, rt-app binary will always be deployed to the
-                  target device at the begining of the run, regardless of whether it
+                  target device at the beginning of the run, regardless of whether it
                   was already installed there.
                   """),
     ]
