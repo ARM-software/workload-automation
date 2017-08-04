@@ -43,6 +43,7 @@ class AppShare(AndroidUxPerfWorkload):
     screen UI is dependent on an existing connection.
 
     Test description:
+
     1. GooglePhotos is started in offline access mode
         1.1. The welcome screen is dismissed
         1.2. Any promotion popup is dismissed
