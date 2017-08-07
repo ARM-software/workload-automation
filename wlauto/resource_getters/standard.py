@@ -90,12 +90,14 @@ class ReventGetter(ResourceGetter):
         self.resolver.register(self, 'revent', GetterPriority.package)
 
     def get(self, resource, **kwargs):
+        # name format: [model/device_name.stage.revent]
         device_model = resource.owner.device.get_device_model()
         wa_device_name = resource.owner.device.name
         for name in [device_model, wa_device_name]:
             if not name:
                 continue
             filename = '.'.join([name, resource.stage, 'revent']).lower()
+            self.logger.debug('Trying to get {0}.'.format(str(filename)))
             location = _d(os.path.join(self.get_base_location(resource), 'revent_files'))
             for candidate in os.listdir(location):
                 if candidate.lower() == filename.lower():
