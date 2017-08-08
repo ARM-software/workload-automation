@@ -462,7 +462,7 @@ class BaseGem5Device(object):
     # gem5 might be slow. Hence, we need to make the ping timeout very long.
     def ping(self):
         self.logger.debug("Pinging gem5 to see if it is still alive")
-        self.gem5_shell('ls /', timeout=self.longdelay)
+        self.gem5_shell('ls /', timeout=self.long_delay)
 
     # Additional Android-specific methods.
     def forward_port(self, _):  # pylint: disable=R0201
