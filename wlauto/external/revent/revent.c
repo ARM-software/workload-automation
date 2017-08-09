@@ -1264,15 +1264,18 @@ void replay(const char *filepath)
 
 		int32_t idx = (recording.events[i]).dev_idx;
 		struct input_event ev = (recording.events[i]).event;
-		while((i < recording.num_events) && !timercmp(&ev.time, &last_event_delta, !=)) {
-			idx = recording.events[i].dev_idx;
-			ev = recording.events[i].event;
+		while(!timercmp(&ev.time, &last_event_delta, !=)) {
 			ret = write(recording.devices.fds[idx], &ev, sizeof(ev));
 			if (ret != sizeof(ev))
 				die("Could not replay event");
 			dprintf("replayed event: type %d code %d value %d\n", ev.type, ev.code, ev.value);
 
 			i++;
+			if (i >= recording.num_events) {
+				break;
+			}
+			idx = recording.events[i].dev_idx;
+			ev = recording.events[i].event;
 		}
 		last_event_delta = ev.time;
 	}
