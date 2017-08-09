@@ -74,7 +74,7 @@ class RecordCommand(ReventCommand):
     name = 'record'
     description = '''Performs a revent recording
 
-    This command helps making revent recordings. It will automatically
+    This command helps create revent recordings. It will automatically
     deploy revent and even has the option of automatically opening apps.
 
     Revent allows you to record raw inputs such as screen swipes or button presses.
@@ -82,14 +82,14 @@ class RecordCommand(ReventCommand):
     have XML UI layouts that can be used with UIAutomator. As a drawback from this,
     revent recordings are specific to the device type they were recorded on.
 
-    WA uses two parts to the names of revent recordings in the format,
-    {device_name}.{suffix}.revent.
+    WA uses two parts to form the names of revent recordings in the format,
+    {device_name}.{suffix}.revent
 
      - device_name can either be specified manually with the ``-d`` argument or
-       it can be automatically determined. On Android device it will be obtained
+       else the name of the device will be automatically determined. On an Android device it is obtained
        from ``build.prop``, on Linux devices it is obtained from ``/proc/device-tree/model``.
      - suffix is used by WA to determine which part of the app execution the
-       recording is for, currently these are either ``setup`` or ``run``. This
+       recording is for, currently either ``setup``, ``run`` or ``teardown``. This
        should be specified with the ``-s`` argument.
 
 

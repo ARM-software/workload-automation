@@ -590,7 +590,8 @@ class BaseLinuxDevice(Device):  # pylint: disable=abstract-method
     def get_device_model(self):
         if self.file_exists("/proc/device-tree/model"):
             raw_model = self.execute("cat /proc/device-tree/model")
-            return '_'.join(raw_model.split()[:2])
+            device_model_to_return = '_'.join(raw_model.split()[:2])
+            return device_model_to_return.rstrip(' \t\r\n\0')
         # Right now we don't know any other way to get device model
         # info in linux on arm platforms
         return None
