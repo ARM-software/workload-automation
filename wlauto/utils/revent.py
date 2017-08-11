@@ -142,9 +142,10 @@ class ReventRecording(object):
                     first = last = events.next()
                 except StopIteration:
                     self._duration = 0
-                for last in events:
-                    pass
-                self._duration = (last.time - first.time).total_seconds()
+                else:
+                    for last in events:
+                        pass
+                    self._duration = (last.time - first.time).total_seconds()
             else:  # not streaming
                 if not self._events:
                     self._duration = 0
