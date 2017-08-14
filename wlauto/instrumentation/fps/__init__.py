@@ -158,37 +158,43 @@ class FpsInstrument(Instrument):
 
     def setup(self, context):
         workload = context.workload
-        if hasattr(workload, 'view'):
-            self.fps_outfile = os.path.join(context.output_directory, 'fps.csv')
-            self.outfile = os.path.join(context.output_directory, 'frames.csv')
-            # Android M brings a new method of collecting FPS data
-            if not self.force_surfaceflinger and (self.device.get_sdk_version() >= 23):
-                # gfxinfo takes in the package name rather than a single view/activity
-                # so there is no 'list_command' to run and compare against a list of
-                # views/activities. Additionally, clearing the stats requires the package
-                # so we need to clear for every package in the workload.
-                # Usually there is only one package, but some workloads may run multiple
-                # packages so each one must be reset before continuing
-                self.fps_method = 'gfxinfo'
-                runcmd = 'dumpsys gfxinfo {} framestats'
-                lstcmd = None
-                params = workload.package
-                params = [params] if isinstance(params, basestring) else params
-                for pkg in params:
-                    self.device.execute('dumpsys gfxinfo {} reset'.format(pkg))
-            else:
-                self.fps_method = 'surfaceflinger'
-                runcmd = 'dumpsys SurfaceFlinger --latency {}'
-                lstcmd = 'dumpsys SurfaceFlinger --list'
-                params = workload.view
-                self.device.execute('dumpsys SurfaceFlinger --latency-clear ')
 
-            self.collector = LatencyCollector(self.outfile, self.device, params or '',
-                                              self.keep_raw, self.logger, self.dumpsys_period,
-                                              runcmd, lstcmd, self.fps_method)
-        else:
+        use_gfxinfo = not self.force_surfaceflinger and (self.device.get_sdk_version() >= 23)
+        if use_gfxinfo and not hasattr(workload, 'package'):
+            self.logger.debug('Workload does not contain a package; falling back to SurfaceFlinger...')
+            use_gfxinfo = False
+        if not use_gfxinfo and not hasattr(workload, 'view'):
             self.logger.debug('Workload does not contain a view; disabling...')
             self.is_enabled = False
+            return
+
+        self.fps_outfile = os.path.join(context.output_directory, 'fps.csv')
+        self.outfile = os.path.join(context.output_directory, 'frames.csv')
+        # Android M brings a new method of collecting FPS data
+        if use_gfxinfo:
+            # gfxinfo takes in the package name rather than a single view/activity
+            # so there is no 'list_command' to run and compare against a list of
+            # views/activities. Additionally, clearing the stats requires the package
+            # so we need to clear for every package in the workload.
+            # Usually there is only one package, but some workloads may run multiple
+            # packages so each one must be reset before continuing
+            self.fps_method = 'gfxinfo'
+            runcmd = 'dumpsys gfxinfo {} framestats'
+            lstcmd = None
+            params = workload.package
+            params = [params] if isinstance(params, basestring) else params
+            for pkg in params:
+                self.device.execute('dumpsys gfxinfo {} reset'.format(pkg))
+        else:
+            self.fps_method = 'surfaceflinger'
+            runcmd = 'dumpsys SurfaceFlinger --latency {}'
+            lstcmd = 'dumpsys SurfaceFlinger --list'
+            params = workload.view
+            self.device.execute('dumpsys SurfaceFlinger --latency-clear ')
+
+        self.collector = LatencyCollector(self.outfile, self.device, params or '',
+                                            self.keep_raw, self.logger, self.dumpsys_period,
+                                            runcmd, lstcmd, self.fps_method)
 
     def start(self, context):
         if self.is_enabled:
