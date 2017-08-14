@@ -38,6 +38,8 @@ def generate_instrumentation_method_map(outfile):
                                        headers=['method name', 'signal'], align='<<')
     priority_table = format_simple_table([(escape_trailing_underscore(k), v)  for k, v in PRIORITY_MAP.iteritems()],
                                          headers=['prefix', 'priority'],  align='<>')
+    if os.path.isfile(outfile):
+        os.unlink(outfile)
     with open(OUTPUT_TEMPLATE_FILE) as fh:
         template = string.Template(fh.read())
     with open(outfile, 'w') as wfh:
