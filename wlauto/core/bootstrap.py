@@ -176,6 +176,7 @@ def init_environment(env_root, dep_dir, extension_paths, overwrite_existing=Fals
 
 
 _env_root = os.getenv('WA_USER_DIRECTORY', os.path.join(_user_home, '.workload_automation'))
+_env_root = os.path.abspath(_env_root)
 _dep_dir = os.path.join(_env_root, 'dependencies')
 _extension_paths = [os.path.join(_env_root, ext.default_path) for ext in _extensions]
 _env_var_paths = os.getenv('WA_EXTENSION_PATHS', '')
