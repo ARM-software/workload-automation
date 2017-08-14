@@ -28,12 +28,16 @@
 
 import sys, os
 import warnings
+from sphinx.apidoc import main
 
 warnings.filterwarnings('ignore', "Module louie was already imported")
 
 this_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.join(this_dir, '..'))
 sys.path.insert(0, os.path.join(this_dir, '../..'))
 import wlauto
+from build_extension_docs import generate_extension_documentation
+from build_instrumentation_method_map import generate_instrumentation_method_map
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -264,7 +268,21 @@ texinfo_documents = [
 #texinfo_show_urls = 'footnote'
 
 
+def run_apidoc(_):
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+    cur_dir = os.path.abspath(os.path.dirname(__file__))
+    api_output = os.path.join(cur_dir, 'api')
+    module = os.path.join(cur_dir, '..', '..', 'wlauto')
+    main(['-f', '-o', api_output, module, '--force'])
+
 def setup(app):
+    module_dir = os.path.join('..', '..', 'wlauto')
+    excluded_extensions = [os.path.join(module_dir, 'external'),
+                           os.path.join(module_dir, 'tests')]
+    os.chdir(os.path.dirname(__file__))
+    app.connect('builder-inited', run_apidoc)
+    generate_instrumentation_method_map('instrumentation_method_map.rst')
+    generate_extension_documentation(module_dir, 'extensions', excluded_extensions)
     app.add_object_type('confval', 'confval',
                         objname='configuration value',
                         indextemplate='pair: %s; configuration value')
