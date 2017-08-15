@@ -58,8 +58,10 @@ class ManualWorkload(Workload):
                                 is not specified, and ``False`` otherwise.
                   """),
         Parameter('view', default='SurfaceView',
-                  description="""Specifies the View of the workload. This enables instruments that require a
-                                 View to be specified, such as the ``fps`` instrument."""),
+                  description="""Specifies the View of the workload. This enables instruments that
+                                 require a View to be specified, such as the ``fps`` instrument.
+                                 This is required for using "SurfaceFlinger" to collect FPS statistics
+                                 and is primarily used on devices pre API level 23"""),
         Parameter('package',
                   description="""Specifies the package name of the workload. This enables
                                  instruments that require a Package to be specified, such
