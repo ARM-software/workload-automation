@@ -152,7 +152,8 @@ def init_environment(env_root, dep_dir, extension_paths, overwrite_existing=Fals
     os.makedirs(env_root)
     with open(os.path.join(_this_dir, '..', 'config_example.py')) as rf:
         text = re.sub(r'""".*?"""', '', rf.read(), 1, re.DOTALL)
-        with open(os.path.join(_env_root, 'config.py'), 'w') as wf:
+        config_path = os.path.join(env_root, 'config.py')
+        with open(config_path, 'w') as wf:
             wf.write(text)
 
     os.makedirs(dep_dir)
@@ -173,9 +174,11 @@ def init_environment(env_root, dep_dir, extension_paths, overwrite_existing=Fals
                     os.chown(os.path.join(root, d), uid, gid)
                 for f in files:  # pylint: disable=W0621
                     os.chown(os.path.join(root, f), uid, gid)
+    return config_path
 
 
 _env_root = os.getenv('WA_USER_DIRECTORY', os.path.join(_user_home, '.workload_automation'))
+_env_root = os.path.abspath(_env_root)
 _dep_dir = os.path.join(_env_root, 'dependencies')
 _extension_paths = [os.path.join(_env_root, ext.default_path) for ext in _extensions]
 _env_var_paths = os.getenv('WA_EXTENSION_PATHS', '')
@@ -189,7 +192,8 @@ for filename in ['config.py', 'config.yaml']:
         _env_configs.append(filepath)
 
 if not os.path.isdir(_env_root):
-    init_environment(_env_root, _dep_dir, _extension_paths)
+    cfg_path = init_environment(_env_root, _dep_dir, _extension_paths)
+    _env_configs.append(cfg_path)
 elif not _env_configs:
     filepath = os.path.join(_env_root, 'config.py')
     with open(os.path.join(_this_dir, '..', 'config_example.py')) as f:

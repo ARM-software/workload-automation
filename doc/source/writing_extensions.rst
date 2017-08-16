@@ -964,7 +964,7 @@ that accompanies them, in addition to what has been outlined here, should
 provide enough guidance.
 
 :commands: This allows extending WA with additional sub-commands (to supplement
-           exiting ones outlined in the :ref:`invocation` section).
+           exiting ones outlined in the :ref:`invocation <invocation>` section).
 :modules: Modules are "extensions for extensions". They can be loaded by other
           extensions to expand their functionality (for example, a flashing
           module maybe loaded by a device in order to support flashing).

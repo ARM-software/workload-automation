@@ -17,6 +17,7 @@
 
 import os
 import sys
+import shutil
 
 from wlauto import ExtensionLoader
 from wlauto.utils.doc import get_rst_from_extension, underline
@@ -30,6 +31,9 @@ def generate_extension_documentation(source_dir, outdir, ignore_paths):
     loader = ExtensionLoader(keep_going=True)
     loader.clear()
     loader.update(paths=[source_dir], ignore_paths=ignore_paths)
+    if os.path.exists(outdir):
+        shutil.rmtree(outdir)
+    os.makedirs(outdir)
     for ext_type in loader.extension_kinds:
         if not ext_type in GENERATE_FOR:
             continue

@@ -147,7 +147,7 @@ to 15 million. You can specify this using dhrystone's parameters:
 
                 wa show dhrystone
 
-          see the :ref:`Invocation` section for details.
+          see the :ref:`Invocation <invocation>` section for details.
 
 In addition to configuring the workload itself, we can also specify
 configuration for the underlying device. This can be done by setting runtime
