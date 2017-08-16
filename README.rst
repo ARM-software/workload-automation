@@ -46,7 +46,8 @@ documentation.
 Documentation
 =============
 
-You can view pre-built HTML documentation `here <http://pythonhosted.org/wlauto/>`_.
+You can view pre-built HTML documentation
+`here <http://workload-automation.readthedocs.io/en/latest/>`_.
 
 Documentation in reStructuredText format may be found under ``doc/source``. To
 compile it into cross-linked HTML, make sure you have `Sphinx
