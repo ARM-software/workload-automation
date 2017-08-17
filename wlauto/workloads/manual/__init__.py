@@ -29,11 +29,13 @@ class ManualWorkloadConfig(object):
                  duration=None,  # Seconds
                  user_triggered=None,
                  view=None,
+                 package=None,
                  enable_logcat=True
                  ):
         self.user_triggered = user_triggered if user_triggered is not None else (False if duration else True)
         self.duration = duration or (None if self.user_triggered else self.default_duration)
         self.view = view
+        self.package = package
         self.enable_logcat = enable_logcat
 
 
@@ -56,8 +58,16 @@ class ManualWorkload(Workload):
                                 is not specified, and ``False`` otherwise.
                   """),
         Parameter('view', default='SurfaceView',
-                  description="""Specifies the View of the workload. This enables instruments that require a
-                                 View to be specified, such as the ``fps`` instrument."""),
+                  description="""Specifies the View of the workload. This enables instruments that
+                                 require a View to be specified, such as the ``fps`` instrument.
+                                 This is required for using "SurfaceFlinger" to collect FPS statistics
+                                 and is primarily used on devices pre API level 23"""),
+        Parameter('package',
+                  description="""Specifies the package name of the workload. This enables
+                                 instruments that require a Package to be specified, such
+                                 as the ``fps`` instrument. This allows for "gfxinfo" to
+                                 be used and is the preferred method of collection for FPS
+                                 statistics on devices API level 23+"""),
         Parameter('enable_logcat', kind=boolean,
                   description='If ``True``, ``manual`` workload will collect logcat as part of the results.'),
     ]
