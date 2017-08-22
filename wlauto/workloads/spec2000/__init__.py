@@ -15,6 +15,7 @@
 
 
 #pylint: disable=E1101,W0201
+import operator
 import os
 import re
 import string
@@ -278,7 +279,11 @@ class Spec2000(Workload):
             commandspec = CommandSpec()
             commandspec.command = bench.command_template.substitute({'binary': binary})
             commandspec.datadir = datadir
-            commandspec.cpumask = get_cpu_mask(cpumap[cpu])
+            if cpu == 'generic':
+                all_cpus = reduce(operator.add, cpumap.values())
+                commandspec.cpumask = get_cpu_mask(all_cpus)
+            else:
+                commandspec.cpumask = get_cpu_mask(cpumap[cpu])
             cmdspecs.append(commandspec)
         return cmdspecs
 
