@@ -36,7 +36,7 @@ NBFORMAT_VERSION = 3
 
 
 if IPython:
-    if LooseVersion('5.0.0') > LooseVersion(IPython.__version__) >= LooseVersion('4.0.0'):
+    if LooseVersion('6.0.0') > LooseVersion(IPython.__version__) >= LooseVersion('4.0.0'):
         import nbformat
         from jupyter_client.manager import KernelManager
 

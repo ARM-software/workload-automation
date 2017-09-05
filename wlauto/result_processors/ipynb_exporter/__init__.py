@@ -29,6 +29,7 @@ from wlauto import File, Parameter, ResultProcessor
 from wlauto.exceptions import ConfigError, ResultProcessorError
 import wlauto.utils.ipython as ipython
 from wlauto.utils.misc import open_file
+from wlauto.utils.types import file_path
 
 
 DEFAULT_NOTEBOOK_TEMPLATE = 'template.ipynb'
@@ -59,6 +60,7 @@ class IPythonNotebookExporter(ResultProcessor):
 
     parameters = [
         Parameter('notebook_template', default=DEFAULT_NOTEBOOK_TEMPLATE,
+                  kind=file_path,
                   description='''Filename of the ipython notebook template.  If
                   no `notebook_template` is specified, the example template
                   above is used.'''),
@@ -72,7 +74,7 @@ class IPythonNotebookExporter(ResultProcessor):
                   ending in ``.pdf``.'''),
         Parameter('show_notebook', kind=bool,
                   description='Open a web browser with the resulting notebook.'),
-        Parameter('notebook_directory',
+        Parameter('notebook_directory', kind=file_path,
                   description='''Path to the notebooks directory served by the
                   ipython notebook server. You must set it if
                   ``show_notebook`` is selected. The ipython notebook
