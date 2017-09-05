@@ -61,7 +61,8 @@ clean_up = False
 ######################################### Device Settings ##########################################
 ####################################################################################################
 # Specify the device you want to run workload automation on. This must be a                        #
-# string with the ID of the device. At the moment, only 'TC2' is supported.                        #
+# string with the ID of the device. Common options are 'generic_android' and                       #
+# 'generic_linux'. Run ``wa list devices`` to see all available options.                           #
 #                                                                                                  #
 device = 'generic_android'
 
