@@ -83,6 +83,9 @@ def numeric(value):
             return ivalue
     return fvalue
 
+def file_path(value):
+    """Handles expansion of paths containing '~'"""
+    return os.path.expanduser(value)
 
 def list_of_strs(value):
     """
