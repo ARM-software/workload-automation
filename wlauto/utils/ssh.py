@@ -40,19 +40,24 @@ logger = logging.getLogger('ssh')
 def ssh_get_shell(host, username, password=None, keyfile=None, port=None, timeout=10, telnet=False, original_prompt=None):
     _check_env()
     start_time = time.time()
+    extra_login_args = {}
     while True:
         if telnet:
             if keyfile:
                 raise ValueError('keyfile may not be used with a telnet connection.')
-            conn = TelnetPxssh(original_prompt=original_prompt)
+            conn = TelnetConnection()
+            if original_prompt:
+                extra_login_args['original_prompt'] = original_prompt
+            if port is None:
+                port = 23
         else:  # ssh
             conn = pxssh.pxssh()
 
         try:
             if keyfile:
-                conn.login(host, username, ssh_key=keyfile, port=port, login_timeout=timeout)
+                conn.login(host, username, ssh_key=keyfile, port=port, login_timeout=timeout, **extra_login_args)
             else:
-                conn.login(host, username, password, port=port, login_timeout=timeout)
+                conn.login(host, username, password, port=port, login_timeout=timeout, **extra_login_args)
             break
         except EOF:
             timeout -= time.time() - start_time
