@@ -37,19 +37,22 @@ NBFORMAT_VERSION = 3
 
 if IPython:
     if LooseVersion('6.0.0') > LooseVersion(IPython.__version__) >= LooseVersion('4.0.0'):
-        import nbformat
-        from jupyter_client.manager import KernelManager
+        try:
+            import nbformat
+            from jupyter_client.manager import KernelManager
 
-        def read_notebook(notebook_in):  # pylint: disable=function-redefined
-            return nbformat.reads(notebook_in, NBFORMAT_VERSION)  # pylint: disable=E1101
+            def read_notebook(notebook_in):  # pylint: disable=function-redefined
+                return nbformat.reads(notebook_in, NBFORMAT_VERSION)  # pylint: disable=E1101
 
-        def write_notebook(notebook, fout):  # pylint: disable=function-redefined
-            nbformat.write(notebook, fout)  # pylint: disable=E1101
+            def write_notebook(notebook, fout):  # pylint: disable=function-redefined
+                nbformat.write(notebook, fout)  # pylint: disable=E1101
 
-        NotebookNode = nbformat.NotebookNode  # pylint: disable=E1101
+            NotebookNode = nbformat.NotebookNode  # pylint: disable=E1101
 
-        IPYTHON_NBCONVERT_HTML = ['jupyter', 'nbconvert', '--to html']
-        IPYTHON_NBCONVERT_PDF = ['jupyter', 'nbconvert', '--to pdf']
+            IPYTHON_NBCONVERT_HTML = ['jupyter', 'nbconvert', '--to html']
+            IPYTHON_NBCONVERT_PDF = ['jupyter', 'nbconvert', '--to pdf']
+        except ImportError:
+            import_error_str = 'Please install "jupyter" as well as "ipython" packages.'
 
     elif LooseVersion('4.0.0') > LooseVersion(IPython.__version__) >= LooseVersion('3.0.0'):
         from IPython.kernel import KernelManager
