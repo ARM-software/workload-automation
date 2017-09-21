@@ -16,7 +16,7 @@
 import os
 
 from wlauto import AndroidUxPerfWorkload, Parameter
-from wlauto.exceptions import ValidationError
+from wlauto.exceptions import ValidationError, WorkloadError
 
 
 class Gmail(AndroidUxPerfWorkload):
