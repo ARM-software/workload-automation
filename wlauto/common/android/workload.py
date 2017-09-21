@@ -72,6 +72,7 @@ class UiAutomatorWorkload(Workload):
     # Can be overidden by subclasses to adjust to run time of specific
     # benchmarks.
     run_timeout = 10 * 60  # seconds
+    uninstall_uiauto_apk = True
 
     def __init__(self, device, _call_super=True, **kwargs):  # pylint: disable=W0613
         if _call_super:
@@ -118,7 +119,8 @@ class UiAutomatorWorkload(Workload):
         pass
 
     def teardown(self, context):
-        self.device.uninstall(self.uiauto_package)
+        if self.uninstall_uiauto_apk:
+            self.device.uninstall(self.uiauto_package)
 
     def validate(self):
         if not self.uiauto_file:
