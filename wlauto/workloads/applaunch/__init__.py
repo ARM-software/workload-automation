@@ -112,6 +112,10 @@ class Applaunch(AndroidUxPerfWorkload):
         self.workload_params['markers_enabled'] = True
         self.workload = loader.get_workload(self.workload_name, self.device,
                                             **self.workload_params)
+
+        # This workload's uiauto apk will not be installed -- automation will be loaded directly form a path
+        # so do not uninstall during teardown
+        self.workload.uninstall_uiauto_apk = False
         self.init_workload_resources(context)
         self.package = self.workload.package
 
