@@ -43,6 +43,9 @@ public class BaseUiAutomation {
     // Time in milliseconds
     public long uiAutoTimeout = 4 * 1000;
 
+    public enum Direction { UP, DOWN, LEFT, RIGHT, NULL };
+    public enum PinchType { IN, OUT, NULL };
+
     public static final int CLICK_REPEAT_INTERVAL_MINIMUM = 5;
     public static final int CLICK_REPEAT_INTERVAL_DEFAULT = 50;
 
