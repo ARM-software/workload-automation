@@ -136,7 +136,7 @@ class TraceCmdInstrument(Instrument):
                   form the buffer size until set succeeds or size is reduced to
                   1MB.
                   """),
-        Parameter('report', kind=bool, default=True,
+        Parameter('report', kind=bool, default=False,
                   description="""
                   Specifies whether reporting should be performed once the
                   binary trace has been generated.
