@@ -43,7 +43,13 @@ public void runUiAutomation() throws Exception {
         sleep(3);
         UiObject btn_microbench = mDevice.findObject(selector.textContains("Micro")
                                                      .className("android.widget.Button"));
-        btn_microbench.click();
+        if (btn_microbench.exists()) {
+            btn_microbench.click();
+        } else {
+            UiObject bench =
+                mDevice.findObject(new UiSelector().resourceIdMatches("com.andromeda.androbench2:id/btnStartingBenchmarking"));
+                bench.click();
+        }        
 
         UiObject btn_yes= mDevice.findObject(selector.textContains("Yes")
                                                      .className("android.widget.Button"));
