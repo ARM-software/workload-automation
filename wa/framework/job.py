@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 
-from wa.framework import pluginloader, signal
+from wa.framework import pluginloader, signal, instrumentation
 from wa.framework.configuration.core import Status
 
 
@@ -68,6 +68,16 @@ class Job(object):
 
     def setup(self, context):
         self.logger.info('Setting up job {} [{}]'.format(self.id, self.iteration))
+
+        self._saved_enabled_instruments = instrumentation.get_enabled()
+        self._saved_disabled_instruments = instrumentation.get_disabled()
+
+        for instrument in self.spec.instrumentation:
+            if instrument.startswith('~'):
+                instrumentation.disable(instrument[1:])
+            else:
+                instrumentation.enable(instrument)
+
         with signal.wrap('WORKLOAD_SETUP', self, context):
             self.workload.setup(context)
 
@@ -90,6 +100,12 @@ class Job(object):
 
     def teardown(self, context):
         self.logger.info('Tearing down job {} [{}]'.format(self.id, self.iteration))
+
+        for instrument in self._saved_enabled_instruments:
+            instrumentation.enable(instrument)
+        for instrument in self._saved_disabled_instruments:
+            instrumentation.disable(instrument)
+
         with signal.wrap('WORKLOAD_TEARDOWN', self, context):
             self.workload.teardown(context)
 
