@@ -43,7 +43,7 @@ class ConfigManager(object):
 
     @property
     def enabled_instruments(self):
-        return self.jobs_config.enabled_instruments
+        return self.jobs_config.enabled_instruments.values()
 
     @property
     def job_specs(self):

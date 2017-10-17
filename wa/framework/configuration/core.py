@@ -1023,7 +1023,7 @@ class JobGenerator(object):
         self.ids_to_run = []
         self.sections = []
         self.workloads = []
-        self._enabled_instruments = set()
+        self._enabled_instruments = toggle_set()
         self._read_enabled_instruments = False
         self.disabled_instruments = []
 
