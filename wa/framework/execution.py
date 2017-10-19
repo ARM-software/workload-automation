@@ -418,8 +418,10 @@ class Runner(object):
     def do_run_job(self, job, context):
         rc = self.context.cm.run_config
         if job.workload.phones_home and not rc.allow_phone_home:
-            self.logger.warning('Skipping job {} ({}) due to allow_phone_home=False'
-                                .format(job.id, job.workload.name))
+            msg = ('Skipping job {} ({}) due to allow_phone_home=False'
+                   .format(job.id, job.workload.name))
+            self.logger.warning(msg)
+            context.add_event(msg)
             job.set_status(Status.SKIPPED)
             return
 
