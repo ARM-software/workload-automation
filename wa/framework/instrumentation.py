@@ -321,7 +321,7 @@ def install(instrument, context):
             raise ValueError(message.format(attr_name, arg_num))
 
         priority = get_priority(attr)
-        logger.debug('\tConnecting %s to %s with priority %s(%d)', attr.__name__, 
+        logger.debug('\tConnecting %s to %s with priority %s(%d)', attr.__name__,
                      SIGNAL_MAP[attr_name], priority.name, priority.value)
 
         mc = ManagedCallback(instrument, attr)
