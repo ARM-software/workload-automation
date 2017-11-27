@@ -27,7 +27,7 @@ import re
 
 from wlauto.exceptions import DeviceError, ConfigError, HostError, WAError
 from wlauto.utils.misc import (check_output, escape_single_quotes,
-                               escape_double_quotes, get_null,
+                               escape_double_quotes, get_null, which,
                                CalledProcessErrorWithStderr, ABI_MAP)
 
 
@@ -458,19 +458,26 @@ def _initialize_without_android_home(env):
 def _init_common(env):
     logger.debug('ANDROID_HOME: {}'.format(env.android_home))
     build_tools_directory = os.path.join(env.android_home, 'build-tools')
-    if not os.path.isdir(build_tools_directory):
-        msg = 'ANDROID_HOME ({}) does not appear to have valid Android SDK install (cannot find build-tools)'
-        raise HostError(msg.format(env.android_home))
-    versions = os.listdir(build_tools_directory)
-    for version in reversed(sorted(versions)):
-        aapt_path = os.path.join(build_tools_directory, version, 'aapt')
-        if os.path.isfile(aapt_path):
-            logger.debug('Using aapt for version {}'.format(version))
-            env.aapt = aapt_path
-            break
+    if os.path.isdir(build_tools_directory):
+        versions = os.listdir(build_tools_directory)
+        for version in reversed(sorted(versions)):
+            aapt_path = os.path.join(build_tools_directory, version, 'aapt')
+            if os.path.isfile(aapt_path):
+                logger.debug('Using aapt for version {}'.format(version))
+                env.aapt = aapt_path
+                break
+        else:
+            raise HostError('aapt not found. Please make sure at least one Android platform is installed.')
     else:
-        raise HostError('aapt not found. Please make sure at least one Android platform is installed.')
-
+        # User may already installed 'aapt' from package provided by distro's
+        # Try finding in $PATH
+        aapt_path = which('aapt')
+        if aapt_path:
+            logger.debug('Using aapt from {}'.format(aapt_path))
+            env.aapt = aapt_path
+        else:
+            msg = 'ANDROID_HOME ({}) does not appear to have valid Android SDK install (cannot find build-tools)'
+            raise HostError(msg.format(env.android_home))
 
 def _check_env():
     global android_home, platform_tools, adb, aapt  # pylint: disable=W0603
