@@ -10,22 +10,29 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from wlauto.exceptions import WAError, ToolError
 from wlauto.utils.doc import format_simple_table
+from wlauto.utils.misc import check_output, get_null, which
 
 
 def get_aapt_path():
     """Return the full path to aapt tool."""
     sdk_path = os.getenv('ANDROID_HOME')
-    if not sdk_path:
-        raise ToolError('Please make sure you have Android SDK installed and have ANDROID_HOME set.')
-    build_tools_directory = os.path.join(sdk_path, 'build-tools')
-    versions = os.listdir(build_tools_directory)
-    for version in reversed(sorted(versions)):
-        aapt_path = os.path.join(build_tools_directory, version, 'aapt')
-        if os.path.isfile(aapt_path):
-            logging.debug('Found aapt for version {}'.format(version))
-            return aapt_path
+    if sdk_path:
+        build_tools_directory = os.path.join(sdk_path, 'build-tools')
+        versions = os.listdir(build_tools_directory)
+        for version in reversed(sorted(versions)):
+            aapt_path = os.path.join(build_tools_directory, version, 'aapt')
+            if os.path.isfile(aapt_path):
+                logging.debug('Found aapt for version {}'.format(version))
+                return aapt_path
+        else:
+            raise ToolError('aapt not found. Please make sure at least one Android platform is installed.')
     else:
-        raise ToolError('aapt not found. Please make sure at least one Android platform is installed.')
+        logging.debug("ANDROID_HOME is not set, try to find in $PATH.")
+        aapt_path = which('aapt')
+        if aapt_path:
+            logging.debug('Using aapt from {}'.format(aapt_path))
+            return aapt_path
+        raise ToolError('Please make sure you have Android SDK installed and have ANDROID_HOME set.')
 
 
 def get_apks(path):
