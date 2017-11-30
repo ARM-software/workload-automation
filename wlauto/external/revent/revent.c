@@ -183,7 +183,7 @@ off_t get_file_size(const char *filename) {
 }
 
 int get_device_info(int fd, device_info_t *info) {
-	bzero(info, sizeof(device_info_t));
+	memset(info, 0, sizeof(device_info_t));
 
 	if (ioctl(fd, EVIOCGID, &info->id) < 0)
 		return errno;
@@ -295,7 +295,7 @@ int write_record_header(int fd, const revent_record_desc_t *desc)
 	if (ret < sizeof(uint16_t))
 		return errno;
 
-	bzero(padding, HEADER_PADDING_SIZE);
+	memset(padding, 0, HEADER_PADDING_SIZE);
 	ret = write(fd, padding, HEADER_PADDING_SIZE);
 	if (ret < HEADER_PADDING_SIZE)
 		return errno;
@@ -1083,7 +1083,7 @@ void record(const char *filepath, int delay, recording_mode_t mode)
 		die("Could not initialise event count: %s", strerror(errno));
 
 	char padding[EVENT_PADDING_SIZE];
-	bzero(padding, EVENT_PADDING_SIZE);
+	memset(padding, 0, EVENT_PADDING_SIZE);
 
 	fd_set readfds;
 	struct timespec tout;
@@ -1240,7 +1240,7 @@ void replay(const char *filepath)
 	adjust_event_times(&recording);
 
 	struct timeval start_time, now, desired_time, last_event_delta, delta;
-	bzero(&last_event_delta, sizeof(struct timeval));
+	memset(&last_event_delta, 0, sizeof(struct timeval));
 	gettimeofday(&start_time, NULL);
 
 	int ret;
