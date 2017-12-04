@@ -226,31 +226,31 @@ void destroy_replay_device(int fd)
 		die("Could not destroy replay device");
 }
 
-inline void set_evbit(int fd, int bit)
+static inline void set_evbit(int fd, int bit)
 {
 	if(ioctl(fd, UI_SET_EVBIT, bit) < 0)
 		die("Could not set EVBIT %i", bit);
 }
 
-inline void set_keybit(int fd, int bit)
+static inline void set_keybit(int fd, int bit)
 {
 	if(ioctl(fd, UI_SET_KEYBIT, bit) < 0)
 		die("Could not set KEYBIT %i", bit);
 }
 
-inline void set_absbit(int fd, int bit)
+static inline void set_absbit(int fd, int bit)
 {
 	if(ioctl(fd, UI_SET_ABSBIT, bit) < 0)
 		die("Could not set ABSBIT %i", bit);
 }
 
-inline void set_relbit(int fd, int bit)
+static inline void set_relbit(int fd, int bit)
 {
 	if(ioctl(fd, UI_SET_RELBIT, bit) < 0)
 		die("Could not set RELBIT %i", bit);
 }
 
-inline void block_sigterm(sigset_t *oldset)
+static inline void block_sigterm(sigset_t *oldset)
 {
 	sigset_t sigset;
 	sigemptyset(&sigset);
@@ -941,7 +941,7 @@ int create_replay_device_or_die(const device_info_t *info)
 	return fd;
 }
 
-inline void read_revent_recording_or_die(const char *filepath, revent_recording_t *recording)
+static inline void read_revent_recording_or_die(const char *filepath, revent_recording_t *recording)
 {
 	int ret;
 	FILE *fin;
