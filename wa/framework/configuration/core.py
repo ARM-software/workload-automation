@@ -1073,7 +1073,7 @@ class JobGenerator(object):
                     msg = "'enabled_instruments' cannot be updated after it has been accessed"
                     raise RuntimeError(msg)
                 self._enabled_instruments.add(entry)
-            elif entry_cls.kind == 'result_processor':
+            elif entry_cls.kind == 'result_processors':
                 if self._read_enabled_processors:
                     msg = "'enabled_processors' cannot be updated after it has been accessed"
                     raise RuntimeError(msg)
