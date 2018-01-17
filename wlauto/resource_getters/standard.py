@@ -291,7 +291,7 @@ class EnvironmentDependencyGetter(ResourceGetter):
             return path
 
 
-class ExtensionAssetGetter(DependencyFileGetter):
+class ExtensionAssetGetter(EnvironmentDependencyGetter):
 
     name = 'extension_asset'
     resource_type = 'extension_asset'
