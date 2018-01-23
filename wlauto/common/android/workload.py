@@ -220,7 +220,8 @@ class ApkWorkload(Workload):
             self.logger.debug("Found version '{}' on target device".format(target_version))
 
         # Get host version
-        self.apk_file = context.resolver.get(ApkFile(self, self.device.abi),
+        self.apk_file = context.resolver.get(ApkFile(self, self.device.abi,
+                                                     package=getattr(self, 'package', None)),
                                              version=getattr(self, 'version', None),
                                              variant_name=getattr(self, 'variant_name', None),
                                              strict=False)
@@ -232,7 +233,8 @@ class ApkWorkload(Workload):
 
         # Get host version, primary abi is first, and then try to find supported.
         for abi in self.device.supported_abi:
-            self.apk_file = context.resolver.get(ApkFile(self, abi),
+            self.apk_file = context.resolver.get(ApkFile(self, abi,
+                                                         package=getattr(self, 'package', None)),
                                                  version=getattr(self, 'version', None),
                                                  variant_name=getattr(self, 'variant_name', None),
                                                  strict=False)
