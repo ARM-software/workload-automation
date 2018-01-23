@@ -565,6 +565,7 @@ def get_from_list_by_extension(resource, filelist, extension, version=None, vari
             filelist = [ff for ff in filelist if version.lower() in os.path.basename(ff).lower()]
     if extension == 'apk':
         filelist = [ff for ff in filelist if not ApkInfo(ff).native_code or resource.platform in ApkInfo(ff).native_code]
+        filelist = [ff for ff in filelist if not resource.package or resource.package == ApkInfo(ff).package]
         filelist = [ff for ff in filelist if resource.uiauto == ('com.arm.wlauto.uiauto' in ApkInfo(ff).package)]
     if len(filelist) == 1:
         return filelist[0]
