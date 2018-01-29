@@ -31,38 +31,31 @@ class Suspend(Workload):
                   description='The duration of suspend.')
     ]
 
-    result_files = ['ftrace.txt', 'dmesg.txt', 'log.txt']
+    result_files = ['ftrace.txt', 'dmesg.txt']
+    HOSTNAME = []
+    KVERSION = []
+    HEADER = []
 
     def setup(self, context):
-        self.android_host = context.resolver.get(File(self, "scripts/android.sh"))
-        self.android_target = self.device.install(self.android_host)
-
-        self.capture_end = 'cd {} && sh {} capture-end'.format(self.device.binaries_directory, 'android.sh', self.mode, self.waketime)
-        self.capture_start = 'cd {} && sh {} capture-start'.format(self.device.binaries_directory, 'android.sh', self.mode, self.waketime)
-        self.suspend = 'cd {} && sh {} suspend {} {}'.format(self.device.binaries_directory, 'android.sh', self.mode, self.waketime)
-
-        self.device.execute(self.capture_end, timeout=5, as_root=True)
-        self.device.execute(self.capture_start, timeout=5, as_root=True)
+        self.suspend_init()
+        self.suspend_prepare()
 
     def run(self, context):
-        adb_shell(self.device.adb_name, self.suspend, timeout=5, as_root=True)
-        time.sleep(1)
-        self.wait_for_boot()
-        
+        self.force_suspend()
 
     def update_result(self, context):
-        self.device.execute(self.capture_end, timeout=5)
+        self.suspend_complete()
 
         for result_file in self.result_files:
             device_path = self.device.path.join(self.device.binaries_directory, result_file)
             host_path = os.path.join(context.output_directory, result_file)
             self.device.pull_file(device_path, host_path, timeout=10)
 
-
     def teardown(self, context):
         for result_file in self.result_files:
             device_path = self.device.path.join(self.device.binaries_directory, result_file)
             self.device.delete_file(device_path)
+        pass
 
     def validate(self):
         pass
@@ -78,7 +71,6 @@ class Suspend(Workload):
         for it to finish.
 
         """
-        self.logger.info("Waiting for Android to boot...")
         while True:
             booted = False
             anim_finished = True  # Assume boot animation was disabled on except
@@ -91,5 +83,51 @@ class Suspend(Workload):
                 break
             time.sleep(5)
 
-        self.logger.info("Android booted")
+    def suspend_init(self):
+        self.wait_for_boot()
+        HOSTNAME = self.device.execute('hostname').replace('\n', '')
+        KVERSION = self.device.execute('cat /proc/version').split()[2]
+        STAMP = os.popen('date "+suspend-%m%d%y-%H%M%S"').read().replace('\n', '')
+
+        self.HEADER = '# ' + STAMP + ' ' + HOSTNAME + ' ' + self.mode + ' ' + KVERSION
+
+    def suspend_prepare(self):
+        self.wait_for_boot()
+        self.device.execute('input keyevent 26')	#Assure the Screen is on
+        self.device.set_sysfile_value('/sys/kernel/debug/tracing/tracing_on', 0)
+        self.device.set_sysfile_value('/sys/kernel/debug/tracing/trace_clock', 'global', verify=False)
+        self.device.set_sysfile_value('/sys/kernel/debug/tracing/current_tracer', 'nop', verify=False)
+        self.device.set_sysfile_value('/sys/kernel/debug/tracing/buffer_size_kb', 12345, verify=False)
+        self.device.set_sysfile_value('/sys/kernel/debug/tracing/events/power/suspend_resume/enable', 1, verify=False)
+        self.device.set_sysfile_value('/sys/kernel/debug/tracing/events/power/device_pm_callback_start/enable', 1, verify=False)
+        self.device.set_sysfile_value('/sys/kernel/debug/tracing/events/power/device_pm_callback_end/enable', 1, verify=False)
+        self.device.set_sysfile_value('/sys/kernel/debug/tracing/trace', '', verify=False)
+        self.wait_for_boot()
+        self.device.execute('dmesg -c')	#Clear dmesg buffer
+        self.device.set_sysfile_value('/sys/kernel/debug/tracing/tracing_on', 1)
+
+    def force_suspend(self):
+        self.device.set_sysfile_value('/sys/class/rtc/rtc0/wakealarm', 0, verify=False)
+        NOW=self.device.get_sysfile_value('/sys/class/rtc/rtc0/since_epoch', int)
+        FUTURE = int(NOW) + self.waketime
+        self.device.set_sysfile_value('/sys/class/rtc/rtc0/wakealarm', FUTURE, verify=False)
+
+        #self.device.set_sysfile_value('/sys/kernel/debug/tracing/trace_marker', 'SUSPEND START', verify=False)
+        # execution will pause here
+        self.device.set_sysfile_value('/sys/power/state', self.mode, verify=False)
+        #self.device.set_sysfile_value('/sys/kernel/debug/tracing/trace_marker', 'RESUME COMPLETE', verify=False)
+        self.wait_for_boot()
+
+    def suspend_complete(self):
+        self.device.set_sysfile_value('/sys/kernel/debug/tracing/tracing_on', 0, verify=False)
+
+        ftrace_file = self.device.path.join(self.device.binaries_directory, 'ftrace.txt')
+        self.wait_for_boot()
+        self.device.execute('echo \"{}\" > {}'.format(self.HEADER, ftrace_file))
+        self.device.execute('cat /sys/kernel/debug/tracing/trace >> {}'.format(ftrace_file))
+
+        dmesg_file = self.device.path.join(self.device.binaries_directory, 'dmesg.txt')
+        self.wait_for_boot()
+        self.device.execute('echo \"{}\" > {}'.format(self.HEADER, dmesg_file))
+        self.device.execute('dmesg -c  >> {}'.format(dmesg_file))
 
