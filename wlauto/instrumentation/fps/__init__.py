@@ -187,7 +187,7 @@ class FpsInstrument(Instrument):
                 self.device.execute('dumpsys gfxinfo {} reset'.format(pkg))
         else:
             self.fps_method = 'surfaceflinger'
-            runcmd = 'dumpsys SurfaceFlinger --latency {}'
+            runcmd = 'dumpsys SurfaceFlinger --latency "{}"'
             lstcmd = 'dumpsys SurfaceFlinger --list'
             params = workload.view
             self.device.execute('dumpsys SurfaceFlinger --latency-clear ')
