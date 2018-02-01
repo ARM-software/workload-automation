@@ -5202,7 +5202,7 @@ def getArgFloat(name, args, min, max, main=True):
 	return val
 
 def processData(live=False):
-	print('PROCESSING DATA')
+	#print('PROCESSING DATA')
 	if(sysvals.usetraceevents):
 		testruns = parseTraceLog(live)
 		if sysvals.dmesgfile:
@@ -5224,7 +5224,7 @@ def processData(live=False):
 
 	sysvals.vprint('Creating the html timeline (%s)...' % sysvals.htmlfile)
 	createHTML(testruns)
-	print('DONE')
+	#print('DONE')
 	data = testruns[0]
 	stamp = data.stamp
 	stamp['suspend'], stamp['resume'] = data.getTimeValues()

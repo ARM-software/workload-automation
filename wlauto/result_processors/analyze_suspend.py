@@ -54,6 +54,7 @@ class AnalyzeSuspend(ResultProcessor):
             sglib.sysvals.dmesgfile = dmesg_file
             sglib.sysvals.dmesglog = True
             #sglib.sysvals.result = 'summary.txt'
+            sglib.sysvals.usetracemarkers = False
             try:
                 stamp = sglib.rerunTest()
                 sglib.sysvals.outputResult(stamp)
