@@ -58,103 +58,15 @@ class Geekbench(AndroidUiAutoBenchmark):
 
     """
     summary_metrics = ['score', 'multicore_score']
-    versions = {
-        '4.0.1': {
-            'package': 'com.primatelabs.geekbench',
-            'activity': '.HomeActivity',
-        },
-        # Version 3.4.1 was the final version 3 variant
-        '3.4.1': {
-            'package': 'com.primatelabs.geekbench',
-            'activity': '.HomeActivity',
-        },
-        '3.0.0': {
-            'package': 'com.primatelabs.geekbench3',
-            'activity': '.HomeActivity',
-        },
-        '2': {
-            'package': 'ca.primatelabs.geekbench2',
-            'activity': '.HomeActivity',
-        },
-    }
-    begin_regex = re.compile(r'^\s*D/WebViewClassic.loadDataWithBaseURL\(\s*\d+\s*\)'
-                             r'\s*:\s*(?P<content>\<.*)\s*$')
-    replace_regex = re.compile(r'<[^>]*>')
-
-    parameters = [
-        Parameter('version', default=sorted(versions.keys())[-1], allowed_values=sorted(versions.keys()),
-                  description='Specifies which version of the workload should be run.'),
-        Parameter('times', kind=int, default=1,
-                  description=('Specfies the number of times the benchmark will be run in a "tight '
-                               'loop", i.e. without performaing setup/teardown inbetween.')),
-        Parameter('timeout', kind=int, default=900,
-                  description=('Timeout for a single iteration of the benchmark. This value is '
-                               'multiplied by ``times`` to calculate the overall run timeout. ')),
-        Parameter('disable_update_result', kind=bool, default=False,
-                  description=('If ``True`` the results file will not be pulled from the devices '
-                               '/data/data/com.primatelabs.geekbench folder.  This allows the '
-                               'workload to be run on unrooted devices and the results extracted '
-                               'manually later.')),
-    ]
-
+    package = 'com.primatelabs.geekbench'
+    activity = '.HomeActivity'
     is_corporate = False
-
-    @property
-    def activity(self):
-        return self.versions[self.version]['activity']
-
-    @property
-    def package(self):
-        return self.versions[self.version]['package']
-
+    
     def __init__(self, device, **kwargs):
         super(Geekbench, self).__init__(device, **kwargs)
-        self.uiauto_params['version'] = self.version
-        self.uiauto_params['times'] = self.times
-        self.uiauto_params['is_corporate'] = self.is_corporate
-        self.run_timeout = self.timeout * self.times
-        self.exact_apk_version = self.version
+        self.uiauto_params['is_corporate'] = self.is_corporate 
 
     def update_result(self, context):
-        super(Geekbench, self).update_result(context)
-        if not self.disable_update_result:
-            major_version = versiontuple(self.version)[0]
-            update_method = getattr(self, 'update_result_{}'.format(major_version))
-            update_method(context)
-
-    def validate(self):
-        if (self.times > 1) and (self.version == '2'):
-            raise ConfigError('times parameter is not supported for version 2 of Geekbench.')
-
-    def update_result_2(self, context):
-        score_calculator = GBScoreCalculator()
-        score_calculator.parse(self.logcat_log)
-        score_calculator.update_results(context)
-
-    def update_result_3(self, context):
-        outfile_glob = self.device.path.join(self.device.package_data_directory, self.package, 'files', '*gb3')
-        on_device_output_files = [f.strip() for f in self.device.execute('ls {}'.format(outfile_glob),
-                                                                         as_root=True).split('\n') if f]
-        for i, on_device_output_file in enumerate(on_device_output_files):
-            host_temp_file = tempfile.mktemp()
-            self.device.pull_file(on_device_output_file, host_temp_file)
-            host_output_file = os.path.join(context.output_directory, os.path.basename(on_device_output_file))
-            with open(host_temp_file) as fh:
-                data = json.load(fh)
-            os.remove(host_temp_file)
-            with open(host_output_file, 'w') as wfh:
-                json.dump(data, wfh, indent=4)
-            context.iteration_artifacts.append(Artifact('geekout', path=os.path.basename(on_device_output_file),
-                                                        kind='data',
-                                                        description='Geekbench 3 output from device.'))
-            context.result.add_metric(namemify('score', i), data['score'])
-            context.result.add_metric(namemify('multicore_score', i), data['multicore_score'])
-            for section in data['sections']:
-                context.result.add_metric(namemify(section['name'] + '_score', i), section['score'])
-                context.result.add_metric(namemify(section['name'] + '_multicore_score', i),
-                                          section['multicore_score'])
-
-    def update_result_4(self, context):
         outfile_glob = self.device.path.join(self.device.package_data_directory, self.package, 'files', '*gb4')
         on_device_output_files = [f.strip() for f in self.device.execute('ls {}'.format(outfile_glob),
                                                                          as_root=True).split('\n') if f]
@@ -178,8 +90,7 @@ class Geekbench(AndroidUiAutoBenchmark):
                     workload_name = workloads['name'].replace(" ", "-")
                     context.result.add_metric(namemify(section['name'] + '_' + workload_name + '_score', i),
                                               workloads['score'])
-
-
+    
 class GBWorkload(object):
     """
     Geekbench workload (not to be confused with WA's workloads). This is a single test run by
@@ -261,7 +172,8 @@ class GBWorkload(object):
 
     __repr__ = __str__
 
-
+    
+    
 class GBScoreCalculator(object):
     """
     Parses logcat output to extract raw Geekbench workload values and converts them into
@@ -386,26 +298,5 @@ class GBScoreCalculator(object):
             context.result.add_metric(capitalize(category) + ' Score', int(category_score))
         context.result.add_metric('Geekbench Score', int(overall_score))
 
-
-class GeekbenchCorproate(Geekbench):
-    name = "geekbench-corporate"
-    is_corporate = True
-
-    versions = ['4.1.0']
-
-    # The activity name for this version doesn't match the package name
-    activity = 'com.primatelabs.geekbench.HomeActivity'
-    package = 'com.primatelabs.geekbench4.corporate'
-
-    parameters = [
-        Parameter('version',
-                  default=sorted(versions)[-1], allowed_values=versions,
-                  override=True)
-    ]
-
 def namemify(basename, i):
     return basename + (' {}'.format(i) if i else '')
-
-
-def versiontuple(v):
-    return tuple(map(int, (v.split("."))))

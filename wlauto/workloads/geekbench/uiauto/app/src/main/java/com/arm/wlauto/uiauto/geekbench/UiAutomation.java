@@ -44,51 +44,16 @@ public class UiAutomation extends UxPerfUiAutomation {
 public void runUiAutomation() throws Exception {
         initialize_instrumentation();
         Bundle params = getParams();
-        String[] version = params.getString("version").split("\\.");
-        int majorVersion = Integer.parseInt(version[0]);
-        int minorVersion = Integer.parseInt(version[1]);
         boolean isCorporate = params.getBoolean("is_corporate");
-        int times = params.getInt("times");
+        String packageName = mDevice.getCurrentPackageName();
 
+        if (packageName.equals("com.primatelabs.geekbench4.corporate"))
+            isCorporate = true;
+        
         if (!isCorporate)
             dismissEula();
-
-        for (int i = 0; i < times; i++) {
-            switch (majorVersion) {
-                case 2:
-                    // In version 2, we scroll through the results WebView to make sure
-                    // all results appear on the screen, which causes them to be dumped into
-                    // logcat by the Linaro hacks.
-                    runBenchmarks();
-                    waitForResultsv2();
-                    scrollThroughResults();
-                    break;
-                case 3:
-                    runBenchmarks();
-                    waitForResultsv3onwards();
-                    if (minorVersion < 4) {
-                        // Attempting to share the results will generate the .gb3 file with
-                        // results that can then be pulled from the device. This is not possible
-                        // in verison 2 of Geekbench (Share option was added later).
-                        // Sharing is not necessary from 3.4.1 onwards as the .gb3 files are always
-                        // created.
-                        shareResults();
-                    }
-                    break;
-                case 4:
-                    runCpuBenchmarks(isCorporate);
-                    waitForResultsv3onwards();
-                    break;
-                default :
-                    throw new RuntimeException("Invalid version of Geekbench requested");
-            }
-
-            if (i < (times - 1)) {
-                mDevice.pressBack();
-                if (majorVersion < 4)
-                    mDevice.pressBack();  // twice
-            }
-        }
+            runCpuBenchmarks(isCorporate);
+            waitForResultsv3onwards();
 
         Bundle status = new Bundle();
         mInstrumentation.sendStatus(Activity.RESULT_OK, status);
@@ -96,23 +61,12 @@ public void runUiAutomation() throws Exception {
 
     public void dismissEula() throws Exception {
         UiObject acceptButton =
-            //mDevice.findObject(new UiSelector().textContains("Accept")
            mDevice.findObject(new UiSelector().resourceId("android:id/button1")
                                          .className("android.widget.Button"));
         if (!acceptButton.waitForExists(WAIT_TIMEOUT_5SEC)) {
             throw new UiObjectNotFoundException("Could not find Accept button");
         }
         acceptButton.click();
-    }
-
-    public void runBenchmarks() throws Exception {
-        UiObject runButton =
-           mDevice.findObject(new UiSelector().textContains("Run Benchmarks")
-                                         .className("android.widget.Button"));
-        if (!runButton.waitForExists(WAIT_TIMEOUT_5SEC)) {
-            throw new UiObjectNotFoundException("Could not find Run button");
-        }
-        runButton.click();
     }
 
     public void runCpuBenchmarks(boolean isCorporate) throws Exception {
@@ -130,14 +84,6 @@ public void runUiAutomation() throws Exception {
         runButton.click();
     }
 
-    public void waitForResultsv2() throws Exception {
-        UiSelector selector = new UiSelector();
-        UiObject resultsWebview = mDevice.findObject(selector.className("android.webkit.WebView"));
-        if (!resultsWebview.waitForExists(WAIT_TIMEOUT_20MIN)) {
-            throw new UiObjectNotFoundException("Did not see Geekbench results screen.");
-        }
-    }
-
     public void waitForResultsv3onwards() throws Exception {
         UiSelector selector = new UiSelector();
         UiObject runningTextView = mDevice.findObject(selector.textContains("Running")
@@ -146,26 +92,5 @@ public void runUiAutomation() throws Exception {
         if (!runningTextView.waitUntilGone(WAIT_TIMEOUT_20MIN)) {
             throw new UiObjectNotFoundException("Did not get to Geekbench results screen.");
         }
-    }
-
-    public void scrollThroughResults() throws Exception {
-        UiSelector selector = new UiSelector();
-        mDevice.pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
-        sleep(1);
-        mDevice.pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
-        sleep(1);
-        mDevice.pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
-        sleep(1);
-        mDevice.pressKeyCode(KeyEvent.KEYCODE_PAGE_DOWN);
-    }
-
-    public void shareResults() throws Exception {
-        sleep(2); // transition
-        UiSelector selector = new UiSelector();
-        mDevice.pressMenu();
-        UiObject shareButton = mDevice.findObject(selector.text("Share")
-                                                    .className("android.widget.TextView"));
-        shareButton.waitForExists(WAIT_TIMEOUT_5SEC);
-        shareButton.click();
     }
 }
