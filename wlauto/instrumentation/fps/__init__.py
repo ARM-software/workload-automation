@@ -317,7 +317,7 @@ class LatencyCollector(threading.Thread):
                     # Then check for each activity in this list and if there is a match,
                     # process the output. If no command is provided, then always process.
                     if self.list_command:
-                        view_list = self.device.execute(self.list_command).split()
+                        view_list = self.device.execute(self.list_command).replace('\r\n', '\n').replace('\r', '\n').split('\n')
                     for activity in self.activities:
                         if activity in view_list:
                             wfh.write(self.device.execute(self.command_template.format(activity)))
