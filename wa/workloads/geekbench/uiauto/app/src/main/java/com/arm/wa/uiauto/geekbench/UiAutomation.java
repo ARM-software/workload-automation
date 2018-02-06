@@ -22,6 +22,7 @@ import android.support.test.runner.AndroidJUnit4;
 import android.support.test.uiautomator.UiObject;
 import android.support.test.uiautomator.UiObjectNotFoundException;
 import android.support.test.uiautomator.UiSelector;
+import android.support.test.uiautomator.UiScrollable;
 import android.view.KeyEvent;
 
 import com.arm.wa.uiauto.BaseUiAutomation;
@@ -95,6 +96,10 @@ public class UiAutomation extends BaseUiAutomation {
                     runCpuBenchmarks(isCorporate);
                     waitForResultsv3onwards();
                     break;
+                case 5:
+                    runCpuBenchmarks(isCorporate);
+                    waitForResultsv3onwards();
+                    break;
                 default :
                     throw new RuntimeException("Invalid version of Geekbench requested");
             }
@@ -134,6 +139,7 @@ public class UiAutomation extends BaseUiAutomation {
     public void runCpuBenchmarks(boolean isCorporate) throws Exception {
         // The run button is at the bottom of the view and may be off the screen so swipe to be sure
         uiDeviceSwipe(Direction.DOWN, 50);
+        scrollPage();
 
         String packageName = isCorporate ? "com.primatelabs.geekbench4.corporate"
                                          : "com.primatelabs.geekbench";
@@ -183,5 +189,11 @@ public class UiAutomation extends BaseUiAutomation {
                                                     .className("android.widget.TextView"));
         shareButton.waitForExists(WAIT_TIMEOUT_5SEC);
         shareButton.click();
+    }
+
+    public void scrollPage() throws Exception {
+        UiScrollable listView = new UiScrollable(new UiSelector().className("android.widget.ScrollView"));
+        listView.setMaxSearchSwipes(3);
+        listView.scrollTextIntoView("RUN CPU BENCHMARK");
     }
 }
