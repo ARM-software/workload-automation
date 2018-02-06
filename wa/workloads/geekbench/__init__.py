@@ -51,6 +51,10 @@ class Geekbench(ApkUiautoWorkload):
             'package': 'com.primatelabs.geekbench',
             'activity': '.HomeActivity',
         },
+        '4.0.1': {
+            'package': 'com.primatelabs.geekbench',
+            'activity': '.HomeActivity',
+        },
         # Version 3.4.1 was the final version 3 variant
         '3.4.1': {
             'package': 'com.primatelabs.geekbench',
@@ -186,8 +190,7 @@ class Geekbench(ApkUiautoWorkload):
                     context.add_metric(namemify(section['name'] + '_' + workload_name + '_score', i),
                                        workloads['score'])
 
-    def update_result_5(self, context):
-        self.update_result_4
+    update_result_5 = update_result_4
 
 class GBWorkload(object):
     """
@@ -385,11 +388,21 @@ class GeekbenchCorproate(Geekbench):
     is_corporate = True
     requires_network = False
 
-    versions = ['5.0.0']
+    versions = {
+        '5.0.0': {
+            'package': 'com.primatelabs.geekbench4.corporate',
+            'activity': 'com.primatelabs.geekbench.HomeActivity',
+        },
+        '4.1.0': {
+            'package': 'com.primatelabs.geekbench4.corporate',
+            'activity': 'com.primatelabs.geekbench.HomeActivity',
+        },
+        }
+    #versions = ['5.0.0']
 
     # The activity name for this version doesn't match the package name
-    activity = 'com.primatelabs.geekbench.HomeActivity'
-    package = 'com.primatelabs.geekbench4.corporate'
+    #activity = 'com.primatelabs.geekbench.HomeActivity'
+    #package = 'com.primatelabs.geekbench4.corporate'
 
     parameters = [
         Parameter('version',
