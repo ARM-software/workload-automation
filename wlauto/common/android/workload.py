@@ -195,6 +195,11 @@ class ApkWorkload(Workload):
                   If ``True``, workload will check that the APK matches the target
                   device ABI, otherwise any APK found will be used.
                   '''),
+        Parameter('clear_data_on_reset', kind=bool, default=True,
+                  description="""
+                  If set to ``False``, this will prevent WA from clearing package
+                  data for this workload prior to running it.
+                  """),
     ]
 
     def __init__(self, device, _call_super=True, **kwargs):
@@ -404,7 +409,8 @@ class ApkWorkload(Workload):
 
     def reset(self, context):  # pylint: disable=W0613
         self.device.execute('am force-stop {}'.format(self.package))
-        self.device.execute('pm clear {}'.format(self.package))
+        if self.clear_data_on_reset:
+            self.device.execute('pm clear {}'.format(self.package))
 
         # As of android API level 23, apps can request permissions at runtime,
         # this will grant all of them so requests do not pop up when running the app
@@ -647,11 +653,6 @@ class GameWorkload(ApkWorkload, ReventWorkload):
                   after setup and run"""),
         Parameter('assets_push_timeout', kind=int, default=500,
                   description='Timeout used during deployment of the assets package (if there is one).'),
-        Parameter('clear_data_on_reset', kind=bool, default=True,
-                  description="""
-                  If set to ``False``, this will prevent WA from clearing package
-                  data for this workload prior to running it.
-                  """),
     ]
 
     def __init__(self, device, **kwargs):  # pylint: disable=W0613
