@@ -49,15 +49,14 @@ class AndroidAssistant(object):
 
     def __init__(self, target, logcat_poll_period=None):
         self.target = target
+        self.logcat_poll_period = logcat_poll_period
+        self.logcat_poller = None
         if self.target.is_rooted:
             self.disable_selinux()
-        if logcat_poll_period:
-            self.logcat_poller = LogcatPoller(target, logcat_poll_period)
-        else:
-            self.logcat_poller = None
 
     def start(self):
-        if self.logcat_poller:
+        if self.logcat_poll_period:
+            self.logcat_poller = LogcatPoller(self.target, self.logcat_poll_period)
             self.logcat_poller.start()
 
     def stop(self):
@@ -104,8 +103,8 @@ class LogcatPoller(threading.Thread):
         self.daemon = True
         self.exc = None
 
-    def start(self):
-        self.logger.debug('starting polling')
+    def run(self):
+        self.logger.debug('Starting polling')
         try:
             while True:
                 if self.stop_signal.is_set():
@@ -117,7 +116,7 @@ class LogcatPoller(threading.Thread):
                 time.sleep(0.5)
         except Exception:  # pylint: disable=W0703
             self.exc = WorkerThreadError(self.name, sys.exc_info())
-        self.logger.debug('polling stopped')
+        self.logger.debug('Polling stopped')
 
     def stop(self):
         self.logger.debug('Stopping logcat polling')
@@ -129,7 +128,7 @@ class LogcatPoller(threading.Thread):
             raise self.exc  # pylint: disable=E0702
 
     def clear_buffer(self):
-        self.logger.debug('clearing logcat buffer')
+        self.logger.debug('Clearing logcat buffer')
         with self.lock:
             self.target.clear_logcat()
             touch(self.buffer_file)
@@ -143,7 +142,7 @@ class LogcatPoller(threading.Thread):
                 touch(outfile)
 
     def close(self):
-        self.logger.debug('closing poller')
+        self.logger.debug('Closing poller')
         if os.path.isfile(self.buffer_file):
             os.remove(self.buffer_file)
 
