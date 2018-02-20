@@ -150,7 +150,8 @@ public class UiAutomation extends BaseUiAutomation {
         // On some devices the images tabs is missing so we need select the local storage.
         UiObject localDevice = mDevice.findObject(new UiSelector().textMatches(".*[GM]B free"));
         if (!imagesFolder.waitForExists(WAIT_TIMEOUT_1SEC*10)) {
-            clickUiObject(BY_DESC, "Show roots");
+            UiObject roots = mDevice.findObject(new UiSelector().descriptionContains("Show root"));
+            roots.click();
         }
         if (imagesFolder.exists()) {
             imagesFolder.click();
@@ -231,16 +232,11 @@ public class UiAutomation extends BaseUiAutomation {
 
         clickUiObject(BY_DESC, "Open presentation");
         clickUiObject(BY_TEXT, "Device storage", true);
-        clickUiObject(BY_DESC, "Navigate up");
-        UiScrollable list =
-                new UiScrollable(new UiSelector().className("android.widget.ListView"));
-        list.scrollIntoView(new UiSelector().textMatches(workingDirectoryName));
-        clickUiObject(BY_TEXT, workingDirectoryName);
-        list.scrollIntoView(new UiSelector().textContains(docName));
-
+        UiObject roots = mDevice.findObject(new UiSelector().descriptionContains("Show root"));
+        roots.click();
+        clickUiObject(BY_TEXT, "Downloads");
         logger.start();
         clickUiObject(BY_TEXT, docName);
-        clickUiObject(BY_TEXT, "Open", "android.widget.Button", true);
         logger.stop();
     }
 
@@ -285,6 +281,16 @@ public class UiAutomation extends BaseUiAutomation {
        if (overwriteView.waitForExists(WAIT_TIMEOUT_1SEC)) {
            clickUiObject(BY_TEXT, "Overwrite");
        }
+       if (saveActionButton.exists()) {
+           clickUiObject(BY_TEXT, "Save");
+        }
+
+        //Some devices keep the keyboard visible after a save. This code will rehide it. 
+        UiObject subtitle = 
+           mDevice.findObject(new UiSelector().description("Subtitle"));
+        if (subtitle.exists()) {
+           enterTextInSlide(".*[Tt]itle.*", docName);
+        }
    }
 
     public void deleteDocument(String docName) throws Exception {
@@ -388,7 +394,6 @@ public class UiAutomation extends BaseUiAutomation {
         String shapeName = "Rounded rectangle";
         insertShape(shapeName);
         modifyShape(shapeName);
-        mDevice.pressBack();
         mDevice.pressBack();
         sleep(1);
 
