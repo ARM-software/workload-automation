@@ -22,7 +22,7 @@ from datetime import datetime
 import wa.framework.signal as signal
 from wa.framework import instrument
 from wa.framework.configuration.core import Status
-from wa.framework.exception import HostError, WorkloadError
+from wa.framework.exception import TargetError, HostError, WorkloadError, ExecutionError
 from wa.framework.job import Job
 from wa.framework.output import init_job_output
 from wa.framework.output_processor import ProcessorManager
@@ -375,12 +375,10 @@ class Runner(object):
             self.send(signal.RUN_INITIALIZED)
 
             while self.context.job_queue:
-                try:
-                    with signal.wrap('JOB_EXECUTION', self, self.context):
-                        self.run_next_job(self.context)
-                except KeyboardInterrupt:
-                    self.context.skip_remaining_jobs()
+                with signal.wrap('JOB_EXECUTION', self, self.context):
+                    self.run_next_job(self.context)
         except Exception as e:
+            self.context.skip_remaining_jobs()
             self.context.add_event(e.message)
             if (not getattr(e, 'logged', None) and
                     not isinstance(e, KeyboardInterrupt)):
@@ -429,6 +427,10 @@ class Runner(object):
             if not getattr(e, 'logged', None):
                 log.log_error(e, self.logger)
                 e.logged = True
+            if isinstance(e, ExecutionError):
+                raise e
+            elif isinstance(e, TargetError):
+                context.tm.verify_target_responsive()
         finally:
             self.logger.info('Completing job {}'.format(job.id))
             self.send(signal.JOB_COMPLETED)
@@ -467,6 +469,8 @@ class Runner(object):
                 if not getattr(e, 'logged', None):
                     log.log_error(e, self.logger)
                     e.logged = True
+                if isinstance(e, TargetError):
+                    context.tm.verify_target_responsive()
                 raise e
             finally:
                 try:
@@ -476,6 +480,8 @@ class Runner(object):
                     self.pm.export_job_output(context)
                 except Exception:
                     job.set_status(Status.PARTIAL)
+                    if isinstance(e, TargetError):
+                        context.tm.verify_target_responsive()
                     raise
 
         except KeyboardInterrupt:
