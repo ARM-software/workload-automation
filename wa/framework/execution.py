@@ -469,7 +469,7 @@ class Runner(object):
                 if not getattr(e, 'logged', None):
                     log.log_error(e, self.logger)
                     e.logged = True
-                if isinstance(e, TargetError):
+                if isinstance(e, TargetError) or isinstance(e, TimeoutError):
                     context.tm.verify_target_responsive()
                 raise e
             finally:
@@ -478,9 +478,9 @@ class Runner(object):
                         job.process_output(context)
                     self.pm.process_job_output(context)
                     self.pm.export_job_output(context)
-                except Exception:
+                except Exception as e:
                     job.set_status(Status.PARTIAL)
-                    if isinstance(e, TargetError):
+                    if isinstance(e, TargetError) or isinstance(e, TimeoutError):
                         context.tm.verify_target_responsive()
                     raise
 
