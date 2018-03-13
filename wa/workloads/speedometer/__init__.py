@@ -41,7 +41,7 @@ class Speedometer(UiautoWorkload):
 
     def setup(self, context):
         super(Speedometer, self).setup(context)
-        self.target.execute('am start -a android.intent.action.VIEW -d http://browserbench.org/Speedometer/')
+        self.target.execute('am start -a android.intent.action.VIEW -d http://browserbench.org/Speedometer2.0/')
 
     def update_output(self, context):
         super(Speedometer, self).update_output(context)
