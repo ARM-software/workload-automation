@@ -22,6 +22,7 @@ import os
 from devlib import DerivedEnergyMeasurements
 from devlib.instrument import CONTINUOUS
 from devlib.instrument.energy_probe import EnergyProbeInstrument
+from devlib.instrument.arm_energy_probe import ArmEnergyProbeInstrument
 from devlib.instrument.daq import DaqInstrument
 from devlib.instrument.acmecape import AcmeCapeInstrument
 from devlib.instrument.monsoon import MonsoonInstrument
@@ -153,6 +154,18 @@ class EnergyProbeBackend(EnergyInstrumentBackend):
                 msg = 'Number of Energy Probe port labels does not match the number of resistor values.'
                 raise ConfigError(msg)
 
+class ArmEnergyProbeBackend(EnergyInstrumentBackend):
+
+    name = 'arm_energy_probe'
+
+    parameters = [
+        Parameter('config_file', kind=str, default='./config',
+                  description="""
+                  Path to config file of the AEP
+                  """),
+    ]
+
+    instrument = ArmEnergyProbeInstrument
 
 class AcmeCapeBackend(EnergyInstrumentBackend):
 
@@ -240,7 +253,7 @@ class EnergyMeasurement(Instrument):
 
     parameters = [
         Parameter('instrument', kind=str, mandatory=True,
-                  allowed_values=['daq', 'energy_probe', 'acme_cape', 'monsoon', 'juno_readenergy'],
+                  allowed_values=['daq', 'energy_probe', 'acme_cape', 'monsoon', 'juno_readenergy', 'arm_energy_probe'],
                   description="""
                   Specify the energy instruments to be enabled.
                   """),
