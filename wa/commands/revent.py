@@ -68,6 +68,8 @@ class RecordCommand(Command):
         self.parser.add_argument('-o', '--output', help='Specify the output file', metavar='FILE')
         self.parser.add_argument('-s', '--setup', help='Record a recording for setup stage',
                                  action='store_true')
+        self.parser.add_argument('-r', '--run', help='Record a recording for run stage',
+                                 action='store_true')
         self.parser.add_argument('-e', '--extract_results', help='Record a recording for extract_results stage',
                                  action='store_true')
         self.parser.add_argument('-t', '--teardown', help='Record a recording for teardown stage',
@@ -79,7 +81,7 @@ class RecordCommand(Command):
         self.parser.add_argument('-C', '--clear', help='Clear app cache before launching it',
                                  action='store_true')
         group = self.parser.add_mutually_exclusive_group(required=False)
-        group.add_argument('-p', '--package', help='Package to launch before recording')
+        group.add_argument('-p', '--package', help='Android package to launch before recording')
         group.add_argument('-w', '--workload', help='Name of a revent workload (mostly games)')
 
     def validate_args(self, args):
@@ -159,6 +161,10 @@ class RecordCommand(Command):
         self.logger.info(msg.format(os.path.join(output_path, file_name)))
 
     def package_record(self, args):
+        if self.target.os != 'android' and self.target.os != 'chromeos':
+            raise ConfigError('Target does not appear to be running Android')
+        if self.target.os == 'chromeos' and not self.target.supports_android:
+            raise ConfigError('Target does not appear to support Android')
         if args.clear:
             self.target.execute('pm clear {}'.format(args.package))
         self.logger.info('Starting {}'.format(args.package))
@@ -194,7 +200,8 @@ class RecordCommand(Command):
                                    'revent_files')
         if args.setup or args.all:
             self.record(setup_file, 'SETUP', output_path)
-        self.record(run_file, 'RUN', output_path)
+        if args.run or args.all:
+            self.record(run_file, 'RUN', output_path)
         if args.extract_results or args.all:
             self.record(extract_results_file, 'EXTRACT_RESULTS', output_path)
         if args.teardown or args.all:

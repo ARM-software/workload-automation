@@ -22,7 +22,8 @@ from datetime import datetime
 import wa.framework.signal as signal
 from wa.framework import instrument
 from wa.framework.configuration.core import Status
-from wa.framework.exception import HostError, WorkloadError
+from wa.framework.exception import TargetError, HostError, WorkloadError,\
+                                   TargetNotRespondingError, TimeoutError
 from wa.framework.job import Job
 from wa.framework.output import init_job_output
 from wa.framework.output_processor import ProcessorManager
@@ -97,6 +98,7 @@ class ExecutionContext(object):
         self.current_job = None
         self.successful_jobs = 0
         self.failed_jobs = 0
+        self.run_interrupted = False
 
     def start_run(self):
         self.output.info.start_time = datetime.utcnow()
@@ -231,10 +233,7 @@ class ExecutionContext(object):
                 job.initialize(self)
             except WorkloadError as e:
                 job.set_status(Status.FAILED)
-                self.add_event(e.message)
-                if not getattr(e, 'logged', None):
-                    log.log_error(e, self.logger)
-                    e.logged = True
+                log.log_error(e, self.logger)
                 failed_ids.append(job.id)
 
                 if self.cm.run_config.bail_on_init_failure:
@@ -343,11 +342,11 @@ class Executor(object):
             self.logger.warn('There were warnings during execution.')
             self.logger.warn('Please see {}'.format(output.logfile))
 
-    def _error_signalled_callback(self):
+    def _error_signalled_callback(self, record):
         self.error_logged = True
         signal.disconnect(self._error_signalled_callback, signal.ERROR_LOGGED)
 
-    def _warning_signalled_callback(self):
+    def _warning_signalled_callback(self, record):
         self.warning_logged = True
         signal.disconnect(self._warning_signalled_callback, signal.WARNING_LOGGED)
 
@@ -363,7 +362,6 @@ class Runner(object):
 
     def __init__(self, context, pm):
         self.logger = logging.getLogger('runner')
-        self.logger.context = context
         self.context = context
         self.pm = pm
         self.output = self.context.output
@@ -375,17 +373,20 @@ class Runner(object):
             self.send(signal.RUN_INITIALIZED)
 
             while self.context.job_queue:
-                try:
-                    with signal.wrap('JOB_EXECUTION', self, self.context):
-                        self.run_next_job(self.context)
-                except KeyboardInterrupt:
-                    self.context.skip_remaining_jobs()
+                if self.context.run_interrupted:
+                    raise KeyboardInterrupt()
+                with signal.wrap('JOB_EXECUTION', self, self.context):
+                    self.run_next_job(self.context)
+
+        except KeyboardInterrupt as e:
+            log.log_error(e, self.logger)
+            self.logger.info('Skipping remaining jobs.')
+            self.context.skip_remaining_jobs()
         except Exception as e:
-            self.context.add_event(e.message)
-            if (not getattr(e, 'logged', None) and
-                    not isinstance(e, KeyboardInterrupt)):
-                log.log_error(e, self.logger)
-                e.logged = True
+            message = e.message if e.message else str(e)
+            log.log_error(e, self.logger)
+            self.logger.error('Skipping remaining jobs due to "{}".'.format(e))
+            self.context.skip_remaining_jobs()
             raise e
         finally:
             self.finalize_run()
@@ -393,6 +394,8 @@ class Runner(object):
 
     def initialize_run(self):
         self.logger.info('Initializing run')
+        signal.connect(self._error_signalled_callback, signal.ERROR_LOGGED)
+        signal.connect(self._warning_signalled_callback, signal.WARNING_LOGGED)
         self.context.start_run()
         self.pm.initialize()
         log.indent()
@@ -411,6 +414,8 @@ class Runner(object):
         for job in self.context.completed_jobs:
             job.finalize(self.context)
         log.dedent()
+        signal.disconnect(self._error_signalled_callback, signal.ERROR_LOGGED)
+        signal.disconnect(self._warning_signalled_callback, signal.WARNING_LOGGED)
 
     def run_next_job(self, context):
         job = context.start_job()
@@ -420,15 +425,18 @@ class Runner(object):
             log.indent()
             self.do_run_job(job, context)
             job.set_status(Status.OK)
-        except KeyboardInterrupt:
-            job.set_status(Status.ABORTED)
-            raise
-        except Exception as e: # pylint: disable=broad-except
-            job.set_status(Status.FAILED)
-            context.add_event(e.message)
-            if not getattr(e, 'logged', None):
-                log.log_error(e, self.logger)
-                e.logged = True
+        except (Exception, KeyboardInterrupt) as e: # pylint: disable=broad-except
+            log.log_error(e, self.logger)
+            if isinstance(e, KeyboardInterrupt):
+                context.run_interrupted = True
+                job.set_status(Status.ABORTED)
+                raise e
+            else:
+                job.set_status(Status.FAILED)
+            if isinstance(e, TargetNotRespondingError):
+                raise e
+            elif isinstance(e, TargetError):
+                context.tm.verify_target_responsive()
         finally:
             self.logger.info('Completing job {}'.format(job.id))
             self.send(signal.JOB_COMPLETED)
@@ -462,11 +470,15 @@ class Runner(object):
             try:
                 with signal.wrap('JOB_EXECUTION', self, context):
                     job.run(context)
+            except KeyboardInterrupt:
+                context.run_interrupted = True
+                job.set_status(Status.ABORTED)
+                raise
             except Exception as e:
                 job.set_status(Status.FAILED)
-                if not getattr(e, 'logged', None):
-                    log.log_error(e, self.logger)
-                    e.logged = True
+                log.log_error(e, self.logger)
+                if isinstance(e, TargetError) or isinstance(e, TimeoutError):
+                    context.tm.verify_target_responsive()
                 raise e
             finally:
                 try:
@@ -474,13 +486,15 @@ class Runner(object):
                         job.process_output(context)
                     self.pm.process_job_output(context)
                     self.pm.export_job_output(context)
-                except Exception:
+                except Exception as e:
                     job.set_status(Status.PARTIAL)
+                    if isinstance(e, TargetError) or isinstance(e, TimeoutError):
+                        context.tm.verify_target_responsive()
                     raise
 
         except KeyboardInterrupt:
+            context.run_interrupted = True
             job.set_status(Status.ABORTED)
-            self.logger.info('Got CTRL-C. Aborting.')
             raise
         finally:
             # If setup was successfully completed, teardown must
@@ -504,7 +518,10 @@ class Runner(object):
                 self.context.failed_jobs += 1
         else:  # status not in retry_on_status
             self.logger.info('Job completed with status {}'.format(job.status))
-            self.context.successful_jobs += 1
+            if job.status != 'ABORTED':
+                self.context.successful_jobs += 1
+            else:
+                self.context.failed_jobs += 1
 
     def retry_job(self, job):
         retry_job = Job(job.spec, job.iteration, self.context)
@@ -515,6 +532,12 @@ class Runner(object):
 
     def send(self, s):
         signal.send(s, self, self.context)
+
+    def _error_signalled_callback(self, record):
+        self.context.add_event(record.getMessage())
+
+    def _warning_signalled_callback(self, record):
+        self.context.add_event(record.getMessage())
 
     def __str__(self):
         return 'runner'

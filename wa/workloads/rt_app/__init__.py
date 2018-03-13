@@ -23,6 +23,8 @@ from subprocess import CalledProcessError
 from wa import Workload, Parameter, Executable, File
 from wa.framework.exception import WorkloadError, ResourceError
 from wa.utils.misc import check_output
+from wa.utils.exec_control import once
+
 
 RAW_OUTPUT_FILENAME = 'raw-output.txt'
 TARBALL_FILENAME = 'rtapp-logs.tar.gz'
@@ -145,6 +147,7 @@ class RtApp(Workload):
                   """),
     ]
 
+    @once
     def initialize(self, context):
         # initialize() runs once per run. setting a class variable to make it
         # available to other instances of the workload
@@ -154,8 +157,6 @@ class RtApp(Workload):
                                                             self.target.abi,
                                                             BINARY_NAME), strict=False)
         RtApp.workgen_script = context.resolver.get(File(self, 'workgen'))
-        if not self.target.is_rooted:  # some use cases require root privileges
-            raise WorkloadError('rt-app requires the target to be rooted.')
         self.target.execute('mkdir -p {}'.format(self.target_working_directory))
         self._deploy_rt_app_binary_if_necessary()
 
@@ -172,9 +173,11 @@ class RtApp(Workload):
 
     def run(self, context):
         self.output = self.target.invoke(self.command,
+                                         in_directory=self.target_working_directory,
                                          on_cpus=self.taskset_mask,
+                                         redirect_stderr=True,
                                          timeout=self.timeout,
-                                         as_root=True)
+                                         as_root=self.target.is_rooted)
 
     def update_output(self, context):
         self._pull_rt_app_logs(context)
@@ -209,6 +212,7 @@ class RtApp(Workload):
         context.add_metric('error_count', error_count, 'count')
         context.add_metric('crit_count', crit_count, 'count')
 
+    @once
     def finalize(self, context):
         if self.uninstall_on_exit:
             self.target.uninstall(self.target_binary)
