@@ -53,6 +53,17 @@ class Recentfling(Workload):
                   through the recent apps list (in which the assumption is
                   there are already recently started apps in the list.
                   """),
+        Parameter('device_name', kind=str,
+                  description="""
+                  If set, recentfling will use the fling parameters for this
+                  device instead of automatically guessing the device.  This can
+                  also be used if the device is not supported by recentfling,
+                  but its screensize is similar to that of one that is supported.
+
+                  For possible values, check your recentfling.sh.  At the time
+                  of writing, valid values are: 'shamu', 'hammerhead', 'angler',
+                  'ariel', 'mtp8996', 'bullhead' or 'volantis'.
+                  """),
     ]
 
     def initialise(self, context):  # pylint: disable=no-self-use
@@ -72,6 +83,8 @@ class Recentfling(Workload):
         args = '-i {} '.format(self.loops)
         if not self.start_apps:
             args += '-N '
+        if self.device_name is not None:
+            args += '-d {}'.format(self.device_name)
         cmd = "echo $$>{dir}/pidfile; cd {bindir}; exec ./recentfling.sh {args}; rm {dir}/pidfile"
         cmd = cmd.format(args=args, dir=self.device.working_directory, bindir=self.device.binaries_directory)
         try:
