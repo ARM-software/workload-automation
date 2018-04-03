@@ -172,8 +172,12 @@ class ApkWorkload(Workload):
 
     # May be optionally overwritten by subclasses
     # Times are in seconds
+    # activity_name: This is the initial activity of the app. This will be used
+    #                to launch the app during the setup.  Many applications do
+    #                not need to specify a launch activity.
     loading_time = 10
     package_names = []
+    activity_name = None
     view = None
     clear_data_on_reset = True
 
@@ -252,6 +256,7 @@ class ApkWorkload(Workload):
         self.apk = PackageHandler(self,
                                   package_name=self.package_name,
                                   variant=self.variant,
+                                  activity_name=self.activity_name,
                                   strict=self.strict,
                                   version=self.version,
                                   force_install=self.force_install,
@@ -637,13 +642,15 @@ class PackageHandler(object):
 
     @property
     def activity(self):
+        if self.activity_name is not None:
+            return self.activity_name
         if self.apk_info is None:
             return None
         return self.apk_info.activity
 
     def __init__(self, owner, install_timeout=300, version=None, variant=None,
-                 package_name=None, strict=False, force_install=False, uninstall=False,
-                 exact_abi=False, prefer_host_package=True, clear_data_on_reset=True):
+                 package_name=None, activity_name=False, strict=False, force_install=False,
+                 uninstall=False, exact_abi=False, prefer_host_package=True, clear_data_on_reset=True):
         self.logger = logging.getLogger('apk')
         self.owner = owner
         self.target = self.owner.target
@@ -651,6 +658,7 @@ class PackageHandler(object):
         self.version = version
         self.variant = variant
         self.package_name = package_name
+        self.activity_name = activity_name
         self.strict = strict
         self.force_install = force_install
         self.uninstall = uninstall
@@ -794,11 +802,11 @@ class PackageHandler(object):
         self.apk_version = host_version
 
     def start_activity(self):
-        if not self.apk_info.activity:
+        if not self.activity:
             cmd = 'am start -W {}'.format(self.apk_info.package)
         else:
             cmd = 'am start -W -n {}/{}'.format(self.apk_info.package,
-                                                self.apk_info.activity)
+                                                self.activity)
         output = self.target.execute(cmd)
         if 'Error:' in output:
             # this will dismiss any error dialogs
