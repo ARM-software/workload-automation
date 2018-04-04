@@ -45,9 +45,9 @@ dropped. E.g.  ::
 
         # ...
 
-        def update_result(self, context):
+        def update_output(self, context):
            # ...
-           context.result.add_metric('energy', 23.6, 'Joules', lower_is_better=True)
+           context.add_metric('energy', 23.6, 'Joules', lower_is_better=True)
 
         # ...
 
