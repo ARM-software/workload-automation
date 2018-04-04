@@ -15,7 +15,7 @@ setup                                    successful-workload-setup-signal
 start                                    before-workload-execution-signal         
 stop                                     after-workload-execution-signal          
 process_workload_result                  successful-iteration-result-update-signal
-update_result                            after-iteration-result-update-signal     
+update_output                            after-workload-output-update-signal
 teardown                                 after-workload-teardown-signal           
 finalize                                 run-fin-signal                           
 on_run_start                             start-signal                             
