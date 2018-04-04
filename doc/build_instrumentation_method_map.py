@@ -22,9 +22,6 @@ from wlauto.core.instrumentation import SIGNAL_MAP, PRIORITY_MAP
 from wlauto.utils.doc import format_simple_table
 
 
-CONVINIENCE_ALIASES = ['initialize', 'setup', 'start', 'stop', 'process_workload_result',
-                       'update_result', 'teardown', 'finalize']
-
 OUTPUT_TEMPLATE_FILE =  os.path.join(os.path.dirname(__file__), 'source', 'instrumentation_method_map.template')
 
 
