@@ -387,9 +387,6 @@ The Workload class defines the following interface::
         def setup(self, context):
             pass
 
-        def setup(self, context):
-            pass
-
         def run(self, context):
             pass
 
