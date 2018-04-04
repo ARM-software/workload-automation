@@ -150,11 +150,11 @@ public class UiAutomation extends BaseUiAutomation {
              .text("Search"))))));
         clickSearch.clickAndWaitForNewWindow(timeout);
 
-        UiObject editSearch = mDevice.findObject(new UiSelector()
-             .className("android.widget.EditText").index(0).text("Search"));
+        UiObject editSearch = getUiObjectByResourceId("com.facebook.katana:id/searchbox",
+                                                      "android.widget.EditText");
 
         editSearch.clearTextField();
-        editSearch.setText("amol kamble");
+        typeText(editSearch, "amol kamble");
         sleep(timeout);
 
         clickUiObject(BY_DESC, "Amol Kamble", "android.view.View", true);
@@ -185,5 +185,14 @@ public class UiAutomation extends BaseUiAutomation {
 
         sleep(2 * timeout);
         mDevice.pressHome();
+    }
+
+    // Simulate typing speed for fields that get updated in real time (like search boxes)
+    private void typeText(UiObject textObj, String text) throws UiObjectNotFoundException {
+        for (int i = 1; i <= text.length(); i++) {
+            textObj.setText(text.substring(0, i));
+            // Sleep is not needed for fields that get updated in real time.
+            // You get about typing speed.
+        }
     }
 }
