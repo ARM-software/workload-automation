@@ -33,6 +33,8 @@ public class UiAutomation extends BaseUiAutomation {
 
     public static String TAG = "facebook";
 
+    final int timeout = 4;
+
     /*
      * The 'runWorkload' method implements the following activities
      * Login to facebook account.
@@ -44,7 +46,6 @@ public class UiAutomation extends BaseUiAutomation {
     @Test
     public void runWorkload() throws Exception {
         initialize_instrumentation();
-        final int timeout = 4;
         UiSelector selector = new UiSelector();
 
         UiObject logInButton = mDevice.findObject(selector
@@ -127,6 +128,8 @@ public class UiAutomation extends BaseUiAutomation {
         clickNotify.clickAndWaitForNewWindow(timeout);
 
         sleep(timeout);
+        scrollDownOnProfile();
+
         mDevice.pressBack();
         sleep(timeout);
         mDevice.pressBack();
@@ -159,6 +162,7 @@ public class UiAutomation extends BaseUiAutomation {
 
         clickUiObject(BY_DESC, "Amol Kamble", "android.view.View", true);
         sleep(timeout);
+        scrollDownOnProfile();
 
         mDevice.pressBack();
         sleep(timeout);
@@ -193,6 +197,16 @@ public class UiAutomation extends BaseUiAutomation {
             textObj.setText(text.substring(0, i));
             // Sleep is not needed for fields that get updated in real time.
             // You get about typing speed.
+        }
+    }
+
+    private void scrollDownOnProfile() {
+        final int steps = 15;
+        final int numberOfScrolls = 4;
+
+        for (int i = 0; i < numberOfScrolls; i++) {
+            uiDeviceSwipeUp(steps);
+            sleep(timeout);
         }
     }
 }
