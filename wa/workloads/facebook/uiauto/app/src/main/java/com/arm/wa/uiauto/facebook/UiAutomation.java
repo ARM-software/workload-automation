@@ -23,6 +23,8 @@ import android.support.test.uiautomator.UiSelector;
 
 import com.arm.wa.uiauto.BaseUiAutomation;
 
+import static com.arm.wa.uiauto.BaseUiAutomation.FindByCriteria.BY_DESC;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -155,10 +157,7 @@ public class UiAutomation extends BaseUiAutomation {
         editSearch.setText("amol kamble");
         sleep(timeout);
 
-        UiObject clickOnSearchResult = mDevice.findObject(new UiSelector()
-             .className("android.webkit.WebView").index(0));
-        clickOnSearchResult.clickTopLeft();
-
+        clickUiObject(BY_DESC, "Amol Kamble", "android.view.View", true);
         sleep(timeout);
 
         mDevice.pressBack();
