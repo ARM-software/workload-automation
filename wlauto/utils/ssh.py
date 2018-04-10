@@ -66,8 +66,14 @@ def ssh_get_shell(host, username, password=None, keyfile=None, port=None, timeou
                 raise DeviceError(message.format(host))
             time.sleep(5)
 
+    conn.sendline('shopt -s checkwinsize')
+    conn.prompt()
     conn.setwinsize(500,200)
     conn.sendline('')
+    conn.prompt()
+    conn.sendline('stty rows 500')
+    conn.prompt()
+    conn.sendline('stty cols 200')
     conn.prompt()
     conn.setecho(False)
     return conn
