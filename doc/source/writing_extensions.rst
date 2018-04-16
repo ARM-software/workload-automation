@@ -387,13 +387,10 @@ The Workload class defines the following interface::
         def setup(self, context):
             pass
 
-        def setup(self, context):
-            pass
-
         def run(self, context):
             pass
 
-        def update_result(self, context):
+        def update_output(self, context):
             pass
 
         def teardown(self, context):
@@ -443,7 +440,7 @@ The interface should be implemented as follows
                     copying files to/from the device should be done elsewhere if
                     possible.
 
-    :update_result: This method gets invoked after the task execution has
+    :update_output: This method gets invoked after the task execution has
                     finished and should be used to extract metrics and add them
                     to the result (see below).
     :teardown: This could be used to perform any cleanup you may wish to do,
@@ -461,13 +458,13 @@ Workload methods (except for ``validate``) take a single argument that is a
 track of the current execution state (such as the current workload, iteration
 number, etc), and contains, among other things, a
 :class:`wlauto.core.workload.WorkloadResult` instance that should be populated
-from the ``update_result`` method with the results of the execution. ::
+from the ``update_output`` method with the results of the execution. ::
 
         # ...
 
-        def update_result(self, context):
+        def update_output(self, context):
            # ...
-           context.result.add_metric('energy', 23.6, 'Joules', lower_is_better=True)
+           context.add_metric('energy', 23.6, 'Joules', lower_is_better=True)
 
         # ...
 
@@ -520,7 +517,7 @@ file of a particular size on the device.
                                                                         self.device_infile,
                                                                         self.device_outfile))
 
-        def update_result(self, context):
+        def update_output(self, context):
                 # Pull the results file to the host
                 host_outfile = os.path.join(context.output_directory, 'outfile')
                 self.device.pull(self.device_outfile, host_outfile)
@@ -529,7 +526,7 @@ file of a particular size on the device.
                 content = iter(open(host_outfile).read().strip().split())
                 for value, metric in zip(content, content):
                 mins, secs = map(float, value[:-1].split('m'))
-                context.result.add_metric(metric, secs + 60 * mins)
+                context.add_metric(metric, secs + 60 * mins)
 
         def teardown(self, context):
                 # Clean up on-device file.
@@ -635,7 +632,7 @@ the following interface::
         def stop(self, context):
             pass
 
-        def update_result(self, context):
+        def update_output(self, context):
             pass
 
         def teardown(self, context):
@@ -719,9 +716,9 @@ Below is a simple instrument that measures the execution time of a workload::
         def fast_stop(self, context):
             self.end_time = time.time()
 
-        def update_result(self, context):
+        def update_output(self, context):
             execution_time = self.end_time - self.start_time
-            context.result.add_metric('execution_time', execution_time, 'seconds')
+            context.add_metric('execution_time', execution_time, 'seconds')
 
 
 Adding a Result Processor
