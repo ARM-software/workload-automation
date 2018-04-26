@@ -914,6 +914,7 @@ class JobGenerator(object):
         self._enabled_processors = toggle_set()
         self._read_enabled_instruments = False
         self._read_enabled_processors = False
+        self._disable_all_augmentations = False
         self.disabled_augmentations = set()
 
         self.job_spec_template = obj_dict(not_in_dict=['name'])
@@ -926,6 +927,8 @@ class JobGenerator(object):
         self.root_node = SectionNode(self.job_spec_template)
 
     def set_global_value(self, name, value):
+        if name == "augmentations":
+            value = self.process_disable_all_glyph(value)
         JobSpec.configuration[name].set_value(self.job_spec_template, value,
                                               check_mandatory=False)
         if name == "augmentations":
@@ -944,15 +947,57 @@ class JobGenerator(object):
         self.root_node.add_workload(workload)
 
     def disable_augmentations(self, augmentations):
-        for entry in augmentations:
-            if entry.startswith('~'):
-                entry = entry[1:]
-            try:
-                self.plugin_cache.get_plugin_class(entry)
-            except NotFoundError:
-                raise ConfigError('Error disabling unknown augmentation: "{}"'.format(entry))
+        if "~~~" not in augmentations:
+            for entry in augmentations:
+                if entry.startswith('~'):
+                    entry = entry[1:]
+
+                try:
+                    self.plugin_cache.get_plugin_class(entry)
+                except NotFoundError:
+                    raise ConfigError('Error disabling unknown augmentation: "{}"'.format(entry))
+        else:
+            self._disable_all_augmentations = True
+            augmentations.clear()
+            augmentations.add("~~")
+
+        if self._disable_all_augmentations:
+            augmentations = self.process_disable_all_glyph(augmentations)
         self.disabled_augmentations = self.disabled_augmentations.union(augmentations)
 
+    def process_disable_all_glyph(self, value):
+        """
+        This will search for the glyph "~~"  If found then all currently enabled
+        augmentations are added to a new toggle set as disabled augmentations.
+        This is then merged with the original value with the glyph removed to
+        enable any augmentations specified at the same level as the glyph.
+
+        Additionally if the command line --disable has previously specified
+        the glyph causing self._disable_all_augmentations to be True then the
+        current set of augmentations is also discarded.
+        """
+        if self._disable_all_augmentations:
+            if "~~" in value:
+                value.clear()
+                value.add("~~")
+            else:
+                value.clear()
+
+        if "~~" in value:
+            value.remove("~~")
+            disable_existing_augmentations = toggle_set()
+
+            for instrument in self._enabled_instruments:
+                if not instrument.startswith('~'):
+                    instrument = '~' + instrument
+                disable_existing_augmentations.add(instrument)
+            for processor in self._enabled_processors:
+                if not processor.startswith('~'):
+                    processor = '~' + processor
+                disable_existing_augmentations.add(processor)
+            value = disable_existing_augmentations.merge_with(value)
+        return value
+    
     def update_augmentations(self, value):
         for entry in value:
             entry_name = entry[1:] if entry.startswith('~') else entry
