@@ -1,6 +1,19 @@
 Workload Automation
 +++++++++++++++++++
 
+.. raw:: html
+
+        <span style="border: solid red 3px">
+        <p align="center">
+        <font color="red">DO NOT USE "MASTER" BRANCH</font>. WA2 has been
+        deprecated in favor of WA3, which is currently on "next" branch.
+        </p>
+        <p align="center">
+        The master branch will be aligned with next shortly. In the mean time,
+        please <font style="bold">USE "NEXT" BRANCH</font> instead.
+        </p>
+        </span>
+
 Workload Automation (WA) is a framework for executing workloads and collecting
 measurements on Android and Linux devices. WA includes automation for nearly 50
 workloads (mostly Android), some common instrumentation (ftrace, ARM
