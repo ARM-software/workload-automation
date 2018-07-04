@@ -540,7 +540,7 @@ class Runner(object):
                 context.tm.start()
                 self.do_run_job(job, context)
                 job.set_status(Status.OK)
-        except (Exception, KeyboardInterrupt) as e: # pylint: disable=broad-except
+        except (Exception, KeyboardInterrupt) as e:  # pylint: disable=broad-except
             log.log_error(e, self.logger)
             if isinstance(e, KeyboardInterrupt):
                 context.run_interrupted = True

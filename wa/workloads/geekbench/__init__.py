@@ -291,7 +291,7 @@ class GBScoreCalculator(object):
         'memory': 0.1926489,
         'stream': 0.1054738,
     }
-    #pylint: disable=C0326
+    # pylint: disable=C0326
     workloads = [
         #          ID    Name        Power Mac ST  Power Mac MT
         GBWorkload(101, 'Blowfish',         43971,   40979),
@@ -389,7 +389,7 @@ class GBScoreCalculator(object):
         context.add_metric('Geekbench Score', int(overall_score))
 
 
-class GeekbenchCorproate(Geekbench): #pylint: disable=too-many-ancestors
+class GeekbenchCorproate(Geekbench):  # pylint: disable=too-many-ancestors
     name = "geekbench-corporate"
     is_corporate = True
     requires_network = False
