@@ -121,3 +121,21 @@ class GoogleSlides(ApkUiautoWorkload):
         # Only accept certain presentation formats
         if os.path.splitext(self.test_file.lower())[1] not in ['.pptx']:
             raise ValidationError('{} must be a PPTX file'.format(self.test_file))
+
+    def deploy_assets(self, context):
+        super(GoogleSlides, self).deploy_assets(context)
+        #Move the test files to the download folder
+        d = self.target.working_directory
+        e = self.target.external_storage
+
+        orig_file_path = self.target.path.join(d, self.test_file)
+        new_file_path = self.target.path.join(e, 'Download')
+        self.deployed_assets.append(new_file_path)
+        self.target.execute('cp {} {}'.format(orig_file_path, new_file_path))
+        self.target.refresh_files(self.deployed_assets)
+
+    def remove_assets(self, context):
+        for asset in self.deployed_assets:
+            self.target.remove(os.path.dirname(asset))
+        self.target.refresh_files(self.deployed_assets)
+        
