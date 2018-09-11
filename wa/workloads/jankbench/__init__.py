@@ -208,9 +208,7 @@ class JankbenchRunMonitor(threading.Thread):
         self.daemon = True
         self.run_ended = threading.Event()
         self.stop_event = threading.Event()
-        # Not using clear_logcat() because command collects directly, i.e. will
-        # ignore poller.
-        self.target.execute('logcat -c')
+        self.target.clear_logcat()
         if self.target.adb_name:
             self.command = ['adb', '-s', self.target.adb_name, 'logcat']
         else:
@@ -226,7 +224,7 @@ class JankbenchRunMonitor(threading.Thread):
                 if ready:
                     line = ready[0].readline()
                     if sys.version_info[0] == 3:
-                        line = line.decode(sys.stdout.encoding)
+                        line = line.decode(sys.stdout.encoding, 'replace')
                     if self.regex.search(line):
                         self.run_ended.set()
 
