@@ -394,10 +394,10 @@ class PostgresqlResultProcessor(OutputProcessor):
             self.current_large_object_uuid = uuid.uuid4()
             with open(os.path.join(output_object.basepath, artifact.path)) as lobj_file:
                 lobj_data = lobj_file.read()
-            lo_len = self.current_lobj.write(lobj_data)
-            if lo_len > 50000000:  # Notify if LO inserts larger than 50MB
+            if len(lobj_data) > 50000000:  # Notify if LO inserts larger than 50MB
                 self.logger.debug(
                     "Inserting large object of size {}".format(lo_len))
+            lo_len = self.current_lobj.write(lobj_data)
             self.cursor.execute(
                 self.sql_command['create_large_object'],
                 (
