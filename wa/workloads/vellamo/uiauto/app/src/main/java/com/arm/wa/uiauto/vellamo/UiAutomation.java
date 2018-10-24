@@ -62,7 +62,7 @@ public class UiAutomation extends BaseUiAutomation {
 
     @Test
     public void setup() throws Exception {
-        dismissPopUp();
+        dismissAndroidVersionPopup();
         dismissEULA();
         if (version.equals("2.0.3")) {
             dissmissWelcomebanner();
@@ -305,16 +305,6 @@ public class UiAutomation extends BaseUiAutomation {
             UiObject noButton = mDevice.findObject(selector.className("android.widget.Button")
                                                      .text("No"));
             noButton.click();
-        }
-    }
-
-    public void dismissPopUp() throws Exception {
-        UiSelector selector = new UiSelector();
-
-        UiObject okButton =
-           mDevice.findObject(selector.className("android.widget.Button").text("OK"));
-        if (okButton.exists()) {
-            okButton.click();
         }
     }
 }

@@ -46,7 +46,7 @@ public class UiAutomation extends BaseUiAutomation {
 
     @Test
     public void setup() throws Exception{
-        dismissPopup();
+        dismissAndroidVersionPopup();
         setScreenOrientation(ScreenOrientation.NATURAL);
         loadBenchmarks();
         installBenchmark();
@@ -60,18 +60,6 @@ public class UiAutomation extends BaseUiAutomation {
     @Test
     public void teardown() throws Exception{
         unsetScreenOrientation();
-    }
-
-    // If we run the app in newer Android we'll get a popup complaining about
-    // that, silently accept it and carry on.
-    // This function should act as a NOP if no popup appears.
-    public void dismissPopup() throws Exception {
-        UiObject acceptButton =
-           mDevice.findObject(new UiSelector().resourceId("android:id/button1")
-                                         .className("android.widget.Button"));
-        if (acceptButton.waitForExists(WAIT_TIMEOUT_5SEC)) {
-            acceptButton.click();
-        }
     }
 
     //Swipe to benchmarks and back to initialise the app correctly
