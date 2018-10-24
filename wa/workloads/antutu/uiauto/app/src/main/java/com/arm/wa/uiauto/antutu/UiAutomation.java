@@ -43,6 +43,11 @@ public class UiAutomation extends BaseUiAutomation {
     private static int initialTimeoutSeconds = 20;
 
     @Test
+    public void setup() throws Exception {
+        dismissAndroidVersionPopup();
+    }
+
+    @Test
     public void runWorkload() throws Exception{
         hitTest();
         waitforCompletion();
