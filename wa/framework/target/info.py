@@ -279,23 +279,23 @@ class TargetInfo(object):
         instance = TargetInfo()
         instance.target = pod['target']
         instance.abi = pod['abi']
-        instance.cpus = [CpuInfo.from_pod(c) for c in pod['cpus']]
         instance.os = pod['os']
         instance.os_version = pod['os_version']
-        instance.system_id = pod['system_id']
-        instance.hostid = pod['hostid']
-        instance.hostname = pod['hostname']
         instance.abi = pod['abi']
         instance.is_rooted = pod['is_rooted']
         instance.kernel_version = kernel_version_from_pod(pod)
         instance.kernel_config = kernel_config_from_pod(pod)
-        instance.sched_features = pod['sched_features']
+        instance.cpus = [CpuInfo.from_pod(c) for c in pod.get('cpus', [])]
+        instance.system_id = pod.get('system_id')
+        instance.hostid = pod.get('hostid')
+        instance.hostname = pod.get('hostname')
+        instance.sched_features = pod.get('sched_features')
         instance.page_size_kb = pod.get('page_size_kb')
         if instance.os == 'android':
-            instance.screen_resolution = pod['screen_resolution']
+            instance.screen_resolution = pod.get('screen_resolution')
             instance.prop = AndroidProperties('')
-            instance.prop._properties = pod['prop']
-            instance.android_id = pod['android_id']
+            instance.prop._properties = pod.get('prop')
+            instance.android_id = pod.get('android_id')
 
         return instance
 
