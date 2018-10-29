@@ -139,6 +139,8 @@ class WAJSONDecoder(_json.JSONDecoder):
             return v
 
         def load_objects(d):
+            if not hasattr(d, 'items'):
+                return d
             pairs = []
             for k, v in d.items():
                 if hasattr(v, 'items'):
