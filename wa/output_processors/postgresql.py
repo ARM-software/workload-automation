@@ -28,10 +28,11 @@ except ImportError as e:
 from devlib.target import KernelVersion, KernelConfig
 
 import wa
-from wa.utils import postgres_convert
 from wa import OutputProcessor, Parameter, OutputProcessorError
-from wa.utils.types import level
 from wa.framework.target.info import CpuInfo
+from wa.utils import postgres_convert
+from wa.utils.serializer import json
+from wa.utils.types import level
 
 
 class PostgresqlResultProcessor(OutputProcessor):
@@ -407,7 +408,7 @@ class PostgresqlResultProcessor(OutputProcessor):
                     augmentation_id,
                     resource_getter_id,
                     parameter,
-                    str(parameter_dict[parameter]),
+                    json.dumps(parameter_dict[parameter]),
                     str(type(parameter_dict[parameter])),
                     parameter_type))
 
