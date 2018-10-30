@@ -1,4 +1,4 @@
---!VERSION!1.1!ENDVERSION!
+--!VERSION!1.2!ENDVERSION!
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "lo";
 
@@ -13,6 +13,7 @@ DROP TABLE IF EXISTS Metrics;
 DROP TABLE IF EXISTS Augmentations;
 DROP TABLE IF EXISTS Jobs_Augs;
 DROP TABLE IF EXISTS ResourceGetters;
+DROP TABLE IF EXISTS Resource_Getters;
 DROP TABLE IF EXISTS Events;
 DROP TABLE IF EXISTS Targets;
 DROP TABLE IF EXISTS Jobs;
@@ -42,6 +43,7 @@ CREATE TABLE Runs (
     timestamp timestamp,
     run_name text,
     project text,
+    project_stage text,
     retry_on_status status_enum[],
     max_retries int,
     bail_on_init_failure boolean,
@@ -49,7 +51,11 @@ CREATE TABLE Runs (
     run_uuid uuid,
     start_time timestamp,
     end_time timestamp,
+    duration float,
     metadata jsonb,
+    _pod_version int,
+    _pod_serialization_version int,
+    state jsonb,
     PRIMARY KEY (oid)
 );
 
@@ -57,12 +63,14 @@ CREATE TABLE Jobs (
     oid uuid NOT NULL,
     run_oid uuid NOT NULL references Runs(oid),
     status status_enum,
-    retries int,
+    retry int,
     label text,
     job_id text,
     iterations int,
     workload_name text,
     metadata jsonb,
+    _pod_version int,
+    _pod_serialization_version int,
     PRIMARY KEY (oid)
 );
 
@@ -82,6 +90,12 @@ CREATE TABLE Targets (
     kernel_sha1 text,
     kernel_config text[],
     sched_features text[],
+    page_size_kb int,
+    screen_resolution int[],
+    prop json,
+    android_id text,
+    _pod_version int,
+    _pod_serialization_version int,
     PRIMARY KEY (oid)
 );
 
@@ -91,10 +105,12 @@ CREATE TABLE Events (
     job_oid uuid references Jobs(oid),
     timestamp timestamp,
     message text,
+    _pod_version int,
+    _pod_serialization_version int,
     PRIMARY KEY (oid)
 );
 
-CREATE TABLE ResourceGetters (
+CREATE TABLE Resource_Getters (
     oid uuid NOT NULL,
     run_oid uuid NOT NULL references Runs(oid),
     name text,
@@ -123,6 +139,8 @@ CREATE TABLE Metrics (
     value double precision,
     units text,
     lower_is_better boolean,
+    _pod_version int,
+    _pod_serialization_version int,
     PRIMARY KEY (oid)
 );
 
@@ -144,6 +162,8 @@ CREATE TABLE Artifacts (
     large_object_uuid uuid NOT NULL references LargeObjects(oid),
     description text,
     kind text,
+    _pod_version int,
+    _pod_serialization_version int,
     PRIMARY KEY (oid)
 );
 
@@ -151,6 +171,8 @@ CREATE TABLE Classifiers (
     oid uuid NOT NULL,
     artifact_oid uuid references Artifacts(oid),
     metric_oid uuid references Metrics(oid),
+    job_oid uuid references Jobs(oid),
+    run_oid uuid references Runs(oid),
     key text,
     value text,
     PRIMARY KEY (oid)
@@ -161,7 +183,7 @@ CREATE TABLE Parameters (
     run_oid uuid NOT NULL references Runs(oid),
     job_oid uuid references Jobs(oid),
     augmentation_oid uuid references Augmentations(oid),
-    resource_getter_oid uuid references ResourceGetters(oid),
+    resource_getter_oid uuid references Resource_Getters(oid),
     name text,
     value text,
     value_type text,
