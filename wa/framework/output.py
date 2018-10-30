@@ -165,8 +165,35 @@ class Output(object):
     def __str__(self):
         return os.path.basename(self.basepath)
 
+class RunOutputCommon(object):
+    ''' Split out common functionality to form a second base of
+        the RunOutput classes
+    '''
+    @property
+    def run_config(self):
+        if self._combined_config:
+            return self._combined_config.run_config
 
-class RunOutput(Output):
+    @property
+    def settings(self):
+        if self._combined_config:
+            return self._combined_config.settings
+
+    def get_job_spec(self, spec_id):
+        for spec in self.job_specs:
+            if spec.id == spec_id:
+                return spec
+        return None
+
+    def list_workloads(self):
+        workloads = []
+        for job in self.jobs:
+            if job.label not in workloads:
+                workloads.append(job.label)
+        return workloads
+
+
+class RunOutput(Output, RunOutputCommon):
 
     kind = 'run'
 
@@ -206,16 +233,6 @@ class RunOutput(Output):
     def failed_dir(self):
         path = os.path.join(self.basepath, '__failed')
         return ensure_directory_exists(path)
-
-    @property
-    def run_config(self):
-        if self._combined_config:
-            return self._combined_config.run_config
-
-    @property
-    def settings(self):
-        if self._combined_config:
-            return self._combined_config.settings
 
     @property
     def augmentations(self):
@@ -302,18 +319,6 @@ class RunOutput(Output):
         shutil.move(job_output.basepath, failed_path)
         job_output.basepath = failed_path
 
-    def get_job_spec(self, spec_id):
-        for spec in self.job_specs:
-            if spec.id == spec_id:
-                return spec
-        return None
-
-    def list_workloads(self):
-        workloads = []
-        for job in self.jobs:
-            if job.label not in workloads:
-                workloads.append(job.label)
-        return workloads
 
 
 class JobOutput(Output):
