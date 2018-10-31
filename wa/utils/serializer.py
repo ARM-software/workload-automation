@@ -169,14 +169,14 @@ class json(object):
         try:
             return _json.load(fh, cls=WAJSONDecoder, object_pairs_hook=OrderedDict, *args, **kwargs)
         except ValueError as e:
-            raise SerializerSyntaxError(e.message)
+            raise SerializerSyntaxError(e.args[0])
 
     @staticmethod
     def loads(s, *args, **kwargs):
         try:
             return _json.loads(s, cls=WAJSONDecoder, object_pairs_hook=OrderedDict, *args, **kwargs)
         except ValueError as e:
-            raise SerializerSyntaxError(e.message)
+            raise SerializerSyntaxError(e.args[0])
 
 
 _mapping_tag = _yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG
