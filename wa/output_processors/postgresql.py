@@ -171,26 +171,27 @@ class PostgresqlResultProcessor(OutputProcessor):
                 run_output.metadata))
         self.target_uuid = uuid.uuid4()
         target_info = context.target_info
+        target_pod = target_info.to_pod()
         self.cursor.execute(
             self.sql_command['create_target'],
             (
                 self.target_uuid,
                 self.run_uuid,
-                target_info.target,
-                target_info.cpus,
-                target_info.os,
-                target_info.os_version,
-                target_info.hostid,
-                target_info.hostname,
-                target_info.abi,
-                target_info.is_rooted,
+                target_pod['target'],
+                target_pod['cpus'],
+                target_pod['os'],
+                target_pod['os_version'],
+                target_pod['hostid'],
+                target_pod['hostname'],
+                target_pod['abi'],
+                target_pod['is_rooted'],
                 # Important caveat: kernel_version is the name of the column in the Targets table
                 # However, this refers to kernel_version.version, not to kernel_version as a whole
-                target_info.kernel_version.version,
-                target_info.kernel_version.release,
+                target_pod['kernel_version'],
+                target_pod['kernel_release'],
                 target_info.kernel_version.sha1,
                 target_info.kernel_config,
-                target_info.sched_features))
+                target_pod['sched_features']))
         # Commit cursor commands
         self.conn.commit()
 
