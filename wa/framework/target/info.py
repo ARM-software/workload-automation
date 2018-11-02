@@ -223,6 +223,8 @@ def get_target_info(target):
 
         info.cpus.append(cpu)
 
+    info.page_size_kb = target.page_size_kb
+
     if isinstance(target, AndroidTarget):
         info.screen_resolution = target.screen_resolution
         info.prop = target.getprop()
@@ -270,7 +272,7 @@ def cache_target_info(target_info, overwrite=False):
 
 class TargetInfo(object):
 
-    format_version = 1
+    format_version = 2
 
     @staticmethod
     def from_pod(pod):
@@ -288,6 +290,7 @@ class TargetInfo(object):
         instance.kernel_version = kernel_version_from_pod(pod)
         instance.kernel_config = kernel_config_from_pod(pod)
         instance.sched_features = pod['sched_features']
+        instance.page_size_kb = pod.get('page_size_kb')
         if instance.os == 'android':
             instance.screen_resolution = pod['screen_resolution']
             instance.prop = AndroidProperties('')
@@ -312,6 +315,7 @@ class TargetInfo(object):
         self.screen_resolution = None
         self.prop = None
         self.android_id = None
+        self.page_size_kb = None
 
     def to_pod(self):
         pod = {}
@@ -330,6 +334,7 @@ class TargetInfo(object):
         pod['kernel_version'] = self.kernel_version.version
         pod['kernel_config'] = dict(self.kernel_config.iteritems())
         pod['sched_features'] = self.sched_features
+        pod['page_size_kb'] = self.page_size_kb
         if self.os == 'android':
             pod['screen_resolution'] = self.screen_resolution
             pod['prop'] = self.prop._properties
