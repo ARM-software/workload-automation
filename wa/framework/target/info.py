@@ -22,6 +22,7 @@ from devlib.target import KernelConfig, KernelVersion, Cpuinfo
 from devlib.utils.android import AndroidProperties
 
 from wa.framework.configuration.core import settings
+from wa.framework.exception import ConfigError
 from wa.utils.serializer import read_pod, write_pod
 
 
@@ -247,8 +248,15 @@ def write_target_info_cache(cache):
 def get_target_info_from_cache(system_id):
     cache = read_target_info_cache()
     pod = cache.get(system_id, None)
+
     if not pod:
         return None
+
+    pod_version = pod.get('format_version', 0)
+    if pod_version != TargetInfo.format_version:
+        msg = 'Target info version mismatch. Expected {}, but found {}.\nTry deleting {}'
+        raise ConfigError(msg.format(TargetInfo.format_version, pod_version,
+                                     settings.target_info_cache_file))
     return TargetInfo.from_pod(pod)
 
 
@@ -261,6 +269,8 @@ def cache_target_info(target_info, overwrite=False):
 
 
 class TargetInfo(object):
+
+    format_version = 1
 
     @staticmethod
     def from_pod(pod):
@@ -305,6 +315,7 @@ class TargetInfo(object):
 
     def to_pod(self):
         pod = {}
+        pod['format_version'] = self.format_version
         pod['target'] = self.target
         pod['abi'] = self.abi
         pod['cpus'] = [c.to_pod() for c in self.cpus]
