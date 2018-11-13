@@ -74,14 +74,18 @@ public class UiAutomation extends BaseUiAutomation {
         UiObject sync = 
                 mDevice.findObject(new UiSelector().text("Data synchronization")
                     .className("android.widget.TextView"));
-                if (sync.exists()){
-                    UiObject data =
-                        mDevice.findObject(new UiSelector().resourceId("android:id/button1")
-                            .className("android.widget.Button"));
-                    data.click();
-                }
+        if (!sync.exists()){
+            sync = mDevice.findObject(new UiSelector().text("Pushed data not found")
+                    .className("android.widget.TextView"));
+        }
+        if (sync.exists()){
+            UiObject data =
+                mDevice.findObject(new UiSelector().resourceId("android:id/button1")
+                    .className("android.widget.Button"));
+            data.click();
+        }
 
-        UiObject home = 
+        UiObject home =
             mDevice.findObject(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/main_homeBack")
                 .className("android.widget.LinearLayout"));
             home.waitForExists(300000);
