@@ -361,3 +361,33 @@ def is_pod(obj):
             if not is_pod(v):
                 return False
     return True
+
+
+class Podable(object):
+
+    _pod_serialization_version = 0
+
+    @classmethod
+    def from_pod(cls, pod):
+        pod = cls._upgrade_pod(pod)
+        instance = cls()
+        instance._pod_version = pod.pop('_pod_version')  # pylint: disable=protected-access
+        return instance
+
+    @classmethod
+    def _upgrade_pod(cls, pod):
+        _pod_serialization_version = pod.pop('_pod_serialization_version', None) or 0
+        while _pod_serialization_version < cls._pod_serialization_version:
+            _pod_serialization_version += 1
+            upgrade = getattr(cls, '_pod_upgrade_v{}'.format(_pod_serialization_version))
+            pod = upgrade(pod)
+        return pod
+
+    def __init__(self):
+        self._pod_version = self._pod_serialization_version
+
+    def to_pod(self):
+        pod = {}
+        pod['_pod_version'] = self._pod_version
+        pod['_pod_serialization_version'] = self._pod_serialization_version
+        return pod
