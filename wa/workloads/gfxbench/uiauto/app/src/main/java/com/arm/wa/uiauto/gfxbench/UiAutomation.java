@@ -97,7 +97,7 @@ public class UiAutomation extends BaseUiAutomation {
             .className("android.widget.RelativeLayout"));
         Rect bounds = circle.getBounds();
         int selectx = bounds.width()/4;
-        selectx = bounds.width() - selectx;
+        selectx = bounds.centerX() + selectx;
         int selecty = bounds.height()/4;
         selecty = bounds.centerY() + selecty;
 
