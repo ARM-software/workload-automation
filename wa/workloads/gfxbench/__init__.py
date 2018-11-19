@@ -40,8 +40,7 @@ class Gfxbench(ApkUiautoWorkload):
     '''
     parameters = [
         Parameter('timeout', kind=int, default=3600,
-                  description=('Timeout for a single iteration of the benchmark. This value is '
-                               'multiplied by ``times`` to calculate the overall run timeout. ')),
+                  description=('Timeout for an iteration of the benchmark.')),
     ]
 
     def __init__(self, target, **kwargs):
