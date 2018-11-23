@@ -29,7 +29,7 @@ from wa.framework.run import RunState, RunInfo
 from wa.framework.target.info import TargetInfo
 from wa.framework.version import get_wa_version_with_commit
 from wa.utils.misc import touch, ensure_directory_exists, isiterable
-from wa.utils.serializer import write_pod, read_pod
+from wa.utils.serializer import write_pod, read_pod, Podable
 from wa.utils.types import enum, numeric
 
 
@@ -332,11 +332,13 @@ class JobOutput(Output):
         self.reload()
 
 
-class Result(object):
+class Result(Podable):
+
+    _pod_serialization_version = 1
 
     @staticmethod
     def from_pod(pod):
-        instance = Result()
+        instance = super(Result, Result).from_pod(pod)
         instance.status = Status(pod['status'])
         instance.metrics = [Metric.from_pod(m) for m in pod['metrics']]
         instance.artifacts = [Artifact.from_pod(a) for a in pod['artifacts']]
@@ -347,6 +349,7 @@ class Result(object):
 
     def __init__(self):
         # pylint: disable=no-member
+        super(Result, self).__init__()
         self.status = Status.NEW
         self.metrics = []
         self.artifacts = []
@@ -430,21 +433,26 @@ class Result(object):
             self.metadata[key] = args[0]
 
     def to_pod(self):
-        return dict(
-            status=str(self.status),
-            metrics=[m.to_pod() for m in self.metrics],
-            artifacts=[a.to_pod() for a in self.artifacts],
-            events=[e.to_pod() for e in self.events],
-            classifiers=copy(self.classifiers),
-            metadata=deepcopy(self.metadata),
-        )
+        pod = super(Result, self).to_pod()
+        pod['status'] = str(self.status)
+        pod['metrics'] = [m.to_pod() for m in self.metrics]
+        pod['artifacts'] = [a.to_pod() for a in self.artifacts]
+        pod['events'] = [e.to_pod() for e in self.events]
+        pod['classifiers'] = copy(self.classifiers)
+        pod['metadata'] = deepcopy(self.metadata)
+        return pod
+
+    @staticmethod
+    def _pod_upgrade_v1(pod):
+        pod['_pod_version'] = pod.get('_pod_version', 1)
+        return pod
 
 
 ARTIFACT_TYPES = ['log', 'meta', 'data', 'export', 'raw']
 ArtifactType = enum(ARTIFACT_TYPES)
 
 
-class Artifact(object):
+class Artifact(Podable):
     """
     This is an artifact generated during execution/post-processing of a
     workload.  Unlike metrics, this represents an actual artifact, such as a
@@ -492,10 +500,16 @@ class Artifact(object):
 
     """
 
+    _pod_serialization_version = 1
+
     @staticmethod
     def from_pod(pod):
+        pod = Artifact._upgrade_pod(pod)
+        pod_version = pod.pop('_pod_version')
         pod['kind'] = ArtifactType(pod['kind'])
-        return Artifact(**pod)
+        instance = Artifact(**pod)
+        instance._pod_version = pod_version  # pylint: disable =protected-access
+        return instance
 
     def __init__(self, name, path, kind, description=None, classifiers=None):
         """"
@@ -515,6 +529,7 @@ class Artifact(object):
                             used to identify sub-tests).
 
         """
+        super(Artifact, self).__init__()
         self.name = name
         self.path = path.replace('/', os.sep) if path is not None else path
         try:
@@ -526,8 +541,14 @@ class Artifact(object):
         self.classifiers = classifiers or {}
 
     def to_pod(self):
-        pod = copy(self.__dict__)
+        pod = super(Artifact, self).to_pod()
+        pod.update(self.__dict__)
         pod['kind'] = str(self.kind)
+        return pod
+
+    @staticmethod
+    def _pod_upgrade_v1(pod):
+        pod['_pod_version'] = pod.get('_pod_version', 1)
         return pod
 
     def __str__(self):
@@ -537,7 +558,7 @@ class Artifact(object):
         return '{} ({}): {}'.format(self.name, self.kind, self.path)
 
 
-class Metric(object):
+class Metric(Podable):
     """
     This is a single metric collected from executing a workload.
 
@@ -554,15 +575,20 @@ class Metric(object):
                         to identify sub-tests).
 
     """
-
     __slots__ = ['name', 'value', 'units', 'lower_is_better', 'classifiers']
+    _pod_serialization_version = 1
 
     @staticmethod
     def from_pod(pod):
-        return Metric(**pod)
+        pod = Metric._upgrade_pod(pod)
+        pod_version = pod.pop('_pod_version')
+        instance = Metric(**pod)
+        instance._pod_version = pod_version  # pylint: disable =protected-access
+        return instance
 
     def __init__(self, name, value, units=None, lower_is_better=False,
                  classifiers=None):
+        super(Metric, self).__init__()
         self.name = name
         self.value = numeric(value)
         self.units = units
@@ -570,13 +596,18 @@ class Metric(object):
         self.classifiers = classifiers or {}
 
     def to_pod(self):
-        return dict(
-            name=self.name,
-            value=self.value,
-            units=self.units,
-            lower_is_better=self.lower_is_better,
-            classifiers=self.classifiers,
-        )
+        pod = super(Metric, self).to_pod()
+        pod['name'] = self.name
+        pod['value'] = self.value
+        pod['units'] = self.units
+        pod['lower_is_better'] = self.lower_is_better
+        pod['classifiers'] = self.classifiers
+        return pod
+
+    @staticmethod
+    def _pod_upgrade_v1(pod):
+        pod['_pod_version'] = pod.get('_pod_version', 1)
+        return pod
 
     def __str__(self):
         result = '{}: {}'.format(self.name, self.value)
@@ -593,18 +624,22 @@ class Metric(object):
             return '<{}>'.format(text)
 
 
-class Event(object):
+class Event(Podable):
     """
     An event that occured during a run.
 
     """
 
     __slots__ = ['timestamp', 'message']
+    _pod_serialization_version = 1
 
     @staticmethod
     def from_pod(pod):
+        pod = Event._upgrade_pod(pod)
+        pod_version = pod.pop('_pod_version')
         instance = Event(pod['message'])
         instance.timestamp = pod['timestamp']
+        instance._pod_version = pod_version  # pylint: disable =protected-access
         return instance
 
     @property
@@ -616,14 +651,20 @@ class Event(object):
         return result
 
     def __init__(self, message):
+        super(Event, self).__init__()
         self.timestamp = datetime.utcnow()
         self.message = str(message)
 
     def to_pod(self):
-        return dict(
-            timestamp=self.timestamp,
-            message=self.message,
-        )
+        pod = super(Event, self).to_pod()
+        pod['timestamp'] = self.timestamp
+        pod['message'] = self.message
+        return pod
+
+    @staticmethod
+    def _pod_upgrade_v1(pod):
+        pod['_pod_version'] = pod.get('_pod_version', 1)
+        return pod
 
     def __str__(self):
         return '[{}] {}'.format(self.timestamp, self.message)
