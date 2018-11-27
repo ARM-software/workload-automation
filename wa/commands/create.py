@@ -40,12 +40,11 @@ from wa.framework.exception import ConfigError, CommandError
 from wa.instruments.energy_measurement import EnergyInstrumentBackend
 from wa.utils.misc import (ensure_directory_exists as _d, capitalize,
                            ensure_file_directory_exists as _f)
-from wa.utils.postgres import get_schema
+from wa.utils.postgres import get_schema, POSTGRES_SCHEMA_DIR
 from wa.utils.serializer import yaml
 
 
 TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), 'templates')
-POSTGRES_SCHEMA_DIR = os.path.join(os.path.dirname(__file__), 'postgres_schemas')
 
 
 class CreateDatabaseSubcommand(SubCommand):
@@ -114,7 +113,7 @@ class CreateDatabaseSubcommand(SubCommand):
             raise ValueError('Databasename to create cannot be postgres.')
 
         self._parse_args(args)
-        self.schema_major, self.schema_minor, self.sql_commands = _get_schema(self.schemafilepath)
+        self.schema_major, self.schema_minor, self.sql_commands = get_schema(self.schemafilepath)
 
         # Display the version if needed and exit
         if args.schema_version:
@@ -191,7 +190,7 @@ class CreateDatabaseSubcommand(SubCommand):
 
     def update_schema(self):
         self._validate_version()
-        schema_major, schema_minor, _ = _get_schema(self.schemafilepath)
+        schema_major, schema_minor, _ = get_schema(self.schemafilepath)
         meta_oid, current_major, current_minor = self._get_database_schema_version()
 
         while not (schema_major == current_major and schema_minor == current_minor):
@@ -209,7 +208,7 @@ class CreateDatabaseSubcommand(SubCommand):
             if not os.path.exists(schema_update):
                 break
 
-            _, _, sql_commands = _get_schema(schema_update)
+            _, _, sql_commands = get_schema(schema_update)
             self._apply_database_schema(sql_commands, major, minor, meta_oid)
             msg = "Updated the database schema to v{}.{}"
             self.logger.debug(msg.format(major, minor))
@@ -226,7 +225,7 @@ class CreateDatabaseSubcommand(SubCommand):
 
         # Reset minor to 0 with major version bump
         current_minor = 0
-        _, _, sql_commands = _get_schema(schema_update)
+        _, _, sql_commands = get_schema(schema_update)
         self._apply_database_schema(sql_commands, current_major, current_minor, meta_oid)
         msg = "Updated the database schema to v{}.{}"
         self.logger.debug(msg.format(current_major, current_minor))
@@ -567,22 +566,3 @@ def get_class_name(name, postfix=''):
 def touch(path):
     with open(path, 'w') as _: # NOQA
         pass
-
-
-def _get_schema(schemafilepath):
-    sqlfile_path = os.path.join(
-        POSTGRES_SCHEMA_DIR, schemafilepath)
-
-    with open(sqlfile_path, 'r') as sqlfile:
-        sql_commands = sqlfile.read()
-
-    schema_major = None
-    schema_minor = None
-    # Extract schema version if present
-    if sql_commands.startswith('--!VERSION'):
-        splitcommands = sql_commands.split('!ENDVERSION!\n')
-        schema_major, schema_minor = splitcommands[0].strip('--!VERSION!').split('.')
-        schema_major = int(schema_major)
-        schema_minor = int(schema_minor)
-        sql_commands = splitcommands[1]
-    return schema_major, schema_minor, sql_commands

@@ -28,6 +28,7 @@ http://initd.org/psycopg/docs/extensions.html#sql-adaptation-protocol-objects
 """
 
 import re
+import os
 
 try:
     from psycopg2 import InterfaceError
@@ -37,6 +38,12 @@ except ImportError:
     AsIs = None
 
 from wa.utils.types import level
+
+
+POSTGRES_SCHEMA_DIR = os.path.join(os.path.dirname(__file__),
+                                   '..',
+                                   'commands',
+                                   'postgres_schemas')
 
 
 def cast_level(value, cur):  # pylint: disable=unused-argument
@@ -217,3 +224,37 @@ def adapt_list(param):
             final_string = final_string + str(item) + ","
         final_string = "{" + final_string + "}"
     return AsIs("'{}'".format(final_string))
+
+
+def get_schema(schemafilepath):
+    with open(schemafilepath, 'r') as sqlfile:
+        sql_commands = sqlfile.read()
+
+    schema_major = None
+    schema_minor = None
+    # Extract schema version if present
+    if sql_commands.startswith('--!VERSION'):
+        splitcommands = sql_commands.split('!ENDVERSION!\n')
+        schema_major, schema_minor = splitcommands[0].strip('--!VERSION!').split('.')
+        schema_major = int(schema_major)
+        schema_minor = int(schema_minor)
+        sql_commands = splitcommands[1]
+    return schema_major, schema_minor, sql_commands
+
+
+def get_database_schema_version(conn):
+    with conn.cursor() as cursor:
+        cursor.execute('''SELECT
+                                  DatabaseMeta.schema_major,
+                                  DatabaseMeta.schema_minor
+                               FROM
+                                  DatabaseMeta;''')
+        schema_major, schema_minor = cursor.fetchone()
+    return (schema_major, schema_minor)
+
+
+def get_schema_versions(conn):
+    schemafilepath = os.path.join(POSTGRES_SCHEMA_DIR, 'postgres_schema.sql')
+    cur_major_version, cur_minor_version, _ = get_schema(schemafilepath)
+    db_schema_version = get_database_schema_version(conn)
+    return (cur_major_version, cur_minor_version), db_schema_version
