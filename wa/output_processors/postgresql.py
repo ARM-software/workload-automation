@@ -31,7 +31,7 @@ from wa.framework.target.info import CpuInfo
 from wa.utils.postgres import (POSTGRES_SCHEMA_DIR, cast_level, cast_vanilla,
                                adapt_vanilla, return_as_is, adapt_level,
                                ListOfLevel, adapt_ListOfX, create_iterable_adapter,
-                               get_schema, get_database_schema_version)
+                               get_schema_versions)
 from wa.utils.serializer import json
 from wa.utils.types import level
 
@@ -127,7 +127,7 @@ class PostgresqlResultProcessor(OutputProcessor):
         # N.B. Typecasters are for postgres->python and adapters the opposite
         self.connect_to_database()
         self.cursor = self.conn.cursor()
-        self.check_schema_versions()
+        self.verify_schema_versions()
 
         # Register the adapters and typecasters for enum types
         self.cursor.execute("SELECT NULL::status_enum")
@@ -520,11 +520,9 @@ class PostgresqlResultProcessor(OutputProcessor):
         self.conn.commit()
         self.conn.reset()
 
-    def check_schema_versions(self):
-        schemafilepath = os.path.join(POSTGRES_SCHEMA_DIR, 'postgres_schema.sql')
-        cur_major_version, cur_minor_version, _ = get_schema(schemafilepath)
-        db_schema_version = get_database_schema_version(self.cursor)
-        if (cur_major_version, cur_minor_version) != db_schema_version:
+    def verify_schema_versions(self):
+        local_schema_version, db_schema_version = get_schema_versions(self.cursor)
+        if local_schema_version != db_schema_version:
             self.cursor.close()
             self.cursor = None
             self.conn.commit()
@@ -532,8 +530,7 @@ class PostgresqlResultProcessor(OutputProcessor):
             msg = 'The current database schema is v{} however the local ' \
                   'schema version is v{}. Please update your database ' \
                   'with the create command'
-            raise OutputProcessorError(msg.format(db_schema_version,
-                                                  (cur_major_version, cur_minor_version)))
+            raise OutputProcessorError(msg.format(db_schema_version, local_schema_version))
 
     def _sql_write_lobject(self, source, lobject):
         with open(source) as lobj_file:
