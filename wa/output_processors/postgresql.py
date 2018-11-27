@@ -30,7 +30,7 @@ from devlib.target import KernelVersion, KernelConfig
 import wa
 from wa import OutputProcessor, Parameter, OutputProcessorError
 from wa.framework.target.info import CpuInfo
-from wa.utils import postgres_convert
+from wa.utils import postgres
 from wa.utils.serializer import json
 from wa.utils.types import level
 
@@ -130,28 +130,28 @@ class PostgresqlResultProcessor(OutputProcessor):
         self.cursor.execute("SELECT NULL::param_enum")
         param_oid = self.cursor.description[0][1]
         LEVEL = psycopg2.extensions.new_type(
-            (status_oid,), "LEVEL", postgres_convert.cast_level)
+            (status_oid,), "LEVEL", postgres.cast_level)
         psycopg2.extensions.register_type(LEVEL)
         PARAM = psycopg2.extensions.new_type(
-            (param_oid,), "PARAM", postgres_convert.cast_vanilla)
+            (param_oid,), "PARAM", postgres.cast_vanilla)
         psycopg2.extensions.register_type(PARAM)
-        psycopg2.extensions.register_adapter(level, postgres_convert.return_as_is(postgres_convert.adapt_level))
+        psycopg2.extensions.register_adapter(level, postgres.return_as_is(postgres.adapt_level))
         psycopg2.extensions.register_adapter(
-            postgres_convert.ListOfLevel, postgres_convert.adapt_ListOfX(postgres_convert.adapt_level))
-        psycopg2.extensions.register_adapter(KernelVersion, postgres_convert.adapt_vanilla)
+            postgres.ListOfLevel, postgres.adapt_ListOfX(postgres.adapt_level))
+        psycopg2.extensions.register_adapter(KernelVersion, postgres.adapt_vanilla)
         psycopg2.extensions.register_adapter(
-            CpuInfo, postgres_convert.adapt_vanilla)
+            CpuInfo, postgres.adapt_vanilla)
         psycopg2.extensions.register_adapter(
             collections.OrderedDict, extras.Json)
         psycopg2.extensions.register_adapter(dict, extras.Json)
         psycopg2.extensions.register_adapter(
-            KernelConfig, postgres_convert.create_iterable_adapter(2, explicit_iterate=True))
+            KernelConfig, postgres.create_iterable_adapter(2, explicit_iterate=True))
         # Register ready-made UUID type adapter
         extras.register_uuid()
         # Insert a run_uuid which will be globally accessible during the run
         self.run_uuid = uuid.UUID(str(uuid.uuid4()))
         run_output = context.run_output
-        retry_on_status = postgres_convert.ListOfLevel(run_output.run_config.retry_on_status)
+        retry_on_status = postgres.ListOfLevel(run_output.run_config.retry_on_status)
         self.cursor.execute(
             self.sql_command['create_run'],
             (
