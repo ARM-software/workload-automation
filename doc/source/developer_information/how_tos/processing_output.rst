@@ -26,7 +26,8 @@ CPU frequency fixed to max, and once with CPU frequency fixed to min.
 Classifiers are used to indicate the configuration in the output.
 
 First, create the :class:`RunOutput` object, which is the main interface for
-interacting with WA outputs.
+interacting with WA outputs. Or alternatively a :class:`RunDatabaseOutput`
+if storing your results in a postgres database.
 
 .. code-block:: python
 
