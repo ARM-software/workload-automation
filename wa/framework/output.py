@@ -354,7 +354,7 @@ class Result(Podable):
     @staticmethod
     def from_pod(pod):
         instance = super(Result, Result).from_pod(pod)
-        instance.status = Status(pod['status'])
+        instance.status = Status.from_pod(pod['status'])
         instance.metrics = [Metric.from_pod(m) for m in pod['metrics']]
         instance.artifacts = [Artifact.from_pod(a) for a in pod['artifacts']]
         instance.events = [Event.from_pod(e) for e in pod['events']]
@@ -449,7 +449,7 @@ class Result(Podable):
 
     def to_pod(self):
         pod = super(Result, self).to_pod()
-        pod['status'] = str(self.status)
+        pod['status'] = self.status.to_pod()
         pod['metrics'] = [m.to_pod() for m in self.metrics]
         pod['artifacts'] = [a.to_pod() for a in self.artifacts]
         pod['events'] = [e.to_pod() for e in self.events]
@@ -460,6 +460,7 @@ class Result(Podable):
     @staticmethod
     def _pod_upgrade_v1(pod):
         pod['_pod_version'] = pod.get('_pod_version', 1)
+        pod['status'] = Status(pod['status']).to_pod()
         return pod
 
 
