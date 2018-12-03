@@ -38,6 +38,7 @@ from wa.framework.target.info import TargetInfo
 from wa.framework.version import get_wa_version_with_commit
 from wa.utils.doc import format_simple_table
 from wa.utils.misc import touch, ensure_directory_exists, isiterable
+from wa.utils.postgres import get_schema_versions
 from wa.utils.serializer import write_pod, read_pod, Podable, json
 from wa.utils.types import enum, numeric
 
@@ -1063,6 +1064,14 @@ class RunDatabaseOutput(DatabaseOutput, RunOutputCommon):
 
         self.connect()
         super(RunDatabaseOutput, self).__init__(conn=self.conn, reload=False)
+
+        local_schema_version, db_schema_version = get_schema_versions(self.conn)
+        if local_schema_version != db_schema_version:
+            self.disconnect()
+            msg = 'The current database schema is v{} however the local ' \
+                  'schema version is v{}. Please update your database ' \
+                  'with the create command'
+            raise HostError(msg.format(db_schema_version, local_schema_version))
 
         if list_runs:
             print('Available runs are:')
