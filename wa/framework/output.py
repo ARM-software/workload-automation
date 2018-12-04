@@ -617,7 +617,7 @@ class Event(object):
 
     def __init__(self, message):
         self.timestamp = datetime.utcnow()
-        self.message = message
+        self.message = str(message)
 
     def to_pod(self):
         return dict(
