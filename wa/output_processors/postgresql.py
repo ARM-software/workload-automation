@@ -521,7 +521,7 @@ class PostgresqlResultProcessor(OutputProcessor):
         self.conn.reset()
 
     def verify_schema_versions(self):
-        local_schema_version, db_schema_version = get_schema_versions(self.cursor)
+        local_schema_version, db_schema_version = get_schema_versions(self.conn)
         if local_schema_version != db_schema_version:
             self.cursor.close()
             self.cursor = None
