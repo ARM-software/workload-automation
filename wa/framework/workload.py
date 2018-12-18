@@ -1,4 +1,4 @@
-#    Copyright 2014-2018 ARM Limited
+#    Copyright 2014-2019 ARM Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,13 @@
 #
 import logging
 import os
+import threading
 import time
+
+try:
+    from shlex import quote
+except ImportError:
+    from pipes import quote
 
 from devlib.utils.android import ApkInfo
 
@@ -865,3 +871,62 @@ class PackageHandler(object):
         self.target.execute('am force-stop {}'.format(self.apk_info.package))
         if self.uninstall:
             self.target.uninstall_package(self.apk_info.package)
+
+
+class TestPackageHandler(PackageHandler):
+    """Class wrapping an APK used through ``am instrument``.
+    """
+    def __init__(self, owner, instrument_args=None, raw_output=False,
+                 instrument_wait=True, no_hidden_api_checks=False,
+                 *args, **kwargs):
+        if instrument_args is None:
+            instrument_args = {}
+        super(TestPackageHandler, self).__init__(owner, *args, **kwargs)
+        self.raw = raw_output
+        self.args = instrument_args
+        self.wait = instrument_wait
+        self.no_checks = no_hidden_api_checks
+
+        self.cmd = ''
+        self.instrument_thread = None
+        self._instrument_output = None
+
+    def setup(self, context):
+        self.initialize_package(context)
+
+        words = ['am', 'instrument']
+        if self.raw:
+            words.append('-r')
+        if self.wait:
+            words.append('-w')
+        if self.no_checks:
+            words.append('--no-hidden-api-checks')
+        for k, v in self.args.items():
+            words.extend(['-e', str(k), str(v)])
+
+        words.append(str(self.apk_info.package))
+        if self.apk_info.activity:
+            words[-1] += '/{}'.format(self.apk_info.activity)
+
+        self.cmd = ' '.join(quote(x) for x in words)
+        self.instrument_thread = threading.Thread(target=self._start_instrument)
+
+    def start_activity(self):
+        self.instrument_thread.start()
+
+    def wait_instrument_over(self):
+        self.instrument_thread.join()
+        if 'Error:' in self._instrument_output:
+            cmd = 'am force-stop {}'.format(self.apk_info.package)
+            self.target.execute(cmd)
+            raise WorkloadError(self._instrument_output)
+
+    def _start_instrument(self):
+        self._instrument_output = self.target.execute(self.cmd)
+        self.logger.debug(self._instrument_output)
+
+    @property
+    def instrument_output(self):
+        if self.instrument_thread.is_alive():
+            self.instrument_thread.join()  # writes self._instrument_output
+        return self._instrument_output
