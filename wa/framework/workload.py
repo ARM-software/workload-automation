@@ -271,6 +271,9 @@ class ApkWorkload(Workload):
     def initialize(self, context):
         super(ApkWorkload, self).initialize(context)
         self.apk.initialize(context)
+        # pylint: disable=access-member-before-definition, attribute-defined-outside-init
+        if self.version is None:
+            self.version = self.apk.apk_info.version_name
         if self.view is None:
             self.view = 'SurfaceView - {}/{}'.format(self.apk.package,
                                                      self.apk.activity)
