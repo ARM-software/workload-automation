@@ -3,6 +3,20 @@ What's New in Workload Automation
 =================================
 
 *************
+Version 3.1.1
+*************
+
+Fixes/Improvements
+==================
+
+Other
+-----
+    - Improve formatting when displaying metrics
+    - Update revent binaries to include latest fixes
+    - Update DockerImage to use new released version of WA and Devlib
+    - Fix broken package on PyPi
+
+*************
 Version 3.1.0
 *************
 
