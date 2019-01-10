@@ -37,7 +37,7 @@ from wa.framework.run import RunState, RunInfo
 from wa.framework.target.info import TargetInfo
 from wa.framework.version import get_wa_version_with_commit
 from wa.utils.doc import format_simple_table
-from wa.utils.misc import touch, ensure_directory_exists, isiterable
+from wa.utils.misc import touch, ensure_directory_exists, isiterable, format_ordered_dict
 from wa.utils.postgres import get_schema_versions
 from wa.utils.serializer import write_pod, read_pod, Podable, json
 from wa.utils.types import enum, numeric
@@ -635,7 +635,7 @@ class Metric(Podable):
     def __repr__(self):
         text = self.__str__()
         if self.classifiers:
-            return '<{} {}>'.format(text, self.classifiers)
+            return '<{} {}>'.format(text, format_ordered_dict(self.classifiers))
         else:
             return '<{}>'.format(text)
 
