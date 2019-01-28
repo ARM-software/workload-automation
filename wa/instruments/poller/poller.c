@@ -196,7 +196,7 @@ int main(int argc, char ** argv) {
 
             strip(buf);
             printf(",%s", buf);
-			memset(buf, 0, sizeof(buf)); // "Empty" buffer
+            memset(buf, 0, sizeof(buf)); // "Empty" buffer
         }
         printf("\n");
         usleep(interval);
