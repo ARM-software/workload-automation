@@ -16,6 +16,8 @@ import logging
 import os
 import time
 
+from distutils.version import LooseVersion
+
 from devlib.utils.android import ApkInfo
 
 from wa.framework.plugin import TargetedPlugin, Parameter
@@ -172,10 +174,15 @@ class ApkWorkload(Workload):
 
     # May be optionally overwritten by subclasses
     # Times are in seconds
+    # activity_name: This is the initial activity of the app. This will be used
+    #                to launch the app during the setup.  Many applications do
+    #                not need to specify a launch activity.
     loading_time = 10
     package_names = []
+    activity_name = None
     view = None
     clear_data_on_reset = True
+    max_apk_version = None
 
     # Set this to True to mark that this workload requires the target apk to be run
     # for initialisation purposes before the main run is performed.
@@ -252,6 +259,7 @@ class ApkWorkload(Workload):
         self.apk = PackageHandler(self,
                                   package_name=self.package_name,
                                   variant=self.variant,
+                                  activity_name=self.activity_name,
                                   strict=self.strict,
                                   version=self.version,
                                   force_install=self.force_install,
@@ -259,7 +267,8 @@ class ApkWorkload(Workload):
                                   uninstall=self.uninstall,
                                   exact_abi=self.exact_abi,
                                   prefer_host_package=self.prefer_host_package,
-                                  clear_data_on_reset=self.clear_data_on_reset)
+                                  clear_data_on_reset=self.clear_data_on_reset,
+                                  max_apk_version=self.max_apk_version)
 
     @once_per_instance
     def initialize(self, context):
@@ -637,13 +646,16 @@ class PackageHandler(object):
 
     @property
     def activity(self):
+        if self.activity_name is not None:
+            return self.activity_name
         if self.apk_info is None:
             return None
         return self.apk_info.activity
 
     def __init__(self, owner, install_timeout=300, version=None, variant=None,
-                 package_name=None, strict=False, force_install=False, uninstall=False,
-                 exact_abi=False, prefer_host_package=True, clear_data_on_reset=True):
+                 package_name=None, activity_name=False, strict=False, force_install=False,
+                 uninstall=False, exact_abi=False, prefer_host_package=True, clear_data_on_reset=True,
+                 max_apk_version=None):
         self.logger = logging.getLogger('apk')
         self.owner = owner
         self.target = self.owner.target
@@ -651,6 +663,7 @@ class PackageHandler(object):
         self.version = version
         self.variant = variant
         self.package_name = package_name
+        self.activity_name = activity_name
         self.strict = strict
         self.force_install = force_install
         self.uninstall = uninstall
@@ -658,6 +671,7 @@ class PackageHandler(object):
         self.prefer_host_package = prefer_host_package
         self.clear_data_on_reset = clear_data_on_reset
         self.supported_abi = self.target.supported_abi
+        self.max_apk_version = max_apk_version
         self.apk_file = None
         self.apk_info = None
         self.apk_version = None
@@ -670,6 +684,8 @@ class PackageHandler(object):
     def setup(self, context):
         context.update_metadata('app_version', self.apk_info.version_name)
         self.initialize_package(context)
+        if self.prefer_host_package:
+            self.check_apk_version()
         self.start_activity()
         self.target.execute('am kill-all')  # kill all *background* activities
         self.target.clear_logcat()
@@ -787,18 +803,20 @@ class PackageHandler(object):
             self.install_apk(context)
         else:
             self.reset(context)
-            if self.apk_info.permissions:
-                self.logger.debug('Granting runtime permissions')
-                for permission in self.apk_info.permissions:
-                    self.target.grant_package_permission(self.apk_info.package, permission)
         self.apk_version = host_version
 
+    def check_apk_version(self):
+        if self.max_apk_version is not None:
+            if LooseVersion(self.apk_version) > LooseVersion(self.max_apk_version):
+                msg = "APK version not supported. Maximum version supported: {}".format(self.max_apk_version)
+                raise WorkloadError(msg)
+
     def start_activity(self):
-        if not self.apk_info.activity:
+        if not self.activity:
             cmd = 'am start -W {}'.format(self.apk_info.package)
         else:
             cmd = 'am start -W -n {}/{}'.format(self.apk_info.package,
-                                                self.apk_info.activity)
+                                                self.activity)
         output = self.target.execute(cmd)
         if 'Error:' in output:
             # this will dismiss any error dialogs
