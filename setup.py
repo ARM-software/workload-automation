@@ -29,7 +29,8 @@ except ImportError:
 wa_dir = os.path.join(os.path.dirname(__file__), 'wa')
 
 sys.path.insert(0, os.path.join(wa_dir, 'framework'))
-from version import get_wa_version, get_wa_version_with_commit
+from version import (get_wa_version, get_wa_version_with_commit,
+                     format_version, required_devlib_version)
 
 # happens if falling back to distutils
 warnings.filterwarnings('ignore', "Unknown distribution option: 'install_requires'")
@@ -83,7 +84,7 @@ params = dict(
         'colorama',  # Printing with colors
         'pyYAML',  # YAML-formatted agenda parsing
         'requests',  # Fetch assets over HTTP
-        'devlib>=1.1.dev1',  # Interacting with devices
+        'devlib>={}'.format(format_version(required_devlib_version)),  # Interacting with devices
         'louie-latest',  # callbacks dispatch
         'wrapt',  # better decorators
         'pandas>=0.23.0',  # Data analysis and manipulation
@@ -122,7 +123,6 @@ class sdist(orig_sdist):
     def initialize_options(self):
         orig_sdist.initialize_options(self)
         self.strip_commit = False
-
 
     def run(self):
         if self.strip_commit:
