@@ -82,7 +82,7 @@ params = dict(
         'pexpect>=3.3',  # Send/receive to/from device
         'pyserial',  # Serial port interface
         'colorama',  # Printing with colors
-        'pyYAML<=3.13',  # YAML-formatted agenda parsing
+        'pyYAML>=5.1b3',  # YAML-formatted agenda parsing
         'requests',  # Fetch assets over HTTP
         'devlib>={}'.format(format_version(required_devlib_version)),  # Interacting with devices
         'louie-latest',  # callbacks dispatch
