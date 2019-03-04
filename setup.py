@@ -90,7 +90,6 @@ params = dict(
         'pandas>=0.23.0',  # Data analysis and manipulation
         'future',  # Python 2-3 compatiblity
     ],
-    dependency_links=['https://github.com/ARM-software/devlib/tarball/master#egg=devlib-1.1.dev1'],
     extras_require={
         'other': ['jinja2'],
         'test': ['nose', 'mock'],
