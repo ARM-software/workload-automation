@@ -1010,6 +1010,7 @@ class RunDatabaseOutput(DatabaseOutput, RunOutputCommon):
         jobs = self._read_db(columns, tables, conditions)
 
         for job in jobs:
+            job['augmentations'] = self._get_job_augmentations(job['oid'])
             job['workload_parameters'] = workload_params.pop(job['oid'], {})
             job['runtime_parameters'] = runtime_params.pop(job['oid'], {})
             job.pop('oid')
@@ -1173,6 +1174,15 @@ class RunDatabaseOutput(DatabaseOutput, RunOutputCommon):
                 logger.debug('Failed to deserialize job_oid:{}-"{}":"{}"'.format(job_oid, k, v))
         return parm_dict
 
+    def _get_job_augmentations(self, job_oid):
+        columns = ['jobs_augs.augmentation_oid', 'augmentations.name',
+                   'augmentations.oid', 'jobs_augs.job_oid']
+        tables = ['jobs_augs', 'augmentations']
+        conditions = ['jobs_augs.job_oid = \'{}\''.format(job_oid),
+                      'jobs_augs.augmentation_oid = augmentations.oid']
+        augmentations = self._read_db(columns, tables, conditions)
+        return [aug['name'] for aug in augmentations]
+
     def _list_runs(self):
         columns = ['runs.run_uuid', 'runs.run_name', 'runs.project',
                    'runs.project_stage', 'runs.status', 'runs.start_time', 'runs.end_time']
@@ -1224,3 +1234,11 @@ class JobDatabaseOutput(DatabaseOutput):
 
     def __str__(self):
         return '{}-{}-{}'.format(self.id, self.label, self.iteration)
+
+    @property
+    def augmentations(self):
+        job_augs = set([])
+        if self.spec:
+            for aug in self.spec.augmentations:
+                job_augs.add(aug)
+        return list(job_augs)
