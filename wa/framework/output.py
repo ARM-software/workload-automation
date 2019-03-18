@@ -346,6 +346,13 @@ class JobOutput(Output):
         self.spec = None
         self.reload()
 
+    @property
+    def augmentations(self):
+        job_augs = set([])
+        for aug in self.spec.augmentations:
+            job_augs.add(aug)
+        return list(job_augs)
+
 
 class Result(Podable):
 
