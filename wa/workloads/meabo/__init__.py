@@ -278,7 +278,7 @@ class Meabo(Workload):
                 name = 'phase_{}_thread_{}_{}'.format(cur_phase,
                                                       match.group('thread'),
                                                       match.group('name'))
-                context.result.add_metric(name, int(match.group('value')))
+                context.add_metric(name, int(match.group('value')))
 
             match = duration_regex.search(line)
             if match:
