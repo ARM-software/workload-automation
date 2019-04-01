@@ -161,13 +161,13 @@ class ApkFile(Resource):
         package_matches = True
         abi_matches = True
         uiauto_matches = uiauto_test_matches(path, self.uiauto)
-        if self.version is not None:
+        if self.version:
             version_matches = apk_version_matches(path, self.version)
-        if self.variant is not None:
+        if self.variant:
             name_matches = file_name_matches(path, self.variant)
-        if self.package is not None:
+        if self.package:
             package_matches = package_name_matches(path, self.package)
-        if self.supported_abi is not None:
+        if self.supported_abi:
             abi_matches = apk_abi_matches(path, self.supported_abi,
                                           self.exact_abi)
         return name_matches and version_matches and \
