@@ -77,6 +77,17 @@ class PerfInstrument(Instrument):
                   description="""Provides labels for pref output. If specified, the number of
                   labels must match the number of ``optionstring``\ s.
                   """),
+        Parameter('perf_mode', kind=str, default='stat', allowed_values=['stat', 'record'],
+                  global_alias='perf_mode',
+                  description="""
+                  Choose between 'perf stat' and 'perf record'. If 'perf record' is selected
+                  'perf report' will also be run. 'report_optionstring' can be used to generate
+                  custom report from the trace.
+                  """),
+        Parameter('report_optionstring', kind=list_or_string, default='',
+                  global_alias='report_perf_options',
+                  description="""Specifies options to be used for the 'perf report' command used
+                  with 'perf_mode=record'. """),
         Parameter('force_install', kind=bool, default=False,
                   description="""
                   always install perf binary even if perf is already present on the device.
@@ -92,6 +103,8 @@ class PerfInstrument(Instrument):
                                        self.events,
                                        self.optionstring,
                                        self.labels,
+                                       self.perf_mode,
+                                       self.report_optionstring,
                                        self.force_install)
 
     def setup(self, context):
@@ -103,11 +116,10 @@ class PerfInstrument(Instrument):
     def stop(self, context):
         self.collector.stop()
 
-    def update_output(self, context):
-        self.logger.info('Extracting reports from target...')
+    def _update_output_stat(self, context):
         outdir = os.path.join(context.output_directory, 'perf')
         self.collector.get_trace(outdir)
-
+        self.logger.info('Processing perf stat reports.')
         for host_file in os.listdir(outdir):
             label = host_file.split('.out')[0]
             host_file_path = os.path.join(outdir, host_file)
@@ -133,6 +145,39 @@ class PerfInstrument(Instrument):
                                 count = int(match.group(2))
                                 metric = '{}_{}'.format(label, match.group(3))
                                 context.add_metric(metric, count, classifiers=classifiers)
+
+    def _update_output_record(self, context):
+        outdir = os.path.join(context.output_directory, 'perf')
+        self.collector.get_trace(outdir)
+
+        self.logger.info('Processing perf report reports.')
+        for host_file in os.listdir(outdir):
+            label = host_file.split('.rpt')[0]
+            host_file_path = os.path.join(outdir, host_file)
+            context.add_artifact(label, host_file_path, 'raw')
+            with open(host_file_path) as fh:
+                for line in fh:
+                    words = line.split()
+                    if len(words) >= 1:
+                        if words[0] == '#' and len(words) == 6:
+                            if words[4] == 'event':
+                                event_type = words[5]
+                                event_type = event_type.strip("'")
+                        if words[0] != '#' and '%' in words[0] and len(words) == 5:
+                            metric = 'perf/{}/{}/{}'.format(event_type, words[1], words[2].strip("[]"))
+                            temp = words[0]
+                            count = temp.strip('%')
+                            context.add_metric(metric, count, '%')
+
+    def update_output(self, context):
+        self.logger.info('Extracting reports from target...')
+
+        # Extract data for 'perf stat'
+        if self.perf_mode == 'stat':
+            self._update_output_stat(context)
+        # Extract data for 'perf record'
+        elif self.perf_mode == 'record':
+            self._update_output_record(context)
 
     def teardown(self, context):
         self.collector.reset()
