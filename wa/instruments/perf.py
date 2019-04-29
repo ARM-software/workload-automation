@@ -1,3 +1,4 @@
+
 #    Copyright 2013-2015 ARM Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +23,7 @@ from devlib.trace.perf import PerfCollector
 
 from wa import Instrument, Parameter
 from wa.utils.types import list_or_string, list_of_strs
+from wa.utils.types import numeric
 
 PERF_COUNT_REGEX = re.compile(r'^(CPU\d+)?\s*(\d+)\s*(.*?)\s*(\[\s*\d+\.\d+%\s*\])?\s*$')
 
@@ -77,8 +79,8 @@ class PerfInstrument(Instrument):
                   description="""Provides labels for pref output. If specified, the number of
                   labels must match the number of ``optionstring``\ s.
                   """),
-        Parameter('perf_mode', kind=str, default='stat', allowed_values=['stat', 'record'],
-                  global_alias='perf_mode',
+        Parameter('mode', kind=str, default='stat', allowed_values=['stat', 'record'],
+                  global_alias='mode',
                   description="""
                   Choose between 'perf stat' and 'perf record'. If 'perf record' is selected
                   'perf report' will also be run. 'report_optionstring' can be used to generate
@@ -86,8 +88,10 @@ class PerfInstrument(Instrument):
                   """),
         Parameter('report_optionstring', kind=list_or_string, default='',
                   global_alias='report_perf_options',
-                  description="""Specifies options to be used for the 'perf report' command used
-                  with 'perf_mode=record'. """),
+                  description="""
+                  Specifies options to be used for the 'perf report' command used
+                  with 'mode=record'.
+                  """),
         Parameter('force_install', kind=bool, default=False,
                   description="""
                   always install perf binary even if perf is already present on the device.
@@ -103,7 +107,7 @@ class PerfInstrument(Instrument):
                                        self.events,
                                        self.optionstring,
                                        self.labels,
-                                       self.perf_mode,
+                                       self.mode,
                                        self.report_optionstring,
                                        self.force_install)
 
@@ -116,12 +120,22 @@ class PerfInstrument(Instrument):
     def stop(self, context):
         self.collector.stop()
 
-    def _update_output_stat(self, context):
+    def update_output(self, context):
         outdir = os.path.join(context.output_directory, 'perf')
         self.collector.get_trace(outdir)
+
+        # Extract data for 'perf stat'
+        if self.mode == 'stat':
+            self._update_output_stat(context, outdir)
+        # Extract data for 'perf record'
+        elif self.mode == 'record':
+            self._update_output_record(context, outdir)
+
+    def _update_output_stat(self, context, outdir):
         self.logger.info('Processing perf stat reports.')
+
         for host_file in os.listdir(outdir):
-            label = host_file.split('.out')[0]
+            label = os.path.splitext(host_file)[0]
             host_file_path = os.path.join(outdir, host_file)
             context.add_artifact(label, host_file_path, 'raw')
             with open(host_file_path) as fh:
@@ -146,38 +160,27 @@ class PerfInstrument(Instrument):
                                 metric = '{}_{}'.format(label, match.group(3))
                                 context.add_metric(metric, count, classifiers=classifiers)
 
-    def _update_output_record(self, context):
-        outdir = os.path.join(context.output_directory, 'perf')
-        self.collector.get_trace(outdir)
+    def _update_output_record(self, context, outdir):
+        self.logger.info('Processing "perf report" reports.')
 
-        self.logger.info('Processing perf report reports.')
         for host_file in os.listdir(outdir):
-            label = host_file.split('.rpt')[0]
+            label, ext = os.path.splitext(host_file)
             host_file_path = os.path.join(outdir, host_file)
             context.add_artifact(label, host_file_path, 'raw')
-            with open(host_file_path) as fh:
-                for line in fh:
-                    words = line.split()
-                    if len(words) >= 1:
-                        if words[0] == '#' and len(words) == 6:
-                            if words[4] == 'event':
-                                event_type = words[5]
-                                event_type = event_type.strip("'")
-                        if words[0] != '#' and '%' in words[0] and len(words) == 5:
-                            metric = 'perf/{}/{}/{}'.format(event_type, words[1], words[2].strip("[]"))
-                            temp = words[0]
-                            count = temp.strip('%')
-                            context.add_metric(metric, count, '%')
-
-    def update_output(self, context):
-        self.logger.info('Extracting reports from target...')
-
-        # Extract data for 'perf stat'
-        if self.perf_mode == 'stat':
-            self._update_output_stat(context)
-        # Extract data for 'perf record'
-        elif self.perf_mode == 'record':
-            self._update_output_record(context)
+            if ext == '.rpt':
+                with open(host_file_path) as fh:
+                    for line in fh:
+                        words = line.split()
+                        if len(words) >= 1:
+                            if words[0] == '#' and len(words) == 6:
+                                if words[4] == 'event':
+                                    event_type = words[5]
+                                    event_type = event_type.strip("'")
+                            if words[0] != '#' and '%' in words[0] and len(words) == 5:
+                                metric = 'perf/{}/{}/{}'.format(event_type, words[1], words[2].strip("[]"))
+                                count = numeric(words[0].strip('%'))
+                                context.add_metric(metric, count, '%',
+                                                   classifiers={'Perf Event': event_type, 'Command': words[1], 'Shared Object' : words[2]})
 
     def teardown(self, context):
         self.collector.reset()
