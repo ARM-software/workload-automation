@@ -67,6 +67,7 @@ try:
     from yaml import FullLoader as _yaml_loader
 except ImportError:
     from yaml import Loader as _yaml_loader
+from yaml.constructor import ConstructorError
 
 
 # pylint: disable=redefined-builtin
@@ -208,16 +209,6 @@ def _wa_cpu_mask_representer(dumper, data):
     return dumper.represent_scalar(_cpu_mask_tag, data.mask())
 
 
-def _wa_dict_constructor(loader, node):
-    pairs = loader.construct_pairs(node)
-    seen_keys = set()
-    for k, _ in pairs:
-        if k in seen_keys:
-            raise ValueError('Duplicate entry: {}'.format(k))
-        seen_keys.add(k)
-    return OrderedDict(pairs)
-
-
 def _wa_regex_constructor(loader, node):
     value = loader.construct_scalar(node)
     flags, pattern = value.split(':', 1)
@@ -235,14 +226,32 @@ def _wa_cpu_mask_constructor(loader, node):
     return cpu_mask(value)
 
 
+class _WaYamlLoader(_yaml_loader):
+
+    def construct_mapping(self, node, deep=False):
+        if not isinstance(node, MappingNode):
+            raise ConstructorError(None, None,
+                    "expected a mapping node, but found %s" % node.id,
+                    node.start_mark)
+        mapping = OrderedDict()
+        for key_node, value_node in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if not isinstance(key, collections.Hashable):
+                raise ConstructorError("while constructing a mapping", node.start_mark,
+                        "found unhashable key", key_node.start_mark)
+            value = self.construct_object(value_node, deep=deep)
+            mapping[key] = value
+        return mapping
+
+
 _yaml.add_representer(OrderedDict, _wa_dict_representer)
 _yaml.add_representer(regex_type, _wa_regex_representer)
 _yaml.add_representer(level, _wa_level_representer)
 _yaml.add_representer(cpu_mask, _wa_cpu_mask_representer)
-_yaml.add_constructor(_regex_tag, _wa_regex_constructor, Loader=_yaml_loader)
-_yaml.add_constructor(_level_tag, _wa_level_constructor, Loader=_yaml_loader)
-_yaml.add_constructor(_cpu_mask_tag, _wa_cpu_mask_constructor, Loader=_yaml_loader)
-_yaml.add_constructor(_mapping_tag, _wa_dict_constructor, Loader=_yaml_loader)
+_yaml.add_constructor(_regex_tag, _wa_regex_constructor, Loader=_WaYamlLoader)
+_yaml.add_constructor(_level_tag, _wa_level_constructor, Loader=_WaYamlLoader)
+_yaml.add_constructor(_cpu_mask_tag, _wa_cpu_mask_constructor, Loader=_WaYamlLoader)
+_yaml.add_constructor(_mapping_tag, _WaYamlLoader.construct_yaml_map, Loader=_WaYamlLoader)
 
 
 class yaml(object):
