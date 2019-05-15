@@ -45,7 +45,6 @@ workloads:
           test: 1
 """
 invalid_agenda = yaml.load(invalid_agenda_text)
-invalid_agenda.name = 'invalid1'
 
 duplicate_agenda_text = """
 global:
@@ -59,13 +58,11 @@ workloads:
       workload_name: benchmarkpi
 """
 duplicate_agenda = yaml.load(duplicate_agenda_text)
-duplicate_agenda.name = 'invalid2'
 
 short_agenda_text = """
 workloads: [antutu, dhrystone, benchmarkpi]
 """
 short_agenda = yaml.load(short_agenda_text)
-short_agenda.name = 'short'
 
 default_ids_agenda_text = """
 workloads:
@@ -79,7 +76,6 @@ workloads:
     - vellamo
 """
 default_ids_agenda = yaml.load(default_ids_agenda_text)
-default_ids_agenda.name = 'default_ids'
 
 sectioned_agenda_text = """
 sections:
@@ -103,7 +99,6 @@ workloads:
     - memcpy
 """
 sectioned_agenda = yaml.load(sectioned_agenda_text)
-sectioned_agenda.name = 'sectioned'
 
 dup_sectioned_agenda_text = """
 sections:
@@ -117,7 +112,6 @@ workloads:
     - memcpy
 """
 dup_sectioned_agenda = yaml.load(dup_sectioned_agenda_text)
-dup_sectioned_agenda.name = 'dup-sectioned'
 
 
 class AgendaTest(TestCase):
