@@ -59,10 +59,11 @@ to specify it explicitly.
 import os
 import re
 import json as _json
-from collections import OrderedDict
+from collections import OrderedDict, Hashable
 from datetime import datetime
 import dateutil.parser
 import yaml as _yaml  # pylint: disable=wrong-import-order
+from yaml import MappingNode
 try:
     from yaml import FullLoader as _yaml_loader
 except ImportError:
@@ -236,7 +237,7 @@ class _WaYamlLoader(_yaml_loader):
         mapping = OrderedDict()
         for key_node, value_node in node.value:
             key = self.construct_object(key_node, deep=deep)
-            if not isinstance(key, collections.Hashable):
+            if not isinstance(key, Hashable):
                 raise ConstructorError("while constructing a mapping", node.start_mark,
                         "found unhashable key", key_node.start_mark)
             value = self.construct_object(value_node, deep=deep)
@@ -263,7 +264,7 @@ class yaml(object):
     @staticmethod
     def load(fh, *args, **kwargs):
         try:
-            return _yaml.load(fh, *args, Loader=_yaml_loader, **kwargs)
+            return _yaml.load(fh, *args, Loader=_WaYamlLoader, **kwargs)
         except _yaml.YAMLError as e:
             lineno = None
             if hasattr(e, 'problem_mark'):
