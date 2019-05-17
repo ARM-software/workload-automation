@@ -107,6 +107,22 @@ workloads:
     - memcpy
 """
 
+yaml_anchors_agenda_text = """
+workloads:
+-   name: dhrystone
+    params: &dhrystone_single_params
+        cleanup_assets: true
+        cpus: 0
+        delay: 3
+        duration: 0
+        mloops: 10
+        threads: 1
+-   name: dhrystone
+    params:
+        <<: *dhrystone_single_params
+        threads: 4
+"""
+
 
 class AgendaTest(TestCase):
 
@@ -168,6 +184,19 @@ class AgendaTest(TestCase):
         assert_equal(root_node_workload_entries[0].config['workload_name'], 'memcpy')
         assert_true(section1_workload_entries[0].config['workload_parameters']['markers_enabled'])
         assert_equal(section2_workload_entries[0].config['workload_name'], 'antutu')
+
+    def test_yaml_anchors(self):
+        yaml_anchors_agenda = yaml.load(yaml_anchors_agenda_text)
+        self.parser.load(self.config, yaml_anchors_agenda, 'test')
+
+        workload_entries = self.config.jobs_config.root_node.workload_entries
+        assert_equal(len(workload_entries), 2)
+        assert_equal(workload_entries[0].config['workload_name'], 'dhrystone')
+        assert_equal(workload_entries[0].config['workload_parameters']['threads'], 1)
+        assert_equal(workload_entries[0].config['workload_parameters']['delay'], 3)
+        assert_equal(workload_entries[1].config['workload_name'], 'dhrystone')
+        assert_equal(workload_entries[1].config['workload_parameters']['threads'], 4)
+        assert_equal(workload_entries[1].config['workload_parameters']['delay'], 3)
 
     @raises(ConfigError)
     def test_dup_sections(self):
