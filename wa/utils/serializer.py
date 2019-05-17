@@ -230,6 +230,8 @@ def _wa_cpu_mask_constructor(loader, node):
 class _WaYamlLoader(_yaml_loader):  # pylint: disable=too-many-ancestors
 
     def construct_mapping(self, node, deep=False):
+        if isinstance(node, MappingNode):
+            self.flatten_mapping(node)
         if not isinstance(node, MappingNode):
             raise ConstructorError(None, None,
                                    "expected a mapping node, but found %s" % node.id,
