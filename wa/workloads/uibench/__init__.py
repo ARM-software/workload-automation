@@ -18,7 +18,7 @@ from wa import Parameter, ApkWorkload
 class Uibench(ApkWorkload):
 
     name = 'uibench'
-    description ="""
+    description = """
         Runs a particular activity of the UIBench_ workload suite. The suite
         is provided by Google as a testbench for the Android UI.
 
