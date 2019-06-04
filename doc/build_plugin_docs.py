@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#    Copyright 2014-2015 ARM Limited
+#    Copyright 2014-2019 ARM Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ def generate_plugin_documentation(source_dir, outdir, ignore_paths):
             exts = pluginloader.list_plugins(ext_type)
             sorted_exts = iter(sorted(exts, key=lambda x: x.name))
             try:
-                wfh.write(get_rst_from_plugin(sorted_exts.next()))
+                wfh.write(get_rst_from_plugin(next(sorted_exts)))
             except StopIteration:
                 return
             for ext in sorted_exts:
