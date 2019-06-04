@@ -99,6 +99,7 @@ params = dict(
         'mongodb': ['pymongo'],
         'notify': ['notify2'],
         'doc': ['sphinx'],
+        'postgres': ['psycopg2-binary']
     },
     # https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
