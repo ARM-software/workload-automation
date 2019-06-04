@@ -37,4 +37,4 @@ def generate_instrument_method_map(outfile):
 
 
 if __name__ == '__main__':
-    generate_instrumentation_method_map(sys.argv[1])
+    generate_instrument_method_map(sys.argv[1])
