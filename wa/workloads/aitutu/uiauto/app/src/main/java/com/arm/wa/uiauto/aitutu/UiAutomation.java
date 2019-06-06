@@ -60,14 +60,19 @@ public class UiAutomation extends BaseUiAutomation {
     public void clearPopups() throws Exception {
         UiSelector selector = new UiSelector();
 
+        UiObject next = mDevice.findObject(selector.textContains("NEXT")
+                                            .className("android.widget.Button"));
+        next.waitForExists(60000);
+        if (next.exists()){
+            next.click();
+        }
+
         UiObject cancel = mDevice.findObject(selector.textContains("CANCEL")
                                              .className("android.widget.Button"));
         cancel.waitForExists(60000);
         if (cancel.exists()){
             cancel.click();
         }
-        //waitObject(cancel);
-        //cancel.click();
     }
 
     public void downloadAssets() throws Exception {
