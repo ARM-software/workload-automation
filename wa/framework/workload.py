@@ -685,6 +685,7 @@ class PackageHandler(object):
             return None
         return self.apk_info.activity
 
+    # pylint: disable=too-many-locals
     def __init__(self, owner, install_timeout=300, version=None, variant=None,
                  package_name=None, strict=False, force_install=False, uninstall=False,
                  exact_abi=False, prefer_host_package=True, clear_data_on_reset=True,
@@ -783,46 +784,48 @@ class PackageHandler(object):
             if len(available_packages) == 1:
                 self.apk_file = available_packages[0]
             elif len(available_packages) > 1:
-                msg = 'Multiple matching packages found for "{}" on host: {}'
-                self.error_msg = msg.format(self.owner, available_packages)
+                self.error_msg = self._get_package_error_msg('host')
 
     def resolve_package_from_target(self):  # pylint: disable=too-many-branches
         self.logger.debug('Resolving package on target')
+        found_package = None
         if self.package_name:
             if not self.target.package_is_installed(self.package_name):
                 return
+            else:
+                installed_versions = [self.package_name]
         else:
             installed_versions = []
             for package in self.owner.package_names:
                 if self.target.package_is_installed(package):
                     installed_versions.append(package)
 
-            if self.version or self.min_version or self.max_version:
-                matching_packages = []
-                for package in installed_versions:
-                    package_version = self.target.get_package_version(package)
-                    if self.version:
-                        for v in list_or_string(self.version):
-                            if loose_version_matching(v, package_version):
-                                matching_packages.append(package)
-                    else:
-                        if range_version_matching(package_version, self.min_version,
-                                                  self.max_version):
+        if self.version or self.min_version or self.max_version:
+            matching_packages = []
+            for package in installed_versions:
+                package_version = self.target.get_package_version(package)
+                if self.version:
+                    for v in list_or_string(self.version):
+                        if loose_version_matching(v, package_version):
                             matching_packages.append(package)
-                if len(matching_packages) == 1:
-                    self.package_name = matching_packages[0]
-                elif len(matching_packages) > 1:
-                    msg = 'Multiple matches for version "{}" found on device.'
-                    self.error_msg = msg.format(self.version)
-            else:
-                if len(installed_versions) == 1:
-                    self.package_name = installed_versions[0]
-                elif len(installed_versions) > 1:
-                    self.error_msg = 'Package version not set and multiple versions found on device.'
+                else:
+                    if range_version_matching(package_version, self.min_version,
+                                              self.max_version):
+                        matching_packages.append(package)
 
-        if self.package_name:
+            if len(matching_packages) == 1:
+                found_package = matching_packages[0]
+            elif len(matching_packages) > 1:
+                self.error_msg = self._get_package_error_msg('device')
+        else:
+            if len(installed_versions) == 1:
+                found_package = installed_versions[0]
+            elif len(installed_versions) > 1:
+                self.error_msg = 'Package version not set and multiple versions found on device.'
+        if found_package:
             self.logger.debug('Found matching package on target; Pulling to host.')
-            self.apk_file = self.pull_apk(self.package_name)
+            self.apk_file = self.pull_apk(found_package)
+            self.package_name = found_package
 
     def initialize_package(self, context):
         installed_version = self.target.get_package_version(self.apk_info.package)
@@ -900,6 +903,20 @@ class PackageHandler(object):
         self.target.execute('am force-stop {}'.format(self.apk_info.package))
         if self.uninstall:
             self.target.uninstall_package(self.apk_info.package)
+
+    def _get_package_error_msg(self, location):
+        if self.version:
+            msg = 'Multiple matches for "{version}" found on {location}.'
+        elif self.min_version and self.max_version:
+            msg = 'Multiple matches between versions "{min_version}" and "{max_version}" found on {location}.'
+        elif self.max_version:
+            msg = 'Multiple matches less than or equal to "{max_version}" found on {location}.'
+        elif self.min_version:
+            msg = 'Multiple matches greater or equal to "{min_version}" found on {location}.'
+        else:
+            msg = ''
+        return msg.format(version=self.version, min_version=self.min_version,
+                          max_version=self.max_version, location=location)
 
 
 class TestPackageHandler(PackageHandler):
