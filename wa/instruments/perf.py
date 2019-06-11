@@ -13,34 +13,18 @@
 # limitations under the License.
 #
 
-import collections
+import itertools
 import os
+import re
+import shlex
 
-from devlib.utils.cli import Command
-from devlib.trace.perf import PerfCollector
+from devlib.trace.perf import PerfCollector, PerfCommandDict
 from wa import Instrument, Parameter
 from wa.utils.types import list_or_string, list_of_strs
 
 __all__ = [
     'PerfInstrument',
 ]
-
-
-class YamlCommandDescriptor(collections.OrderedDict):
-
-    def __init__(self, yaml_dict):
-        super(YamlCommandDescriptor, self).__init__()
-        if isinstance(yaml_dict, YamlCommandDescriptor):
-            for k, v in yaml_dict.items():
-                self[k] = v
-            return
-        yaml_dict_copy = yaml_dict.copy()
-        for label, parameters in yaml_dict_copy.items():
-            self[label] = str(Command(kwflags_join=',',
-                                      kwflags_sep='=',
-                                      end_of_options='--',
-                                      **parameters))
-
 
 DEFAULT_EVENTS = ['migration', 'cs']
 DEFAULT_OPTIONSTRING = '-a'
@@ -69,6 +53,10 @@ class PerfInstrument(Instrument):
     default behaviour (see the defaults of these parameters).  However, it can
     also be used through the more advanced ``commands`` dictionary which
     provides a flexible access to all ways ``perf`` can be used.
+
+    In both cases, if a ``stat`` command is issued, this workload will
+    automatically parse its output into run ``metrics``. For this reason,
+    please avoid the ``-x`` ``stat`` flag.
 
     The ``pre_commands`` and ``post_commands`` are provided to suit those
     ``perf`` commands that don't actually capture data (``list``, ``config``,
@@ -126,12 +114,12 @@ class PerfInstrument(Instrument):
                   ``optionstring``\ s. This parameter is ignored if
                   ``commands`` is passed.
                   """),
-        Parameter('pre_commands', kind=YamlCommandDescriptor, default=None,
+        Parameter('pre_commands', kind=PerfCommandDict, default=None,
                   description="""
                   Dictionary of commands to be run before the workloads run
                   (same format as ``commands``).
                  """),
-        Parameter('commands', kind=YamlCommandDescriptor, default=None,
+        Parameter('commands', kind=PerfCommandDict, default=None,
                   description="""
                   Dictionary in which keys are considered as *labels* and
                   values are themselves dictionaries with the following
@@ -172,7 +160,7 @@ class PerfInstrument(Instrument):
                                   stderr: '&1'
                                   stdout: stat.out
                  """),
-        Parameter('post_commands', kind=YamlCommandDescriptor, default=None,
+        Parameter('post_commands', kind=PerfCommandDict, default=None,
                   description="""
                   Dictionary of commands to be run after the workloads run
                   (same format as ``commands``).
@@ -187,6 +175,10 @@ class PerfInstrument(Instrument):
         # pylint: disable=unused-argument
         # pylint: disable=access-member-before-definition
         # pylint: disable=attribute-defined-outside-init
+        if self.pre_commands is None:
+            self.pre_commands = PerfCommandDict({})
+        if self.post_commands is None:
+            self.post_commands = PerfCommandDict({})
         if self.commands is None:
             if self.optionstring is None:
                 self.optionstring = DEFAULT_OPTIONSTRING
@@ -206,11 +198,11 @@ class PerfInstrument(Instrument):
             if len(self.labels) != len(self.optionstring):
                 raise ValueError('Lengths of labels and optionstring differ')
 
-            self.commands = YamlCommandDescriptor({
+            self.commands = PerfCommandDict({
                 label: {
                     'command': 'stat',
                     'kwflags': {'event': self.events},
-                    'options': options,
+                    'options': shlex.split(options),
                     'args': {
                         'command': 'sleep',
                         'args': 1000,
@@ -233,8 +225,9 @@ class PerfInstrument(Instrument):
                                        self.post_commands)
 
     def setup(self, context):
-        # pylint: disable=unused-argument
         self.collector.reset()
+        version = self.collector.execute('--version').strip()
+        context.update_metadata('versions', self.name, version)
 
     def start(self, context):
         # pylint: disable=unused-argument
@@ -245,11 +238,160 @@ class PerfInstrument(Instrument):
         self.collector.stop()
 
     def update_output(self, context):
-        outdir = os.path.join(context.output_directory, 'perf')
+        outdir = os.path.join(context.output_directory, self.name)
         self.collector.get_traces(outdir)
-        # HUGE TODO: add parsers for supported post_commands
-        #    (or should these be in devlib?)
+        all_commands = itertools.chain(self.pre_commands.items(),
+                                       self.commands.items(),
+                                       self.post_commands.items())
+        for label, cmd in all_commands:
+            if 'stat' in cmd.command:
+                # perf stat supports redirecting its stdout to --output/-o:
+                stat_file = (cmd.kwflags.get('o', None) or
+                             cmd.kwflags.get('output', None) or
+                             cmd.stdout)
+                with open(os.path.join(outdir, label, stat_file)) as f:
+                    for metric in self._extract_stat_metrics(label, f.read()):
+                        context.add_metric(**metric)
 
     def teardown(self, context):
         # pylint: disable=unused-argument
         self.collector.reset()
+
+    @classmethod
+    def _extract_stat_metrics(cls, label, stdout):
+        """
+        When running ``perf stat``, this instrument reports the captured
+        counters as unitless :class:`Metrics` with the following classifiers:
+
+        - ``'name'``: The name of the event as reported by ``perf``. This name
+          may not be unique when aggregation is disabled as the same counter is
+          then captured for multiple hardware threads;
+        - ``'label'``: Label given to the run of ``perf stat``;
+        - ``'target'``: The target ``perf`` reports for the captured events.
+          This is shared across all events of a run and is further specialized
+          by ``'hw_thread'``, ``'core'`` and ``'cluster'`` if applicable;
+        - ``'duration'``, ``'duration_units'``: duration of the ``perf`` run;
+        - ``'count_error'``: A string containing the error corresponding that
+          prevented the counter from being captured. Only available if an error
+          occured. In this case the value of the metric is always ``0``;
+        - ``'hw_thread_count'``: Number of **hardware** threads that were
+          contributing to the counter. Only available when the automatic
+          aggregation done by ``perf stat`` is disabled. See ``'hw_thread'``,
+          ``'core'`` and ``'cluster'``;
+        - ``'hw_thread'``: When the ``--no-aggr`` option is used, holds the
+          index of the hardware thread that incremented the counter. In this
+          case, ``'hw_thread_count'`` is always ``1``. For backward
+          compatibility, the ``'cpu'`` classifier is provided as a synonym of
+          ``'hw_thread'`` (unlike what its name might suggest, on systems
+          supporting hardware multithreading, ``'cpu'`` is not a synonym of
+          ``'core'``!);
+        - ``'cluster'``: When the ``--per-socket`` option is used, holds the
+          index of the cluster (_i.e._ "socket" in ``perf`` terminology) that
+          incremented the counter and ``'hw_thread_count'`` holds the number of
+          hardware threads in the cluster. When the ``--per-core`` option is
+          used, this classifier gives the index of the cluster of the core.
+        - ``'core'``: When the ``--per-core`` option is used, holds the index
+          (within its cluster) of the core that incremented the counter and
+          ``'hw_thread_count'`` holds the number of hardware threads in the
+          core.
+        - ``'enabled'``: When ``perf`` needs to capture more hardware events
+          than there are hardware counters, it shares the hardware counters
+          among the events through time-slicing. This classifier holds the
+          fraction (between ``0.0`` and ``100.0``) of the run that a hardware
+          counter was allocated to the the event. Available only for hardware
+          events and only when time-slicing was required.
+        - ``'comment_value'``, ``'comment_units'``: Some counters may come with
+          an extra "comment" (following a ``#``) added by ``perf``. The
+          ``'comment_value'`` holds the numeric (``int`` or ``float``) value of
+          the comment while ``'comment_units'`` holds the rest of the comment
+          (typically the units). Only available for the events for which
+          ``perf`` added a comment.
+        """
+        match = cls._stat_regex.search(stdout)
+        if match is None:
+            return
+        base_classifiers = {
+            'label': label,
+            'target': match['target'],
+            'duration': float(match['duration'].replace(',', '')),
+            'duration_units': match['duration_units'],
+        }
+        for m in cls._stat_counter_regex.finditer(match['counters']):
+            classifiers = base_classifiers.copy()
+            name, count = cls._extract_stat_count(m, classifiers)
+            yield {
+                'name': name,
+                'units': None,
+                'value': count,
+                'classifiers': classifiers,
+            }
+
+    _stat_regex = re.compile(
+        r'Performance counter stats for (?P<target>.*?)\s*:\s*$'
+        r'^(?P<counters>.*)$'
+        r'^\s*(?P<duration>[0-9.,]+)\s*(?P<duration_units>\S+)\s*time elapsed',
+        flags=(re.S | re.M))
+
+    _stat_counter_regex = re.compile(
+        r'^\s*{aggr}?\s*{count}\s*{name}\s*{comment}?(?:{enabled}|$)'.format(
+            aggr=r'(?:{hw_thread}|(?:{cluster}{core}?\s*{thread_cnt}))'.format(
+                hw_thread=r'(?:CPU-?(?P<hw_thread>\d+))',
+                cluster=r'S(?P<cluster>\d+)',
+                core=r'(?:-C(?P<core>\d+))',
+                thread_cnt=r'(?P<hw_thread_count>\d+)'),
+            count=r'(?P<count>[0-9.,]+|\<not supported\>|\<not counted\>)',
+            name=r'(?P<name>.*?)',
+            comment=r'(?:#\s*{value}\s*{units}\s*)'.format(
+                value=r'(?P<comment_value>[0-9,.]+)',
+                units=r'(?P<comment_units>.*?)'),
+            enabled=r'(?:[\[\(](?P<enabled>[0-9.]+)%[\)\]])'),
+        flags=re.M)
+
+    @staticmethod
+    def _extract_stat_count(match, classifiers):
+        """Extracts the counter classifiers and count from a counter_match.
+
+        Parameters:
+            match        A :class:`re.Match` from :attr:`_stat_counter_regex`
+            classifiers  A dictionary to be completed for the matched counter
+
+        Returns:
+            A (name, value) tuple for the matched counter (value is 0 if an
+            error occurred).
+        """
+        name = f'{classifiers["label"]}_{match["name"]}'.replace(' ', '_')
+        classifiers['name'] = match['name']
+        # But metrics need a unique name (classifiers not enough) so this
+        # name might be specialized by the following:
+        try:
+            count = int(match['count'].replace(',', ''))
+        except ValueError:
+            try:
+                # some "counters" return a float (e.g. "task-clock"):
+                count = float(match['count'].replace(',', ''))
+            except ValueError:
+                # perf may report "not supported" or "not counted":
+                count = 0  # as metrics have to be numeric, can't use None
+                classifiers['count_error'] = match['count']
+        if match['hw_thread']:  # --no-aggr
+            classifiers['hw_thread'] = int(match['hw_thread'])
+            classifiers['hw_thread_count'] = 1
+            classifiers['cpu'] = int(match['hw_thread'])  # deprecated!
+            name += f'_T{classifiers["hw_thread"]}'
+        elif match['cluster']:  # --per-core or --per-socket
+            classifiers['cluster'] = int(match['cluster'])
+            classifiers['hw_thread_count'] = int(match['hw_thread_count'])
+            name += f'_S{classifiers["cluster"]}'
+            if match['core']:  # --per-core
+                classifiers['core'] = int(match['core'])
+                name += f'_C{classifiers["core"]}'
+        if match['comment_value']:
+            try:
+                classifiers['comment_value'] = int(match['comment_value'])
+            except ValueError:
+                classifiers['comment_value'] = float(match['comment_value'])
+        if match['comment_units']:
+            classifiers['comment_units'] = match['comment_units']
+        if match['enabled']:
+            classifiers['enabled'] = float(match['enabled'])
+        return (name, count)
