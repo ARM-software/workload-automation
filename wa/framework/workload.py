@@ -26,7 +26,8 @@ from devlib.utils.android import ApkInfo
 
 from wa.framework.plugin import TargetedPlugin, Parameter
 from wa.framework.resource import (ApkFile, ReventFile,
-                                   File, loose_version_matching)
+                                   File, loose_version_matching,
+                                   range_version_matching)
 from wa.framework.exception import WorkloadError, ConfigError
 from wa.utils.types import ParameterDict, list_or_string, version_tuple
 from wa.utils.revent import ReventRecorder
@@ -212,6 +213,16 @@ class ApkWorkload(Workload):
                   description="""
                   The version of the package to be used.
                   """),
+        Parameter('max_version', kind=str,
+                  default=None,
+                  description="""
+                  The maximum version of the package to be used.
+                  """),
+        Parameter('min_version', kind=str,
+                  default=None,
+                  description="""
+                  The minimum version of the package to be used.
+                  """),
         Parameter('variant', kind=str,
                   default=None,
                   description="""
@@ -287,7 +298,15 @@ class ApkWorkload(Workload):
                                   exact_abi=self.exact_abi,
                                   prefer_host_package=self.prefer_host_package,
                                   clear_data_on_reset=self.clear_data_on_reset,
-                                  activity=self.activity)
+                                  activity=self.activity,
+                                  min_version=self.min_version,
+                                  max_version=self.max_version)
+
+    def validate(self):
+        if self.min_version and self.max_version:
+            if version_tuple(self.min_version) > version_tuple(self.max_version):
+                msg = 'Cannot specify min version ({}) greater than max version ({})'
+                raise ConfigError(msg.format(self.min_version, self.max_version))
 
     @once_per_instance
     def initialize(self, context):
@@ -678,12 +697,14 @@ class PackageHandler(object):
     def __init__(self, owner, install_timeout=300, version=None, variant=None,
                  package_name=None, strict=False, force_install=False, uninstall=False,
                  exact_abi=False, prefer_host_package=True, clear_data_on_reset=True,
-                 activity=None):
+                 activity=None, min_version=None, max_version=None):
         self.logger = logging.getLogger('apk')
         self.owner = owner
         self.target = self.owner.target
         self.install_timeout = install_timeout
         self.version = version
+        self.min_version = min_version
+        self.max_version = max_version
         self.variant = variant
         self.package_name = package_name
         self.strict = strict
@@ -750,7 +771,9 @@ class PackageHandler(object):
                                                          version=self.version,
                                                          package=self.package_name,
                                                          exact_abi=self.exact_abi,
-                                                         supported_abi=self.supported_abi),
+                                                         supported_abi=self.supported_abi,
+                                                         min_version=self.min_version,
+                                                         max_version=self.max_version),
                                                  strict=self.strict)
         else:
             available_packages = []
@@ -760,7 +783,9 @@ class PackageHandler(object):
                                                         version=self.version,
                                                         package=package,
                                                         exact_abi=self.exact_abi,
-                                                        supported_abi=self.supported_abi),
+                                                        supported_abi=self.supported_abi,
+                                                        min_version=self.min_version,
+                                                        max_version=self.max_version),
                                                 strict=self.strict)
                 if apk_file:
                     available_packages.append(apk_file)
@@ -781,12 +806,17 @@ class PackageHandler(object):
                 if self.target.package_is_installed(package):
                     installed_versions.append(package)
 
-            if self.version:
+            if self.version or self.min_version or self.max_version:
                 matching_packages = []
                 for package in installed_versions:
                     package_version = self.target.get_package_version(package)
-                    for v in list_or_string(self.version):
-                        if loose_version_matching(v, package_version):
+                    if self.version:
+                        for v in list_or_string(self.version):
+                            if loose_version_matching(v, package_version):
+                                matching_packages.append(package)
+                    else:
+                        if range_version_matching(package_version, self.min_version,
+                                                  self.max_version):
                             matching_packages.append(package)
                 if len(matching_packages) == 1:
                     self.package_name = matching_packages[0]
