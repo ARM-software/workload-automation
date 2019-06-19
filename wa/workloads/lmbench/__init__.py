@@ -103,6 +103,7 @@ class Lmbench(Workload):
         setup_test = getattr(self, '_setup_{}'.format(self.test))
         setup_test()
 
+    def run(self, context):
         for _ in range(self.loops):
             for command in self.commands:
                 self.target.execute(command, timeout=self.run_timeout)
