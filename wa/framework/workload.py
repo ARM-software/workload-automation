@@ -389,7 +389,6 @@ class ApkReventWorkload(ApkUIWorkload):
 
     def __init__(self, target, **kwargs):
         super(ApkReventWorkload, self).__init__(target, **kwargs)
-        self.apk = PackageHandler(self)
         self.gui = ReventGUI(self, target,
                              self.setup_timeout,
                              self.run_timeout,
