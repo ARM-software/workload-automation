@@ -358,7 +358,8 @@ class PerfInstrument(Instrument):
             A (name, value) tuple for the matched counter (value is 0 if an
             error occurred).
         """
-        name = f'{classifiers["label"]}_{match["name"]}'.replace(' ', '_')
+        name = '{}_{}'.format(classifiers['label'],
+                              match['name']).replace(' ', '_')
         classifiers['name'] = match['name']
         # But metrics need a unique name (classifiers not enough) so this
         # name might be specialized by the following:
@@ -376,14 +377,14 @@ class PerfInstrument(Instrument):
             classifiers['hw_thread'] = int(match['hw_thread'])
             classifiers['hw_thread_count'] = 1
             classifiers['cpu'] = int(match['hw_thread'])  # deprecated!
-            name += f'_T{classifiers["hw_thread"]}'
+            name += '_T{}'.format(classifiers["hw_thread"])
         elif match['cluster']:  # --per-core or --per-socket
             classifiers['cluster'] = int(match['cluster'])
             classifiers['hw_thread_count'] = int(match['hw_thread_count'])
-            name += f'_S{classifiers["cluster"]}'
+            name += '_S{}'.format(classifiers["cluster"])
             if match['core']:  # --per-core
                 classifiers['core'] = int(match['core'])
-                name += f'_C{classifiers["core"]}'
+                name += '_C{}'.format(classifiers["core"])
         if match['comment_value']:
             try:
                 classifiers['comment_value'] = int(match['comment_value'])
