@@ -75,6 +75,53 @@ class PerfInstrument(Instrument):
 
     Please refer to the ``sysfile_values`` runtime parameter to do so from an
     agenda.
+
+    When running ``perf stat``, this instrument reports the captured
+    counters as unitless :class:`Metrics` with the following classifiers:
+
+    - ``'name'``: The name of the event as reported by ``perf``. This name
+      may not be unique when aggregation is disabled as the same counter is
+      then captured for multiple hardware threads;
+    - ``'label'``: Label given to the run of ``perf stat``;
+    - ``'target'``: The target ``perf`` reports for the captured events.
+      This is shared across all events of a run and is further specialized
+      by ``'hw_thread'``, ``'core'`` and ``'cluster'`` if applicable;
+    - ``'duration'``, ``'duration_units'``: duration of the ``perf`` run;
+    - ``'count_error'``: A string containing the error corresponding that
+      prevented the counter from being captured. Only available if an error
+      occured. In this case the value of the metric is always ``0``;
+    - ``'hw_thread_count'``: Number of **hardware** threads that were
+      contributing to the counter. Only available when the automatic
+      aggregation done by ``perf stat`` is disabled. See ``'hw_thread'``,
+      ``'core'`` and ``'cluster'``;
+    - ``'hw_thread'``: When the ``--no-aggr`` option is used, holds the
+      index of the hardware thread that incremented the counter. In this
+      case, ``'hw_thread_count'`` is always ``1``. For backward
+      compatibility, the ``'cpu'`` classifier is provided as a synonym of
+      ``'hw_thread'`` (unlike what its name might suggest, on systems
+      supporting hardware multithreading, ``'cpu'`` is not a synonym of
+      ``'core'``!);
+    - ``'cluster'``: When the ``--per-socket`` option is used, holds the
+      index of the cluster (_i.e._ "socket" in ``perf`` terminology) that
+      incremented the counter and ``'hw_thread_count'`` holds the number of
+      hardware threads in the cluster. When the ``--per-core`` option is
+      used, this classifier gives the index of the cluster of the core.
+    - ``'core'``: When the ``--per-core`` option is used, holds the index
+      (within its cluster) of the core that incremented the counter and
+      ``'hw_thread_count'`` holds the number of hardware threads in the
+      core.
+    - ``'enabled'``: When ``perf`` needs to capture more hardware events
+      than there are hardware counters, it shares the hardware counters
+      among the events through time-slicing. This classifier holds the
+      fraction (between ``0.0`` and ``100.0``) of the run that a hardware
+      counter was allocated to the the event. Available only for hardware
+      events and only when time-slicing was required.
+    - ``'comment_value'``, ``'comment_units'``: Some counters may come with
+      an extra "comment" (following a ``#``) added by ``perf``. The
+      ``'comment_value'`` holds the numeric (``int`` or ``float``) value of
+      the comment while ``'comment_units'`` holds the rest of the comment
+      (typically the units). Only available for the events for which
+      ``perf`` added a comment.
     """
 
     parameters = [
@@ -259,54 +306,6 @@ class PerfInstrument(Instrument):
 
     @classmethod
     def _extract_stat_metrics(cls, label, stdout):
-        """
-        When running ``perf stat``, this instrument reports the captured
-        counters as unitless :class:`Metrics` with the following classifiers:
-
-        - ``'name'``: The name of the event as reported by ``perf``. This name
-          may not be unique when aggregation is disabled as the same counter is
-          then captured for multiple hardware threads;
-        - ``'label'``: Label given to the run of ``perf stat``;
-        - ``'target'``: The target ``perf`` reports for the captured events.
-          This is shared across all events of a run and is further specialized
-          by ``'hw_thread'``, ``'core'`` and ``'cluster'`` if applicable;
-        - ``'duration'``, ``'duration_units'``: duration of the ``perf`` run;
-        - ``'count_error'``: A string containing the error corresponding that
-          prevented the counter from being captured. Only available if an error
-          occured. In this case the value of the metric is always ``0``;
-        - ``'hw_thread_count'``: Number of **hardware** threads that were
-          contributing to the counter. Only available when the automatic
-          aggregation done by ``perf stat`` is disabled. See ``'hw_thread'``,
-          ``'core'`` and ``'cluster'``;
-        - ``'hw_thread'``: When the ``--no-aggr`` option is used, holds the
-          index of the hardware thread that incremented the counter. In this
-          case, ``'hw_thread_count'`` is always ``1``. For backward
-          compatibility, the ``'cpu'`` classifier is provided as a synonym of
-          ``'hw_thread'`` (unlike what its name might suggest, on systems
-          supporting hardware multithreading, ``'cpu'`` is not a synonym of
-          ``'core'``!);
-        - ``'cluster'``: When the ``--per-socket`` option is used, holds the
-          index of the cluster (_i.e._ "socket" in ``perf`` terminology) that
-          incremented the counter and ``'hw_thread_count'`` holds the number of
-          hardware threads in the cluster. When the ``--per-core`` option is
-          used, this classifier gives the index of the cluster of the core.
-        - ``'core'``: When the ``--per-core`` option is used, holds the index
-          (within its cluster) of the core that incremented the counter and
-          ``'hw_thread_count'`` holds the number of hardware threads in the
-          core.
-        - ``'enabled'``: When ``perf`` needs to capture more hardware events
-          than there are hardware counters, it shares the hardware counters
-          among the events through time-slicing. This classifier holds the
-          fraction (between ``0.0`` and ``100.0``) of the run that a hardware
-          counter was allocated to the the event. Available only for hardware
-          events and only when time-slicing was required.
-        - ``'comment_value'``, ``'comment_units'``: Some counters may come with
-          an extra "comment" (following a ``#``) added by ``perf``. The
-          ``'comment_value'`` holds the numeric (``int`` or ``float``) value of
-          the comment while ``'comment_units'`` holds the rest of the comment
-          (typically the units). Only available for the events for which
-          ``perf`` added a comment.
-        """
         match = cls._stat_regex.search(stdout)
         if match is None:
             return
