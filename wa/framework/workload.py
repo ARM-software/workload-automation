@@ -51,6 +51,12 @@ class Workload(TargetedPlugin):
                   If ``True``, assets that are deployed or created as part of the
                   workload will be removed again from the device.
                   """),
+        Parameter('uninstall', kind=bool,
+                  default=True,
+                  description="""
+                  If ``True``, executables that are installed to the device
+                  as part of the workload will be uninstalled again.
+                  """),
     ]
 
     # Set this to True to mark that this workload poses a risk of exposing
@@ -225,6 +231,7 @@ class ApkWorkload(Workload):
                   """),
         Parameter('uninstall', kind=bool,
                   default=False,
+                  override=True,
                   description="""
                   If ``True``, will uninstall workload\'s APK as part of teardown.'
                   """),
