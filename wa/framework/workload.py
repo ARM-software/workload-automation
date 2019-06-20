@@ -48,9 +48,9 @@ class Workload(TargetedPlugin):
                   aliases=['clean_up'],
                   default=True,
                   description="""
-                  If ``True``, if assets are deployed as part of the workload they
-                  will be removed again from the device as part of finalize.
-                  """)
+                  If ``True``, assets that are deployed or created as part of the
+                  workload will be removed again from the device.
+                  """),
     ]
 
     # Set this to True to mark that this workload poses a risk of exposing
