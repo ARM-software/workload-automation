@@ -358,7 +358,8 @@ class ApkUIWorkload(ApkWorkload):
     @once_per_instance
     def finalize(self, context):
         super(ApkUIWorkload, self).finalize(context)
-        self.gui.remove()
+        if self.cleanup_assets:
+            self.gui.remove()
 
 
 class ApkUiautoWorkload(ApkUIWorkload):
@@ -438,7 +439,8 @@ class UIWorkload(Workload):
     @once_per_instance
     def finalize(self, context):
         super(UIWorkload, self).finalize(context)
-        self.gui.remove()
+        if self.cleanup_assets:
+            self.gui.remove()
 
 
 class UiautoWorkload(UIWorkload):
@@ -634,12 +636,12 @@ class ReventGUI(object):
         if self.revent_teardown_file:
             self.revent_recorder.replay(self.on_target_teardown_revent,
                                         timeout=self.teardown_timeout)
+
+    def remove(self):
         self.target.remove(self.on_target_setup_revent)
         self.target.remove(self.on_target_run_revent)
         self.target.remove(self.on_target_extract_results_revent)
         self.target.remove(self.on_target_teardown_revent)
-
-    def remove(self):
         self.revent_recorder.remove()
 
     def _check_revent_files(self):

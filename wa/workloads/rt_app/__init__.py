@@ -130,8 +130,8 @@ class RtApp(Workload):
                   '''),
         Parameter('cpus', kind=cpu_mask, default=0, aliases=['taskset_mask'],
                   description='Constrain execution to specific CPUs.'),
-        Parameter('uninstall_on_exit', kind=bool, default=False,
-                  description="""
+        Parameter('uninstall', aliases=['uninstall_on_exit'], kind=bool, default=False,
+                  override=True, description="""
                   If set to ``True``, rt-app binary will be uninstalled from the device
                   at the end of the run.
                   """),
@@ -213,9 +213,10 @@ class RtApp(Workload):
 
     @once
     def finalize(self, context):
-        if self.uninstall_on_exit:
+        if self.uninstall:
             self.target.uninstall(self.target_binary)
-        self.target.execute('rm -rf {}'.format(self.target_working_directory))
+        if self.cleanup_assets:
+            self.target.execute('rm -rf {}'.format(self.target_working_directory))
 
     def _deploy_rt_app_binary_if_necessary(self):
         # called from initialize() so gets invoked once per run
