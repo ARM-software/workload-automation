@@ -291,14 +291,35 @@ class PerfInstrument(Instrument):
                                        self.commands.items(),
                                        self.post_commands.items())
         for label, cmd in all_commands:
-            if 'stat' in cmd.command:
+            classifiers = {
+                'label': label,
+                'command': cmd.command,
+            }
+
+            outputs = []
+            if 'o' in cmd.kwflags:
+                outputs.append((cmd.kwflags['o'], 'data'))
+            if 'output' in cmd.kwflags:
+                outputs.append((cmd.kwflags['output'], 'data'))
+            if cmd.stdout and not cmd.stdout.startswith('&'):
+                outputs.append((cmd.stdout, 'data'))
+            if cmd.stderr and not cmd.stderr.startswith('&'):
+                outputs.append((cmd.stderr, 'log'))
+
+            metrics_done = False
+            for output, kind in outputs:
                 # perf stat supports redirecting its stdout to --output/-o:
-                stat_file = (cmd.kwflags.get('o', None) or
-                             cmd.kwflags.get('output', None) or
-                             cmd.stdout)
-                with open(os.path.join(outdir, label, stat_file)) as f:
-                    for metric in self._extract_stat_metrics(label, f.read()):
-                        context.add_metric(**metric)
+                output_path = os.path.join(outdir, label, output)
+                if 'stat' in cmd.command and not metrics_done:
+                    metrics_done = True
+                    with open(output_path) as f:
+                        for metric in self._extract_stat_metrics(label,
+                                                                 f.read()):
+                            context.add_metric(**metric)
+                    kind = 'raw'
+                context.add_artifact(os.path.join(label, output),
+                                     output_path, kind,
+                                     classifiers=classifiers)
 
     def teardown(self, context):
         # pylint: disable=unused-argument
