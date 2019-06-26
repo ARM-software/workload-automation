@@ -26,7 +26,7 @@ __all__ = [
     'PerfInstrument',
 ]
 
-DEFAULT_EVENTS = ['migration', 'cs']
+DEFAULT_EVENTS = ['migrations', 'cs']
 DEFAULT_OPTIONSTRING = '-a'
 
 
