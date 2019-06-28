@@ -28,7 +28,7 @@ from wa.framework.plugin import TargetedPlugin, Parameter
 from wa.framework.resource import (ApkFile, ReventFile,
                                    File, loose_version_matching)
 from wa.framework.exception import WorkloadError, ConfigError
-from wa.utils.types import ParameterDict, list_or_string
+from wa.utils.types import ParameterDict, list_or_string, version_tuple
 from wa.utils.revent import ReventRecorder
 from wa.utils.exec_control import once_per_instance
 

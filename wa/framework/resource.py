@@ -284,8 +284,8 @@ def apk_version_matches(path, version):
 
 
 def loose_version_matching(config_version, apk_version):
-    config_version = config_version.split('.')
-    apk_version = apk_version.split('.')
+    config_version = version_tuple(config_version)
+    apk_version = version_tuple(apk_version)
 
     if len(apk_version) < len(config_version):
         return False  # More specific version requested than available
