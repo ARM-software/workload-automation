@@ -77,7 +77,8 @@ params = dict(
     maintainer='ARM Architecture & Technology Device Lab',
     maintainer_email='workload-automation@arm.com',
     setup_requires=[
-        'numpy'
+        'numpy<=1.16.4; python_version<"3"',
+        'numpy; python_version>="3"',
     ],
     install_requires=[
         'python-dateutil',  # converting between UTC and local time.
@@ -89,7 +90,8 @@ params = dict(
         'devlib>={}'.format(devlib_version),  # Interacting with devices
         'louie-latest',  # callbacks dispatch
         'wrapt',  # better decorators
-        'pandas>=0.23.0',  # Data analysis and manipulation
+        'pandas>=0.23.0,<=0.24.2; python_version<"3"',  # Data analysis and manipulation
+        'pandas>=0.23.0; python_version>"3"',  # Data analysis and manipulation
         'future',  # Python 2-3 compatiblity
     ],
     dependency_links=['https://github.com/ARM-software/devlib/tarball/master#egg=devlib-{}'.format(devlib_version)],
