@@ -96,12 +96,11 @@ params = dict(
     ],
     dependency_links=['https://github.com/ARM-software/devlib/tarball/master#egg=devlib-{}'.format(devlib_version)],
     extras_require={
-        'other': ['jinja2'],
         'test': ['nose', 'mock'],
-        'mongodb': ['pymongo'],
         'notify': ['notify2'],
         'doc': ['sphinx', 'sphinx_rtd_theme'],
-        'postgres': ['psycopg2-binary']
+        'postgres': ['psycopg2-binary'],
+        'daq': ['daqpower'],
     },
     # https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
