@@ -30,7 +30,7 @@ Installation
 To install::
 
         git clone git@github.com:ARM-software/workload-automation.git workload-automation
-        sudo -H pip install ./workload-automation
+        sudo -H python setup [install|develop]
 
 Please refer to the `installation section <http://workload-automation.readthedocs.io/en/latest/user_information.html#install>`_
 in the documentation for more details.
