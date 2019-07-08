@@ -62,11 +62,14 @@ for root, dirs, files in os.walk(wa_dir):
 
 scripts = [os.path.join('scripts', s) for s in os.listdir('scripts')]
 
+with open("README.rst", "r") as fh:
+    long_description = fh.read()
 
 devlib_version = format_version(required_devlib_version)
 params = dict(
     name='wlauto',
     description='A framework for automating workload execution and measurement collection on ARM devices.',
+    long_description=long_description,
     version=get_wa_version_with_commit(),
     packages=packages,
     package_data=data_files,
