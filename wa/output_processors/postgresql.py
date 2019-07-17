@@ -209,8 +209,8 @@ class PostgresqlResultProcessor(OutputProcessor):
                 list(target_pod.get('screen_resolution', [])),
                 target_pod.get('prop'),
                 target_pod.get('android_id'),
-                target_pod.get('pod_version'),
-                target_pod.get('pod_serialization_version'),
+                target_pod.get('_pod_version'),
+                target_pod.get('_pod_serialization_version'),
             )
         )
 
