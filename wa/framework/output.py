@@ -930,8 +930,10 @@ class DatabaseOutput(Output):
         tables = ['largeobjects', 'artifacts']
         joins = [('classifiers', 'classifiers.artifact_oid = artifacts.oid')]
         conditions = ['artifacts.{}_oid = \'{}\''.format(self.kind, self.oid),
-                      'artifacts.large_object_uuid = largeobjects.oid',
-                      'artifacts.job_oid IS NULL']
+                      'artifacts.large_object_uuid = largeobjects.oid']
+        # If retrieving run level artifacts we want those that don't also belong to a job
+        if self.kind == 'run':
+            conditions.append('artifacts.job_oid IS NULL')
         pod = self._read_db(columns, tables, conditions, joins)
         for artifact in pod:
             artifact['path'] = str(artifact['path'])
