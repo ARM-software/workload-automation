@@ -243,10 +243,10 @@ def get_schema(schemafilepath):
 def get_database_schema_version(conn):
     with conn.cursor() as cursor:
         cursor.execute('''SELECT
-                                  DatabaseMeta.schema_major,
-                                  DatabaseMeta.schema_minor
-                               FROM
-                                  DatabaseMeta;''')
+                              DatabaseMeta.schema_major,
+                              DatabaseMeta.schema_minor
+                          FROM
+                              DatabaseMeta;''')
         schema_major, schema_minor = cursor.fetchone()
     return (schema_major, schema_minor)
 
