@@ -1,4 +1,4 @@
---!VERSION!1.2!ENDVERSION!
+--!VERSION!1.3!ENDVERSION!
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "lo";
 
@@ -96,6 +96,7 @@ CREATE TABLE Targets (
     android_id text,
     _pod_version int,
     _pod_serialization_version int,
+    system_id text,
     PRIMARY KEY (oid)
 );
 
@@ -164,6 +165,7 @@ CREATE TABLE Artifacts (
     kind text,
     _pod_version int,
     _pod_serialization_version int,
+    is_dir boolean,
     PRIMARY KEY (oid)
 );
 
