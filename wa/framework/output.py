@@ -968,7 +968,8 @@ class RunDatabaseOutput(DatabaseOutput, RunOutputCommon):
     def _db_targetfile(self):
         columns = ['os', 'is_rooted', 'target', 'abi', 'cpus', 'os_version',
                    'hostid', 'hostname', 'kernel_version', 'kernel_release',
-                   'kernel_sha1', 'kernel_config', 'sched_features',
+                   'kernel_sha1', 'kernel_config', 'sched_features', 'page_size_kb',
+                   'system_id', 'screen_resolution', 'prop', 'android_id',
                    '_pod_version', '_pod_serialization_version']
         tables = ['targets']
         conditions = ['targets.run_oid = \'{}\''.format(self.oid)]
