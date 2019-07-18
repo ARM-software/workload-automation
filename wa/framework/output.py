@@ -948,8 +948,9 @@ class DatabaseOutput(Output):
 
 def kernel_config_from_db(raw):
     kernel_config = {}
-    for k, v in zip(raw[0], raw[1]):
-        kernel_config[k] = v
+    if raw:
+        for k, v in zip(raw[0], raw[1]):
+            kernel_config[k] = v
     return kernel_config
 
 
