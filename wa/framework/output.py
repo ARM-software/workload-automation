@@ -145,9 +145,10 @@ class Output(object):
         if not os.path.exists(path):
             msg = 'Attempting to add non-existing artifact: {}'
             raise HostError(msg.format(path))
+        is_dir = os.path.isdir(path)
         path = os.path.relpath(path, self.basepath)
 
-        self.result.add_artifact(name, path, kind, description, classifiers)
+        self.result.add_artifact(name, path, kind, description, classifiers, is_dir)
 
     def add_event(self, message):
         self.result.add_event(message)
@@ -385,9 +386,10 @@ class Result(Podable):
         logger.debug('Adding metric: {}'.format(metric))
         self.metrics.append(metric)
 
-    def add_artifact(self, name, path, kind, description=None, classifiers=None):
+    def add_artifact(self, name, path, kind, description=None, classifiers=None,
+                     is_dir=False):
         artifact = Artifact(name, path, kind, description=description,
-                            classifiers=classifiers)
+                            classifiers=classifiers, is_dir=is_dir)
         logger.debug('Adding artifact: {}'.format(artifact))
         self.artifacts.append(artifact)
 
@@ -523,7 +525,7 @@ class Artifact(Podable):
 
     """
 
-    _pod_serialization_version = 1
+    _pod_serialization_version = 2
 
     @staticmethod
     def from_pod(pod):
@@ -532,9 +534,11 @@ class Artifact(Podable):
         pod['kind'] = ArtifactType(pod['kind'])
         instance = Artifact(**pod)
         instance._pod_version = pod_version  # pylint: disable =protected-access
+        instance.is_dir = pod.pop('is_dir')
         return instance
 
-    def __init__(self, name, path, kind, description=None, classifiers=None):
+    def __init__(self, name, path, kind, description=None, classifiers=None,
+                 is_dir=False):
         """"
         :param name: Name that uniquely identifies this artifact.
         :param path: The *relative* path of the artifact. Depending on the
@@ -550,7 +554,6 @@ class Artifact(Podable):
         :param classifiers: A set of key-value pairs to further classify this
                             metric beyond current iteration (e.g. this can be
                             used to identify sub-tests).
-
         """
         super(Artifact, self).__init__()
         self.name = name
@@ -562,11 +565,13 @@ class Artifact(Podable):
             raise ValueError(msg.format(kind, ARTIFACT_TYPES))
         self.description = description
         self.classifiers = classifiers or {}
+        self.is_dir = is_dir
 
     def to_pod(self):
         pod = super(Artifact, self).to_pod()
         pod.update(self.__dict__)
         pod['kind'] = str(self.kind)
+        pod['is_dir'] = self.is_dir
         return pod
 
     @staticmethod
@@ -574,11 +579,17 @@ class Artifact(Podable):
         pod['_pod_version'] = pod.get('_pod_version', 1)
         return pod
 
+    @staticmethod
+    def _pod_upgrade_v2(pod):
+        pod['is_dir'] = pod.get('is_dir', False)
+        return pod
+
     def __str__(self):
         return self.path
 
     def __repr__(self):
-        return '{} ({}): {}'.format(self.name, self.kind, self.path)
+        ft = 'dir' if self.is_dir else 'file'
+        return '{} ({}) ({}): {}'.format(self.name, ft, self.kind, self.path)
 
 
 class Metric(Podable):
