@@ -174,8 +174,14 @@ class SysfsExtractor(Instrument):
                     self.target.list_directory(dev_dir)):
                 self.logger.error('sysfs files were not pulled from the device.')
                 self.device_and_host_paths.remove(paths)  # Path is removed to skip diffing it
-        for _, before_dir, after_dir, diff_dir in self.device_and_host_paths:
+        for dev_dir, before_dir, after_dir, diff_dir in self.device_and_host_paths:
             diff_sysfs_dirs(before_dir, after_dir, diff_dir)
+            context.add_artifact('{} [before]'.format(dev_dir), before_dir,
+                                 kind='data', classifiers={'stage': 'before'})
+            context.add_artifact('{} [after]'.format(dev_dir), after_dir,
+                                 kind='data', classifiers={'stage': 'after'})
+            context.add_artifact('{} [diff]'.format(dev_dir), diff_dir,
+                                 kind='data', classifiers={'stage': 'diff'})
 
     def teardown(self, context):
         self._one_time_setup_done = []
