@@ -23,6 +23,8 @@ except ImportError:
 import logging
 import os
 import shutil
+import tarfile
+import tempfile
 from collections import OrderedDict, defaultdict
 from copy import copy, deepcopy
 from datetime import datetime
@@ -822,6 +824,19 @@ class DatabaseOutput(Output):
 
     def get_artifact_path(self, name):
         artifact = self.get_artifact(name)
+        if artifact.is_dir:
+            return self._read_dir_artifact(artifact)
+        else:
+            return self._read_file_artifact(artifact)
+
+    def _read_dir_artifact(self, artifact):
+        artifact_path = tempfile.mkdtemp(prefix='wa_')
+        with tarfile.open(fileobj=self.conn.lobject(int(artifact.path), mode='b'), mode='r|gz') as tar_file:
+            tar_file.extractall(artifact_path)
+        self.conn.commit()
+        return artifact_path
+
+    def _read_file_artifact(self, artifact):
         artifact = StringIO(self.conn.lobject(int(artifact.path)).read())
         self.conn.commit()
         return artifact
@@ -910,7 +925,7 @@ class DatabaseOutput(Output):
 
     def _get_artifacts(self):
         columns = ['artifacts.name', 'artifacts.description', 'artifacts.kind',
-                   ('largeobjects.lo_oid', 'path'), 'artifacts.oid',
+                   ('largeobjects.lo_oid', 'path'), 'artifacts.oid', 'artifacts.is_dir',
                    'artifacts._pod_version', 'artifacts._pod_serialization_version']
         tables = ['largeobjects', 'artifacts']
         joins = [('classifiers', 'classifiers.artifact_oid = artifacts.oid')]

@@ -315,9 +315,12 @@ methods
 
 .. method:: RunDatabaseOutput.get_artifact_path(name)
 
-    Returns a `StringIO` object containing the contents of the artifact
-    specified by ``name``. This will only look at the run artifacts; this will
-    not search the artifacts of the individual jobs.
+    If the artifcat is a file this method returns a `StringIO` object containing
+    the contents of the artifact specified by ``name``. If the aritifcat is a
+    directory, the method returns a path to a locally extracted version of the
+    directory which is left to the user to remove after use. This will only look
+    at the run artifacts; this will not search the artifacts of the individual
+    jobs.
 
     :param name:  The name of the artifact who's path to retrieve.
     :return: A `StringIO` object with the contents of the artifact
@@ -452,8 +455,11 @@ methods
 
 .. method:: JobDatabaseOutput.get_artifact_path(name)
 
-    Returns a ``StringIO`` object containing the contents of the artifact
-    specified by ``name`` associated with this job.
+    If the artifcat is a file this method returns a `StringIO` object containing
+    the contents of the artifact specified by ``name`` associated with this job.
+    If the aritifcat is a directory, the method returns a path to a locally
+    extracted version of the directory which is left to the user to remove after
+    use.
 
     :param name:  The name of the artifact who's path to retrieve.
     :return: A `StringIO` object with the contents of the artifact
