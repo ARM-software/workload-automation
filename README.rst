@@ -18,7 +18,7 @@ workloads, instruments or output processing.
 Requirements
 ============
 
-- Python 2.7 or Python 3
+- Python 3
 - Linux (should work on other Unixes, but untested)
 - Latest Android SDK (ANDROID_HOME must be set) for Android devices, or
 - SSH for Linux devices
