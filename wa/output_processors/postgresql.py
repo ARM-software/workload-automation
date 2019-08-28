@@ -305,7 +305,7 @@ class PostgresqlResultProcessor(OutputProcessor):
         ''' A final export of the RunOutput that updates existing parameters
             and uploads ones which are only generated after jobs have run.
         '''
-        if not self.cursor:  # Database did not connect correctly.
+        if self.cursor is None:  # Output processor did not initialise correctly.
             return
         # Ensure we're still connected to the database.
         self.connect_to_database()
