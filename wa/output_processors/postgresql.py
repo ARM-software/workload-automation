@@ -222,6 +222,8 @@ class PostgresqlResultProcessor(OutputProcessor):
         ''' Run once for each job to upload information that is
             updated on a job by job basis.
         '''
+        # Ensure we're still connected to the database.
+        self.connect_to_database()
         job_uuid = uuid.uuid4()
         # Create a new job
         self.cursor.execute(
@@ -305,6 +307,9 @@ class PostgresqlResultProcessor(OutputProcessor):
         '''
         if not self.cursor:  # Database did not connect correctly.
             return
+        # Ensure we're still connected to the database.
+        self.connect_to_database()
+
         # Update the job statuses following completion of the run
         for job in run_output.jobs:
             job_id = job.id
