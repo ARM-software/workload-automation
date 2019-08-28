@@ -128,8 +128,6 @@ class PostgresqlResultProcessor(OutputProcessor):
                 'Postgresql Output Processor: {}'.format(import_error_msg))
         # N.B. Typecasters are for postgres->python and adapters the opposite
         self.connect_to_database()
-        self.cursor = self.conn.cursor()
-        self.verify_schema_versions()
 
         # Register the adapters and typecasters for enum types
         self.cursor.execute("SELECT NULL::status_enum")
@@ -513,6 +511,8 @@ class PostgresqlResultProcessor(OutputProcessor):
             raise OutputProcessorError(
                 "Database error, if the database doesn't exist, " +
                 "please use 'wa create database' to create the database: {}".format(e))
+        self.cursor = self.conn.cursor()
+        self.verify_schema_versions()
 
     def execute_sql_line_by_line(self, sql):
         cursor = self.conn.cursor()
