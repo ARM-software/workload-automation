@@ -260,9 +260,9 @@ class RtApp(Workload):
         # use workgen dry run option to generate a use case
         # file with proper JSON grammar on host first
         try:
-            check_output('python {} -d -o {} {}'.format(self.workgen_script,
-                                                        output_file,
-                                                        user_file),
+            check_output('python3 {} -d -o {} {}'.format(self.workgen_script,
+                                                         output_file,
+                                                         user_file),
                          shell=True)
         except CalledProcessError as e:
             message = 'Could not generate config using workgen, got "{}"'
