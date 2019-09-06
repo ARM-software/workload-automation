@@ -357,8 +357,8 @@ class GeekbenchCorproate(Geekbench):  # pylint: disable=too-many-ancestors
     name = "geekbench-corporate"
     is_corporate = True
     requires_network = False
-    supported_versions = ['4.1.0', '5.0.0']
-    package_names = ['com.primatelabs.geekbench4.corporate']
+    supported_versions = ['4.1.0', '4.3.4', '5.0.0']
+    package_names = ['com.primatelabs.geekbench4.corporate', 'com.primatelabs.geekbench5.corporate']
     activity = 'com.primatelabs.geekbench.HomeActivity'
 
     parameters = [
