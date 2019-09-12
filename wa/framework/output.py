@@ -984,7 +984,7 @@ class RunDatabaseOutput(DatabaseOutput, RunOutputCommon):
 
     @property
     def _db_targetfile(self):
-        columns = ['os', 'is_rooted', 'target', 'abi', 'cpus', 'os_version',
+        columns = ['os', 'is_rooted', 'target', 'modules', 'abi', 'cpus', 'os_version',
                    'hostid', 'hostname', 'kernel_version', 'kernel_release',
                    'kernel_sha1', 'kernel_config', 'sched_features', 'page_size_kb',
                    'system_id', 'screen_resolution', 'prop', 'android_id',

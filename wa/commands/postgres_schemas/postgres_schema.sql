@@ -1,4 +1,4 @@
---!VERSION!1.3!ENDVERSION!
+--!VERSION!1.4!ENDVERSION!
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "lo";
 
@@ -78,6 +78,7 @@ CREATE TABLE Targets (
     oid uuid NOT NULL,
     run_oid uuid NOT NULL references Runs(oid),
     target text,
+    modules text[],
     cpus text[],
     os text,
     os_version jsonb,
