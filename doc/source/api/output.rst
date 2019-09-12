@@ -608,6 +608,12 @@ The available attributes of the class are as follows:
     The name of the target class that was uised ot interact with the device
     during the run E.g.  ``"AndroidTarget"``, ``"LinuxTarget"`` etc.
 
+``modules``
+    A list of names of modules that have been loaded by the target. Modules
+    provide additional functionality, such as access to ``cpufreq`` and which
+    modules are installed may impact how much of the ``TargetInfo`` has been
+    populated.
+
 ``cpus``
     A list of :class:`CpuInfo` objects describing the capabilities of each CPU.
 
