@@ -510,3 +510,7 @@ class EnergyMeasurement(Instrument):
                 units = metrics[0].units
                 value = sum(m.value for m in metrics)
                 context.add_metric(name, value, units)
+
+    def teardown(self, context):
+        for instrument in self.instruments.values():
+            instrument.teardown()
