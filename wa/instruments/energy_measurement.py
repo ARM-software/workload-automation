@@ -195,7 +195,7 @@ class EnergyProbeBackend(EnergyInstrumentBackend):
                   description="""
                   Path to /dev entry for the energy probe (it should be /dev/ttyACMx)
                   """),
-    Parameter('keep_raw', kind=bool, default=False,
+        Parameter('keep_raw', kind=bool, default=False,
                   description="""
                   If set to ``True``, this will prevent the raw files obtained
                   from the device before processing from being deleted
@@ -331,7 +331,7 @@ class AcmeCapeBackend(EnergyInstrumentBackend):
         for iio_device in iio_devices:
             ret[iio_device] = AcmeCapeInstrument(
                 target, iio_capture=iio_capture, host=host,
-                iio_device=iio_device, buffer_size=buffer_size, keep_raw=keep_raw)
+                iio_device=iio_device, buffer_size=buffer_size, keep_raw=self.keep_raw)
         return ret
 
 
