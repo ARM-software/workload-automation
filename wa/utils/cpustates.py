@@ -560,12 +560,12 @@ class CpuUtilizationTimeline(object):
 
         headers = ['ts'] + ['{} CPU{}'.format(cpu.name, cpu.id) for cpu in cpus]
         self.writer.writerow(headers)
-        self._max_freq_list = [cpu.cpufreq.available_frequencies[-1] for cpu in cpus]
+        self._max_freq_list = [cpu.cpufreq.available_frequencies[-1] for cpu in cpus if cpu.cpufreq.available_frequencies]
 
     def update(self, timestamp, core_states):  # NOQA
         row = [timestamp]
         for core, [_, frequency] in enumerate(core_states):
-            if frequency is not None:
+            if frequency is not None and core in self._max_freq_list:
                 frequency /= float(self._max_freq_list[core])
                 row.append(frequency)
             else:
