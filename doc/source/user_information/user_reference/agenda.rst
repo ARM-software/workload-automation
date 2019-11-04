@@ -30,7 +30,7 @@ An example agenda can be seen here:
 
         device: generic_android
         device_config:
-            device: R32C801B8XY # Th adb name of our device we want to run on
+            device: R32C801B8XY # The adb name of our device we want to run on
             disable_selinux: true
             load_default_modules: true
             package_data_directory: /data/data
@@ -126,7 +126,7 @@ whole will behave. The most common options that that you may want to specify are
 
 For more information and a full list of these configuration options please see
 :ref:`Run Configuration <run-configuration>` and
-:ref:`"Meta Configuration" <meta-configuration>`.
+:ref:`Meta Configuration <meta-configuration>`.
 
 
 Plugins
