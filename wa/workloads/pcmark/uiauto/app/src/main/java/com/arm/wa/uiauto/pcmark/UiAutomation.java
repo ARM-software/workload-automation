@@ -47,7 +47,7 @@ public class UiAutomation extends BaseUiAutomation {
     @Test
     public void setup() throws Exception{
         dismissAndroidVersionPopup();
-        setScreenOrientation(ScreenOrientation.NATURAL);
+        setScreenOrientation(ScreenOrientation.PORTRAIT);
         loadBenchmarks();
         installBenchmark();
     }
