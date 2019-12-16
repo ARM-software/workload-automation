@@ -38,7 +38,7 @@
 #
 
 # We want to make sure to base this on a recent ubuntu release
-FROM ubuntu:18.10
+FROM ubuntu:19.10
 
 # Please update the references below to use different versions of
 # devlib, WA or the Android SDK
