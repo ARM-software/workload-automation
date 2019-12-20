@@ -123,7 +123,7 @@ class PerfInstrument(Instrument):
 
     def setup(self, context):
         self.outdir = os.path.join(context.output_directory, self.perf_type)
-        self.collector.set_output(outdir)
+        self.collector.set_output(self.outdir)
         self.collector.reset()
 
     def start(self, context):
