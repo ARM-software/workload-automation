@@ -84,9 +84,13 @@ def get_from_location(basepath, resource):
         if os.path.exists(path):
             return path
     elif resource.kind == 'executable':
-        path = os.path.join(basepath, 'bin', resource.abi, resource.filename)
-        if os.path.exists(path):
-            return path
+        bin_dir = os.path.join(basepath, 'bin', resource.abi)
+        if not os.path.exists(bin_dir):
+            return None
+        for entry in os.listdir(bin_dir):
+            path = os.path.join(bin_dir, entry)
+            if resource.match(path):
+                return path
     elif resource.kind == 'revent':
         path = os.path.join(basepath, 'revent_files')
         if os.path.exists(path):
