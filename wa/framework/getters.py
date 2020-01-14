@@ -78,6 +78,7 @@ def get_path_matches(resource, files):
     return matches
 
 
+# pylint: disable=too-many-return-statements
 def get_from_location(basepath, resource):
     if resource.kind == 'file':
         path = os.path.join(basepath, resource.path)
