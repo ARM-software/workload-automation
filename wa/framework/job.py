@@ -181,6 +181,11 @@ class Job(object):
         if force or self.status < status:
             self.status = status
 
+    def add_classifier(self, name, value, overwrite=False):
+        if name in self.classifiers and not overwrite:
+            raise ValueError('Cannot overwrite "{}" classifier.'.format(name))
+        self.classifiers[name] = value
+
     def __str__(self):
         return '{} ({}) [{}]'.format(self.id, self.label, self.iteration)
 
