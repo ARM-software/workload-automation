@@ -38,10 +38,6 @@ class Job(object):
         return self.spec.label
 
     @property
-    def classifiers(self):
-        return self.spec.classifiers
-
-    @property
     def status(self):
         return self._status
 
@@ -64,6 +60,7 @@ class Job(object):
         self.output = None
         self.run_time = None
         self.retries = 0
+        self.classifiers = copy(self.spec.classifiers)
         self._has_been_initialized = False
         self._status = Status.NEW
 
