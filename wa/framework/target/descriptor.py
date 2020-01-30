@@ -332,21 +332,10 @@ CONNECTION_PARAMS = {
             The port SSH server is listening on on the target.
             """),
         Parameter(
-            'telnet', kind=bool, default=False,
+            'strict_host_check', kind=bool, default=True,
             description="""
-            If set to ``True``, a Telnet connection, rather than
-            SSH will be used.
-            """),
-        Parameter(
-            'password_prompt', kind=str,
-            description="""
-            Password prompt to expect
-            """),
-        Parameter(
-            'original_prompt', kind=str,
-            description="""
-            Original shell prompt to expect.
-            """),
+            Specify whether devices should be connected to if
+            their host key does not match the systems known host keys. """),
         Parameter(
             'sudo_cmd', kind=str,
             default="sudo -- sh -c {}",
@@ -355,6 +344,25 @@ CONNECTION_PARAMS = {
             somewhere in the string it indicate where the command
             to be run via sudo is to go.
             """),
+        # Depreciated Parameters
+        Parameter(
+            'telnet', kind=str,
+            description="""
+            Original shell prompt to expect.
+            """,
+            deprecated=True),
+        Parameter(
+            'password_prompt', kind=str,
+            description="""
+            Password prompt to expect
+            """,
+            deprecated=True),
+        Parameter(
+            'original_prompt', kind=str,
+            description="""
+            Original shell prompt to expect.
+            """,
+            deprecated=True),
     ],
     Gem5Connection: [
         Parameter(

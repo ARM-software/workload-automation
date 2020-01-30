@@ -314,7 +314,7 @@ class ConfigurationPoint(object):
     def validate(self, obj, check_mandatory=True):
         value = getattr(obj, self.name, None)
         if self.deprecated:
-            msg = 'Depreciated parameter supplied for "{}" in "{}". Config will be ignored.'
+            msg = 'Depreciated parameter supplied for "{}" in "{}". The value will be ignored.'
             logger.warning(msg.format(self.name, obj.name))
             return
         if value is not None:
