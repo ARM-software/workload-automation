@@ -20,7 +20,7 @@ from copy import copy
 from devlib import (LinuxTarget, AndroidTarget, LocalLinuxTarget,
                     ChromeOsTarget, Platform, Juno, TC2, Gem5SimulationPlatform,
                     AdbConnection, SshConnection, LocalConnection,
-                    Gem5Connection)
+                    TelnetConnection, Gem5Connection)
 from devlib.target import DEFAULT_SHELL_PROMPT
 
 from wa.framework import pluginloader
@@ -363,6 +363,46 @@ CONNECTION_PARAMS = {
             Original shell prompt to expect.
             """,
             deprecated=True),
+    ],
+    TelnetConnection: [
+        Parameter(
+            'host', kind=str, mandatory=True,
+            description="""
+            Host name or IP address of the target.
+            """),
+        Parameter(
+            'username', kind=str, mandatory=True,
+            description="""
+            User name to connect with
+            """),
+        Parameter(
+            'password', kind=str,
+            description="""
+            Password to use.
+            """),
+        Parameter(
+            'port', kind=int,
+            description="""
+            The port SSH server is listening on on the target.
+            """),
+        Parameter(
+            'password_prompt', kind=str,
+            description="""
+            Password prompt to expect
+            """),
+        Parameter(
+            'original_prompt', kind=str,
+            description="""
+            Original shell prompt to expect.
+            """),
+        Parameter(
+            'sudo_cmd', kind=str,
+            default="sudo -- sh -c {}",
+            description="""
+            Sudo command to use. Must have ``{}`` specified
+            somewhere in the string it indicate where the command
+            to be run via sudo is to go.
+            """),
     ],
     Gem5Connection: [
         Parameter(
