@@ -44,14 +44,6 @@ class Workload(TargetedPlugin):
     kind = 'workload'
 
     parameters = [
-        Parameter('cleanup_assets', kind=bool,
-                  global_alias='cleanup_assets',
-                  aliases=['clean_up'],
-                  default=True,
-                  description="""
-                  If ``True``, assets that are deployed or created as part of the
-                  workload will be removed again from the device.
-                  """),
         Parameter('uninstall', kind=bool,
                   default=True,
                   description="""
