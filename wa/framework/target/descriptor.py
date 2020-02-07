@@ -464,16 +464,16 @@ CONNECTION_PARAMS['ChromeOsConnection'] = \
     CONNECTION_PARAMS[AdbConnection] + CONNECTION_PARAMS[SshConnection]
 
 
-# name --> ((target_class, conn_class), params_list, defaults)
+# name --> ((target_class, conn_class, unsupported_platforms), params_list, defaults)
 TARGETS = {
-    'linux': ((LinuxTarget, SshConnection), COMMON_TARGET_PARAMS, None),
-    'android': ((AndroidTarget, AdbConnection), COMMON_TARGET_PARAMS +
+    'linux': ((LinuxTarget, SshConnection, []), COMMON_TARGET_PARAMS, None),
+    'android': ((AndroidTarget, AdbConnection, []), COMMON_TARGET_PARAMS +
                [Parameter('package_data_directory', kind=str, default='/data/data',
                           description='''
                           Directory containing Android data
                           '''),
                ], None),
-    'chromeos': ((ChromeOsTarget, 'ChromeOsConnection'), COMMON_TARGET_PARAMS +
+    'chromeos': ((ChromeOsTarget, 'ChromeOsConnection', []), COMMON_TARGET_PARAMS +
                 [Parameter('package_data_directory', kind=str, default='/data/data',
                            description='''
                            Directory containing Android data
@@ -494,7 +494,8 @@ TARGETS = {
                           the need for privilege elevation.
                           '''),
                 ], None),
-    'local': ((LocalLinuxTarget, LocalConnection), COMMON_TARGET_PARAMS, None),
+    'local': ((LocalLinuxTarget, LocalConnection, [Juno, Gem5SimulationPlatform, TC2]),
+              COMMON_TARGET_PARAMS, None),
 }
 
 # name --> assistant
@@ -549,13 +550,15 @@ class DefaultTargetDescriptor(TargetDescriptor):
         # pylint: disable=attribute-defined-outside-init,too-many-locals
         result = []
         for target_name, target_tuple in TARGETS.items():
-            (target, conn), target_params = self._get_item(target_tuple)
+            (target, conn, unsupported_platforms), target_params = self._get_item(target_tuple)
             assistant = ASSISTANTS[target_name]
             conn_params = CONNECTION_PARAMS[conn]
             for platform_name, platform_tuple in PLATFORMS.items():
                 platform_target_defaults = platform_tuple[-1]
                 platform_tuple = platform_tuple[0:-1]
                 (platform, plat_conn), platform_params = self._get_item(platform_tuple)
+                if platform in unsupported_platforms:
+                    continue
                 # Add target defaults specified in the Platform tuple
                 target_params = self._apply_param_defaults(target_params,
                                                            platform_target_defaults)
