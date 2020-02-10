@@ -69,11 +69,14 @@ def instantiate_target(tdesc, params, connect=None, extra_platform_params=None):
 
     for name, value in params.items():
         if name in target_params:
-            tp[name] = value
+            if not target_params[name].deprecated:
+                tp[name] = value
         elif name in platform_params:
-            pp[name] = value
+            if not platform_params[name].deprecated:
+                pp[name] = value
         elif name in conn_params:
-            cp[name] = value
+            if not conn_params[name].deprecated:
+                cp[name] = value
         elif name in assistant_params:
             pass
         else:
@@ -129,7 +132,8 @@ class TargetDescription(object):
         config = {}
         for pattr in param_attrs:
             for p in getattr(self, pattr):
-                config[p.name] = p.default
+                if not p.deprecated:
+                    config[p.name] = p.default
         return config
 
     def _set(self, attr, vals):
