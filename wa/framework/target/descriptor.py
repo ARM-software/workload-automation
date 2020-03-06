@@ -328,6 +328,7 @@ CONNECTION_PARAMS = {
             """),
         Parameter(
             'port', kind=int,
+            default=22,
             description="""
             The port SSH server is listening on on the target.
             """),
