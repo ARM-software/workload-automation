@@ -587,6 +587,27 @@ public class BaseUiAutomation {
         }
     }
 
+    // If Chrome is a fresh install then these popups may be presented
+    // dismiss them if visible.
+    public void dismissChromePopup() throws Exception {
+        UiObject accept =
+            mDevice.findObject(new UiSelector().resourceId("com.android.chrome:id/terms_accept")
+                .className("android.widget.Button"));
+        if (accept.exists()){
+            accept.click();
+            UiObject negative =
+                mDevice.findObject(new UiSelector().resourceId("com.android.chrome:id/negative_button")
+                    .className("android.widget.Button"));
+            negative.waitForExists(100000);
+            negative.click();
+        }
+        UiObject lite =
+            mDevice.findObject(new UiSelector().resourceId("com.android.chrome:id/button_secondary")
+                .className("android.widget.Button"));
+        if (lite.exists()){
+            lite.click();
+        }
+    }
 
     // Override getParams function to decode a url encoded parameter bundle before
     // passing it to workloads.

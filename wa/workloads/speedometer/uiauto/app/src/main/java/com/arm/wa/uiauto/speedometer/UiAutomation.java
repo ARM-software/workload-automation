@@ -47,7 +47,7 @@ public class UiAutomation extends BaseUiAutomation {
     @Test
     public void setup() throws Exception{
         setScreenOrientation(ScreenOrientation.NATURAL);
-        clearFirstRun();
+         dismissChromePopup();
     }
 
     @Test
@@ -59,20 +59,6 @@ public class UiAutomation extends BaseUiAutomation {
     public void teardown() throws Exception{
         clearTabs();
         unsetScreenOrientation();
-    }
-
-    public void clearFirstRun() throws Exception {
-        UiObject accept =
-            mDevice.findObject(new UiSelector().resourceId("com.android.chrome:id/terms_accept")
-                .className("android.widget.Button"));
-        if (accept.exists()){
-            accept.click();
-            UiObject negative =
-                mDevice.findObject(new UiSelector().resourceId("com.android.chrome:id/negative_button")
-                    .className("android.widget.Button"));
-            negative.waitForExists(100000);
-            negative.click();
-        }
     }
 
     public void runBenchmark() throws Exception {
