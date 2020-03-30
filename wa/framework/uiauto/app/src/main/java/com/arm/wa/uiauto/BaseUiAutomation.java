@@ -586,20 +586,21 @@ public class BaseUiAutomation {
             acceptButton.click();
         }
     }
-
+   
     // If Chrome is a fresh install then these popups may be presented
     // dismiss them if visible.
     public void dismissChromePopup() throws Exception {
         UiObject accept =
             mDevice.findObject(new UiSelector().resourceId("com.android.chrome:id/terms_accept")
                 .className("android.widget.Button"));
-        if (accept.exists()){
+        if (accept.waitForExists(3000)){
             accept.click();
             UiObject negative =
                 mDevice.findObject(new UiSelector().resourceId("com.android.chrome:id/negative_button")
                     .className("android.widget.Button"));
-            negative.waitForExists(100000);
-            negative.click();
+            if (negative.waitForExists(10000)) {
+                negative.click();
+            }      
         }
         UiObject lite =
             mDevice.findObject(new UiSelector().resourceId("com.android.chrome:id/button_secondary")
