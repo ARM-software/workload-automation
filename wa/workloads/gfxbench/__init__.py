@@ -26,7 +26,7 @@ class Gfxbench(ApkUiautoWorkload):
                      re.compile(r'Car Chase Offscreen score (.+)'),
                      re.compile(r'Manhattan 3.1 score (.+)'),
                      re.compile(r'1080p Manhattan 3.1 Offscreen score (.+)'),
-                     re.compile(r'1440p Manhattan 3.1 Offscreen score (.+)'),
+                     re.compile(r'1440p Manhattan 3.1.1 Offscreen score (.+)'),
                      re.compile(r'Tessellation score (.+)'),
                      re.compile(r'Tessellation Offscreen score (.+)')]
     score_regex = re.compile(r'.*?([\d.]+).*')

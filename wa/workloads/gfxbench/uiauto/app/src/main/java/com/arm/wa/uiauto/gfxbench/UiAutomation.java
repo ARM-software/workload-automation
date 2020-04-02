@@ -31,6 +31,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
@@ -65,20 +66,20 @@ public class UiAutomation extends BaseUiAutomation {
 
         mDevice.click(selectx,selecty);
 
-        //Disable the tests
+        // Enable High level tests
         toggleTest("High-Level Tests");
-        toggleTest("Low-Level Tests");
-        toggleTest("Special Tests");
-        toggleTest("Fixed Time Test");
-
-        //Enable sub tests
         toggleTest("Car Chase");
         toggleTest("1080p Car Chase Offscreen");
         toggleTest("Manhattan 3.1");
         toggleTest("1080p Manhattan 3.1 Offscreen");
         toggleTest("1440p Manhattan 3.1.1 Offscreen");
+
+        // Enable low level tests
+        toggleTest("Low-Level Tests");
         toggleTest("Tessellation");
         toggleTest("1080p Tessellation Offscreen");
+        toggleTest("Special Tests");
+        toggleTest("Fixed Time Test");
     }
 
     @Test
@@ -131,63 +132,31 @@ public class UiAutomation extends BaseUiAutomation {
             mDevice.findObject(new UiSelector().text("High-Level Tests")
                 .className("android.widget.TextView"));
         complete.waitForExists(1200000);
+
+        UiObject outOfmemory = mDevice.findObject(new UiSelector().text("OUT_OF_MEMORY"));
+        if (outOfmemory.exists()) {
+            throw new OutOfMemoryError("The workload has failed because the device is doing to much work.");
+        }
     }
 
     public void getScores() throws Exception {
         UiScrollable list = new UiScrollable(new UiSelector().scrollable(true));
+    
         UiObject results =
             mDevice.findObject(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/results_testList"));
-        int number_of_results = results.getChildCount();
+        ArrayList<String> tests = new ArrayList<String>();
+        tests.add("Car Chase");
+        tests.add("1080p Car Chase Offscreen");
+        tests.add("Manhattan 3.1");
+        tests.add("1080p Manhattan 3.1 Offscreen");
+        tests.add("1440p Manhattan 3.1.1 Offscreen");
+        tests.add("Tessellation");
+        tests.add("1080p Tessellation Offscreen");
 
-        //High Level Tests
-        UiObject carchase =
-            mDevice.findObject(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/results_testList"))
-            .getChild(new UiSelector().index(1))
-            .getChild(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/updated_result_item_subresult"));
-        Log.d(TAG, "Car Chase score " + carchase.getText());
-
-        UiObject carchaseoff =
-            mDevice.findObject(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/results_testList"))
-            .getChild(new UiSelector().index(2))
-            .getChild(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/updated_result_item_subresult"));
-        Log.d(TAG, "Car Chase Offscreen score " + carchaseoff.getText());
-
-        UiObject manhattan =
-            mDevice.findObject(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/results_testList"))
-            .getChild(new UiSelector().index(3))
-            .getChild(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/updated_result_item_subresult"));
-        Log.d(TAG, "Manhattan 3.1 score " + manhattan.getText());
-
-        UiObject manhattan1080 =
-            mDevice.findObject(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/results_testList"))
-            .getChild(new UiSelector().index(4))
-            .getChild(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/updated_result_item_subresult"));
-        Log.d(TAG, "1080p Manhattan 3.1 Offscreen score " + manhattan1080.getText());
-
-        UiObject manhattan1440 =
-            mDevice.findObject(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/results_testList"))
-            .getChild(new UiSelector().index(5))
-            .getChild(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/updated_result_item_subresult"));
-        Log.d(TAG, "1440p Manhattan 3.1 Offscreen score " + manhattan1440.getText());
-
-        //Low Level Tests
-        UiObject tess =
-            mDevice.findObject(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/results_testList"))
-            .getChild(new UiSelector().index(7))
-            .getChild(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/updated_result_item_subresult"));
-        if (!tess.exists() && list.waitForExists(60)) {
-            list.scrollIntoView(tess);
+        for (String test : tests) {
+            getTestScore(list, results, test);
         }
-        Log.d(TAG, "Tessellation score " + tess.getText());
-
-        UiObject tessoff =
-            mDevice.findObject(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/results_testList"))
-            .getChild(new UiSelector().index(8))
-            .getChild(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/updated_result_item_subresult"));
-        if (!tessoff.exists() && list.waitForExists(60)) {
-            list.scrollIntoView(tessoff);
-        }
-        Log.d(TAG, "Tessellation Offscreen score " + tessoff.getText());
+       
     }
 
     public void toggleTest(String testname) throws Exception {
@@ -198,5 +167,23 @@ public class UiAutomation extends BaseUiAutomation {
             list.scrollIntoView(test);
         }
         test.click();
+    }
+
+    public void getTestScore(UiScrollable scrollable, UiObject resultsList, String test) throws Exception {
+        if (test.equals("Tessellation")) {
+            scrollable.scrollToEnd(1000);
+        }
+        for (int i=1; i < resultsList.getChildCount(); i++) {
+            UiObject testname = resultsList.getChild(new UiSelector().index(i))
+                .getChild(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/updated_result_item_name"));
+            if (testname.exists() && testname.getText().equals(test)) {
+                UiObject result = resultsList.getChild(new UiSelector()
+                                    .index(i))
+                                    .getChild(new UiSelector()
+                                    .resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/updated_result_item_subresult"));
+                Log.d(TAG, test + " score " + result.getText());
+                return;
+            }
+        }
     }
 }
