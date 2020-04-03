@@ -14,8 +14,6 @@
 #
 
 import inspect
-from collections import OrderedDict
-from copy import copy
 
 from devlib import (LinuxTarget, AndroidTarget, LocalLinuxTarget,
                     ChromeOsTarget, Platform, Juno, TC2, Gem5SimulationPlatform,
@@ -506,30 +504,82 @@ ASSISTANTS = {
     'chromeos': ChromeOsAssistant
 }
 
-# name --> ((platform_class, conn_class), params_list, defaults, target_defaults)
+# Platform specific parameter overrides.
+JUNO_PLATFORM_OVERRIDES = [
+        Parameter('baudrate', kind=int, default=115200,
+                description='''
+                Baud rate for the serial connection.
+                '''),
+        Parameter('vemsd_mount', kind=str, default='/media/JUNO',
+                description='''
+                VExpress MicroSD card mount location. This is a MicroSD card in
+                the VExpress device that is mounted on the host via USB. The card
+                contains configuration files for the platform and firmware and
+                kernel images to be flashed.
+                '''),
+        Parameter('bootloader', kind=str, default='u-boot',
+                allowed_values=['uefi', 'uefi-shell', 'u-boot', 'bootmon'],
+                description='''
+                Selects the bootloader mechanism used by the board. Depending on
+                firmware version, a number of possible boot mechanisms may be use.
+
+                Please see ``devlib`` documentation for descriptions.
+                '''),
+        Parameter('hard_reset_method', kind=str, default='dtr',
+                allowed_values=['dtr', 'reboottxt'],
+                description='''
+                There are a couple of ways to reset VersatileExpress board if the
+                software running on the board becomes unresponsive. Both require
+                configuration to be enabled (please see ``devlib`` documentation).
+
+                ``dtr``: toggle the DTR line on the serial connection
+                ``reboottxt``: create ``reboot.txt`` in the root of the VEMSD mount.
+                '''),
+]
+TC2_PLATFORM_OVERRIDES = [
+        Parameter('baudrate', kind=int, default=38400,
+                description='''
+                Baud rate for the serial connection.
+                '''),
+        Parameter('vemsd_mount', kind=str, default='/media/VEMSD',
+                description='''
+                VExpress MicroSD card mount location. This is a MicroSD card in
+                the VExpress device that is mounted on the host via USB. The card
+                contains configuration files for the platform and firmware and
+                kernel images to be flashed.
+                '''),
+        Parameter('bootloader', kind=str, default='bootmon',
+                allowed_values=['uefi', 'uefi-shell', 'u-boot', 'bootmon'],
+                description='''
+                Selects the bootloader mechanism used by the board. Depending on
+                firmware version, a number of possible boot mechanisms may be use.
+
+                Please see ``devlib`` documentation for descriptions.
+                '''),
+        Parameter('hard_reset_method', kind=str, default='reboottxt',
+                allowed_values=['dtr', 'reboottxt'],
+                description='''
+                There are a couple of ways to reset VersatileExpress board if the
+                software running on the board becomes unresponsive. Both require
+                configuration to be enabled (please see ``devlib`` documentation).
+
+                ``dtr``: toggle the DTR line on the serial connection
+                ``reboottxt``: create ``reboot.txt`` in the root of the VEMSD mount.
+                '''),
+]
+
+# name --> ((platform_class, conn_class), params_list, defaults, target_overrides)
 # Note: normally, connection is defined by the Target name, but
 #       platforms may choose to override it
-# Note: the target_defaults allows you to override common target_params for a
+# Note: the target_overrides allows you to override common target_params for a
 # particular platform. Parameters you can override are in COMMON_TARGET_PARAMS
-# Example of overriding one of the target parameters: Replace last None with:
-# {'shell_prompt': CUSTOM__SHELL_PROMPT}
+# Example of overriding one of the target parameters: Replace last `None` with
+# a list of `Parameter` objects to be used instead.
 PLATFORMS = {
     'generic': ((Platform, None), COMMON_PLATFORM_PARAMS, None, None),
-    'juno': ((Juno, None), COMMON_PLATFORM_PARAMS + VEXPRESS_PLATFORM_PARAMS,
-            {
-                 'vemsd_mount': '/media/JUNO',
-                 'baudrate': 115200,
-                 'bootloader': 'u-boot',
-                 'hard_reset_method': 'dtr',
-            },
-            None),
+    'juno': ((Juno, None), COMMON_PLATFORM_PARAMS + VEXPRESS_PLATFORM_PARAMS, JUNO_PLATFORM_OVERRIDES, None),
     'tc2': ((TC2, None), COMMON_PLATFORM_PARAMS + VEXPRESS_PLATFORM_PARAMS,
-            {
-                 'vemsd_mount': '/media/VEMSD',
-                 'baudrate': 38400,
-                 'bootloader': 'bootmon',
-                 'hard_reset_method': 'reboottxt',
-            }, None),
+            TC2_PLATFORM_OVERRIDES, None),
     'gem5': ((Gem5SimulationPlatform, Gem5Connection), GEM5_PLATFORM_PARAMS, None, None),
 }
 
@@ -560,8 +610,7 @@ class DefaultTargetDescriptor(TargetDescriptor):
                 if platform in unsupported_platforms:
                     continue
                 # Add target defaults specified in the Platform tuple
-                target_params = self._apply_param_defaults(target_params,
-                                                           platform_target_defaults)
+                target_params = self._override_params(target_params, platform_target_defaults)
                 name = '{}_{}'.format(platform_name, target_name)
                 td = TargetDescription(name, self)
                 td.target = target
@@ -581,22 +630,16 @@ class DefaultTargetDescriptor(TargetDescriptor):
                 result.append(td)
         return result
 
-    def _apply_param_defaults(self, params, defaults):  # pylint: disable=no-self-use
-        '''Adds parameters in the defaults dict to params list.
-        Return updated params as a list (idempotent function).'''
-        if not defaults:
+    def _override_params(self, params, overrides): # pylint: disable=no-self-use
+        ''' Returns a new list of parameters replacing any parameter with the
+        correesponding parameter in overrides'''
+        if not overrides:
             return params
-        param_map = OrderedDict((p.name, copy(p)) for p in params)
-        for name, value in defaults.items():
-            if name not in param_map:
-                raise ValueError('Unexpected default "{}"'.format(name))
-            param_map[name].default = value
-        # Convert the OrderedDict to a list to return the same type
-        return list(param_map.values())
+        return [o if p.match(o.name) else p for o in overrides for p in params]
 
     def _get_item(self, item_tuple):
-        cls, params, defaults = item_tuple
-        updated_params = self._apply_param_defaults(params, defaults)
+        cls, params, defaults, = item_tuple
+        updated_params = self._override_params(params, defaults)
         return cls, updated_params
 
 
