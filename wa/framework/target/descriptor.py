@@ -264,7 +264,6 @@ VEXPRESS_PLATFORM_PARAMS = [
 
               ``dtr``: toggle the DTR line on the serial connection
               ``reboottxt``: create ``reboot.txt`` in the root of the VEMSD mount.
-
               '''),
 ]
 
@@ -568,7 +567,7 @@ TC2_PLATFORM_OVERRIDES = [
                 '''),
 ]
 
-# name --> ((platform_class, conn_class), params_list, defaults, target_overrides)
+# name --> ((platform_class, conn_class, conn_overrides), params_list, defaults, target_overrides)
 # Note: normally, connection is defined by the Target name, but
 #       platforms may choose to override it
 # Note: the target_overrides allows you to override common target_params for a
@@ -576,11 +575,15 @@ TC2_PLATFORM_OVERRIDES = [
 # Example of overriding one of the target parameters: Replace last `None` with
 # a list of `Parameter` objects to be used instead.
 PLATFORMS = {
-    'generic': ((Platform, None), COMMON_PLATFORM_PARAMS, None, None),
-    'juno': ((Juno, None), COMMON_PLATFORM_PARAMS + VEXPRESS_PLATFORM_PARAMS, JUNO_PLATFORM_OVERRIDES, None),
-    'tc2': ((TC2, None), COMMON_PLATFORM_PARAMS + VEXPRESS_PLATFORM_PARAMS,
+    'generic': ((Platform, None, None), COMMON_PLATFORM_PARAMS, None, None),
+    'juno': ((Juno, None, [
+                            Parameter('host', kind=str, mandatory=False,
+                            description="Host name or IP address of the target."),
+                          ]
+            ), COMMON_PLATFORM_PARAMS + VEXPRESS_PLATFORM_PARAMS, JUNO_PLATFORM_OVERRIDES, None),
+    'tc2': ((TC2, None, None), COMMON_PLATFORM_PARAMS + VEXPRESS_PLATFORM_PARAMS,
             TC2_PLATFORM_OVERRIDES, None),
-    'gem5': ((Gem5SimulationPlatform, Gem5Connection), GEM5_PLATFORM_PARAMS, None, None),
+    'gem5': ((Gem5SimulationPlatform, Gem5Connection, None), GEM5_PLATFORM_PARAMS, None, None),
 }
 
 
@@ -606,7 +609,7 @@ class DefaultTargetDescriptor(TargetDescriptor):
             for platform_name, platform_tuple in PLATFORMS.items():
                 platform_target_defaults = platform_tuple[-1]
                 platform_tuple = platform_tuple[0:-1]
-                (platform, plat_conn), platform_params = self._get_item(platform_tuple)
+                (platform, plat_conn, conn_defaults), platform_params = self._get_item(platform_tuple)
                 if platform in unsupported_platforms:
                     continue
                 # Add target defaults specified in the Platform tuple
@@ -622,10 +625,12 @@ class DefaultTargetDescriptor(TargetDescriptor):
 
                 if plat_conn:
                     td.conn = plat_conn
-                    td.conn_params = CONNECTION_PARAMS[plat_conn]
+                    conn_params = CONNECTION_PARAMS[plat_conn]
+                    td.conn_params = self._override_params(conn_params, conn_defaults)
+
                 else:
                     td.conn = conn
-                    td.conn_params = conn_params
+                    td.conn_params = self._override_params(conn_params, conn_defaults)
 
                 result.append(td)
         return result
