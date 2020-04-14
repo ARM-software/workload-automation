@@ -640,10 +640,16 @@ class DefaultTargetDescriptor(TargetDescriptor):
         correesponding parameter in overrides'''
         if not overrides:
             return params
-        return [o if p.match(o.name) else p for o in overrides for p in params]
+        param_map = {p.name: p for p in params}
+        for override in overrides:
+            if override.name in param_map:
+                param_map[override.name] = override
+        # Return the list of overriden parameters
+        return list(param_map.values())
+
 
     def _get_item(self, item_tuple):
-        cls, params, defaults, = item_tuple
+        cls, params, defaults = item_tuple
         updated_params = self._override_params(params, defaults)
         return cls, updated_params
 
