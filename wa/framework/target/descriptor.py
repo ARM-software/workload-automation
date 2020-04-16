@@ -694,7 +694,7 @@ def _get_target_defaults(target):
 
 
 def add_description_for_target(target, description=None, **kwargs):
-    (base_name, ((_, base_conn), base_params, _)) = _get_target_defaults(target)
+    (base_name, ((_, base_conn, _), base_params, _)) = _get_target_defaults(target)
 
     if 'target_params' not in kwargs:
         kwargs['target_params'] = base_params
@@ -702,7 +702,7 @@ def add_description_for_target(target, description=None, **kwargs):
     if 'platform' not in kwargs:
         kwargs['platform'] = Platform
     if 'platform_params' not in kwargs:
-        for (plat, conn), params, _, _ in PLATFORMS.values():
+        for (plat, conn, _), params, _, _ in PLATFORMS.values():
             if plat == kwargs['platform']:
                 kwargs['platform_params'] = params
                 if conn is not None and kwargs['conn'] is None:
