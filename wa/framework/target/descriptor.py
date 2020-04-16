@@ -637,7 +637,7 @@ class DefaultTargetDescriptor(TargetDescriptor):
 
     def _override_params(self, params, overrides): # pylint: disable=no-self-use
         ''' Returns a new list of parameters replacing any parameter with the
-        correesponding parameter in overrides'''
+        corresponding parameter in overrides'''
         if not overrides:
             return params
         param_map = {p.name: p for p in params}
@@ -647,11 +647,10 @@ class DefaultTargetDescriptor(TargetDescriptor):
         # Return the list of overriden parameters
         return list(param_map.values())
 
-
     def _get_item(self, item_tuple):
-        cls, params, defaults = item_tuple
+        cls_tuple, params, defaults = item_tuple
         updated_params = self._override_params(params, defaults)
-        return cls, updated_params
+        return cls_tuple, updated_params
 
 
 _adhoc_target_descriptions = []
