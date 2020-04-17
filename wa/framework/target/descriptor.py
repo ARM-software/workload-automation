@@ -625,9 +625,8 @@ class DefaultTargetDescriptor(TargetDescriptor):
 
                 if plat_conn:
                     td.conn = plat_conn
-                    conn_params = CONNECTION_PARAMS[plat_conn]
-                    td.conn_params = self._override_params(conn_params, conn_defaults)
-
+                    td.conn_params = self._override_params(CONNECTION_PARAMS[plat_conn],
+                                                           conn_defaults)
                 else:
                     td.conn = conn
                     td.conn_params = self._override_params(conn_params, conn_defaults)
