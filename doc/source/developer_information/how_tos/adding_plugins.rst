@@ -120,7 +120,7 @@ separated by a new line.
                       '''
 
 In order to allow for additional configuration of the workload from a user a
-list of :ref:`parameters <plugin-parmeters>` can be supplied. These can be
+list of :ref:`parameters <plugin-parameters>` can be supplied. These can be
 configured in a variety of different ways. For example here we are ensuring that
 the value of the parameter is an integer and larger than 0 using the ``kind``
 and ``constraint`` options, also if no value is provided we are providing a
