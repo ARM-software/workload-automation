@@ -317,6 +317,8 @@ CONNECTION_PARAMS = {
             'password', kind=str,
             description="""
             Password to use.
+            (When connecting to a passwordless machine set to an
+            empty string to prevent attempting ssh key authentication.)
             """),
         Parameter(
             'keyfile', kind=str,
