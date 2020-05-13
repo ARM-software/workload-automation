@@ -344,6 +344,13 @@ CONNECTION_PARAMS = {
             somewhere in the string it indicate where the command
             to be run via sudo is to go.
             """),
+        Parameter(
+            'use_scp', kind=bool,
+            default=False,
+            description="""
+            Allow using SCP as method of file transfer instead
+            of the default SFTP.
+            """),
         # Depreciated Parameters
         Parameter(
             'telnet', kind=str,
