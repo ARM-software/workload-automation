@@ -481,7 +481,6 @@ class MetaConfiguration(Configuration):
                         contain bash color escape codes. Set this to ``False`` if
                         console output will be piped somewhere that does not know
                         how to handle those.
-
             """,
         ),
         ConfigurationPoint(
