@@ -464,6 +464,7 @@ class MetaConfiguration(Configuration):
             description="""
             The local mount point for the filer hosting WA assets.
             """,
+            default=''
         ),
         ConfigurationPoint(
             'logging',
