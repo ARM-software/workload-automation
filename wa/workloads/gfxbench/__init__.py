@@ -15,6 +15,7 @@
 import re
 
 from wa import ApkUiautoWorkload, WorkloadError, Parameter
+from wa.utils.types import list_or_string
 
 
 class Gfxbench(ApkUiautoWorkload):
@@ -22,13 +23,6 @@ class Gfxbench(ApkUiautoWorkload):
     name = 'gfxbench-corporate'
     package_names = ['net.kishonti.gfxbench.gl.v50000.corporate']
     clear_data_on_reset = False
-    regex_matches = [re.compile(r'Car Chase score (.+)'),
-                     re.compile(r'Car Chase Offscreen score (.+)'),
-                     re.compile(r'Manhattan 3.1 score (.+)'),
-                     re.compile(r'1080p Manhattan 3.1 Offscreen score (.+)'),
-                     re.compile(r'1440p Manhattan 3.1.1 Offscreen score (.+)'),
-                     re.compile(r'Tessellation score (.+)'),
-                     re.compile(r'Tessellation Offscreen score (.+)')]
     score_regex = re.compile(r'.*?([\d.]+).*')
     description = '''
     Execute a subset of graphical performance benchmarks
@@ -37,23 +31,41 @@ class Gfxbench(ApkUiautoWorkload):
     1. Open the gfxbench application
     2. Execute Car Chase, Manhattan and Tessellation benchmarks
 
+    Note: Some of the default tests are unavailable on devices running
+          with a smaller resolution than 1080p.
+
     '''
+
+    default_test_list = [
+        "Car Chase",
+        "1080p Car Chase Offscreen",
+        "Manhattan 3.1",
+        "1080p Manhattan 3.1 Offscreen",
+        "1440p Manhattan 3.1.1 Offscreen",
+        "Tessellation",
+        "1080p Tessellation Offscreen",
+    ]
+
     parameters = [
         Parameter('timeout', kind=int, default=3600,
                   description=('Timeout for an iteration of the benchmark.')),
+        Parameter('tests', kind=list_or_string, default=default_test_list,
+                  description=('List of tests to be executed.')),
     ]
 
     def __init__(self, target, **kwargs):
         super(Gfxbench, self).__init__(target, **kwargs)
         self.gui.timeout = self.timeout
+        self.gui.uiauto_params['tests'] = self.test_list
 
     def update_output(self, context):
         super(Gfxbench, self).update_output(context)
-        expected_results = len(self.regex_matches)
+        expected_results = len(self.test_list)
+        regex_matches = [re.compile('{} score (.+)'.format(t)) for t in self.test_list]
         logcat_file = context.get_artifact_path('logcat')
         with open(logcat_file, errors='replace') as fh:
             for line in fh:
-                for regex in self.regex_matches:
+                for regex in regex_matches:
                     match = regex.search(line)
                     # Check if we have matched the score string in logcat
                     if match:

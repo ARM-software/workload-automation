@@ -40,10 +40,13 @@ public class UiAutomation extends BaseUiAutomation {
     private int networkTimeoutSecs = 30;
     private long networkTimeout =  TimeUnit.SECONDS.toMillis(networkTimeoutSecs);
     public static String TAG = "UXPERF";
+    protected Bundle parameters;
+    protected String[] testList;
 
     @Before
     public void initialize(){
-        initialize_instrumentation();
+        parameters = getParams();
+        testList = parameters.getStringArray("tests");
     }
 
     @Test
@@ -66,21 +69,18 @@ public class UiAutomation extends BaseUiAutomation {
 
         mDevice.click(selectx,selecty);
 
-        // Enable High level tests
+        // Disable test categories
         toggleTest("High-Level Tests");
-        toggleTest("Car Chase");
-        toggleTest("1080p Car Chase Offscreen");
-        toggleTest("Manhattan 3.1");
-        toggleTest("1080p Manhattan 3.1 Offscreen");
-        toggleTest("1440p Manhattan 3.1.1 Offscreen");
-
-        // Enable low level tests
         toggleTest("Low-Level Tests");
-        toggleTest("Tessellation");
-        toggleTest("1080p Tessellation Offscreen");
         toggleTest("Special Tests");
         toggleTest("Fixed Time Test");
+
+        // Enable selected tests
+        for (String test : testList) {
+            toggleTest(test);
+        }
     }
+
 
     @Test
     public void runWorkload() throws Exception {
@@ -129,7 +129,7 @@ public class UiAutomation extends BaseUiAutomation {
 
         //Wait for results
         UiObject complete =
-            mDevice.findObject(new UiSelector().text("High-Level Tests")
+            mDevice.findObject(new UiSelector().textContains("Test")
                 .className("android.widget.TextView"));
         complete.waitForExists(1200000);
 
@@ -141,22 +141,14 @@ public class UiAutomation extends BaseUiAutomation {
 
     public void getScores() throws Exception {
         UiScrollable list = new UiScrollable(new UiSelector().scrollable(true));
-    
+
         UiObject results =
             mDevice.findObject(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/results_testList"));
-        ArrayList<String> tests = new ArrayList<String>();
-        tests.add("Car Chase");
-        tests.add("1080p Car Chase Offscreen");
-        tests.add("Manhattan 3.1");
-        tests.add("1080p Manhattan 3.1 Offscreen");
-        tests.add("1440p Manhattan 3.1.1 Offscreen");
-        tests.add("Tessellation");
-        tests.add("1080p Tessellation Offscreen");
 
-        for (String test : tests) {
+        for (String test : testList) {
             getTestScore(list, results, test);
         }
-       
+
     }
 
     public void toggleTest(String testname) throws Exception {
@@ -164,6 +156,7 @@ public class UiAutomation extends BaseUiAutomation {
         UiObject test =
             mDevice.findObject(new UiSelector().text(testname));
         if (!test.exists() && list.waitForExists(60)) {
+            list.flingToBeginning(10);
             list.scrollIntoView(test);
         }
         test.click();
