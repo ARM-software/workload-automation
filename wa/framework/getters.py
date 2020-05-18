@@ -328,7 +328,8 @@ class Filer(ResourceGetter):
 
     """
     parameters = [
-        Parameter('remote_path', global_alias='remote_assets_path', default='',
+        Parameter('remote_path', global_alias='remote_assets_path',
+                  default=settings.assets_repository,
                   description="""
                   Path, on the local system, where the assets are located.
                   """),
