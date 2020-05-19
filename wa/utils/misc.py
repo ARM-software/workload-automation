@@ -34,6 +34,7 @@ from contextlib import contextmanager
 from datetime import datetime, timedelta
 from functools import reduce  # pylint: disable=redefined-builtin
 from operator import mul
+from tempfile import gettempdir
 from time import sleep
 if sys.version_info[0] == 3:
     from io import StringIO
@@ -660,14 +661,15 @@ def lock_file(path, timeout=30):
     from wa.framework.exception import ResourceError
 
     locked = False
-    l_file = '{}.lock'.format(path) if not path.endswith('.lock') else path
-    file_lock_logger.debug('Acquiring lock on "{}"'.format(l_file))
+    l_file = 'wa-{}.lock'.format(path)
+    l_file = os.path.join(gettempdir(), l_file.replace(os.path.sep, '_'))
+    file_lock_logger.debug('Acquiring lock on "{}"'.format(path))
     try:
         while timeout:
             try:
                 open(l_file, 'x').close()
                 locked = True
-                file_lock_logger.debug('Lock acquired on "{}"'.format(l_file))
+                file_lock_logger.debug('Lock acquired on "{}"'.format(path))
                 break
             except FileExistsError:
                 msg = 'Failed to acquire lock on "{}" Retrying...'
@@ -683,4 +685,4 @@ def lock_file(path, timeout=30):
     finally:
         if locked and os.path.exists(l_file):
             os.remove(l_file)
-            file_lock_logger.debug('Lock released "{}"'.format(l_file))
+            file_lock_logger.debug('Lock released "{}"'.format(path))
