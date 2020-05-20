@@ -129,8 +129,7 @@ public class UiAutomation extends BaseUiAutomation {
 
         //Wait for results
         UiObject complete =
-            mDevice.findObject(new UiSelector().textContains("Test")
-                .className("android.widget.TextView"));
+            mDevice.findObject(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/results_testList"));
         complete.waitForExists(1200000);
 
         UiObject outOfmemory = mDevice.findObject(new UiSelector().text("OUT_OF_MEMORY"));
