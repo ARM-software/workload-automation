@@ -81,10 +81,13 @@ public class UiAutomation extends BaseUiAutomation {
         }
     }
 
-
     @Test
     public void runWorkload() throws Exception {
         runBenchmark();
+    }
+
+    @Test
+    public void extractResults() throws Exception {
         getScores();
     }
 
