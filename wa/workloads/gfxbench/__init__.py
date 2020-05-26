@@ -56,7 +56,7 @@ class Gfxbench(ApkUiautoWorkload):
     def __init__(self, target, **kwargs):
         super(Gfxbench, self).__init__(target, **kwargs)
         self.gui.timeout = self.timeout
-        self.gui.uiauto_params['tests'] = self.test_list
+        self.gui.uiauto_params['tests'] = self.tests
 
     def update_output(self, context):
         super(Gfxbench, self).update_output(context)
