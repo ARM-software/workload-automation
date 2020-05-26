@@ -60,7 +60,7 @@ class Gfxbench(ApkUiautoWorkload):
 
     def update_output(self, context):
         super(Gfxbench, self).update_output(context)
-        expected_results = len(self.test_list)
+        expected_results = len(self.tests)
         regex_matches = [re.compile('{} score (.+)'.format(t)) for t in self.test_list]
         logcat_file = context.get_artifact_path('logcat')
         with open(logcat_file, errors='replace') as fh:
