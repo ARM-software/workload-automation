@@ -17,6 +17,13 @@
 #
 #   docker run -it --privileged -v /dev/bus/usb:/dev/bus/usb --volume ${PWD}:/workspace --workdir /workspace wa
 #
+# If using selinux you may need to add the `z` option when mounting
+# volumes e.g.:
+#   --volume ${PWD}:/workspace:z
+# Warning: Please ensure you do not use this option when mounting
+# system directores. For more information please see:
+# https://docs.docker.com/storage/bind-mounts/#configure-the-selinux-label
+#
 # The above command starts the container in privileged mode, with
 # access to USB devices. The current directory is mounted into the
 # image, allowing you to work from there. Any files written to this
