@@ -19,7 +19,7 @@ from datetime import datetime
 
 from devlib.utils.android import ApkInfo as _ApkInfo
 
-from wa import settings
+from wa.framework.configuration import settings
 from wa.framework.exception import ConfigError
 from wa.utils.serializer import read_pod, write_pod, Podable
 from wa.utils.types import enum
@@ -87,8 +87,9 @@ class LogcatParser(object):
         return LogcatEvent(timestamp, pid, tid, level, tag, message)
 
 
+# pylint: disable=protected-access,attribute-defined-outside-init
 class ApkInfo(_ApkInfo, Podable):
-    # Implement ApkInfo as a Podable class.
+    '''Implement ApkInfo as a Podable class.'''
 
     _pod_serialization_version = 1
 
@@ -132,3 +133,57 @@ class ApkInfo(_ApkInfo, Podable):
         pod['_pod_version'] = pod.get('_pod_version', 1)
         return pod
 
+
+def read_apk_info_cache():
+    if not os.path.exists(settings.cache_directory):
+        os.makedirs(settings.cache_directory)
+    if not os.path.isfile(settings.apk_info_cache_file):
+        return {}
+    with lock_file(settings.apk_info_cache_file):
+        return read_pod(settings.apk_info_cache_file)
+
+
+def write_apk_info_cache(cache):
+    if not os.path.exists(settings.cache_directory):
+        os.makedirs(settings.cache_directory)
+    with lock_file(settings.apk_info_cache_file):
+        write_pod(cache, settings.apk_info_cache_file)
+
+
+# pylint: disable=protected-access
+def get_apk_info_from_cache(apk_id):
+    cache = read_apk_info_cache()
+    pod = cache.get(apk_id, None)
+
+    if not pod:
+        return None
+
+    _pod_version = pod.get('_pod_version', 0)
+    if _pod_version != ApkInfo._pod_serialization_version:
+        msg = 'ApkInfo cache version mismatch. Expected {}, but found {}.\nTry deleting {}'
+        raise ConfigError(msg.format(ApkInfo._pod_serialization_version, _pod_version,
+                                     settings.apk_info_cache_file))
+    return ApkInfo.from_pod(pod)
+
+
+def cache_apk_info(apk_info, apk_id, overwrite=True):
+    cache = read_apk_info_cache()
+    if apk_id in cache and not overwrite:
+        raise ValueError('ApkInfo for {} is already in cache.'.format(apk_info.path))
+    cache[apk_id] = apk_info.to_pod()
+    write_apk_info_cache(cache)
+
+
+def get_cacheable_apk_info(path):
+    if not path:
+        return
+    stat = os.stat(path)
+    modified = stat.st_mtime
+    apk_id = '{}-{}'.format(path, modified)
+
+    info = get_apk_info_from_cache(apk_id)
+    if not info:
+        with lock_file(path):
+            info = ApkInfo(path)
+        cache_apk_info(info, apk_id)
+    return info

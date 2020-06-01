@@ -22,8 +22,8 @@ try:
 except ImportError:
     from pipes import quote
 
-from devlib.utils.android import ApkInfo
 
+from wa.utils.android import get_cacheable_apk_info
 from wa.framework.plugin import TargetedPlugin, Parameter
 from wa.framework.resource import (ApkFile, ReventFile,
                                    File, loose_version_matching,
@@ -523,7 +523,7 @@ class UiAutomatorGUI(object):
     def init_resources(self, resolver):
         self.uiauto_file = resolver.get(ApkFile(self.owner, uiauto=True))
         if not self.uiauto_package:
-            uiauto_info = ApkInfo(self.uiauto_file)
+            uiauto_info = get_cacheable_apk_info(self.uiauto_file)
             self.uiauto_package = uiauto_info.package
 
     def init_commands(self):
@@ -743,8 +743,7 @@ class PackageHandler(object):
                     self.resolve_package_from_host(context)
 
             if self.apk_file:
-                with lock_file(self.apk_file):
-                    self.apk_info = ApkInfo(self.apk_file)
+                self.apk_info = get_cacheable_apk_info(self.apk_file)
             else:
                 if self.error_msg:
                     raise WorkloadError(self.error_msg)
