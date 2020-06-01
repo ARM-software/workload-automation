@@ -14,9 +14,16 @@
 #
 
 import logging
+import os
 from datetime import datetime
 
+from devlib.utils.android import ApkInfo as _ApkInfo
+
+from wa import settings
+from wa.framework.exception import ConfigError
+from wa.utils.serializer import read_pod, write_pod, Podable
 from wa.utils.types import enum
+from wa.utils.misc import lock_file
 
 
 LogcatLogLevel = enum(['verbose', 'debug', 'info', 'warn', 'error', 'assert'], start=2)
@@ -78,3 +85,50 @@ class LogcatParser(object):
             return None
 
         return LogcatEvent(timestamp, pid, tid, level, tag, message)
+
+
+class ApkInfo(_ApkInfo, Podable):
+    # Implement ApkInfo as a Podable class.
+
+    _pod_serialization_version = 1
+
+    @staticmethod
+    def from_pod(pod):
+        instance = ApkInfo()
+        instance.path = pod['path']
+        instance.package = pod['package']
+        instance.activity = pod['activity']
+        instance.label = pod['label']
+        instance.version_name = pod['version_name']
+        instance.version_code = pod['version_code']
+        instance.native_code = pod['native_code']
+        instance.permissions = pod['permissions']
+        instance._apk_path = pod['_apk_path']
+        instance._activities = pod['_activities']
+        instance._methods = pod['_methods']
+        return instance
+
+    def __init__(self, path=None):
+        super().__init__(path)
+        self._pod_version = self._pod_serialization_version
+
+    def to_pod(self):
+        pod = super().to_pod()
+        pod['path'] = self.path
+        pod['package'] = self.package
+        pod['activity'] = self.activity
+        pod['label'] = self.label
+        pod['version_name'] = self.version_name
+        pod['version_code'] = self.version_code
+        pod['native_code'] = self.native_code
+        pod['permissions'] = self.permissions
+        pod['_apk_path'] = self._apk_path
+        pod['_activities'] = self.activities  # Force extraction
+        pod['_methods'] = self.methods  # Force extraction
+        return pod
+
+    @staticmethod
+    def _pod_upgrade_v1(pod):
+        pod['_pod_version'] = pod.get('_pod_version', 1)
+        return pod
+
