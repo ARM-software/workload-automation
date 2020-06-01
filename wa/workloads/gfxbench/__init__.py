@@ -23,7 +23,7 @@ class Gfxbench(ApkUiautoWorkload):
     name = 'gfxbench-corporate'
     package_names = ['net.kishonti.gfxbench.gl.v50000.corporate']
     clear_data_on_reset = False
-    score_regex = re.compile(r'.*?([\d.]+).*')
+    regex_template = 'name: \((?P<test_name>.*)\).*result: \((?P<result>.*)?\).* sub_result:.*\((?P<sub_result>.*?)?\).*'
     description = '''
     Execute a subset of graphical performance benchmarks
 
@@ -58,26 +58,43 @@ class Gfxbench(ApkUiautoWorkload):
         self.gui.timeout = self.timeout
         self.gui.uiauto_params['tests'] = self.tests
 
+    # pylint: disable=too-many-locals
     def update_output(self, context):
         super(Gfxbench, self).update_output(context)
-        expected_results = len(self.tests)
-        regex_matches = [re.compile('{} score (.+)'.format(t)) for t in self.tests]
+        regex_matches = [re.compile(self.regex_template.format(t)) for t in self.tests]
         logcat_file = context.get_artifact_path('logcat')
+        found = []
+        detected_results = 0
+        failed = False
         with open(logcat_file, errors='replace') as fh:
             for line in fh:
                 for regex in regex_matches:
                     match = regex.search(line)
-                    # Check if we have matched the score string in logcat
-                    if match:
-                        score_match = self.score_regex.search(match.group(1))
-                        # Check if there is valid number found for the score.
-                        if score_match:
-                            result = float(score_match.group(1))
-                        else:
-                            result = 'NaN'
-                        entry = regex.pattern.rsplit(None, 1)[0]
-                        context.add_metric(entry, result, 'FPS', lower_is_better=False)
-                        expected_results -= 1
-        if expected_results > 0:
-            msg = "The GFXBench workload has failed. Expected {} scores, Detected {} scores."
-            raise WorkloadError(msg.format(len(self.regex_matches), expected_results))
+                    # Check if we have matched the score string in logcat and not already found.
+                    if match and match.group('test_name') not in found:
+                        found.append(match.group('test_name'))
+                        # Set Default values
+                        result = 'NaN'
+                        unit = 'FPS'
+
+                        # For most tests we usually want the `sub_result`
+                        # as this is our FPS value
+                        try:
+                            result = float(match.group('sub_result').split()[0].replace(',', ''))
+                        except (ValueError, TypeError):
+                            # However for some tests the value is stored in `result`
+                            # and the unit is saved in the `sub_result`.
+                            try:
+                                result = float(match.group('result').replace(',', ''))
+                                if match.group('sub_result'):
+                                    unit = match.group('sub_result').upper()
+                            except (ValueError, TypeError):
+                                failed = True
+
+                        entry = match.group('test_name')
+                        context.add_metric(entry, result, unit, lower_is_better=False)
+                        detected_results += 1
+
+        if failed or detected_results < len(regex_matches):
+            msg = "The workload has failed to process all scores. Expected >={} scores, Detected {} scores."
+            raise WorkloadError(msg.format(len(regex_matches), detected_results))

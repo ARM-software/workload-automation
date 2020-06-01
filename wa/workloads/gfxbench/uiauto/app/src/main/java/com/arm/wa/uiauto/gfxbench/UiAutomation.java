@@ -142,15 +142,36 @@ public class UiAutomation extends BaseUiAutomation {
     }
 
     public void getScores() throws Exception {
-        UiScrollable list = new UiScrollable(new UiSelector().scrollable(true));
-
-        UiObject results =
-            mDevice.findObject(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/results_testList"));
-
-        for (String test : testList) {
-            getTestScore(list, results, test);
+        // To ensure we print all scores, some will be printed multiple times but these are filtered on the python side.
+        UiScrollable scrollable = new UiScrollable(new UiSelector().scrollable(true));
+        // Start at the bottom of the list as this seems more reliable when extracting results.
+        scrollable.flingToEnd(10);
+        Boolean top_of_list = false;
+        while(true) {
+            UiObject resultsList =
+                mDevice.findObject(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/results_testList"));
+            // Find the element in the list that contains our test and pull result and sub_result
+            for (int i=1; i < resultsList.getChildCount(); i++) {
+                UiObject testName = resultsList.getChild(new UiSelector().index(i))
+                    .getChild(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/updated_result_item_name"));
+                UiObject result = resultsList.getChild(new UiSelector()
+                                    .index(i))
+                                    .getChild(new UiSelector()
+                                    .resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/updated_result_item_result"));
+                UiObject subResult = resultsList.getChild(new UiSelector()
+                                    .index(i))
+                                    .getChild(new UiSelector()
+                                    .resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/updated_result_item_subresult"));
+                if (testName.waitForExists(500) && result.waitForExists(500) && subResult.waitForExists(500)) {
+                    Log.d(TAG, "name: (" + testName.getText() + ") result: (" + result.getText() + ") sub_result: (" + subResult.getText() + ")");
+                }
+            }
+            // Ensure we loop over the first screen an extra time once the top of the list has been reached.
+            if (top_of_list){
+                break;
+            }
+            top_of_list = !scrollable.scrollBackward(100);
         }
-
     }
 
     public void toggleTest(String testname) throws Exception {
@@ -162,23 +183,5 @@ public class UiAutomation extends BaseUiAutomation {
             list.scrollIntoView(test);
         }
         test.click();
-    }
-
-    public void getTestScore(UiScrollable scrollable, UiObject resultsList, String test) throws Exception {
-        if (test.equals("Tessellation")) {
-            scrollable.scrollToEnd(1000);
-        }
-        for (int i=1; i < resultsList.getChildCount(); i++) {
-            UiObject testname = resultsList.getChild(new UiSelector().index(i))
-                .getChild(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/updated_result_item_name"));
-            if (testname.exists() && testname.getText().equals(test)) {
-                UiObject result = resultsList.getChild(new UiSelector()
-                                    .index(i))
-                                    .getChild(new UiSelector()
-                                    .resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/updated_result_item_subresult"));
-                Log.d(TAG, test + " score " + result.getText());
-                return;
-            }
-        }
     }
 }
