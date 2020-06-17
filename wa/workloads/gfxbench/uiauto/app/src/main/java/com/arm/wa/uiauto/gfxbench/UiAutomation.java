@@ -42,11 +42,14 @@ public class UiAutomation extends BaseUiAutomation {
     public static String TAG = "UXPERF";
     protected Bundle parameters;
     protected String[] testList;
+    protected String packageID;
+
 
     @Before
     public void initialize(){
         parameters = getParams();
         testList = parameters.getStringArray("tests");
+        packageID = getPackageID(parameters);
     }
 
     @Test
@@ -56,7 +59,7 @@ public class UiAutomation extends BaseUiAutomation {
 
         //Calculate the location of the test selection button
         UiObject circle =
-            mDevice.findObject(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/main_circleControl")
+            mDevice.findObject(new UiSelector().resourceId(packageID + "main_circleControl")
             .className("android.widget.RelativeLayout"));
         Rect bounds = circle.getBounds();
         int selectx = bounds.width()/4;
@@ -119,7 +122,7 @@ public class UiAutomation extends BaseUiAutomation {
         }
 
         UiObject home =
-            mDevice.findObject(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/main_homeBack")
+            mDevice.findObject(new UiSelector().resourceId(packageID + "main_homeBack")
                 .className("android.widget.LinearLayout"));
             home.waitForExists(300000);
     }
@@ -132,7 +135,7 @@ public class UiAutomation extends BaseUiAutomation {
 
         //Wait for results
         UiObject complete =
-            mDevice.findObject(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/results_testList"));
+            mDevice.findObject(new UiSelector().resourceId(packageID + "results_testList"));
         complete.waitForExists(1200000);
 
         UiObject outOfmemory = mDevice.findObject(new UiSelector().text("OUT_OF_MEMORY"));
@@ -149,19 +152,19 @@ public class UiAutomation extends BaseUiAutomation {
         Boolean top_of_list = false;
         while(true) {
             UiObject resultsList =
-                mDevice.findObject(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/results_testList"));
+                mDevice.findObject(new UiSelector().resourceId(packageID + "results_testList"));
             // Find the element in the list that contains our test and pull result and sub_result
             for (int i=1; i < resultsList.getChildCount(); i++) {
                 UiObject testName = resultsList.getChild(new UiSelector().index(i))
-                    .getChild(new UiSelector().resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/updated_result_item_name"));
+                    .getChild(new UiSelector().resourceId(packageID + "updated_result_item_name"));
                 UiObject result = resultsList.getChild(new UiSelector()
                                     .index(i))
                                     .getChild(new UiSelector()
-                                    .resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/updated_result_item_result"));
+                                    .resourceId(packageID + "updated_result_item_result"));
                 UiObject subResult = resultsList.getChild(new UiSelector()
                                     .index(i))
                                     .getChild(new UiSelector()
-                                    .resourceId("net.kishonti.gfxbench.gl.v50000.corporate:id/updated_result_item_subresult"));
+                                    .resourceId(packageID + "updated_result_item_subresult"));
                 if (testName.waitForExists(500) && result.waitForExists(500) && subResult.waitForExists(500)) {
                     Log.d(TAG, "name: (" + testName.getText() + ") result: (" + result.getText() + ") sub_result: (" + subResult.getText() + ")");
                 }
@@ -175,7 +178,8 @@ public class UiAutomation extends BaseUiAutomation {
     }
 
     public void toggleTest(String testname) throws Exception {
-        UiScrollable list = new UiScrollable(new UiSelector().scrollable(true));
+        UiScrollable list = new UiScrollable(new UiSelector().scrollable(true)
+                                                .resourceId(packageID + "main_testSelectListView"));
         UiObject test =
             mDevice.findObject(new UiSelector().text(testname));
         if (!test.exists() && list.waitForExists(60)) {
