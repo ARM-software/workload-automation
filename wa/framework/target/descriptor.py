@@ -661,7 +661,7 @@ class DefaultTargetDescriptor(TargetDescriptor):
         for override in overrides:
             if override.name in param_map:
                 param_map[override.name] = override
-        # Return the list of overriden parameters
+        # Return the list of overridden parameters
         return list(param_map.values())
 
     def _get_item(self, item_tuple):
