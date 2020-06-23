@@ -14,6 +14,7 @@
 #
 
 import inspect
+from itertools import chain
 
 from devlib import (LinuxTarget, AndroidTarget, LocalLinuxTarget,
                     ChromeOsTarget, Platform, Juno, TC2, Gem5SimulationPlatform,
@@ -57,6 +58,7 @@ def instantiate_target(tdesc, params, connect=None, extra_platform_params=None):
     platform_params = get_config_point_map(tdesc.platform_params)
     conn_params = get_config_point_map(tdesc.conn_params)
     assistant_params = get_config_point_map(tdesc.assistant_params)
+    tm_params = get_config_point_map(tdesc.tm_params)
 
     tp, pp, cp = {}, {}, {}
 
@@ -75,7 +77,7 @@ def instantiate_target(tdesc, params, connect=None, extra_platform_params=None):
         elif name in conn_params:
             if not conn_params[name].deprecated:
                 cp[name] = value
-        elif name in assistant_params:
+        elif name in chain(assistant_params, tm_params):
             pass
         else:
             msg = 'Unexpected parameter for {}: {}'
@@ -111,7 +113,7 @@ class TargetDescription(object):
 
     def __init__(self, name, source, description=None, target=None, platform=None,
                  conn=None, assistant=None, target_params=None, platform_params=None,
-                 conn_params=None, assistant_params=None):
+                 conn_params=None, assistant_params=None, tm_params=None):
         self.name = name
         self.source = source
         self.description = description
@@ -123,10 +125,12 @@ class TargetDescription(object):
         self._set('platform_params', platform_params)
         self._set('conn_params', conn_params)
         self._set('assistant_params', assistant_params)
+        self._set('tm_params', tm_params)
 
     def get_default_config(self):
         param_attrs = ['target_params', 'platform_params',
-                       'conn_params', 'assistant_params']
+                       'conn_params', 'assistant_params',
+                       'tm_params']
         config = {}
         for pattr in param_attrs:
             for p in getattr(self, pattr):
@@ -610,6 +614,10 @@ class DefaultTargetDescriptor(TargetDescriptor):
 
     def get_descriptions(self):
         # pylint: disable=attribute-defined-outside-init,too-many-locals
+        # pylint: disable=wrong-import-position,cyclic-import
+        # Import here to prevent circular import
+        from wa.framework.target.manager import TargetManager
+
         result = []
         for target_name, target_tuple in TARGETS.items():
             (target, conn, unsupported_platforms), target_params = self._get_item(target_tuple)
@@ -631,6 +639,7 @@ class DefaultTargetDescriptor(TargetDescriptor):
                 td.target_params = target_params
                 td.platform_params = platform_params
                 td.assistant_params = assistant.parameters
+                td.tm_params = TargetManager.parameters
 
                 if plat_conn:
                     td.conn = plat_conn
