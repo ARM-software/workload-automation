@@ -239,7 +239,7 @@ class Http(ResourceGetter):
         index_url = urljoin(self.url, 'index.json')
         response = self.geturl(index_url)
         if response.status_code != http.client.OK:
-            message = 'Could not fetch "{}"; recieved "{} {}"'
+            message = 'Could not fetch "{}"; received "{} {}"'
             self.logger.error(message.format(index_url,
                                              response.status_code,
                                              response.reason))
