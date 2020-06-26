@@ -292,8 +292,9 @@ def write_target_info_cache(cache):
         write_pod(cache, settings.target_info_cache_file)
 
 
-def get_target_info_from_cache(system_id):
-    cache = read_target_info_cache()
+def get_target_info_from_cache(system_id, cache=None):
+    if cache is None:
+        cache = read_target_info_cache()
     pod = cache.get(system_id, None)
 
     if not pod:
@@ -307,8 +308,9 @@ def get_target_info_from_cache(system_id):
     return TargetInfo.from_pod(pod)
 
 
-def cache_target_info(target_info, overwrite=False):
-    cache = read_target_info_cache()
+def cache_target_info(target_info, overwrite=False, cache=None):
+    if cache is None:
+        cache = read_target_info_cache()
     if target_info.system_id in cache and not overwrite:
         raise ValueError('TargetInfo for {} is already in cache.'.format(target_info.system_id))
     cache[target_info.system_id] = target_info.to_pod()
