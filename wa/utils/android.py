@@ -22,7 +22,7 @@ from devlib.utils.android import ApkInfo as _ApkInfo
 from wa.framework.configuration import settings
 from wa.utils.serializer import read_pod, write_pod, Podable
 from wa.utils.types import enum
-from wa.utils.misc import lock_file
+from wa.utils.misc import atomic_write_path
 
 
 LogcatLogLevel = enum(['verbose', 'debug', 'info', 'warn', 'error', 'assert'], start=2)
@@ -155,9 +155,9 @@ class ApkInfoCache:
         if apk_id in self.cache and not overwrite:
             raise ValueError('ApkInfo for {} is already in cache.'.format(apk_info.path))
         self.cache[apk_id] = apk_info.to_pod()
-        with lock_file(self.path):
-            write_pod(self.cache, self.path)
-            self.last_modified = os.stat(self.path)
+        with atomic_write_path(self.path) as at_path:
+            write_pod(self.cache, at_path)
+        self.last_modified = os.stat(self.path)
 
     def get_info(self, key):
         self._update_cache()
@@ -171,9 +171,8 @@ class ApkInfoCache:
             return
         if self.last_modified != os.stat(self.path):
             apk_info_cache_logger.debug('Updating cache {}'.format(self.path))
-            with lock_file(self.path):
-                self.cache = read_pod(self.path)
-                self.last_modified = os.stat(self.path)
+            self.cache = read_pod(self.path)
+            self.last_modified = os.stat(self.path)
 
 
 def get_cacheable_apk_info(path):
@@ -189,8 +188,7 @@ def get_cacheable_apk_info(path):
     if info:
         msg = 'Using ApkInfo ({}) from cache'.format(info.package)
     else:
-        with lock_file(path):
-            info = ApkInfo(path)
+        info = ApkInfo(path)
         apk_info_cache.store(info, apk_id, overwrite=True)
         msg = 'Storing ApkInfo ({}) in cache'.format(info.package)
     apk_info_cache_logger.debug(msg)
