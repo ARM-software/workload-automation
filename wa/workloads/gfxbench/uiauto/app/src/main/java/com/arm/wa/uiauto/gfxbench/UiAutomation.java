@@ -57,6 +57,12 @@ public class UiAutomation extends BaseUiAutomation {
         setScreenOrientation(ScreenOrientation.NATURAL);
         clearFirstRun();
 
+        // Ensure we're on the home screen
+        UiObject homeButton = mDevice.findObject(
+                new UiSelector().resourceId(packageID + "tabbar_back"))
+                                .getChild(new UiSelector().index(0));
+        homeButton.click();
+
         //Calculate the location of the test selection button
         UiObject circle =
             mDevice.findObject(new UiSelector().resourceId(packageID + "main_circleControl")
@@ -122,7 +128,7 @@ public class UiAutomation extends BaseUiAutomation {
         }
 
         UiObject home =
-            mDevice.findObject(new UiSelector().resourceId(packageID + "main_homeBack")
+            mDevice.findObject(new UiSelector().resourceId(packageID + "main_view_back")
                 .className("android.widget.LinearLayout"));
             home.waitForExists(300000);
     }
