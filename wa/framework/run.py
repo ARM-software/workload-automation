@@ -102,13 +102,7 @@ class RunState(Podable):
         self.timestamp = datetime.utcnow()
 
     def add_job(self, job):
-        job_state = JobState(job.id, job.label, job.iteration, job.status)
-        self.jobs[(job_state.id, job_state.iteration)] = job_state
-
-    def update_job(self, job):
-        state = self.jobs[(job.id, job.iteration)]
-        state.status = job.status
-        state.timestamp = datetime.utcnow()
+        self.jobs[(job.state.id, job.state.iteration)] = job.state
 
     def get_status_counts(self):
         counter = Counter()
