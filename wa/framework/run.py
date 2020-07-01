@@ -163,7 +163,7 @@ class JobState(Podable):
         pod['label'] = self.label
         pod['iteration'] = self.iteration
         pod['status'] = self.status.to_pod()
-        pod['retries'] = 0
+        pod['retries'] = self.retries
         pod['timestamp'] = self.timestamp
         return pod
 
