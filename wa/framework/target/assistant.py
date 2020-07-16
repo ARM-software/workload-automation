@@ -113,7 +113,7 @@ class AndroidAssistant(object):
         if self.logcat_poller:
             self.logcat_poller.write_log(outfile)
         else:
-            self.target.dump_logcat(outfile)
+            self.target.dump_logcat(outfile, logcat_format='threadtime')
 
     def clear_logcat(self):
         if self.logcat_poller:
@@ -226,7 +226,7 @@ class LogcatPoller(threading.Thread):
 
     def poll(self):
         self.last_poll = time.time()
-        self.target.dump_logcat(self.buffer_file, append=True, timeout=self.timeout)
+        self.target.dump_logcat(self.buffer_file, append=True, timeout=self.timeout, logcat_format='threadtime')
         self.target.clear_logcat()
 
     def insert_logcat_marker(self):
