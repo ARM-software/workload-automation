@@ -75,6 +75,10 @@ Python
 
 Workload Automation 3 currently supports Python 3.5+
 
+.. note:: If your system's default python version is still Python 2, please
+          replace the commands listed here with their Python3 equivalent
+          (e.g. python3, pip3 etc.)
+
 .. _pip:
 
 pip
