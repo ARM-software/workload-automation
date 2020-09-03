@@ -25,8 +25,8 @@ Operating System
 
 WA runs on a native Linux install. It has been tested on recent Ubuntu releases,
 but other recent Linux distributions should work as well. It should run on
-either 32-bit or 64-bit OS, provided the correct version of Android (see
-below) was installed. Officially, **other environments are not supported**.
+either 32-bit or 64-bit OS, provided the correct version of dependencies (see
+below) are installed. Officially, **other environments are not supported**.
 WA has been known to run on Linux Virtual machines and in Cygwin environments,
 though additional configuration may be required in both cases (known issues
 include makings sure USB/serial connections are passed to the VM, and wrong
@@ -46,7 +46,8 @@ possible to get limited functionality with minimal porting effort).
 Android SDK
 -----------
 
-You need to have the Android SDK with at least one platform installed.
+To interact with Android devices you will need to have the Android SDK
+with at least one platform installed.
 To install it, download the ADT Bundle from here_.  Extract it
 and add ``<path_to_android_sdk>/sdk/platform-tools`` and ``<path_to_android_sdk>/sdk/tools``
 to your ``PATH``.  To test that you've installed it properly, run ``adb
