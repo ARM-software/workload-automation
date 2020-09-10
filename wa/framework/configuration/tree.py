@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+from copy import copy, deepcopy
 
 from wa.utils import log
 
@@ -41,6 +42,9 @@ class JobSpecSource(object):
         with log.indentcontext():
             for key, value in self.config.items():
                 logger.debug('"{}" to "{}"'.format(key, value))
+    
+    def copy_subtree(self):
+        raise NotImplementedError()
 
 
 class WorkloadEntry(JobSpecSource):
@@ -53,6 +57,8 @@ class WorkloadEntry(JobSpecSource):
         else:
             return 'workload "{}" from section "{}"'.format(self.id, self.parent.id)
 
+    def copy_subtree(self):
+        return WorkloadEntry(deepcopy(self.config), self.parent)
 
 class SectionNode(JobSpecSource):
 
@@ -107,3 +113,17 @@ class SectionNode(JobSpecSource):
             for n in self.descendants():
                 if n.is_leaf:
                     yield n
+
+    def copy_subtree(self):
+        new_children = [child.copy_subtree() for child in self.children]
+        new_workloads = copy(self.workload_entries)
+        new_node = copy(self)
+
+        for wkl in new_workloads:
+            wkl.parent = new_node
+        for child in new_children:
+            child.parent = new_node
+            
+        new_node.children = new_children
+        new_node.workload_entries = new_workloads
+        return new_node

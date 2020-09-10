@@ -46,9 +46,9 @@ from future.utils import with_metaclass
 
 from devlib.utils.types import identifier, boolean, integer, numeric, caseless_string
 
+from wa.framework.exception import NotFoundError
 from wa.utils.misc import (isiterable, list_to_ranges, list_to_mask,
                            mask_to_list, ranges_to_list)
-
 
 def list_of_strs(value):
     """
@@ -866,3 +866,41 @@ class cpu_mask(object):
 
     def to_pod(self):
         return {'cpu_mask': self._mask}
+
+
+class sweep:
+    """
+    Used to define a range of values a parameter may sweep through.
+    """
+
+    @property
+    def auto(self):
+        return self.handler.auto
+
+    @property
+    def param_name(self):
+        return self.handler.param_name
+
+    @property
+    def values(self):
+        if self._values:
+            return self._values
+        elif self.handler.values:
+            self._values = self.handler.values
+            return self._values
+        else:
+            msg = 'sweep values for param {} not yet generated'
+            raise NotFoundError(msg.format(self.param_name))
+
+    def __init__(self, values=None, handler=None):
+        self._values = list(values) if values is not None else None
+        self.handler = handler
+
+    def __iter__(self):
+        return self.values.__iter__()
+
+    def __getitem__(self, index):
+        return self.values[index]
+
+    def __setitem__(self, index, value):
+        self.values[index] = value

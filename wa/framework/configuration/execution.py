@@ -147,6 +147,7 @@ class ConfigManager(object):
         return self.get_config()
 
     def generate_jobs(self, context):
+        self.jobs_config.expand_sweeps(context.tm)
         job_specs = self.jobs_config.generate_job_specs(context.tm)
         if not job_specs:
             msg = 'No jobs available for running.'
