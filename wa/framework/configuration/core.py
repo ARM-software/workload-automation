@@ -997,6 +997,33 @@ class JobSpec(Configuration):
         if self.label is None:
             self.label = self.workload_name
 
+        self.convert_auto_label()
+
+    def convert_auto_label(self):
+        to_fetch = set() # Total parameter names required
+        for _, name, _, _ in Formatter().parse(str(self.label)):
+            if name:
+                to_fetch.add(name)
+
+        if not to_fetch:
+            return
+
+        fetched = {}  # maps parameter name -> value
+        for k, v in self.workload_parameters.items():
+            if k in to_fetch:
+                fetched[k] = v
+        for k, v in self.runtime_parameters.items():
+            if k in to_fetch:
+                fetched[k] = v
+        for k, v in self.boot_parameters.items():
+            if k in to_fetch:
+                fetched[k] = v
+
+        try:
+            self.label = self.label.format(**fetched)
+        except KeyError as e:
+                msg = '{} is not a recognised parameter'
+                raise ConfigError(msg.format(e.args[0]))
 
 # This is used to construct the list of Jobs WA will run
 class JobGenerator(object):
