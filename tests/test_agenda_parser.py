@@ -18,6 +18,7 @@
 # pylint: disable=R0201
 import os
 import sys
+import re
 from collections import defaultdict
 from unittest import TestCase
 
@@ -240,3 +241,269 @@ class IncludesTest(TestCase):
                     's1-wk2': {'section': 'one', 'memcpy': True},
                     's2-wk2': {'section': 'two', 'included': True, 'memcpy': True},
                 })
+
+GLOBAL_WKL_SWEEP_TEST = """
+workloads:
+    - name: dhrystone
+      workload_params:
+        sweep(range):
+          threads: [1,2,3]
+"""
+
+SECTION_SWEEP_TEST = """
+sections:
+    - id: my_section
+      workload_params:
+        sweep(range): 
+          threads: [1,2,3]
+
+workloads:
+    - name: dhrystone
+"""
+
+SECTION_GROUP_SWEEP_TEST = """
+sections:
+    - id: my_section1
+      group: mygroup
+      workload_params:
+        sweep(range):
+          threads: [1,2,3]
+    - id: my_section2
+      group: mygroup
+      workload_params:
+        threads: 8
+    - id: my_section3
+      group: othergroup
+      runtime_parameters:
+        freq: 10
+workloads:
+    - name: dhrystone
+"""
+
+GLOBAL_CFG_SWEEP_TEST = """
+config:
+    workload_parameters:
+        sweep(range): 
+          duration: [1,2,3,4,5]
+
+workloads:
+    - name: idle
+"""
+
+WKL_OVERRIDE_SECTION_SWEEP_TEST = """
+sections:
+    - id: mysection
+      workload_parameters:
+        sweep(range):
+          duration: [1,2,3]
+      group: a
+
+workloads:
+    - name: idle
+      workload_parameters:
+        sweep(range):
+          duration: [4,5,6]
+    - name: idle
+      workload_parameters:
+        duration: 7
+    - name: idle
+"""
+
+
+SECTION_SWEEP_OVERRIDE_CFG_SWEEP_TEST = """
+config:
+    workload_parameters:
+        sweep(range):
+          duration: [1,2,3]
+
+sections:
+    - id: mysection
+      workload_parameters:
+        sweep(range):
+          duration: [4,5,6,7]
+
+workloads:
+    - name: idle
+"""
+
+NESTED_WKL_SWEEP_TEST = """
+sections:
+  - id: mysection
+    workloads:
+      - name: idle
+        params:
+          sweep(range):
+            duration: [1,2,3]
+workloads:
+  - name: idle
+    params:
+      duration: 4
+"""
+
+NESTED_WKL_SWEEP_OVERRIDE_TEST = """
+sections:
+  - id: mysection
+    workload_parameters:
+      duration: 100
+    workloads:
+      - name: idle
+        params:
+          sweep(range):
+            duration: [1,2,3]
+
+workloads:
+  - name: idle
+    params:
+      duration: 20
+"""
+
+RANGE_SWEEP_TEST = """
+workloads:
+  - name: idle
+    params:
+      sweep(range):
+        duration: 1-10,2
+"""
+
+SWEEP_METADATA_TEST_1 = """
+sections:
+  - id: mysection
+    runtime_params:
+      sweep(range):
+        threads: 1-4
+workloads:
+  - name: idle
+    params:
+      sweep(range):
+        duration: 1-5
+"""
+
+SWEEP_METADATA_TEST_2 = """
+workloads:
+  - name: idle
+    label: testlabel{duration}
+    params:
+      sweep(range):
+        duration: 1-5
+"""
+
+AUTOPARAM_TEST = """
+workloads:
+  - name: Youtube
+    params:
+      sweep(autoparam):
+        param: video_source
+        plugin: Youtube
+"""
+
+
+class SweepsTest(TestCase):
+
+    def test_global_workload_sweeps(self):
+        # Do sweeps work on global workloads?
+        jobspecs = get_job_specs(GLOBAL_WKL_SWEEP_TEST)
+        assert_equal(len(jobspecs), 3)
+        for jobspec, threads in zip(jobspecs, [1,2,3]):
+            assert_equal(jobspec.workload_parameters['threads'], threads)
+    
+    def test_section_sweeps(self):
+        # Do sweeps work within a section?
+        jobspecs = get_job_specs(SECTION_SWEEP_TEST)
+        assert_equal(len(jobspecs), 3)
+        for jobspec, threads in zip(jobspecs, [1,2,3]):
+            assert_equal(jobspec.workload_parameters['threads'], threads)
+    
+    def test_section_group_sweeps(self):
+        # Do sweeps work when defined in a group?
+        jobspecs = get_job_specs(SECTION_GROUP_SWEEP_TEST)
+        assert_equal(len(jobspecs), 4)
+        for jobspec, threads in zip(jobspecs, [1,2,3,8]):
+            assert_equal(jobspec.workload_parameters['threads'], threads)
+            assert_equal(list(jobspec.runtime_parameters.values())[0]['freq'], 10)
+    
+    def test_global_config_sweeps(self):
+        # Do sweeps work when defined in a global config?
+        jobspecs = get_job_specs(GLOBAL_CFG_SWEEP_TEST)
+        assert_equal(len(jobspecs), 5)
+        for jobspec, duration in zip(jobspecs, [1,2,3,4,5]):
+            assert_equal(jobspec.workload_parameters['duration'], duration)
+    
+    def test_wkl_sweep_override_section(self):
+        # Do global workload sweeps override section parameters?
+        jobspecs = get_job_specs(WKL_OVERRIDE_SECTION_SWEEP_TEST)
+        expect = [4,4,4,5,5,5,6,6,6,7,7,7,1,2,3]
+        assert_equal(len(jobspecs), len(expect))
+        for jobspec in jobspecs:
+            duration = jobspec.workload_parameters['duration']
+            assert duration in expect
+    
+    def test_section_sweep_override_config(self):
+        # Do section sweeps override global config?
+        jobspecs = get_job_specs(SECTION_SWEEP_OVERRIDE_CFG_SWEEP_TEST)
+        expect = [4,4,4, 5,5,5, 6,6,6, 7,7,7]
+        assert_equal(len(jobspecs), len(expect))
+        for jobspec in jobspecs:
+            cfg = jobspec.workload_parameters['duration']
+            assert cfg in expect
+    
+    def test_nested_wkl_sweep_in_section(self):
+        # Handle sweeps correctly inside workloads inside sections
+        jobspecs = get_job_specs(NESTED_WKL_SWEEP_TEST)
+        expect = {1,2,3,4}
+        assert_equal(len(jobspecs), len(expect))
+        for jobspec in jobspecs:
+          cfg = jobspec.workload_parameters['duration']
+          expect.remove(cfg)
+    
+    def test_nested_wkl_override(self):
+        jobspecs = get_job_specs(NESTED_WKL_SWEEP_OVERRIDE_TEST)
+        expect = {1,2,3,20}
+        assert_equal(len(jobspecs), len(expect))
+        for jobspec in jobspecs:
+            cfg = jobspec.workload_parameters['duration']
+            expect.remove(cfg)
+    
+    def test_section_wkl_sweep_metadata(self):
+        # Do sweeps derived from a labelled entry share the label?
+        # Do sweeps derived from the same entry share a commonly prefixed identifier?
+        jobspecs = get_job_specs(SWEEP_METADATA_TEST_1)
+        ids = [job.id for job in jobspecs]
+        initial = r'(?P<section>\w*)_\d*-(?P<workload>\w*)_\d*'
+        result = re.match(initial, ids[0])
+        assert result
+        section = result.group('section')
+        workload = result.group('workload')
+        confirm = section + r'_\d*-' + workload + r'_\d*'
+
+        assert all(re.fullmatch(confirm, other) for other in ids[1:])
+        assert_equal([job.label for job in jobspecs], [jobspecs[0].label]*len(jobspecs))
+    
+    def test_wkl_sweep_metadata(self):
+        jobspecs = get_job_specs(SWEEP_METADATA_TEST_2)
+        ids = [job.id for job in jobspecs]
+        initial = r'(?P<workload>\w*)_\d*'
+        result = re.match(initial, ids[0])
+        assert result
+        workload = result.group('workload')
+        confirm = workload + r'_\d*'
+        assert all(re.fullmatch(confirm, other) for other in ids[1:])
+        labels = ['testlabel' + str(x) for x in range(1,5)]
+        assert_equal([job.label for job in jobspecs], labels)
+
+    def test_autoparam_sweep(self):
+        jobspecs = get_job_specs(AUTOPARAM_TEST)
+        from wa.workloads.youtube import Youtube
+        expect = set(Youtube.parameters['video_source'].allowed_values)
+        assert_equal(len(expect), len(jobspecs))
+        for jobspec in jobspecs:
+            expect.remove(jobspec.workload_parameters['video_source'])
+
+def get_job_specs(text):
+    ap = AgendaParser()
+    cm = ConfigManager()
+    tm = FakeTargetManager()
+    
+    raw = yaml.load(text)
+    ap.load(cm, raw, None)
+    cm.jobs_config.expand_sweeps(tm)
+    return cm.jobs_config.generate_job_specs(tm)
