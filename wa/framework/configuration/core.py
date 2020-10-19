@@ -252,8 +252,7 @@ class ConfigurationPoint(object):
                            a warning to the user however will continue execution.
         """
         self.name = identifier(name)
-        if kind in KIND_MAP:
-            kind = KIND_MAP[kind]
+        kind = KIND_MAP.get(kind, kind)
         if kind is not None and not callable(kind):
             raise ValueError('Kind must be callable.')
         self.kind = kind
