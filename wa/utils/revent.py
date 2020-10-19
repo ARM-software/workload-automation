@@ -188,7 +188,7 @@ class ReventRecording(object):
             self._parse_header_and_devices(self.fh)
             self._events_start = self.fh.tell()
             if not self.stream:
-                self._events = [e for e in self._iter_events()]
+                self._events = list(self._iter_events())
         finally:
             if self._close_when_done:
                 self.close()

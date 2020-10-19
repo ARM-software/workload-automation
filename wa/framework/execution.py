@@ -449,7 +449,7 @@ class Executor(object):
         for status in reversed(Status.levels):
             if status in counter:
                 parts.append('{} {}'.format(counter[status], status))
-        self.logger.info(status_summary + ', '.join(parts))
+        self.logger.info('{}{}'.format(status_summary, ', '.join(parts)))
 
         self.logger.info('Results can be found in {}'.format(output.basepath))
 
