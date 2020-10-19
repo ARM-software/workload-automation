@@ -404,8 +404,8 @@ def istextfile(fileobj, blocksize=512):
         If more than 30% of the chars in the block are non-text, or there
         are NUL ('\x00') bytes in the block, assume this is a binary file.
     """
-    _text_characters = (b''.join(chr(i) for i in range(32, 127)) +
-                        b'\n\r\t\f\b')
+    _text_characters = (b''.join(chr(i) for i in range(32, 127))
+                        + b'\n\r\t\f\b')
 
     block = fileobj.read(blocksize)
     if b'\x00' in block:

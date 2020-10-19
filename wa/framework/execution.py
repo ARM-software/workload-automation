@@ -128,8 +128,8 @@ class ExecutionContext(object):
         self.run_state.status = status
         self.run_output.status = status
         self.run_output.info.end_time = datetime.utcnow()
-        self.run_output.info.duration = (self.run_output.info.end_time -
-                                         self.run_output.info.start_time)
+        self.run_output.info.duration = (self.run_output.info.end_time
+                                         - self.run_output.info.start_time)
         self.write_output()
 
     def finalize(self):

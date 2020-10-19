@@ -259,8 +259,8 @@ class Speedometer(Workload):
         while not benchmark_complete:
             if self.target_file_was_created(local_storage):
                 if (
-                    iterations % (find_period_s // sleep_period_s) == 0 or
-                    not local_storage_seen
+                    iterations % (find_period_s // sleep_period_s) == 0
+                    or not local_storage_seen
                 ):
                     # There's a chance we don't see the localstorage file immediately, and there's a
                     # chance more of them could be created later, so check for those files every ~30
