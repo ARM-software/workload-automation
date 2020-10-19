@@ -155,8 +155,8 @@ class ReventRecording(object):
             else:  # not streaming
                 if not self._events:
                     self._duration = 0
-                self._duration = (self._events[-1].time -
-                                  self._events[0].time).total_seconds()
+                self._duration = (self._events[-1].time
+                                  - self._events[0].time).total_seconds()
         return self._duration
 
     @property
