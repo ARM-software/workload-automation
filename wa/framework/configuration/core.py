@@ -823,12 +823,12 @@ class JobSpec(Configuration):
                            description='''
                            The name of the workload to run.
                            '''),
-        ConfigurationPoint('workload_parameters', kind=obj_dict,
+        ConfigurationPoint('workload_parameters', kind=obj_dict, merge=True,
                            aliases=["params", "workload_params", "parameters"],
                            description='''
                            Parameter to be passed to the workload
                            '''),
-        ConfigurationPoint('runtime_parameters', kind=obj_dict,
+        ConfigurationPoint('runtime_parameters', kind=obj_dict, merge=True,
                            aliases=["runtime_params"],
                            description='''
                            Runtime parameters to be set prior to running
