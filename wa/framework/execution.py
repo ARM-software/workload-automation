@@ -337,7 +337,7 @@ class Executor(object):
     returning.
 
     The initial context set up involves combining configuration from various
-    sources, loading of requided workloads, loading and installation of
+    sources, loading of required workloads, loading and installation of
     instruments and output processors, etc. Static validation of the combined
     configuration is also performed.
 
@@ -353,7 +353,7 @@ class Executor(object):
     def execute(self, config_manager, output):
         """
         Execute the run specified by an agenda. Optionally, selectors may be
-        used to only selecute a subset of the specified agenda.
+        used to only execute a subset of the specified agenda.
 
         Params::
 
