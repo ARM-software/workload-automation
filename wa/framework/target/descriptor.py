@@ -20,6 +20,7 @@ from devlib import (LinuxTarget, AndroidTarget, LocalLinuxTarget,
                     AdbConnection, SshConnection, LocalConnection,
                     TelnetConnection, Gem5Connection)
 from devlib.target import DEFAULT_SHELL_PROMPT
+from devlib.utils.ssh import DEFAULT_SSH_SUDO_COMMAND
 
 from wa.framework import pluginloader
 from wa.framework.configuration.core import get_config_point_map
@@ -369,7 +370,7 @@ CONNECTION_PARAMS = {
             their host key does not match the systems known host keys. """),
         Parameter(
             'sudo_cmd', kind=str,
-            default="sudo -- sh -c {}",
+            default=DEFAULT_SSH_SUDO_COMMAND,
             description="""
             Sudo command to use. Must have ``{}`` specified
             somewhere in the string it indicate where the command
