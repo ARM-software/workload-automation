@@ -54,8 +54,8 @@ FROM ubuntu:19.10
 
 # Please update the references below to use different versions of
 # devlib, WA or the Android SDK
-ARG DEVLIB_REF=v1.2
-ARG WA_REF=v3.2
+ARG DEVLIB_REF=HEAD
+ARG WA_REF=HEAD
 ARG ANDROID_SDK_URL=https://dl.google.com/android/repository/sdk-tools-linux-3859397.zip
 
 RUN apt-get update && apt-get install -y \
