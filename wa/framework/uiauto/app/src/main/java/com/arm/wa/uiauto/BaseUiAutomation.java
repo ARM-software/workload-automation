@@ -610,6 +610,26 @@ public class BaseUiAutomation {
         }
     }
 
+    // Clear any existing Chrome tabs from the application
+    public void clearChromeTabs() throws Exception {
+        UiObject tabselector =
+            mDevice.findObject(new UiSelector().resourceId("com.android.chrome:id/tab_switcher_button")
+                .className("android.widget.ImageButton"));
+        if (!tabselector.exists()){
+            return;
+        }
+        tabselector.click();
+        UiObject menu =
+            mDevice.findObject(new UiSelector().resourceId("com.android.chrome:id/menu_button")
+                .className("android.widget.ImageButton"));
+        menu.click();
+        UiObject closetabs =
+            mDevice.findObject(new UiSelector().textContains("Close all tabs"));
+        if (closetabs.exists()){
+            closetabs.click();
+        }
+    }
+
     // Override getParams function to decode a url encoded parameter bundle before
     // passing it to workloads.
     public Bundle getParams() {
