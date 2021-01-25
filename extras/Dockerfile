@@ -58,6 +58,10 @@ ARG DEVLIB_REF=v1.3
 ARG WA_REF=v3.3
 ARG ANDROID_SDK_URL=https://dl.google.com/android/repository/sdk-tools-linux-3859397.zip
 
+# Set a default timezone to use
+ENV TZ=Europe/London
+
+ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
 apache2-utils \
 bison \
