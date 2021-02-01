@@ -28,6 +28,7 @@ from devlib.instrument.arm_energy_probe import ArmEnergyProbeInstrument
 from devlib.instrument.daq import DaqInstrument
 from devlib.instrument.acmecape import AcmeCapeInstrument
 from devlib.instrument.monsoon import MonsoonInstrument
+from devlib.instrument.battery_monitor import BatteryMonitorInstrument
 from devlib.platform.arm import JunoEnergyInstrument
 from devlib.utils.misc import which
 
@@ -383,6 +384,48 @@ class JunoEnergyBackend(EnergyInstrumentBackend):
     instrument = JunoEnergyInstrument
 
 
+class BatteryMonitorBackend(EnergyInstrumentBackend):
+
+    name = 'battery_monitor'
+    description = """
+    Record power readings as reported from a devices built in sensors. The available
+    sysfs node exposing the current is attempted to be auto detected however if not found,
+    please specify manually using the ``current_node`` parameter
+
+    Warning: These readings are not reliable and aimed at allowing A/B comparision rather
+    than to provide accurate measurement.
+
+    Note: A device must have charging disabled when using this instrument.
+    """
+
+    parameters = [
+        Parameter('period', default=2, kind=int,
+                  description="""
+                  How often in seconds the battery stats are polled.
+                  The refresh rate of these stats is device dependant but typically
+                  not that frequent.
+                  """),
+        Parameter('current_node', default=None,
+                  description="""
+                  Instrument will attempt to detect which node to read to
+                  access current, if receiving incorrect readings or if not found,
+                   please specify manually.
+                  """),
+        Parameter('current_scale', default=1e6, kind=int,
+                  description="""
+                  The default value for current is reported in uA, however some
+                  devices may use other units, adjust accordingly.
+                  """),
+        Parameter('voltage_scale', default=1e3, kind=int,
+                  description="""
+                  The default value for voltage is reported in mV, however some
+                  devices may use other units, adjust accordingly.
+                  """)
+    ]
+
+    instrument = BatteryMonitorInstrument
+
+
 class EnergyMeasurement(Instrument):
 
     name = 'energy_measurement'
@@ -397,7 +440,7 @@ class EnergyMeasurement(Instrument):
 
     parameters = [
         Parameter('instrument', kind=str, mandatory=True,
-                  allowed_values=['daq', 'energy_probe', 'acme_cape', 'monsoon', 'juno_readenergy', 'arm_energy_probe'],
+                  allowed_values=['daq', 'energy_probe', 'acme_cape', 'monsoon', 'juno_readenergy', 'arm_energy_probe', 'battery_monitor'],
                   description="""
                   Specify the energy instruments to be enabled.
                   """),
