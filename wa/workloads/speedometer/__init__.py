@@ -128,7 +128,7 @@ class Speedometer(Workload):
     @once
     def initialize(self, context):
         super(Speedometer, self).initialize(context)
-        self.archive_server = ArchiveServer()
+        Speedometer.archive_server = ArchiveServer()
         if not self.target.is_rooted:
             raise WorkloadError(
                 "Device must be rooted for the speedometer workload currently"
@@ -148,18 +148,17 @@ class Speedometer(Workload):
 
         # Temporary directory used for storing the Speedometer files, uiautomator
         # dumps, and modified XML chrome config files.
-        self.temp_dir = tempfile.TemporaryDirectory()
-        self.document_root = os.path.join(self.temp_dir.name, "document_root")
+        Speedometer.temp_dir = tempfile.TemporaryDirectory()
+        Speedometer.document_root = os.path.join(self.temp_dir.name, "document_root")
 
         # Host a copy of Speedometer locally
         tarball = context.get_resource(File(self, "speedometer_archive.tgz"))
         with tarfile.open(name=tarball) as handle:
             handle.extractall(self.temp_dir.name)
         self.archive_server.start(self.document_root, self.target)
-        self.webserver_port = self.archive_server.get_port()
 
-        self.speedometer_url = "http://localhost:{}/Speedometer2.0/index.html".format(
-            self.webserver_port
+        Speedometer.speedometer_url = "http://localhost:{}/Speedometer2.0/index.html".format(
+            self.archive_server.get_port()
         )
 
     def setup(self, context):
