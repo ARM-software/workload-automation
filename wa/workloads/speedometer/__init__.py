@@ -231,6 +231,8 @@ class Speedometer(Workload):
     def run(self, context):
         super(Speedometer, self).run(context)
 
+        self.archive_server.expose_to_device(self.target)
+
         # Generate a UUID to search for in the browser's local storage to find out
         # when the workload has ended.
         report_end_id = uuid.uuid4().hex
@@ -244,6 +246,8 @@ class Speedometer(Workload):
         self.target.execute(browser_launch_cmd)
 
         self.wait_for_benchmark_to_complete(report_end_id)
+
+        self.archive_server.hide_from_device(self.target)
 
     def target_file_was_created(self, f):
         """Assume that once self.target.file_exists(f) returns True, it will
@@ -419,13 +423,15 @@ class ArchiveServer(object):
         self._thread = ArchiveServerThread(self._httpd)
         self._thread.start()
 
-        adb_command(target.adb_name, "reverse tcp:{0} tcp:{0}".format(self._port))
-
     def stop(self, target):
-        adb_command(target.adb_name, "reverse --remove tcp:{}".format(self._port))
-
         self._httpd.shutdown()
         self._thread.join()
+
+    def expose_to_device(self, target):
+        adb_command(target.adb_name, "reverse tcp:{0} tcp:{0}".format(self._port))
+
+    def hide_from_device(self, target):
+        adb_command(target.adb_name, "reverse --remove tcp:{}".format(self._port))
 
     def get_port(self):
         return self._port
