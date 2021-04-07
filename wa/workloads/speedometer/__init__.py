@@ -155,7 +155,7 @@ class Speedometer(Workload):
         tarball = context.get_resource(File(self, "speedometer_archive.tgz"))
         with tarfile.open(name=tarball) as handle:
             handle.extractall(self.temp_dir.name)
-        self.archive_server.start(self.document_root, self.target)
+        self.archive_server.start(self.document_root)
 
         Speedometer.speedometer_url = "http://localhost:{}/Speedometer2.0/index.html".format(
             self.archive_server.get_port()
@@ -375,7 +375,7 @@ class Speedometer(Workload):
         super(Speedometer, self).finalize(context)
 
         # Shutdown the locally hosted version of Speedometer
-        self.archive_server.stop(self.target)
+        self.archive_server.stop()
 
 
 class ArchiveServerThread(threading.Thread):
@@ -411,7 +411,7 @@ class ArchiveServer(object):
     def __init__(self):
         self._port = None
 
-    def start(self, document_root, target):
+    def start(self, document_root):
         # Create the server, and find out the port we've been assigned...
         self._httpd = HTTPServer(("", 0), DifferentDirectoryHTTPRequestHandler)
         # (This property is expected to be read by the
@@ -422,7 +422,7 @@ class ArchiveServer(object):
         self._thread = ArchiveServerThread(self._httpd)
         self._thread.start()
 
-    def stop(self, target):
+    def stop(self):
         self._httpd.shutdown()
         self._thread.join()
 
