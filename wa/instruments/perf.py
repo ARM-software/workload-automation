@@ -95,6 +95,11 @@ class PerfInstrument(Instrument):
                   description="""Specifies options to be used to gather report when record command
                   is used. It's highly recommended to use perf_type simpleperf when running on
                   android devices as reporting options are unstable with perf"""),
+        Parameter('run_report_sample', kind=bool, default=False, description="""If true, run
+                  'perf/simpleperf report-sample'. It only works with the record command."""),
+        Parameter('report_sample_options', kind=str, default=None,
+                  description="""Specifies options to pass to report-samples when run_report_sample
+                  is true."""),
         Parameter('labels', kind=list_of_strs, default=None,
                   global_alias='perf_labels',
                   description="""Provides labels for perf/simpleperf output for each optionstring.
@@ -112,12 +117,17 @@ class PerfInstrument(Instrument):
         self.outdir = None
 
     def initialize(self, context):
+        if self.report_sample_options:
+            self.run_report_sample = True
+
         self.collector = PerfCollector(self.target,
                                        self.perf_type,
                                        self.command,
                                        self.events,
                                        self.optionstring,
                                        self.report_option_string,
+                                       self.run_report_sample,
+                                       self.report_sample_options,
                                        self.labels,
                                        self.force_install)
 
