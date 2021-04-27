@@ -21,7 +21,7 @@ import re
 
 from devlib.collector.perf import PerfCollector
 
-from wa import Instrument, Parameter
+from wa import Instrument, Parameter, ConfigError
 from wa.utils.types import list_or_string, list_of_strs, numeric
 
 PERF_COUNT_REGEX = re.compile(r'^(CPU\d+)?\s*(\d+)\s*(.*?)\s*(\[\s*\d+\.\d+%\s*\])?\s*$')
@@ -115,6 +115,14 @@ class PerfInstrument(Instrument):
         super(PerfInstrument, self).__init__(target, **kwargs)
         self.collector = None
         self.outdir = None
+
+    def validate(self):
+        if self.report_option_string and (self.command != "record"):
+            raise ConfigError("report_option_string only works with perf/simpleperf record. Set command to record or remove report_option_string")
+        if self.report_sample_options and (self.command != "record"):
+            raise ConfigError("report_sample_options only works with perf/simpleperf record. Set command to record or remove report_sample_options")
+        if self.run_report_sample and (self.command != "record"):
+            raise ConfigError("run_report_sample only works with perf/simpleperf record. Set command to record or remove run_report_sample")
 
     def initialize(self, context):
         if self.report_sample_options:
