@@ -30,7 +30,7 @@ from devlib.instrument.acmecape import AcmeCapeInstrument
 from devlib.instrument.monsoon import MonsoonInstrument
 from devlib.platform.arm import JunoEnergyInstrument
 from devlib.utils.misc import which
-
+import logging
 from wa import Instrument, Parameter
 from wa.framework import pluginloader
 from wa.framework.plugin import Plugin
@@ -38,6 +38,7 @@ from wa.framework.exception import ConfigError, InstrumentError
 from wa.utils.types import (list_of_strings, list_of_ints, list_or_string,
                             obj_dict, identifier, list_of_numbers)
 
+logger = logging.getLogger('energy_measurement')
 
 class EnergyInstrumentBackend(Plugin):
 
@@ -484,6 +485,7 @@ class EnergyMeasurement(Instrument):
             instrument.stop()
 
     def update_output(self, context):
+        logger.debug('Update output of energy csv')
         for device, instrument in self.instruments.items():
             # Append the device key to the filename and artifact name, unless
             # it's None (as it will be for backends with only 1
@@ -536,5 +538,9 @@ class EnergyMeasurement(Instrument):
                 context.add_metric(name, value, units)
 
     def teardown(self, context):
+        logger.debug('Job status {}'.format(context.current_job.status))
+        if context.current_job.status == 'FAILED':
+            self.update_output(context)
+
         for instrument in self.instruments.values():
             instrument.teardown()
