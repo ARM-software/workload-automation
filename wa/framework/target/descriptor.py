@@ -541,6 +541,10 @@ TARGETS = {
                           description='''
                           Directory containing Android data
                           '''),
+                Parameter('persistent_data_path', kind=str, default='/storage/emulated/0/Android/data',
+                          description='''
+                          Directory containing persistent Android data
+                          '''),
                ], None),
     'chromeos': ((ChromeOsTarget, 'ChromeOsConnection', []), COMMON_TARGET_PARAMS +
                 [Parameter('package_data_directory', kind=str, default='/data/data',
