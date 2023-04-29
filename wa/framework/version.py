@@ -21,9 +21,9 @@ from subprocess import Popen, PIPE
 
 VersionTuple = namedtuple('Version', ['major', 'minor', 'revision', 'dev'])
 
-version = VersionTuple(3, 3, 1, 'dev1')
+version = VersionTuple(3, 3, 1, '')
 
-required_devlib_version = VersionTuple(1, 3, 1, 'dev2')
+required_devlib_version = VersionTuple(1, 3, 3, '')
 
 
 def format_version(v):
