@@ -12,6 +12,7 @@ config:
             - "irq*"
             - "power*"
             - "lisa*"
+            - "task*"
         buffer_size: 122900
         report: false
     perf:
