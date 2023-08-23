@@ -158,6 +158,13 @@ class TraceCmdInstrument(Instrument):
                   description="""
                   The mode that trace-cmd will be started in.
                   For more details, consult the trace-cmd documentation.
+                  """),
+        Parameter('record_interval', kind=int, default=1000,
+                  description="""
+                  The interval for filesystem writes in record mode, in microseconds.
+                  The default is set to 1000 (1 ms).
+                  This is the time each recording process will sleep before waking up to
+                  record any new data that was written to the ring buffer.
                   """)
     ]
 
@@ -181,6 +188,7 @@ class TraceCmdInstrument(Instrument):
             strict=False,
             report_on_target=False,
             trace_cmd_mode=self.trace_cmd_mode,
+            record_interval=self.record_interval,
         )
         if self.report and self.report_on_target:
             collector_params['autoreport'] = True
