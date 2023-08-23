@@ -28,13 +28,7 @@ from wa.utils.types import list_of_strings
 from wa.utils.misc import which
 
 
-OUTPUT_TRACE_FILE = 'trace.dat'
-OUTPUT_TEXT_FILE = '{}.txt'.format(os.path.splitext(OUTPUT_TRACE_FILE)[0])
-TIMEOUT = 180
-
-
 class TraceCmdInstrument(Instrument):
-
     name = 'trace-cmd'
     description = """
     trace-cmd is an instrument which interacts with ftrace Linux kernel internal
@@ -70,9 +64,7 @@ class TraceCmdInstrument(Instrument):
     on collecting a lot of trace over long periods of time, the buffer size
     will not be enough and you will only get trace for the last portion of your
     run. To deal with this you can set the ``trace_mode`` setting to
-    ``'record'`` (the default is ``'start'``)::
-
-        trace_cmd_mode = 'record'
+    ``'record'`` (the default is ``'start'``).
 
     This will cause trace-cmd to trace into file(s) on disk, rather than the
     buffer, and so the limit for the max size of the trace is set by the
@@ -162,6 +154,11 @@ class TraceCmdInstrument(Instrument):
                             installed on the host (the one in your
                             distribution's repos may be too old).
                   """),
+        Parameter('trace_cmd_mode', kind=str, default='start', allowed_values=['start', 'record'],
+                  description="""
+                  The mode that trace-cmd will be started in.
+                  For more details, consult the trace-cmd documentation.
+                  """)
     ]
 
     def __init__(self, target, **kwargs):
@@ -183,6 +180,7 @@ class TraceCmdInstrument(Instrument):
             no_install=self.no_install,
             strict=False,
             report_on_target=False,
+            trace_cmd_mode=self.trace_cmd_mode,
         )
         if self.report and self.report_on_target:
             collector_params['autoreport'] = True
@@ -226,11 +224,12 @@ class TraceCmdInstrument(Instrument):
             context.add_artifact('trace-cmd-txt', textfile, 'export')
 
     def teardown(self, context):
-        path = self.target.path.join(self.target.working_directory, OUTPUT_TRACE_FILE)
-        self.target.remove(path)
-        if self.report_on_target:
-            path = self.target.path.join(self.target.working_directory, OUTPUT_TEXT_FILE)
-            self.target.remove(path)
+        if self.collector:
+            self.collector.teardown()
+
+    def finalize(self, context):
+        if self.collector:
+            self.collector.finalize()
 
     def validate(self):
         if self.report and not self.report_on_target and not which('trace-cmd'):
