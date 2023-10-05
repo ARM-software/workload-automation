@@ -29,15 +29,14 @@ import os
 import re
 import numbers
 import shlex
-import sys
 from bisect import insort
 from urllib.parse import quote, unquote  # pylint: disable=no-name-in-module, import-error
-from past.builtins import basestring  # pylint: disable=redefined-builtin
 # pylint: disable=wrong-import-position
 from collections import defaultdict
 from collections.abc import MutableMapping
 from functools import total_ordering
 
+from past.builtins import basestring  # pylint: disable=redefined-builtin
 from future.utils import with_metaclass
 
 from devlib.utils.types import identifier, boolean, integer, numeric, caseless_string

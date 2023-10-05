@@ -289,7 +289,7 @@ def get_article(word):
               in all case; e.g. this will return ``"a hour"``.
 
     """
-    return'an' if word[0] in 'aoeiu' else 'a'
+    return 'an' if word[0] in 'aoeiu' else 'a'
 
 
 def get_random_string(length):
