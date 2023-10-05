@@ -18,8 +18,6 @@
 import os
 import sys
 import inspect
-import imp
-import string
 import logging
 from collections import OrderedDict, defaultdict
 from itertools import chain
@@ -32,14 +30,8 @@ from wa.framework.exception import (NotFoundError, PluginLoaderError, TargetErro
                                     ValidationError, ConfigError, HostError)
 from wa.utils import log
 from wa.utils.misc import (ensure_directory_exists as _d, walk_modules, load_class,
-                           merge_dicts_simple, get_article)
+                           merge_dicts_simple, get_article, import_path)
 from wa.utils.types import identifier
-
-
-if sys.version_info[0] == 3:
-    MODNAME_TRANS = str.maketrans(':/\\.', '____')
-else:
-    MODNAME_TRANS = string.maketrans(':/\\.', '____')
 
 
 class AttributeCollection(object):
@@ -645,8 +637,7 @@ class PluginLoader(object):
 
     def _discover_from_file(self, filepath):
         try:
-            modname = os.path.splitext(filepath[1:])[0].translate(MODNAME_TRANS)
-            module = imp.load_source(modname, filepath)
+            module = import_path(filepath)
             self._discover_in_module(module)
         except (SystemExit, ImportError) as e:
             if self.keep_going:
