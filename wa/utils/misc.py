@@ -41,10 +41,7 @@ from functools import reduce  # pylint: disable=redefined-builtin
 from operator import mul
 from tempfile import gettempdir, NamedTemporaryFile
 from time import sleep
-if sys.version_info[0] == 3:
-    from io import StringIO
-else:
-    from io import BytesIO as StringIO
+from io import StringIO
 # pylint: disable=wrong-import-position,unused-import
 from itertools import chain, cycle
 from distutils.spawn import find_executable  # pylint: disable=no-name-in-module, import-error
