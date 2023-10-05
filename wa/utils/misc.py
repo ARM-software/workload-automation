@@ -236,7 +236,12 @@ def load_class(classpath):
     """Loads the specified Python class. ``classpath`` must be a fully-qualified
     class name (i.e. namspaced under module/package)."""
     modname, clsname = classpath.rsplit('.', 1)
-    return getattr(__import__(modname), clsname)
+    mod = importlib.import_module(modname)
+    cls = getattr(mod, clsname)
+    if isinstance(cls, type):
+        return cls
+    else:
+        raise ValueError(f'The classpath "{classpath}" does not point at a class: {cls}')
 
 
 def get_pager():
