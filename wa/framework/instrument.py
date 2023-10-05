@@ -98,7 +98,6 @@ and the code to clear these file goes in teardown method. ::
 
 """
 
-import sys
 import logging
 import inspect
 from collections import OrderedDict
