@@ -4,7 +4,6 @@ config:
     augmentations:
         # disable all previously-enabled augmentations
         - ~~
-        - perf
         - trace-cmd
     trace-cmd:
         events:
@@ -15,14 +14,5 @@ config:
             - "task*"
         buffer_size: 122900
         report: false
-    perf:
-        perf_type: simpleperf
-        events:
-            - raw-cpu-cycles
-            - instructions
-    device: generic_android
-    device_config:
-        working_directory: "/sdcard/wa_tmp"
-        load_default_modules: False
 workloads:
-    - name: jetnewsScrollArticle
+    - name: jetnews
