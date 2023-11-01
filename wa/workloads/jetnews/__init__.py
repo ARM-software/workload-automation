@@ -15,6 +15,7 @@
 
 from wa import Workload
 
+
 class JetNews(Workload):
     name = "jetnews"
     description = "Run the JetNews basic tests"
