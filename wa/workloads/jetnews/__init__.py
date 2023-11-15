@@ -13,36 +13,58 @@
 # limitations under the License.
 #
 
-from wa import Workload
+from wa import ApkWorkload, Parameter
+from wa.utils.types import list_or_string
 
 
-class JetNews(Workload):
-    name = "jetnews"
-    description = "Run the JetNews basic tests"
-    package_names = ["com.example.jetnews", "com.arm.benchmark"]
+class JetNews(ApkWorkload):
+    name = 'jetnews'
 
-    def setup(self, context):
-        super(JetNews, self).setup(context)
-        for package in self.package_names:
-            self.target.execute(f"am force-stop {package}")
+    description = '''
+    JetNews-based benchmarks for UI performance measurement.
+    '''
+
+    package_names = ['com.example.jetnews']
+
+    # All the supported test types that can be executed for this workload.
+    all_test_types = ['ScrollArticleTest',
+                      'ScrollArticleSlowlyTest',
+                      'UserSimulationTest']
+
+    # All the available parameters for this workload.
+    parameters = [
+        Parameter('tests',
+                  kind=list_or_string,
+                  default=all_test_types,
+                  allowed_values=all_test_types,
+                  description='''
+                  Select the type of test to run:
+
+                      - ScrollArticleTest
+                      - ScrollArticleSlowlyTest
+                      - UserSimulationTest
+
+                  By default all the tests are executed.
+                  '''),
+        Parameter('iterations',
+                  kind=int,
+                  default=1,
+                  constraint=lambda x: x > 0,
+                  description='''
+                  Specifies the number of times the benchmark will be run in a "tight loop",
+                  i.e. without performing setup/teardown in between.
+
+                  The default is 1 iteration.
+                  ''')
+    ]
 
     def run(self, context):
-        super(JetNews, self).run(context)
-
-        # Run the first set of basic tests:
-        tests = ["ScrollArticleTest",
-                 "ScrollArticleSlowlyTest",
-                 "UserSimulationTest"]
+        super().run(context)
 
         # Invoke each test one after the other.
-        for test in tests:
-            self.target.execute(
-                "am instrument -w "
-                "-e class com.arm.test." + test + " "
-                "com.arm.benchmark/androidx.test.runner.AndroidJUnitRunner"
-            )
-
-    def teardown(self, context):
-        super(JetNews, self).teardown(context)
-        for package in self.package_names:
-            self.target.execute(f"am force-stop {package}")
+        # These tests are part of a separate apk that interacts with the main
+        # JetNews app.
+        for iteration in range (self.iterations):
+            for test in self.tests:
+                command = f'am instrument -w -e class com.arm.test. {test} com.arm.benchmark/androidx.test.runner.AndroidJUnitRunner'
+                self.target.execute(command)
