@@ -64,7 +64,7 @@ class JetNews(ApkWorkload):
         # Invoke each test one after the other.
         # These tests are part of a separate apk that interacts with the main
         # JetNews app.
-        for iteration in range (self.iterations): # pylint: disable=W0612
+        for iteration in range(self.iterations):  # pylint: disable=W0612
             for test in self.tests:
                 command = f'am instrument -w -e class com.arm.test. {test} com.arm.benchmark/androidx.test.runner.AndroidJUnitRunner'
                 self.target.execute(command)
