@@ -384,7 +384,7 @@ class TargetedPlugin(Plugin):
 
     """
 
-    suppoted_targets = []
+    supported_targets = []
     parameters = [
         Parameter('cleanup_assets', kind=bool,
                   global_alias='cleanup_assets',
@@ -398,8 +398,8 @@ class TargetedPlugin(Plugin):
 
     @classmethod
     def check_compatible(cls, target):
-        if cls.suppoted_targets:
-            if target.os not in cls.suppoted_targets:
+        if cls.supported_targets:
+            if target.os not in cls.supported_targets:
                 msg = 'Incompatible target OS "{}" for {}'
                 raise TargetError(msg.format(target.os, cls.name))
 
