@@ -16,13 +16,16 @@ import os
 import logging
 from copy import copy, deepcopy
 from collections import OrderedDict, defaultdict
+from itertools import product
+from string import Formatter
+
 
 from wa.framework.exception import ConfigError, NotFoundError
-from wa.framework.configuration.tree import SectionNode
+from wa.framework.configuration.tree import SectionNode, WorkloadEntry
 from wa.utils import log
 from wa.utils.misc import (get_article, merge_config_values)
 from wa.utils.types import (identifier, integer, boolean, list_of_strings,
-                            list_of, toggle_set, obj_dict, enum)
+                            list_of, toggle_set, obj_dict, enum, sweep)
 from wa.utils.serializer import is_pod, Podable
 
 
@@ -306,7 +309,11 @@ class ConfigurationPoint(object):
                 raise ConfigError(msg.format(self.name, obj.name))
         else:
             try:
-                value = self.kind(value)
+                if isinstance(value, sweep) and not value.auto:
+                    for i, v in enumerate(value):
+                        value[i] = self.kind(v)
+                else:
+                    value = self.kind(value)
             except (ValueError, TypeError):
                 typename = get_type_name(self.kind)
                 msg = 'Bad value "{}" for {}; must be {} {}'
@@ -336,6 +343,13 @@ class ConfigurationPoint(object):
             self.validate_constraint(name, value)
 
     def validate_allowed_values(self, name, value):
+        if isinstance(value, sweep) and not value.auto:
+            for v in value:
+                self._do_validate_allowed_values(name, v)
+        else:
+            self._do_validate_allowed_values(name, value)
+
+    def _do_validate_allowed_values(self, name, value):
         if 'list' in str(self.kind):
             for v in value:
                 if v not in self.allowed_values:
@@ -347,6 +361,13 @@ class ConfigurationPoint(object):
                 raise ConfigError(msg.format(value, self.name, name, self.allowed_values))
 
     def validate_constraint(self, name, value):
+        if isinstance(value, sweep) and not value.auto:
+            for v in value:
+                self._do_validate_constraint(name, v)
+        else:
+            self._do_validate_constraint(name, value)
+
+    def _do_validate_constraint(self, name, value):
         msg_vals = {'value': value, 'param': self.name, 'plugin': name}
         if isinstance(self.constraint, tuple) and len(self.constraint) == 2:
             constraint, msg = self.constraint  # pylint: disable=unpacking-non-sequence
@@ -983,6 +1004,33 @@ class JobSpec(Configuration):
         if self.label is None:
             self.label = self.workload_name
 
+        self.convert_auto_label()
+
+    def convert_auto_label(self):
+        to_fetch = set() # Total parameter names required
+        for _, name, _, _ in Formatter().parse(str(self.label)):
+            if name:
+                to_fetch.add(name)
+
+        if not to_fetch:
+            return
+
+        fetched = {}  # maps parameter name -> value
+        for k, v in self.workload_parameters.items():
+            if k in to_fetch:
+                fetched[k] = v
+        for k, v in self.runtime_parameters.items():
+            if k in to_fetch:
+                fetched[k] = v
+        for k, v in self.boot_parameters.items():
+            if k in to_fetch:
+                fetched[k] = v
+
+        try:
+            self.label = self.label.format(**fetched)
+        except KeyError as e:
+                msg = '{} is not a recognised parameter'
+                raise ConfigError(msg.format(e.args[0]))
 
 # This is used to construct the list of Jobs WA will run
 class JobGenerator(object):
@@ -1091,6 +1139,9 @@ class JobGenerator(object):
                 specs.append(job_spec)
         return specs
 
+    def expand_sweeps(self, tm):
+        _expand_children_sweeps(self.root_node, tm, self.plugin_cache)
+
 
 def create_job_spec(workload_entry, sections, target_manager, plugin_cache,
                     disabled_augmentations):
@@ -1131,3 +1182,90 @@ def get_config_point_map(params):
 
 
 settings = MetaConfiguration(os.environ)
+
+
+def _expand_children_sweeps(node, tm, pc):
+    child_names = ['workload_entries', 'children']
+    for name in child_names:
+        children_list = getattr(node, name, [])
+        to_replace = {}
+        for index, child in enumerate(children_list):
+            expanded_children = _process_node_sweeps(child, tm, pc)
+            if expanded_children:
+                to_replace[index] = expanded_children
+
+        if to_replace:
+            new_children = []
+            for i, v in enumerate(children_list):
+                if i in to_replace:
+                    new_children.extend(to_replace.pop(i))
+                else:
+                    new_children.append(v)
+            group = getattr(children_list[0], 'group', None)
+            for child in new_children:
+                if group:
+                    child.group = group
+                child.parent = node
+
+            setattr(node, name, new_children)
+
+
+def _process_node_sweeps(node, tm, pc):
+    # Expand the subtree and workload entries
+    _expand_children_sweeps(node, tm, pc)
+
+    # Then own config:
+    # 1. Find sweeps in config
+    locs_sweeps = list(find_sweeps(node.config))
+    if not locs_sweeps:
+        return []
+
+    sweeps = list(l_s[1] for l_s in locs_sweeps)
+    locs = list(l_s[0] for l_s in locs_sweeps)
+
+    # 2. Convert any auto sweeps
+    resolve_auto_sweeps(sweeps, tm, pc)
+
+    # 3. Generate configurations from
+    config_options = _construct_config_options(sweeps, locs, node.config)
+
+    # 4. Copy subtree over
+    def construct_concrete_section(config):
+        new_node = node.copy_subtree()
+        new_node.config = config
+        return new_node
+
+    new_nodes = list(map(construct_concrete_section, config_options))
+    return new_nodes
+
+def _construct_config_options(sweeps, locations, config):
+    options = product(*sweeps)
+    config_options = []
+    for i, option in enumerate(options):
+        new_config = deepcopy(config)
+        new_config['id'] = new_config['id'] + '_{}'.format(i)
+        for value, location in zip(option, locations):
+            _nested_dict_set(location, new_config, value)
+        config_options.append(new_config)
+    return config_options
+
+
+def resolve_auto_sweeps(sweeps, tm, pc):
+    for sweep in sweeps:
+        if sweep.auto:
+            sweep.handler.resolve_auto_sweep(tm, pc)
+
+
+def _nested_dict_set(loc, dictn, value):
+    for key in loc[:-1]:
+        dictn = dictn.setdefault(key, {})
+    dictn[loc[-1]] = value
+
+
+def find_sweeps(dictn):
+    for k, v in dictn.items():
+        if isinstance(v, sweep):
+            yield (k,), v
+        elif isinstance(v, dict) or isinstance(v, obj_dict):
+            for loc, swp in find_sweeps(v):
+                yield (k,) + loc, swp
