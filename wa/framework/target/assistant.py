@@ -68,10 +68,10 @@ class AndroidAssistant(object):
 
                   Logcat buffer on android is of limited size and it cannot be
                   adjusted at run time. Depending on the amount of logging activity,
-                  the buffer may not be enought to capture comlete trace for a
+                  the buffer may not be enough to capture complete trace for a
                   workload execution. For those situations, logcat may be polled
                   periodically during the course of the run and stored in a
-                  temporary locaiton on the host. Setting the value of the poll
+                  temporary location on the host. Setting the value of the poll
                   period enables this behavior.
                   """),
         Parameter('stay_on_mode', kind=int,
