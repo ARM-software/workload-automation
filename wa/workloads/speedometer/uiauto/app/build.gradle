@@ -1,0 +1,36 @@
+apply plugin: 'com.android.application'
+
+def packageName = "com.arm.wa.uiauto.chrome"
+
+android {
+    compileSdkVersion 33
+    // buildToolsVersion '28.0.0'
+    namespace "${packageName}"
+    defaultConfig {
+        applicationId "${packageName}"
+        minSdkVersion 18
+        targetSdkVersion 33
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        applicationVariants.all { variant ->
+            variant.outputs.each { output ->
+                output.outputFileName = "${packageName}.apk"
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'com.android.support.test:runner:0.5'
+    implementation 'com.android.support.test:rules:0.5'
+    implementation 'com.android.support.test.uiautomator:uiautomator-v18:2.1.2'
+    implementation(name: 'uiauto', ext: 'aar')
+}
+
+repositories {
+    flatDir {
+        dirs 'libs'
+    }
+}

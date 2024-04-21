@@ -24,7 +24,7 @@ import threading
 import time
 import uuid
 
-from wa import Parameter, Workload, File
+from wa import ApkUiautoWorkload, Parameter, File
 from wa.framework.exception import WorkloadError
 from wa.utils.exec_control import once
 from wa.utils.misc import safe_extract
@@ -32,7 +32,7 @@ from wa.utils.misc import safe_extract
 from devlib.utils.android import adb_command
 
 
-class Speedometer(Workload):
+class Speedometer(ApkUiautoWorkload):
 
     name = "speedometer"
     description = """
@@ -119,6 +119,18 @@ class Speedometer(Workload):
             description="""
                   The app package for the browser that will be launched.
                   """,
+        ),
+        Parameter(
+            "prefer_host_package",
+            kind=bool,
+            default=False,
+            description="""
+                  If ``True`` then a package found on the host
+                  will be preferred if it is a valid version and ABI, if not it
+                  will fall back to the version on the target if available. If
+                  ``False`` then the version on the target is preferred instead.
+                  """,
+            override=True
         ),
     ]
 
