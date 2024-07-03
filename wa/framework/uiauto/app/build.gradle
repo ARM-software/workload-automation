@@ -2,7 +2,8 @@ apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion 28
-    buildToolsVersion '28.0.3'
+    // buildToolsVersion is no longer used/accepted.
+    // buildToolsVersion '28.0.3'
     defaultConfig {
         minSdkVersion 18
         targetSdkVersion 28
