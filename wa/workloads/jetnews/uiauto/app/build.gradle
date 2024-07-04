@@ -1,0 +1,51 @@
+plugins {
+  id 'com.android.application'
+  id "org.jetbrains.kotlin.android" version "2.0.20-Beta1"
+}
+
+kotlin {
+    // Standardize on the same jvm version for compatibility reasons.
+    jvmToolchain(17)
+}
+
+//apply plugin: 'com.android.application'
+def packageName = "com.arm.wa.uiauto.jetnews"
+
+android {
+    namespace = "com.arm.wa.uiauto.jetnews"
+
+    compileSdkVersion 34
+    defaultConfig {
+        applicationId "${packageName}"
+        minSdkVersion 23
+        targetSdkVersion 28
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+    buildTypes {
+        applicationVariants.all { variant ->
+            variant.outputs.each { output ->
+                output.outputFileName = "${packageName}.apk"
+            }
+        }
+    }
+    useLibrary 'android.test.base'
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'androidx.test.uiautomator:uiautomator:2.4.0-alpha01'
+    implementation 'androidx.test.janktesthelper:janktesthelper:1.0.1'
+    implementation 'androidx.test.espresso:espresso-core:3.5.1'
+
+    implementation(name: 'uiauto', ext: 'aar')
+}
+
+repositories {
+    flatDir {
+        dirs 'libs'
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs += ['-Xlint:deprecation']
+}
