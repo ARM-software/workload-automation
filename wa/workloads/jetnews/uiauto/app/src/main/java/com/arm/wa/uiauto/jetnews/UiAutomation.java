@@ -1,4 +1,4 @@
-/*    Copyright 2014-2024 ARM Limited
+/*    Copyright 2024 ARM Limited
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import com.arm.wa.uiauto.UiAutoUtils;
 
 import org.junit.Test;
 
-// Dummy workload for jetnews. We need to use JankTestBasem but we
+// Dummy workload for jetnews. We need to use the JankTestBase class but we
 // can't inherit from that class as we already inherit BaseUiAutomation.
 // Therefore we have another class (UiAutomationJankTests) that uses
 // this class instead.

@@ -8,7 +8,6 @@ kotlin {
     jvmToolchain(17)
 }
 
-//apply plugin: 'com.android.application'
 def packageName = "com.arm.wa.uiauto.jetnews"
 
 android {

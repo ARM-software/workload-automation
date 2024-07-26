@@ -14,7 +14,9 @@
 #
 
 from wa import ApkUiautoWorkload, Parameter, TestPackageHandler
+
 from wa.utils.types import list_of_strs
+
 import re
 
 class Jetnews(ApkUiautoWorkload):
@@ -22,8 +24,21 @@ class Jetnews(ApkUiautoWorkload):
     name = 'jetnews'
     package_names = ['com.example.jetnews']
     description = '''
-    JetNews
+    This workload uses the JetNews sample app to run a set of UiAutomation
+    tests, with the goal of gathering frame metrics and calculating jank
+    frame percentages.
+
+    It uses two APK's, the JetNews app itself (modified to contain more posts)
+    and the UiAutomation tests that interact with the app.
+
+    There are 3 available tests, two in portrait mode and 1 in landscape mode.
     '''
+
+    _OUTPUT_SECTION_REGEX = re.compile(
+        r'(\s*INSTRUMENTATION_STATUS: gfx-[\w-]+=[-+\d.]+\n)+'
+        r'\s*INSTRUMENTATION_STATUS_CODE: (?P<code>[-+\d]+)\n?', re.M)
+    _OUTPUT_GFXINFO_REGEX = re.compile(
+        r'INSTRUMENTATION_STATUS: (?P<name>[\w-]+)=(?P<value>[-+\d.]+)')
 
     default_test_strings = [
         'PortraitVerticalTest',
@@ -38,24 +53,19 @@ class Jetnews(ApkUiautoWorkload):
                   tests are PortraitVerticalTest, LandscapeVerticalTest and
                   PortraitHorizontalTest. If none are specified, the default
                   is to run all of them.
-                  """, default=default_test_strings),
+                  """, default=default_test_strings,
+                  constraint=lambda x: all(v in ['PortraitVerticalTest', 'PortraitHorizontalTest', 'LandscapeVerticalTest'] for v in x)),
         Parameter('flingspeed', kind=int,
                   description="""
                   Default fling speed for the tests. The default is 5000 and
                   the minimum value is 1000.
-                  """, default=5000),
+                  """, default=5000, constraint=lambda x: x >= 1000),
         Parameter('repeat', kind=int,
                   description="""
                   The number of times the tests should be repeated. The default
                   is 1.
-                  """, default=1)
+                  """, default=1, constraint=lambda x: x > 0)
     ]
-
-    _OUTPUT_SECTION_REGEX = re.compile(
-        r'(\s*INSTRUMENTATION_STATUS: gfx-[\w-]+=[-+\d.]+\n)+'
-        r'\s*INSTRUMENTATION_STATUS_CODE: (?P<code>[-+\d]+)\n?', re.M)
-    _OUTPUT_GFXINFO_REGEX = re.compile(
-        r'INSTRUMENTATION_STATUS: (?P<name>[\w-]+)=(?P<value>[-+\d.]+)')
 
     def __init__(self, target, **kwargs):
         super(Jetnews, self).__init__(target, **kwargs)
