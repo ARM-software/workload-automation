@@ -13,13 +13,13 @@
 # limitations under the License.
 #
 
-from wa import ApkUiautoWorkload, Parameter, TestPackageHandler
+from wa import Parameter, ApkUiautoJankTestWorkload, TestPackageHandler
 
 from wa.utils.types import list_of_strs
 
 import re
 
-class Jetnews(ApkUiautoWorkload):
+class Jetnews(ApkUiautoJankTestWorkload):
 
     name = 'jetnews'
     package_names = ['com.example.jetnews']
@@ -34,17 +34,14 @@ class Jetnews(ApkUiautoWorkload):
     There are 3 available tests, two in portrait mode and 1 in landscape mode.
     '''
 
-    _OUTPUT_SECTION_REGEX = re.compile(
-        r'(\s*INSTRUMENTATION_STATUS: gfx-[\w-]+=[-+\d.]+\n)+'
-        r'\s*INSTRUMENTATION_STATUS_CODE: (?P<code>[-+\d]+)\n?', re.M)
-    _OUTPUT_GFXINFO_REGEX = re.compile(
-        r'INSTRUMENTATION_STATUS: (?P<name>[\w-]+)=(?P<value>[-+\d.]+)')
-
     default_test_strings = [
         'PortraitVerticalTest',
         'PortraitHorizontalTest',
         'LandscapeVerticalTest',
     ]
+
+    # List of jank tests to invoke for this workload.
+    jetnews_jank_tests = ['test1']
 
     parameters = [
         Parameter('tests', kind=list_of_strs,
@@ -69,35 +66,16 @@ class Jetnews(ApkUiautoWorkload):
 
     def __init__(self, target, **kwargs):
         super(Jetnews, self).__init__(target, **kwargs)
-        # This test uses the androidx library.
-        self.gui.uiauto_runner = 'androidx.test.runner.AndroidJUnitRunner'
-        # Class for the regular instrumented tests.
-        self.gui.uiauto_class = 'UiAutomation'
-        # Class containing the jank tests.
-        self.gui.uiauto_jank_class = 'UiAutomationJankTests'
-        # A list of all the individual jank tests contained in the jetnews
-        # uiauto apk.
-        self.gui.jank_stages = ['test1']
+        self.gui.jank_tests = jetnews_jank_tests
         self.gui.uiauto_params['tests'] = self.tests
         self.gui.uiauto_params['flingspeed'] = self.flingspeed
         self.gui.uiauto_params['repeat'] = self.repeat
-        # Declared here so we can hold the test output for later processing.
-        self.output = {}
 
     def run(self, context):
-        # Run the jank tests and capture the output so we can parse it
-        # into the output result file.
-        self.output['test1'] = self.gui._execute('test1', self.gui.timeout)
+        # Run the jank tests.
+        self.gui.run()
 
     def update_output(self, context):
         super(Jetnews, self).update_output(context)
-        # Parse the test result and filter out the results so we can output
-        # a meaningful result file.
-        for test, test_output in self.output.items():
-            for section in self._OUTPUT_SECTION_REGEX.finditer(test_output):
-                if int(section.group('code')) != -1:
-                    msg = 'Run failed (INSTRUMENTATION_STATUS_CODE: {}). See log.'
-                    raise RuntimeError(msg.format(section.group('code')))
-                for metric in self._OUTPUT_GFXINFO_REGEX.finditer(section.group()):
-                    context.add_metric(metric.group('name'), metric.group('value'),
-                                       classifiers={'test_name': test})
+        # Parse the frame metrics and output the results file.
+        self.gui.parse_metrics(context)
