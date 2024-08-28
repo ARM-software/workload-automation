@@ -16,6 +16,7 @@ import logging
 import os
 import threading
 import time
+import re
 
 try:
     from shlex import quote
@@ -395,6 +396,13 @@ class ApkUiautoWorkload(ApkUIWorkload):
         super(ApkUiautoWorkload, self).setup(context)
 
 
+class ApkUiautoJankTestWorkload(ApkUiautoWorkload):
+
+    def __init__(self, target, **kwargs):
+        super(ApkUiautoWorkload, self).__init__(target, **kwargs)
+        self.gui = UiAutomatorJankTestGUI(self)
+
+
 class ApkReventWorkload(ApkUIWorkload):
 
     # May be optionally overwritten by subclasses
@@ -578,6 +586,85 @@ class UiAutomatorGUI(object):
         else:
             self.logger.debug(result)
         time.sleep(2)
+
+
+class UiAutomatorJankTestGUI(UiAutomatorGUI):
+
+    # The list of jank tests, within the testing class, that should
+    # be invoked.
+    jank_tests = []
+    # The default class for jank testing.
+    uiauto_jank_class = 'UiAutomationJankTests'
+    # The default runner for the jank tests, using androidx.
+    uiauto_runner = 'androidx.test.runner.AndroidJUnitRunner'
+    # Output of each of the executed tests.
+    output = {}
+
+    # A couple regular expressions used to parse frame metrics output by the
+    # android jank tests.
+    _OUTPUT_SECTION_REGEX = re.compile(
+        r'(\s*INSTRUMENTATION_STATUS: gfx-[\w-]+=[-+\d.]+\n)+'
+        r'\s*INSTRUMENTATION_STATUS_CODE: (?P<code>[-+\d]+)\n?', re.M)
+    _OUTPUT_GFXINFO_REGEX = re.compile(
+        r'INSTRUMENTATION_STATUS: (?P<name>[\w-]+)=(?P<value>[-+\d.]+)')
+
+    def __init__(self, owner, package=None, klass='UiAutomation', timeout=600):
+        super(UiAutomatorJankTestGUI, self).__init__(owner, package, klass, timeout)
+
+    def init_commands(self):
+        # Let UiAutomatorGUI handle the initialization of instrumented test
+        # commands.
+        super(UiAutomatorJankTestGUI, self).init_commands()
+
+        # Now initialize the jank test commands.
+        if not self.jank_tests:
+            raise RuntimeError('List of jank tests is empty')
+
+        params_dict = self.uiauto_params
+        params_dict['workdir'] = self.target.working_directory
+        params = ''
+        for k, v in params_dict.iter_encoded_items():
+            params += ' -e {} {}'.format(k, v)
+
+        for test in self.jank_tests:
+            class_string = '{}.{}#{}'.format(self.uiauto_package,
+                                             self.uiauto_jank_class,
+                                             test)
+            instrumentation_string = '{}/{}'.format(self.uiauto_package,
+                                                    self.uiauto_runner)
+            cmd_template = 'am instrument -w -r{} -e class {} {}'
+            self.commands[test] = cmd_template.format(params, class_string,
+                                                      instrumentation_string)
+
+    def run(self, timeout=None):
+        if not self.commands:
+            raise RuntimeError('Commands have not been initialized')
+
+        # Validate that each test has been initialized with their own set of commands.
+        for test in self.jank_tests:
+            if not self.commands[test]:
+                raise RuntimeError('Commands for test "{}" not initialized'.format(test))
+
+        # Run the jank tests and capture output for each one of them.
+        for test in self.jank_tests:
+            self.output[test] = self.target.execute(self.commands[test], self.timeout)
+
+            if 'FAILURE' in self.output[test]:
+                raise WorkloadError(self.output[test])
+            else:
+                self.logger.debug(self.output[test])
+
+    def parse_metrics(self, context):
+        # Parse the test results and filter out the metrics so we can output
+        # a meaningful results file.
+        for test, test_output in self.output.items():
+            for section in self._OUTPUT_SECTION_REGEX.finditer(test_output):
+                if int(section.group('code')) != -1:
+                    msg = 'Run failed (INSTRUMENTATION_STATUS_CODE: {}). See log.'
+                    raise RuntimeError(msg.format(section.group('code')))
+                for metric in self._OUTPUT_GFXINFO_REGEX.finditer(section.group()):
+                    context.add_metric(metric.group('name'), metric.group('value'),
+                                       classifiers={'test_name': test})
 
 
 class ReventGUI(object):
