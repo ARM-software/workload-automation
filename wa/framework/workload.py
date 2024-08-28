@@ -504,14 +504,13 @@ class UiAutomatorGUI(object):
 
     stages = ['setup', 'runWorkload', 'extractResults', 'teardown']
 
+    uiauto_runner = 'android.support.test.runner.AndroidJUnitRunner'
+
     def __init__(self, owner, package=None, klass='UiAutomation', timeout=600):
         self.owner = owner
         self.target = self.owner.target
         self.uiauto_package = package
         self.uiauto_class = klass
-        self.uiauto_jank_class = klass
-        self.uiauto_runner = 'android.support.test.runner.AndroidJUnitRunner'
-        self.jank_stages = []
         self.timeout = timeout
         self.logger = logging.getLogger('gui')
         self.uiauto_file = None
@@ -533,16 +532,6 @@ class UiAutomatorGUI(object):
 
         for stage in self.stages:
             class_string = '{}.{}#{}'.format(self.uiauto_package, self.uiauto_class,
-                                             stage)
-            instrumentation_string = '{}/{}'.format(self.uiauto_package,
-                                                    self.uiauto_runner)
-            cmd_template = 'am instrument -w -r{} -e class {} {}'
-            self.commands[stage] = cmd_template.format(params, class_string,
-                                                       instrumentation_string)
-
-        for stage in self.jank_stages:
-            class_string = '{}.{}#{}'.format(self.uiauto_package,
-                                             self.uiauto_jank_class,
                                              stage)
             instrumentation_string = '{}/{}'.format(self.uiauto_package,
                                                     self.uiauto_runner)
@@ -589,7 +578,6 @@ class UiAutomatorGUI(object):
         else:
             self.logger.debug(result)
         time.sleep(2)
-        return result
 
 
 class ReventGUI(object):
