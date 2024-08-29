@@ -66,7 +66,7 @@ class Jetnews(ApkUiautoJankTestWorkload):
 
     def __init__(self, target, **kwargs):
         super(Jetnews, self).__init__(target, **kwargs)
-        self.gui.jank_tests = jetnews_jank_tests
+        self.gui.jank_tests = self.jetnews_jank_tests
         self.gui.uiauto_params['tests'] = self.tests
         self.gui.uiauto_params['flingspeed'] = self.flingspeed
         self.gui.uiauto_params['repeat'] = self.repeat
