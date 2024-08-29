@@ -399,7 +399,7 @@ class ApkUiautoWorkload(ApkUIWorkload):
 class ApkUiautoJankTestWorkload(ApkUiautoWorkload):
 
     def __init__(self, target, **kwargs):
-        super(ApkUiautoWorkload, self).__init__(target, **kwargs)
+        super(ApkUiautoJankTestWorkload, self).__init__(target, **kwargs)
         self.gui = UiAutomatorJankTestGUI(self)
 
 
@@ -607,9 +607,6 @@ class UiAutomatorJankTestGUI(UiAutomatorGUI):
         r'\s*INSTRUMENTATION_STATUS_CODE: (?P<code>[-+\d]+)\n?', re.M)
     _OUTPUT_GFXINFO_REGEX = re.compile(
         r'INSTRUMENTATION_STATUS: (?P<name>[\w-]+)=(?P<value>[-+\d.]+)')
-
-    def __init__(self, owner, package=None, klass='UiAutomation', timeout=600):
-        super(UiAutomatorJankTestGUI, self).__init__(owner, package, klass, timeout)
 
     def init_commands(self):
         # Let UiAutomatorGUI handle the initialization of instrumented test

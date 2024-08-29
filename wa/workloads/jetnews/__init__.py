@@ -17,8 +17,6 @@ from wa import Parameter, ApkUiautoJankTestWorkload, TestPackageHandler
 
 from wa.utils.types import list_of_strs
 
-import re
-
 class Jetnews(ApkUiautoJankTestWorkload):
 
     name = 'jetnews'
