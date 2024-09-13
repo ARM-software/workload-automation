@@ -17,7 +17,7 @@ from wa import Parameter, ApkUiautoJankTestWorkload, TestPackageHandler
 
 from wa.utils.types import list_of_strs
 
-class Jetnews(ApkUiautoJankTestWorkload):
+class Jetnews(ApkUiautoJankTestWorkload): # pylint: disable=too-many-ancestors
 
     name = 'jetnews'
     package_names = ['com.example.jetnews']
