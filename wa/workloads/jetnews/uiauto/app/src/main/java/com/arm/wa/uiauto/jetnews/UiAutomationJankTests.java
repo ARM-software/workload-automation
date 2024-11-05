@@ -110,7 +110,7 @@ public class UiAutomationJankTests extends JankTestBase {
     }
 
     private void runPortraitVerticalTests() throws Exception {
-        // Scroll to the first postcard in the list.
+        mDevice.setOrientationPortrait();
         mDevice.wait(Until.findObject(By.res(MAIN_VIEW)), DEFAULT_TIMEOUT);
         UiObject2 articles = mDevice.findObject(By.res(MAIN_VIEW));
         ViewMatchers.assertThat(articles, CoreMatchers.notNullValue());
@@ -134,20 +134,28 @@ public class UiAutomationJankTests extends JankTestBase {
     }
 
     private void runPortraitHorizontalTests() throws Exception {
+        mDevice.setOrientationPortrait();
         mDevice.wait(Until.findObject(By.res(MAIN_VIEW)), DEFAULT_TIMEOUT);
         UiObject2 articles = mDevice.findObject(By.res(MAIN_VIEW));
         ViewMatchers.assertThat(articles, CoreMatchers.notNullValue());
         
         scrollTo(articles, TOP_ARTICLE, false, TOP_ARTICLE,
                  BOTTOM_ARTICLE, false, true, fling_speed);
+
+        // Scroll downwards until the first postcard in the list is on screen.
+        // We reduce the fling speed so we don't skip past it on devices with
+        // screens that are too small or too big (fast scrolling).
         scrollTo(articles, POPULAR_LIST, true, TOP_ARTICLE,
-                 BOTTOM_ARTICLE, false, true, 5000);
+                 BOTTOM_ARTICLE, false, true,
+                 (fling_speed / 5) < 1000? 1000 : fling_speed);
         
         UiObject2 article = mDevice.findObject(By.res(POPULAR_LIST));
         article.fling(Direction.RIGHT,
                       fling_speed > 10000? 10000 : fling_speed);
         article.fling(Direction.LEFT, fling_speed);
         scrollTo(articles, BOTTOM_ARTICLE, true, TOP_ARTICLE,
+                 BOTTOM_ARTICLE, false, true, fling_speed);
+        scrollTo(articles, TOP_ARTICLE, false, TOP_ARTICLE,
                  BOTTOM_ARTICLE, false, true, fling_speed);
     }
 
@@ -157,22 +165,39 @@ public class UiAutomationJankTests extends JankTestBase {
         mDevice.setOrientationLandscape();
         mDevice.wait(Until.findObject(By.res(MAIN_VIEW)), DEFAULT_TIMEOUT);
 
+        // On some devices with smaller screens, the landscape test may not
+        // be supported, as the screen space is too small to display both
+        // the list of articles and the article preview view.
+        // In that case, skip the portion of the test that interacts with
+        // the preview view.
         UiObject2 articles = mDevice.findObject(By.res(MAIN_VIEW));
         ViewMatchers.assertThat(articles, CoreMatchers.notNullValue());
 
+        articles.setGestureMarginPercentage(0.2f);
         scrollTo(articles, BOTTOM_ARTICLE, true, TOP_ARTICLE,
-                                        BOTTOM_ARTICLE, false, true,
-                                        fling_speed);
+                 BOTTOM_ARTICLE, false, true,
+                 fling_speed);
         scrollTo(articles, TOP_ARTICLE, false, TOP_ARTICLE,
-                                        BOTTOM_ARTICLE, false, true,
-                                        fling_speed);
+                 BOTTOM_ARTICLE, false, true,
+                 fling_speed);
         
+        // Scroll downwards until the first postcard in the list is on screen.
+        // We reduce the fling speed so we don't skip past it on devices with
+        // screens that are too small or too big (fast scrolling).
+        scrollTo(articles, "PostCardSimple0", true, TOP_ARTICLE,
+                 BOTTOM_ARTICLE, false, true,
+                 (fling_speed / 5) < 1000? 1000 : fling_speed);
+
+        UiObject2 article_to_click = mDevice.findObject(By.res("PostCardSimple0"));
+        article_to_click.click();
+
         // Wait for the clicked article to appear.
         UiObject2 article = mDevice.wait(
             Until.findObject(By.res(ARTICLE_VIEW)),
             DEFAULT_TIMEOUT
         );
 
+        article.setGestureMarginPercentage(0.2f);
         article.fling(Direction.DOWN, fling_speed);
         article.fling(Direction.UP, fling_speed);
 
