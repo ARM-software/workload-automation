@@ -47,9 +47,9 @@ import com.arm.wa.uiauto.ActionLogger;
 // things get setup properly (parameters, screen orientation etc).
 
 public class UiAutomationJankTests extends JankTestBase {
-    private static final int DEFAULT_BENCHMARK_REPEAT_COUNT = 1;
-    private static final int DEFAULT_TIMEOUT = 1000;
-    private static final int DEFAULT_BENCHMARK_FLING_SPEED = 5000;
+    private static final int DEFAULT_BENCHMARK_REPEAT_COUNT = 5;
+    private static final int DEFAULT_TIMEOUT = 100;
+    private static final int DEFAULT_BENCHMARK_FLING_SPEED = 20000;
     private static final String[] DEFAULT_BENCHMARK_TESTS
         = {"PortraitVerticalTest",
            "PortraitHorizontalTest",
@@ -59,9 +59,14 @@ public class UiAutomationJankTests extends JankTestBase {
 
     private static final String MAIN_VIEW = "ArticlesMainScrollView";
     private static final String TOP_ARTICLE = "TopStoriesForYou";
+    private static final String FIRST_POST = "PostCardSimple0";
+    private static final String FIRST_POST_CONTENT = "PostContent0";
+    private static final String ARTICLE_VIEW = "ArticleView";
     private static final String BOTTOM_ARTICLE = "PostCardHistory19";
     private static final String POPULAR_LIST = "PopularOnJetnewsRow";
-    private static final String ARTICLE_VIEW = "ArticleHomeScreenPreview0";
+    private static final String ARTICLE_PREVIEW = "ArticleHomeScreenPreview0";
+    private static final String FIRST_POPULAR_CARD = "PostCardPopular0";
+    private static final String LAST_POPULAR_CARD = "PostCardPopular10";
 
     private UiAutomation mUiAutomation;
     private int repeat;
@@ -85,6 +90,7 @@ public class UiAutomationJankTests extends JankTestBase {
                     = new ActionLogger("PortraitVerticalTest",
                                        mUiAutomation.getParams());
                 logger.start();
+                resetAppState();
                 runPortraitVerticalTests();
                 logger.stop();
             }
@@ -94,6 +100,7 @@ public class UiAutomationJankTests extends JankTestBase {
                     = new ActionLogger("PortraitHorizontalTest",
                                        mUiAutomation.getParams());
                 logger.start();
+                resetAppState();
                 runPortraitHorizontalTests();
                 logger.stop();
             }
@@ -103,116 +110,158 @@ public class UiAutomationJankTests extends JankTestBase {
                     = new ActionLogger("LandscapeVerticalTest",
                                        mUiAutomation.getParams());
                 logger.start();
+                resetAppState();
                 runLandscapeVerticalTests();
                 logger.stop();
             }
         }
     }
 
+    // Returns true if the main view is in focus. False otherwise.
+    private boolean findMainView() throws Exception {
+        return mDevice.wait(Until.findObject(By.res(MAIN_VIEW)), DEFAULT_TIMEOUT) != null;
+    }
+
+    // Scroll the object with resource id ARTICLES_ID to the bottom end and
+    // back to the top end. It is also used to scroll sideways if the controls
+    // allow such movement.
+    private void scrollList(String articles_id, String top_id, String bottom_id,
+                            boolean sideways) throws Exception {
+        // Scroll down and up in the articles list.
+        assert(scrollTo(articles_id, bottom_id, true, top_id,
+                        bottom_id, sideways, true, fling_speed));
+        assert(scrollTo(articles_id, top_id, false, top_id,
+                        bottom_id, sideways, true, fling_speed));
+    }
+
+    // Scroll the object with resource id ARTICLES_ID down until the object with
+    // resource id ARTICLE_NAME is visible and return true. If the object is not
+    // visible, return false.
+    private boolean scrollToArticle(String articles_id,
+                                      String article_name) throws Exception {
+        // Scroll downwards until we find the item named ARTICLE_NAME on screen.
+        // We reduce the fling speed so we don't skip past it on devices with
+        // screens that are too small (less area to display things) or too
+        // big (fast scrolling).
+        scrollTo(articles_id, article_name, true, TOP_ARTICLE, BOTTOM_ARTICLE,
+                 false, true, 1000);
+
+        return mDevice.findObject(By.res(article_name)) != null;
+    }
+
+    // Assuming an object with resource id ARTICLE_ID is in view, click it,
+    // wait for the article to open, fling downwards and upwards.
+    //
+    // This is shared with landscape mode as well, so we don't try to back out
+    // from the opened article, since landscape mode presents a split view of
+    // the scroll list and the article's contents.
+    private void interactWithArticle(String article_id) throws Exception {
+        UiObject2 article
+            = mDevice.wait(Until.findObject(By.res(article_id)),
+                           DEFAULT_TIMEOUT);
+
+        ViewMatchers.assertThat(article, CoreMatchers.notNullValue());
+
+        article.click();
+
+        // Wait for the clicked article to appear.
+        UiObject2 article_view
+            = mDevice.wait(Until.findObject(By.res(ARTICLE_PREVIEW)),
+                           DEFAULT_TIMEOUT);
+
+        // If it is a small screen device or portrait mode, we may not have a
+        // preview window, so look for a fullscreen article view.
+        if (article_view == null) {
+
+            article_view
+                = mDevice.wait(Until.findObject(By.res(FIRST_POST_CONTENT)),
+                               DEFAULT_TIMEOUT);
+        }
+
+        // Interact with the opened article by flinging up and down once.
+        ViewMatchers.assertThat(article_view, CoreMatchers.notNullValue());
+        article_view.setGestureMarginPercentage(0.2f);
+        article_view.fling(Direction.DOWN, fling_speed);
+        article_view.fling(Direction.UP, fling_speed);
+
+        UiObject2 refresh_button
+            = mDevice.wait(Until.findObject(By.text("Retry")),
+                           DEFAULT_TIMEOUT);
+
+        if (refresh_button != null)
+            refresh_button.click();
+    }
+
+    // Reset the app state for a new test.
+    private void resetAppState() throws Exception {
+        mDevice.setOrientationPortrait();
+
+        // FIXUP for differences between tablets and small phones.
+        // Sometimes, when flipping back from landscape to portrait, the app
+        // will switch to a view of the article, and we might need to back out
+        // to the main view.
+        UiObject2 article_view
+            = mDevice.wait(Until.findObject(By.res(FIRST_POST_CONTENT)),
+                           DEFAULT_TIMEOUT);
+
+        // If we see the article view, back out from it.
+        if (article_view != null)
+            mDevice.pressBack();
+
+        mDevice.setOrientationNatural();
+
+        // Now make sure the main view is visible.
+        while (mDevice.wait(Until.findObject(By.res(MAIN_VIEW)),
+               DEFAULT_TIMEOUT) == null) {};
+
+        // Scroll up to the top of the articles list.
+        scrollTo(MAIN_VIEW, TOP_ARTICLE, false, TOP_ARTICLE,
+                 BOTTOM_ARTICLE, false, true, fling_speed);
+    }
+
     private void runPortraitVerticalTests() throws Exception {
         mDevice.setOrientationPortrait();
-        mDevice.wait(Until.findObject(By.res(MAIN_VIEW)), DEFAULT_TIMEOUT);
-        UiObject2 articles = mDevice.findObject(By.res(MAIN_VIEW));
-        ViewMatchers.assertThat(articles, CoreMatchers.notNullValue());
 
-        scrollTo(articles, BOTTOM_ARTICLE, true, TOP_ARTICLE,
-                 BOTTOM_ARTICLE, false, true, fling_speed);
-        scrollTo(articles, TOP_ARTICLE, false, TOP_ARTICLE,
-                 BOTTOM_ARTICLE, false, true, fling_speed);
-
-        mDevice.click(articles.getVisibleCenter().x,
-                      articles.getVisibleCenter().y);
-
-        // Fling the article back and forth.
-        UiObject2 article = mDevice.findObject(By.scrollable(true));
-
-        article.fling(Direction.DOWN, fling_speed);
-        article.fling(Direction.UP, fling_speed);
-
-        // Go back to the main screen.
-        mDevice.pressBack();
+        assert(findMainView());
+        scrollList(MAIN_VIEW, TOP_ARTICLE, BOTTOM_ARTICLE, false);
+        assert(scrollToArticle(MAIN_VIEW, FIRST_POST));
+        interactWithArticle(FIRST_POST);
     }
 
     private void runPortraitHorizontalTests() throws Exception {
         mDevice.setOrientationPortrait();
-        mDevice.wait(Until.findObject(By.res(MAIN_VIEW)), DEFAULT_TIMEOUT);
-        UiObject2 articles = mDevice.findObject(By.res(MAIN_VIEW));
-        ViewMatchers.assertThat(articles, CoreMatchers.notNullValue());
-        
-        scrollTo(articles, TOP_ARTICLE, false, TOP_ARTICLE,
-                 BOTTOM_ARTICLE, false, true, fling_speed);
 
-        // Scroll downwards until the first postcard in the list is on screen.
-        // We reduce the fling speed so we don't skip past it on devices with
-        // screens that are too small or too big (fast scrolling).
-        scrollTo(articles, POPULAR_LIST, true, TOP_ARTICLE,
-                 BOTTOM_ARTICLE, false, true,
-                 (fling_speed / 5) < 1000? 1000 : fling_speed);
-        
-        UiObject2 article = mDevice.findObject(By.res(POPULAR_LIST));
-        article.fling(Direction.RIGHT,
-                      fling_speed > 10000? 10000 : fling_speed);
-        article.fling(Direction.LEFT, fling_speed);
-        scrollTo(articles, BOTTOM_ARTICLE, true, TOP_ARTICLE,
-                 BOTTOM_ARTICLE, false, true, fling_speed);
-        scrollTo(articles, TOP_ARTICLE, false, TOP_ARTICLE,
-                 BOTTOM_ARTICLE, false, true, fling_speed);
+        assert(findMainView());
+        scrollList(MAIN_VIEW, TOP_ARTICLE, BOTTOM_ARTICLE, false);
+        assert(scrollToArticle(MAIN_VIEW, "PostCardHistory0"));
+        assert(scrollToArticle(MAIN_VIEW, POPULAR_LIST));
+
+        // Scroll the horizontal list to the end and back.
+        scrollList(POPULAR_LIST, FIRST_POPULAR_CARD, LAST_POPULAR_CARD, true);
+        // Fetch the first article on the horizontal scroll list.
+        interactWithArticle(FIRST_POPULAR_CARD);
     }
 
     private void runLandscapeVerticalTests() throws Exception {
         // Flip the screen sideways to exercise the other layout
         // of the Jetnews app.
         mDevice.setOrientationLandscape();
-        mDevice.wait(Until.findObject(By.res(MAIN_VIEW)), DEFAULT_TIMEOUT);
 
-        // On some devices with smaller screens, the landscape test may not
-        // be supported, as the screen space is too small to display both
-        // the list of articles and the article preview view.
-        // In that case, skip the portion of the test that interacts with
-        // the preview view.
-        UiObject2 articles = mDevice.findObject(By.res(MAIN_VIEW));
-        ViewMatchers.assertThat(articles, CoreMatchers.notNullValue());
-
-        articles.setGestureMarginPercentage(0.2f);
-        scrollTo(articles, BOTTOM_ARTICLE, true, TOP_ARTICLE,
-                 BOTTOM_ARTICLE, false, true,
-                 fling_speed);
-        scrollTo(articles, TOP_ARTICLE, false, TOP_ARTICLE,
-                 BOTTOM_ARTICLE, false, true,
-                 fling_speed);
-        
-        // Scroll downwards until the first postcard in the list is on screen.
-        // We reduce the fling speed so we don't skip past it on devices with
-        // screens that are too small or too big (fast scrolling).
-        scrollTo(articles, "PostCardSimple0", true, TOP_ARTICLE,
-                 BOTTOM_ARTICLE, false, true,
-                 (fling_speed / 5) < 1000? 1000 : fling_speed);
-
-        UiObject2 article_to_click = mDevice.findObject(By.res("PostCardSimple0"));
-        article_to_click.click();
-
-        // Wait for the clicked article to appear.
-        UiObject2 article = mDevice.wait(
-            Until.findObject(By.res(ARTICLE_VIEW)),
-            DEFAULT_TIMEOUT
-        );
-
-        article.setGestureMarginPercentage(0.2f);
-        article.fling(Direction.DOWN, fling_speed);
-        article.fling(Direction.UP, fling_speed);
-
-        mDevice.setOrientationPortrait();
-        mDevice.pressBack();
+        assert(findMainView());
+        scrollList(MAIN_VIEW, TOP_ARTICLE, BOTTOM_ARTICLE, false);
+        assert(scrollToArticle(MAIN_VIEW, FIRST_POST));
+        interactWithArticle(FIRST_POST);
     }
 
-    private void scrollTo(UiObject2 element,
-                          String resourceId, boolean downFirst,
-                          String beginningId, String endId, boolean sideways,
-                          boolean fling, int swipeSpeed) {
+    private boolean scrollTo(String element_id,
+                             String resourceId, boolean downFirst,
+                             String beginningId, String endId, boolean sideways,
+                             boolean fling, int swipeSpeed) {
         // First check if the resource is in view. If it is, then just return.
-        if (element.hasObject(By.res(resourceId))) {
+        if (mDevice.wait(Until.findObject(By.res(resourceId)),
+                         DEFAULT_TIMEOUT) != null) {
             Log.d(LOG_TAG, "Object " + resourceId + " was already in view.");
-            return;
+            return true;
         }
 
         Direction direction;
@@ -230,19 +279,33 @@ public class UiAutomationJankTests extends JankTestBase {
             Log.d(LOG_TAG,
                   "Object " + resourceId + " is not in view. Scrolling.");
             do {
+                UiObject2 element = mDevice.wait(Until.findObject(By.res(element_id)),
+                                                 DEFAULT_TIMEOUT);
+                element.setGestureMarginPercentage(0.2f);
+
                 if (fling)
                     element.fling(direction, swipeSpeed);
                 else
                     element.scroll(direction, 0.3f);
 
-                // If we found it, just return. Otherwise keep going.
-                if (element.findObject(By.res(resourceId)) != null) {
-                    Log.d(LOG_TAG,
-                          "Object " + resourceId + " found while scrolling.");
-                    return;
+                UiObject2 refresh_button
+                    = mDevice.wait(Until.findObject(By.text("Retry")),
+                                   DEFAULT_TIMEOUT);
+
+                if (refresh_button != null) {
+                    refresh_button.click();
                 }
 
-            } while (!mDevice.hasObject(By.res(markerId)));
+                // If we found it, just return. Otherwise keep going.
+                if (mDevice.wait(Until.findObject(By.res(resourceId)),
+                                 DEFAULT_TIMEOUT) != null) {
+                    Log.d(LOG_TAG,
+                          "Object " + resourceId + " found while scrolling.");
+                    return true;
+                }
+
+            } while (mDevice.wait(Until.findObject(By.res(markerId)),
+                                  DEFAULT_TIMEOUT) == null);
 
             if (direction == Direction.DOWN)
                 direction = Direction.UP;
@@ -261,7 +324,7 @@ public class UiAutomationJankTests extends JankTestBase {
                 markerId = beginningId;
         }
         // We should've found it. If it is not here, it doesn't exist.
-        return;
+        return false;
     }
 
     @Override
