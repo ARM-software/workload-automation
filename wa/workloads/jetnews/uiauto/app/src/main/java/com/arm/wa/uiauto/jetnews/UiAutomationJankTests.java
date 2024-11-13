@@ -47,9 +47,9 @@ import com.arm.wa.uiauto.ActionLogger;
 // things get setup properly (parameters, screen orientation etc).
 
 public class UiAutomationJankTests extends JankTestBase {
-    private static final int DEFAULT_BENCHMARK_REPEAT_COUNT = 5;
-    private static final int DEFAULT_TIMEOUT = 100;
-    private static final int DEFAULT_BENCHMARK_FLING_SPEED = 20000;
+    private static final int DEFAULT_BENCHMARK_REPEAT_COUNT = 1;
+    private static final int DEFAULT_TIMEOUT = 1000;
+    private static final int DEFAULT_BENCHMARK_FLING_SPEED = 5000;
     private static final String[] DEFAULT_BENCHMARK_TESTS
         = {"PortraitVerticalTest",
            "PortraitHorizontalTest",
