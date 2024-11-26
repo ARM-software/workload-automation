@@ -31,6 +31,10 @@ class Jetnews(ApkUiautoJankTestWorkload):  # pylint: disable=too-many-ancestors
     and the UiAutomation tests that interact with the app.
 
     There are 3 available tests, two in portrait mode and 1 in landscape mode.
+
+    Please note the UiAutomation APK bundled with Workload Automation requires
+    Android 9 (API level 28) to work correctly, otherwise it will fail to
+    install.
     '''
 
     default_test_strings = [
