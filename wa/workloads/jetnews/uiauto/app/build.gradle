@@ -16,8 +16,8 @@ android {
     compileSdkVersion 34
     defaultConfig {
         applicationId "${packageName}"
-        minSdkVersion 23
-        targetSdkVersion 28
+        minSdkVersion 28
+        targetSdkVersion 34
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
