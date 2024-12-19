@@ -57,9 +57,10 @@ class Jetnews(ApkUiautoJankTestWorkload):  # pylint: disable=too-many-ancestors
                   constraint=lambda x: all(v in ['PortraitVerticalTest', 'PortraitHorizontalTest', 'LandscapeVerticalTest'] for v in x)),
         Parameter('flingspeed', kind=int,
                   description="""
-                  Default fling speed for the tests. The default is 5000 and
-                  the minimum value is 1000.
-                  """, default=5000, constraint=lambda x: x >= 1000),
+                  Default fling speed for the tests. The default is 15000 and
+                  the minimum value is 1000. If the value is too small, it will
+                  take longer for the test to run.
+                  """, default=15000, constraint=lambda x: x >= 1000),
         Parameter('repeat', kind=int,
                   description="""
                   The number of times the tests should be repeated. The default
