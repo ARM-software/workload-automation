@@ -1,4 +1,4 @@
-#    Copyright 2014-2018 ARM Limited
+#    Copyright 2014-2025 ARM Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +14,8 @@
 #
 from collections import defaultdict
 from http.server import SimpleHTTPRequestHandler, HTTPServer
-import logging
 import os
 import re
-import subprocess
 import tarfile
 import tempfile
 import threading
@@ -275,6 +273,7 @@ class Speedometer(Workload):
         benchmark_complete = False
         while not benchmark_complete:
             if self.target_file_was_created(local_storage):
+                candidate_files = []
                 if (
                     iterations % (find_period_s // sleep_period_s) == 0
                     or not local_storage_seen
@@ -308,12 +307,12 @@ class Speedometer(Workload):
             iterations += 1
 
             if iterations > ((timeout_period_m * 60) // sleep_period_s):
-                # We've been waiting 15 minutes for Speedometer to finish running - give up.
+                # We've been waiting <timeout_period_m> minutes for Speedometer to finish running - give up.
                 if not local_storage_seen:
                     raise WorkloadError(
-                        "Speedometer did not complete within 15m - Local Storage wasn't found"
+                        f"Speedometer did not complete within {timeout_period_m} minutes - Local Storage wasn't found"
                     )
-                raise WorkloadError("Speedometer did not complete within 15 minutes.")
+                raise WorkloadError(f"Speedometer did not complete within {timeout_period_m} minutes.")
 
             time.sleep(sleep_period_s)
 
