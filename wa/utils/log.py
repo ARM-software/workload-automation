@@ -22,10 +22,15 @@ import string
 import subprocess
 import threading
 from contextlib import contextmanager
+from typing_extensions import Protocol
+from typing import (cast, Type, Optional, Union,
+                    List, Generator, Any, Dict, Callable,
+                    IO)
+from louie import dispatcher  # type: ignore
 
-import colorama
+import colorama  # type: ignore
 
-from devlib import DevlibError
+from devlib.exception import DevlibError
 
 from wa.framework import signal
 from wa.framework.exception import WAError
@@ -44,22 +49,29 @@ RESET_COLOR = colorama.Style.RESET_ALL
 
 DEFAULT_INIT_BUFFER_CAPACITY = 1000
 
-_indent_level = 0
-_indent_width = 4
-_console_handler = None
-_init_handler = None
+_indent_level: int = 0
+_indent_width: int = 4
+_console_handler: Optional[logging.StreamHandler] = None
+_init_handler: Optional['InitHandler'] = None
+
+
+class LoggedExc(Protocol):
+    logged: bool  # Declares the attribute for type checkers
 
 
 # pylint: disable=global-statement
-def init(verbosity=logging.INFO, color=True, indent_with=4,
-         regular_fmt='%(levelname)-8s %(message)s',
-         verbose_fmt='%(asctime)s %(levelname)-8s %(name)10.10s: %(message)s',
-         debug=False):
+def init(verbosity: int = logging.INFO, color: bool = True, indent_with: int = 4,
+         regular_fmt: str = '%(levelname)-8s %(message)s',
+         verbose_fmt: str = '%(asctime)s %(levelname)-8s %(name)10.10s: %(message)s',
+         debug: bool = False) -> None:
+    """
+    initialize logger
+    """
     global _indent_width, _console_handler, _init_handler
     _indent_width = indent_with
-    signal.log_error_func = lambda m: log_error(m, signal.logger)
+    signal.log_error_func = lambda m: log_error(m, signal.logger)  # type: ignore
 
-    root_logger = logging.getLogger()
+    root_logger: logging.Logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)
 
     error_handler = ErrorSignalHandler(logging.DEBUG)
@@ -67,7 +79,7 @@ def init(verbosity=logging.INFO, color=True, indent_with=4,
 
     _console_handler = logging.StreamHandler()
     if color:
-        formatter = ColorFormatter
+        formatter: Type[logging.Formatter] = ColorFormatter
     else:
         formatter = LineFormatter
     if verbosity:
@@ -89,18 +101,26 @@ def init(verbosity=logging.INFO, color=True, indent_with=4,
         logging.raiseExceptions = False
 
     logger = logging.getLogger('CGroups')
+    # FIXME - cannot assign to a method
     logger.info = logger.debug
 
 
-def set_level(level):
-    _console_handler.setLevel(level)
+def set_level(level: Union[int, str]) -> None:
+    """
+    set log level
+    """
+    if _console_handler:
+        _console_handler.setLevel(level)
 
 
 # pylint: disable=global-statement
-def add_file(filepath, level=logging.DEBUG,
-             fmt='%(asctime)s %(levelname)-8s %(name)10.10s: %(message)s'):
+def add_file(filepath: str, level: int = logging.DEBUG,
+             fmt: str = '%(asctime)s %(levelname)-8s %(name)10.10s: %(message)s') -> None:
+    """
+    add log file
+    """
     global _init_handler
-    root_logger = logging.getLogger()
+    root_logger: logging.Logger = logging.getLogger()
     file_handler = logging.FileHandler(filepath)
     file_handler.setLevel(level)
     file_handler.setFormatter(LineFormatter(fmt))
@@ -113,7 +133,10 @@ def add_file(filepath, level=logging.DEBUG,
     root_logger.addHandler(file_handler)
 
 
-def enable(logs):
+def enable(logs: Union[str, List[str]]) -> None:
+    """
+    enable logging
+    """
     if isinstance(logs, list):
         for log in logs:
             __enable_logger(log)
@@ -121,7 +144,10 @@ def enable(logs):
         __enable_logger(logs)
 
 
-def disable(logs):
+def disable(logs: Union[str, List[str]]) -> None:
+    """
+    disable logging
+    """
     if isinstance(logs, list):
         for log in logs:
             __disable_logger(log)
@@ -129,32 +155,44 @@ def disable(logs):
         __disable_logger(logs)
 
 
-def __enable_logger(logger):
+def __enable_logger(logger: Union[str, logging.Logger]) -> None:
+    """
+    enable logger
+    """
     if isinstance(logger, str):
         logger = logging.getLogger(logger)
     logger.propagate = True
 
 
-def __disable_logger(logger):
+def __disable_logger(logger: Union[str, logging.Logger]) -> None:
+    """
+    disable logger
+    """
     if isinstance(logger, str):
         logger = logging.getLogger(logger)
     logger.propagate = False
 
 
 # pylint: disable=global-statement
-def indent():
+def indent() -> None:
+    """
+    increase indent level
+    """
     global _indent_level
     _indent_level += 1
 
 
 # pylint: disable=global-statement
-def dedent():
+def dedent() -> None:
+    """
+    decrease indent level
+    """
     global _indent_level
     _indent_level -= 1
 
 
 @contextmanager
-def indentcontext():
+def indentcontext() -> Generator[None, Any, None]:
     indent()
     try:
         yield
@@ -163,14 +201,14 @@ def indentcontext():
 
 
 # pylint: disable=global-statement
-def set_indent_level(level):
+def set_indent_level(level: int):
     global _indent_level
     old_level = _indent_level
     _indent_level = level
     return old_level
 
 
-def log_error(e, logger, critical=False):
+def log_error(e: BaseException, logger: logging.Logger, critical: Optional[bool] = False) -> None:
     """
     Log the specified Exception as an error. The Error message will be formatted
     differently depending on the nature of the exception.
@@ -190,18 +228,18 @@ def log_error(e, logger, critical=False):
         log_func = logger.error
 
     if isinstance(e, KeyboardInterrupt):
-        old_level = set_indent_level(0)
+        old_level: int = set_indent_level(0)
         logger.info('Got CTRL-C. Aborting.')
         set_indent_level(old_level)
     elif isinstance(e, (WAError, DevlibError)):
         log_func(str(e))
     elif isinstance(e, subprocess.CalledProcessError):
-        tb = get_traceback()
+        tb: Optional[str] = get_traceback()
         log_func(tb)
-        command = e.cmd
+        command: str = e.cmd
         if e.args:
             command = '{} {}'.format(command, ' '.join(map(str, e.args)))
-        message = 'Command \'{}\' returned non-zero exit status {}\nOUTPUT:\n{}\n'
+        message: str = 'Command \'{}\' returned non-zero exit status {}\nOUTPUT:\n{}\n'
         log_func(message.format(command, e.returncode, e.output))
     elif isinstance(e, SyntaxError):
         tb = get_traceback()
@@ -214,7 +252,7 @@ def log_error(e, logger, critical=False):
         log_func(tb)
         log_func('{}({})'.format(e.__class__.__name__, e))
 
-    e.logged = True
+    cast(LoggedExc, e).logged = True
 
 
 class ErrorSignalHandler(logging.Handler):
@@ -223,11 +261,14 @@ class ErrorSignalHandler(logging.Handler):
 
     """
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord):
+        """
+        emit a log record
+        """
         if record.levelno == logging.ERROR:
-            signal.send(signal.ERROR_LOGGED, self, record)
+            signal.send(signal.ERROR_LOGGED, cast(Type[dispatcher.Anonymous], self), record)
         elif record.levelno == logging.WARNING:
-            signal.send(signal.WARNING_LOGGED, self, record)
+            signal.send(signal.WARNING_LOGGED, cast(Type[dispatcher.Anonymous], self), record)
 
 
 class InitHandler(logging.handlers.BufferingHandler):
@@ -236,24 +277,36 @@ class InitHandler(logging.handlers.BufferingHandler):
 
     """
 
-    def __init__(self, capacity):
+    def __init__(self, capacity: int):
         super(InitHandler, self).__init__(capacity)
-        self.targets = []
+        self.targets: List[logging.Handler] = []
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord) -> None:
+        """
+        emit a log record
+        """
         record.indent_level = _indent_level
         super(InitHandler, self).emit(record)
 
-    def flush(self):
+    def flush(self) -> None:
+        """
+        flush logs
+        """
         for target in self.targets:
             self.flush_to_target(target)
-        self.buffer = []
+        self.buffer: List[logging.LogRecord] = []
 
-    def add_target(self, target):
+    def add_target(self, target: logging.Handler):
+        """
+        add target handler
+        """
         if target not in self.targets:
             self.targets.append(target)
 
-    def flush_to_target(self, target):
+    def flush_to_target(self, target: logging.Handler):
+        """
+        emit log to target handler
+        """
         for record in self.buffer:
             target.emit(record)
 
@@ -264,19 +317,23 @@ class LineFormatter(logging.Formatter):
 
     """
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
+        """
+        format lines of the message
+        """
         record.message = record.getMessage()
         if self.usesTime():
             record.asctime = self.formatTime(record, self.datefmt)
 
-        indent_level = getattr(record, 'indent_level', _indent_level)
-        cur_indent = _indent_width * indent_level
-        d = record.__dict__
-        parts = []
+        indent_level: int = getattr(record, 'indent_level', _indent_level)
+        cur_indent: int = _indent_width * indent_level
+        d: Dict[str, Any] = record.__dict__
+        parts: List[str] = []
         for line in record.message.split('\n'):
             line = ' ' * cur_indent + line
             d.update({'message': line.strip('\r')})
-            parts.append(self._fmt % d)
+            if self._fmt:
+                parts.append(self._fmt % d)
 
         return '\n'.join(parts)
 
@@ -294,23 +351,29 @@ class ColorFormatter(LineFormatter):
 
     """
 
-    def __init__(self, fmt=None, datefmt=None):
+    def __init__(self, fmt: Optional[str] = None, datefmt: Optional[str] = None):
         super(ColorFormatter, self).__init__(fmt, datefmt)
-        template_text = self._fmt.replace('%(message)s', RESET_COLOR + '%(message)s${color}')
+        template_text = self._fmt.replace('%(message)s', RESET_COLOR + '%(message)s${color}') if self._fmt else ''
         template_text = '${color}' + template_text + RESET_COLOR
         self.fmt_template = string.Template(template_text)
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
+        """
+        format line with color
+        """
         self._set_color(COLOR_MAP[record.levelno])
         return super(ColorFormatter, self).format(record)
 
-    def _set_color(self, color):
+    def _set_color(self, color: str) -> None:
+        """
+        set log color
+        """
         self._fmt = self.fmt_template.substitute(color=color)
 
 
 class BaseLogWriter(object):
 
-    def __init__(self, name, level=logging.DEBUG):
+    def __init__(self, name: str, level: int = logging.DEBUG):
         """
         File-like object class designed to be used for logging from streams
         Each complete line (terminated by new line character) gets logged
@@ -319,10 +382,10 @@ class BaseLogWriter(object):
         :param name: The name of the logger that will be used.
 
         """
-        self.logger = logging.getLogger(name)
-        self.buffer = ''
+        self.logger: logging.Logger = logging.getLogger(name)
+        self.buffer: str = ''
         if level == logging.DEBUG:
-            self.do_write = self.logger.debug
+            self.do_write: Callable = self.logger.debug
         elif level == logging.INFO:
             self.do_write = self.logger.info
         elif level == logging.WARNING:
@@ -332,24 +395,36 @@ class BaseLogWriter(object):
         else:
             raise Exception('Unknown logging level: {}'.format(level))
 
-    def flush(self):
+    def flush(self) -> 'BaseLogWriter':
+        """
+        flush base log writer
+        """
         # Defined to match the interface expected by pexpect.
         return self
 
-    def close(self):
+    def close(self) -> 'BaseLogWriter':
+        """
+        close base log writer
+        """
         if self.buffer:
             self.logger.debug(self.buffer)
             self.buffer = ''
         return self
 
-    def __del__(self):
+    def __del__(self) -> None:
         # Ensure we don't lose bufferd output
         self.close()
 
 
 class LogWriter(BaseLogWriter):
+    """
+    Log writer
+    """
 
-    def write(self, data):
+    def write(self, data: str) -> 'LogWriter':
+        """
+        write logs
+        """
         data = data.replace('\r\n', '\n').replace('\r', '\n')
         if '\n' in data:
             parts = data.split('\n')
@@ -363,8 +438,14 @@ class LogWriter(BaseLogWriter):
 
 
 class LineLogWriter(BaseLogWriter):
+    """
+    Line log writer
+    """
 
-    def write(self, data):
+    def write(self, data: str) -> None:
+        """
+        write logs as lines
+        """
         self.do_write(data)
 
 
@@ -374,14 +455,17 @@ class StreamLogger(threading.Thread):
 
     """
 
-    def __init__(self, name, stream, level=logging.DEBUG, klass=LogWriter):
+    def __init__(self, name: str, stream: IO, level: int = logging.DEBUG, klass: Type = LogWriter):
         super(StreamLogger, self).__init__()
         self.writer = klass(name, level)
         self.stream = stream
         self.daemon = True
 
-    def run(self):
-        line = self.stream.readline()
+    def run(self) -> None:
+        """
+        run the stream logger
+        """
+        line: str = self.stream.readline()
         while line:
             self.writer.write(line.rstrip('\n'))
             line = self.stream.readline()

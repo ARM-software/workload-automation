@@ -285,8 +285,8 @@ class InterruptStatsInstrument(Instrument):
         context.add_artifact('interrupts [before]', self.before_file, kind='data',
                              classifiers={'stage': 'before'})
         # If workload execution failed, the after_file may not have been created.
-        if os.path.isfile(self.after_file):
-            diff_interrupt_files(self.before_file, self.after_file, _f(self.diff_file))
+        if os.path.isfile(self.after_file or ''):
+            diff_interrupt_files(self.before_file or '', self.after_file or '', _f(self.diff_file or ''))
             context.add_artifact('interrupts [after]', self.after_file, kind='data',
                                  classifiers={'stage': 'after'})
             context.add_artifact('interrupts [diff]', self.diff_file, kind='data',

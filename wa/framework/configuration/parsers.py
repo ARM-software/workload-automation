@@ -24,28 +24,42 @@ from wa.framework.configuration.core import JobSpec
 from wa.framework.exception import ConfigError
 from wa.utils import log
 from wa.utils.serializer import json, read_pod, SerializerSyntaxError
-from wa.utils.types import toggle_set, counter
+from wa.utils.types import toggle_set, counter, obj_dict
 from wa.utils.misc import merge_config_values, isiterable
+from wa.framework.configuration.tree import JobSpecSource
+from typing import (TYPE_CHECKING, Dict, List, Any, cast, Union,
+                    Tuple, Set, Optional)
+if TYPE_CHECKING:
+    from wa.framework.configuration.execution import ConfigManager, JobGenerator
+    from wa.framework.configuration.core import ConfigurationPoint
 
-
-logger = logging.getLogger('config')
+logger: logging.Logger = logging.getLogger('config')
 
 
 class ConfigParser(object):
-
-    def load_from_path(self, state, filepath):
+    """
+    Config file parser
+    """
+    def load_from_path(self, state: 'ConfigManager', filepath: str) -> List[str]:
+        """
+        Load config file from the specified path
+        """
         raw, includes = _load_file(filepath, "Config")
         self.load(state, raw, filepath)
         return includes
 
-    def load(self, state, raw, source, wrap_exceptions=True):  # pylint: disable=too-many-branches
+    def load(self, state: 'ConfigManager', raw: Dict,
+             source: str, wrap_exceptions: bool = True) -> None:  # pylint: disable=too-many-branches
+        """
+        load configuration from source file
+        """
         logger.debug('Parsing config from "{}"'.format(source))
         log.indent()
         try:
-            state.plugin_cache.add_source(source)
+            state.plugin_cache.add_source(cast(JobSpecSource, source))
             if 'run_name' in raw:
-                msg = '"run_name" can only be specified in the config '\
-                      'section of an agenda'
+                msg: str = '"run_name" can only be specified in the config '\
+                    'section of an agenda'
                 raise ConfigError(msg)
 
             if 'id' in raw:
@@ -78,7 +92,7 @@ class ConfigParser(object):
                 # Assume that all leftover config is for a plug-in or a global
                 # alias it is up to PluginCache to assert this assumption
                 logger.debug('Caching "{}" with "{}"'.format(identifier(name), values))
-                state.plugin_cache.add_configs(identifier(name), values, source)
+                state.plugin_cache.add_configs(identifier(name), values, cast(JobSpecSource, source))
 
         except ConfigError as e:
             if wrap_exceptions:
@@ -90,13 +104,18 @@ class ConfigParser(object):
 
 
 class AgendaParser(object):
-
-    def load_from_path(self, state, filepath):
+    """
+    Agenda Parser
+    """
+    def load_from_path(self, state: 'ConfigManager', filepath: str) -> List[str]:
         raw, includes = _load_file(filepath, 'Agenda')
         self.load(state, raw, filepath)
         return includes
 
-    def load(self, state, raw, source):
+    def load(self, state: 'ConfigManager', raw: Dict[str, List[Dict]], source: str) -> None:
+        """
+        load agenda from source
+        """
         logger.debug('Parsing agenda from "{}"'.format(source))
         log.indent()
         try:
@@ -104,11 +123,11 @@ class AgendaParser(object):
                 raise ConfigError('Invalid agenda, top level entry must be a dict')
 
             self._populate_and_validate_config(state, raw, source)
-            sections = self._pop_sections(raw)
-            global_workloads = self._pop_workloads(raw)
+            sections: List[Dict] = self._pop_sections(raw)
+            global_workloads: List = self._pop_workloads(raw)
             if not global_workloads:
-                msg = 'No jobs avaliable. Please ensure you have specified at '\
-                      'least one workload to run.'
+                msg: str = 'No jobs avaliable. Please ensure you have specified at '\
+                    'least one workload to run.'
                 raise ConfigError(msg)
 
             if raw:
@@ -126,14 +145,19 @@ class AgendaParser(object):
         finally:
             log.dedent()
 
-    def _populate_and_validate_config(self, state, raw, source):
+    def _populate_and_validate_config(self, state: 'ConfigManager',
+                                      raw: Dict[str, Any], source: str) -> None:
+        """
+        populate the configuration and validate it
+        config and global are dicts
+        """
         for name in ['config', 'global']:
-            entry = raw.pop(name, None)
+            entry: Optional[Dict] = raw.pop(name, None)
             if entry is None:
                 continue
 
             if not isinstance(entry, dict):
-                msg = 'Invalid entry "{}" - must be a dict'
+                msg: str = 'Invalid entry "{}" - must be a dict'
                 raise ConfigError(msg.format(name))
 
             if 'run_name' in entry:
@@ -143,8 +167,12 @@ class AgendaParser(object):
 
             state.load_config(entry, '{}/{}'.format(source, name))
 
-    def _pop_sections(self, raw):
-        sections = raw.pop("sections", [])
+    def _pop_sections(self, raw: Dict[str, Any]) -> List[Dict]:
+        """
+        get sections from raw data
+        sections is a List of dicts
+        """
+        sections: List[Dict] = raw.pop("sections", [])
         if not isinstance(sections, list):
             raise ConfigError('Invalid entry "sections" - must be a list')
         for section in sections:
@@ -152,15 +180,22 @@ class AgendaParser(object):
                 raise ConfigError('Invalid section "{}" - must be a dict'.format(section))
         return sections
 
-    def _pop_workloads(self, raw):
-        workloads = raw.pop("workloads", [])
+    def _pop_workloads(self, raw: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        get workloads from raw data
+        """
+        workloads: List[Dict[str, Any]] = raw.pop("workloads", [])
         if not isinstance(workloads, list):
             raise ConfigError('Invalid entry "workloads" - must be a list')
         return workloads
 
-    def _collect_ids(self, sections, global_workloads):
-        seen_section_ids = set()
-        seen_workload_ids = set()
+    def _collect_ids(self, sections: List[Dict[str, Any]],
+                     global_workloads: List[Dict[str, Any]]) -> Tuple[Set[str], Set[str]]:
+        """
+        collect section and workload ids and return them as a tuple of sets
+        """
+        seen_section_ids: Set[str] = set()
+        seen_workload_ids: Set[str] = set()
 
         for workload in global_workloads:
             workload = _get_workload_entry(workload)
@@ -175,15 +210,23 @@ class AgendaParser(object):
 
         return seen_section_ids, seen_workload_ids
 
-    def _process_global_workloads(self, state, global_workloads, seen_wkl_ids):
+    def _process_global_workloads(self, state: 'ConfigManager', global_workloads: List[Dict[str, Any]],
+                                  seen_wkl_ids: Set[str]) -> None:
+        """
+        process global workload entries
+        """
         for workload_entry in global_workloads:
             workload = _process_workload_entry(workload_entry, seen_wkl_ids,
                                                state.jobs_config)
-            state.jobs_config.add_workload(workload)
+            state.jobs_config.add_workload(cast(obj_dict, workload))
 
-    def _process_sections(self, state, sections, seen_sect_ids, seen_wkl_ids):
+    def _process_sections(self, state: 'ConfigManager', sections: List[Dict[str, Any]],
+                          seen_sect_ids: Set[str], seen_wkl_ids: Set[str]) -> None:
+        """
+        process sections in the configuration
+        """
         for section in sections:
-            workloads = []
+            workloads: List[Dict[str, Any]] = []
             for workload_entry in section.pop("workloads", []):
                 workload = _process_workload_entry(workload_entry, seen_wkl_ids,
                                                    state.jobs_config)
@@ -191,22 +234,22 @@ class AgendaParser(object):
 
             if 'params' in section:
                 if 'runtime_params' in section:
-                    msg = 'both "params" and "runtime_params" specified in a '\
-                          'section: "{}"'
+                    msg: str = 'both "params" and "runtime_params" specified in a '\
+                        'section: "{}"'
                     raise ConfigError(msg.format(json.dumps(section, indent=None)))
                 section['runtime_params'] = section.pop('params')
 
-            group = section.pop('group', None)
+            group: str = section.pop('group', None)
             section = _construct_valid_entry(section, seen_sect_ids,
                                              "s", state.jobs_config)
-            state.jobs_config.add_section(section, workloads, group)
+            state.jobs_config.add_section(cast(obj_dict, section), cast(List[obj_dict], workloads), group)
 
 
 ########################
 ### Helper functions ###
 ########################
 
-def pop_aliased_param(cfg_point, d, default=None):
+def pop_aliased_param(cfg_point: 'ConfigurationPoint', d: Dict[str, str], default: Any = None) -> Any:
     """
     Given a ConfigurationPoint and a dict, this function will search the dict for
     the ConfigurationPoint's name/aliases. If more than one is found it will raise
@@ -214,8 +257,8 @@ def pop_aliased_param(cfg_point, d, default=None):
     for the ConfigurationPoint. If the name or aliases are present in the dict it will
     return the "default" parameter of this function.
     """
-    aliases = [cfg_point.name] + cfg_point.aliases
-    alias_map = [a for a in aliases if a in d]
+    aliases: List[str] = [cfg_point.name] + cfg_point.aliases
+    alias_map: List[str] = [a for a in aliases if a in d]
     if len(alias_map) > 1:
         raise ConfigError('Duplicate entry: {}'.format(aliases))
     elif alias_map:
@@ -224,23 +267,32 @@ def pop_aliased_param(cfg_point, d, default=None):
         return default
 
 
-def _load_file(filepath, error_name):
+def _load_file(filepath: str, error_name: str) -> Tuple[Dict[str, Any], List[str]]:
+    """
+    read raw data and includes information from file
+    """
     if not os.path.isfile(filepath):
         raise ValueError("{} does not exist".format(filepath))
     try:
-        raw = read_pod(filepath)
-        includes = _process_includes(raw, filepath, error_name)
+        raw: Dict[str, Any] = read_pod(filepath)
+        includes: List[str] = _process_includes(raw, filepath, error_name)
     except SerializerSyntaxError as e:
         raise ConfigError('Error parsing {} {}: {}'.format(error_name, filepath, e))
     if not isinstance(raw, dict):
-        message = '{} does not contain a valid {} structure; top level must be a dict.'
+        message: str = '{} does not contain a valid {} structure; top level must be a dict.'
         raise ConfigError(message.format(filepath, error_name))
     return raw, includes
 
 
-def _config_values_from_includes(filepath, include_path, error_name):
-    source_dir = os.path.dirname(filepath)
-    included_files = []
+def _config_values_from_includes(filepath: str,
+                                 include_path: Union[str, List[str]],
+                                 error_name: str) -> Tuple[Dict[str, Any], List[str]]:
+    """
+    get the configuration values from the included files in the current configuration.
+    it again calls _load_file -> _process_includes in all the subsequent includes.
+    """
+    source_dir: str = os.path.dirname(filepath)
+    included_files: List[str] = []
 
     if isinstance(include_path, str):
         include_path = os.path.expanduser(os.path.join(source_dir, include_path))
@@ -268,15 +320,39 @@ def _config_values_from_includes(filepath, include_path, error_name):
     return replace_value, included_files
 
 
-def _process_includes(raw, filepath, error_name):
+def _process_includes(raw: Optional[Dict], filepath: str, error_name: str) -> List[str]:
+    """
+    It is possible to include other files in your config files and agendas. This is
+    done by specifying ``include#`` (note the trailing hash) as a key in one of the
+    mappings, with the value being the path to the file to be included. The path
+    must be either absolute, or relative to the location of the file it is being
+    included from (*not* to the current working directory). The path may also
+    include ``~`` to indicate current user's home directory.
+
+    The include is performed by removing the ``include#`` loading the contents of
+    the specified into the mapping that contained it. In cases where the mapping
+    already contains the key to be loaded, values will be merged using the usual
+    merge method (for overwrites, values in the mapping take precedence over those
+    from the included files).
+    Some additional details about the implementation and its limitations:
+
+    - The ``include#`` *must* be a key in a mapping, and the contents of the
+    included file *must* be a mapping as well; it is not possible to include a
+    list
+    - Being a key in a mapping, there can only be one ``include#`` entry per block.
+    - The included file *must* have a ``.yaml`` extension.
+    - Nested inclusions *are* allowed. I.e. included files may themselves include
+    files; in such cases the included paths must be relative to *that* file, and
+    not the "main" file.
+    """
     if not raw:
         return []
 
-    included_files = []
-    replace_value = None
+    included_files: List[str] = []
+    replace_value: Optional[Dict[str, Any]] = None
 
     if hasattr(raw, 'items'):
-        for key, value in raw.items():
+        for key, value in cast(Dict, raw).items():
             if key == 'include#':
                 replace_value, includes = _config_values_from_includes(filepath, value, error_name)
                 included_files.extend(includes)
@@ -297,7 +373,7 @@ def _process_includes(raw, filepath, error_name):
     return included_files
 
 
-def merge_augmentations(raw):
+def merge_augmentations(raw: Dict[str, Any]) -> None:
     """
     Since, from configuration perspective, output processors and instruments are
     handled identically, the configuration entries are now interchangeable. E.g. it is
@@ -309,10 +385,10 @@ def merge_augmentations(raw):
     that there are no conflicts between the entries.
 
     """
-    cfg_point = JobSpec.configuration['augmentations']
-    names = [cfg_point.name, ] + cfg_point.aliases
+    cfg_point: 'ConfigurationPoint' = JobSpec.configuration['augmentations']
+    names: List[str] = [cfg_point.name, ] + cfg_point.aliases
 
-    entries = []
+    entries: List[toggle_set] = []
     for n in names:
         if n not in raw:
             continue
@@ -320,15 +396,15 @@ def merge_augmentations(raw):
         try:
             entries.append(toggle_set(value))
         except TypeError as exc:
-            msg = 'Invalid value "{}" for "{}": {}'
+            msg: str = 'Invalid value "{}" for "{}": {}'
             raise ConfigError(msg.format(value, n, exc))
 
     # Make sure none of the specified aliases conflict with each other
-    to_check = list(entries)
+    to_check: List[toggle_set] = list(entries)
     while len(to_check) > 1:
-        check_entry = to_check.pop()
+        check_entry: toggle_set = to_check.pop()
         for e in to_check:
-            conflicts = check_entry.conflicts_with(e)
+            conflicts: List[str] = check_entry.conflicts_with(e)
             if conflicts:
                 msg = '"{}" and "{}" have conflicting entries: {}'
                 conflict_string = ', '.join('"{}"'.format(c.strip("~"))
@@ -336,10 +412,10 @@ def merge_augmentations(raw):
                 raise ConfigError(msg.format(check_entry, e, conflict_string))
 
     if entries:
-        raw['augmentations'] = reduce(lambda x, y: x.union(y), entries)
+        raw['augmentations'] = reduce(lambda x, y: cast(toggle_set, x.union(y)), entries)
 
 
-def _pop_aliased(d, names, entry_id):
+def _pop_aliased(d: Dict[str, str], names: List[str], entry_id: str) -> Optional[str]:
     name_count = sum(1 for n in names if n in d)
     if name_count > 1:
         names_list = ', '.join(names)
@@ -351,13 +427,16 @@ def _pop_aliased(d, names, entry_id):
     return None
 
 
-def _construct_valid_entry(raw, seen_ids, prefix, jobs_config):
-    workload_entry = {}
-
+def _construct_valid_entry(raw: Dict[str, Any], seen_ids: Set[str], prefix: str,
+                           jobs_config: 'JobGenerator') -> Dict[str, Any]:
+    workload_entry: Dict[str, Any] = {}
+    """
+    construct a valid workload entry from raw data read from file
+    """
     # Generate an automatic ID if the entry doesn't already have one
     if 'id' not in raw:
         while True:
-            new_id = '{}{}'.format(prefix, counter(name=prefix))
+            new_id: str = '{}{}'.format(prefix, counter(name=prefix))
             if new_id not in seen_ids:
                 break
         workload_entry['id'] = new_id
@@ -370,15 +449,15 @@ def _construct_valid_entry(raw, seen_ids, prefix, jobs_config):
 
     # Validate all workload_entry
     for name, cfg_point in JobSpec.configuration.items():
-        value = pop_aliased_param(cfg_point, raw)
-        if value is not None:
+        value: Any = pop_aliased_param(cfg_point, raw)
+        if value is not None and cfg_point.kind:
             value = cfg_point.kind(value)
             cfg_point.validate_value(name, value)
             workload_entry[name] = value
 
     if "augmentations" in workload_entry:
         if '~~' in workload_entry['augmentations']:
-            msg = '"~~" can only be specfied in top-level config, and not for individual workloads/sections'
+            msg: str = '"~~" can only be specfied in top-level config, and not for individual workloads/sections'
             raise ConfigError(msg)
         jobs_config.update_augmentations(workload_entry['augmentations'])
 
@@ -390,7 +469,7 @@ def _construct_valid_entry(raw, seen_ids, prefix, jobs_config):
     return workload_entry
 
 
-def _collect_valid_id(entry_id, seen_ids, entry_type):
+def _collect_valid_id(entry_id: Optional[Union[int, str]], seen_ids: Set[str], entry_type) -> None:
     if entry_id is None:
         return
     entry_id = str(entry_id)
@@ -398,7 +477,7 @@ def _collect_valid_id(entry_id, seen_ids, entry_type):
         raise ConfigError('Duplicate {} ID "{}".'.format(entry_type, entry_id))
     # "-" is reserved for joining section and workload IDs
     if "-" in entry_id:
-        msg = 'Invalid {} ID "{}"; IDs cannot contain a "-"'
+        msg: str = 'Invalid {} ID "{}"; IDs cannot contain a "-"'
         raise ConfigError(msg.format(entry_type, entry_id))
     if entry_id == "global":
         msg = 'Invalid {} ID "global"; is a reserved ID'
@@ -406,7 +485,7 @@ def _collect_valid_id(entry_id, seen_ids, entry_type):
     seen_ids.add(entry_id)
 
 
-def _get_workload_entry(workload):
+def _get_workload_entry(workload: Union[Dict[str, Any], str]) -> Dict[str, Any]:
     if isinstance(workload, str):
         workload = {'name': workload}
     elif not isinstance(workload, dict):
@@ -414,7 +493,8 @@ def _get_workload_entry(workload):
     return workload
 
 
-def _process_workload_entry(workload, seen_workload_ids, jobs_config):
+def _process_workload_entry(workload: Dict[str, Any], seen_workload_ids: Set[str],
+                            jobs_config: 'JobGenerator') -> Dict[str, Any]:
     workload = _get_workload_entry(workload)
     workload = _construct_valid_entry(workload, seen_workload_ids,
                                       "wk", jobs_config)

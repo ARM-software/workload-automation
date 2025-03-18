@@ -23,12 +23,18 @@ import re
 import inspect
 from itertools import cycle
 
-USER_HOME = os.path.expanduser('~')
+from typing import (Type, Any, Match, Optional, List, Iterable,
+                    TYPE_CHECKING, Union)
+if TYPE_CHECKING:
+    from wa.framework.configuration.core import ConfigurationPoint
+    from wa.framework.plugin import Alias, Plugin, AliasCollection
 
-BULLET_CHARS = '-*'
+USER_HOME: str = os.path.expanduser('~')
+
+BULLET_CHARS: str = '-*'
 
 
-def get_summary(aclass):
+def get_summary(aclass: Type):
     """
     Returns the summary description for an extension class. The summary is the
     first paragraph (separated by blank line) of the description taken either from
@@ -39,7 +45,7 @@ def get_summary(aclass):
     return get_description(aclass).split('\n\n')[0]
 
 
-def get_description(aclass):
+def get_description(aclass: Type) -> str:
     """
     Return the description of the specified extension class. The description is taken
     either from ``description`` attribute of the class or its docstring.
@@ -48,34 +54,34 @@ def get_description(aclass):
     if hasattr(aclass, 'description') and aclass.description:
         return inspect.cleandoc(aclass.description)
     if aclass.__doc__:
-        return inspect.getdoc(aclass)
+        return inspect.getdoc(aclass) or ''
     else:
         return 'no documentation found for {}'.format(aclass.__name__)
 
 
-def get_type_name(obj):
+def get_type_name(obj: Any) -> str:
     """Returns the name of the type object or function specified. In case of a lambda,
     the definiition is returned with the parameter replaced by "value"."""
-    match = re.search(r"<(type|class|function) '?(.*?)'?>", str(obj))
+    match: Optional[Match[str]] = re.search(r"<(type|class|function) '?(.*?)'?>", str(obj))
     if isinstance(obj, tuple):
-        name = obj[1]
-    elif match.group(1) == 'function':
-        text = str(obj)
+        name: str = obj[1]
+    elif match is not None and match.group(1) == 'function':
+        text: str = str(obj)
         name = text.split()[1]
         if name.endswith('<lambda>'):
-            source = inspect.getsource(obj).strip().replace('\n', ' ')
+            source: str = inspect.getsource(obj).strip().replace('\n', ' ')
             match = re.search(r'lambda\s+(\w+)\s*:\s*(.*?)\s*[\n,]', source)
             if not match:
                 raise ValueError('could not get name for {}'.format(obj))
             name = match.group(2).replace(match.group(1), 'value')
     else:
-        name = match.group(2)
+        name = match.group(2) if match else ''
         if '.' in name:
             name = name.split('.')[-1]
     return name
 
 
-def count_leading_spaces(text):
+def count_leading_spaces(text: str) -> int:
     """
     Counts the number of leading space characters in a string.
 
@@ -92,7 +98,7 @@ def count_leading_spaces(text):
     return nspaces
 
 
-def format_column(text, width):
+def format_column(text: str, width: int) -> str:
     """
     Formats text into a column of specified width. If a line is too long,
     it will be broken on a word boundary. The new lines will have the same
@@ -101,16 +107,16 @@ def format_column(text, width):
     Note: this will not attempt to join up lines that are too short.
 
     """
-    formatted = []
+    formatted: List[str] = []
     for line in text.split('\n'):
-        line_len = len(line)
+        line_len: int = len(line)
         if line_len <= width:
             formatted.append(line)
         else:
-            words = line.split(' ')
-            new_line = words.pop(0)
+            words: List[str] = line.split(' ')
+            new_line: str = words.pop(0)
             while words:
-                next_word = words.pop(0)
+                next_word: str = words.pop(0)
                 if (len(new_line) + len(next_word) + 1) < width:
                     new_line += ' ' + next_word
                 else:
@@ -120,7 +126,8 @@ def format_column(text, width):
     return '\n'.join(formatted)
 
 
-def format_bullets(text, width, char='-', shift=3, outchar=None):
+def format_bullets(text: str, width: int, char: str = '-',
+                   shift: int = 3, outchar: Optional[str] = None) -> str:
     """
     Formats text into bulleted list. Assumes each line of input that starts with
     ``char`` (possibly preceeded with whitespace) is a new bullet point. Note: leading
@@ -136,13 +143,13 @@ def format_bullets(text, width, char='-', shift=3, outchar=None):
               left as ``None``, ``char`` will be used.
 
     """
-    bullet_lines = []
-    output = ''
+    bullet_lines: List[str] = []
+    output: str = ''
 
-    def __process_bullet(bullet_lines):
+    def __process_bullet(bullet_lines: List[str]) -> str:
         if bullet_lines:
             bullet = format_paragraph(indent(' '.join(bullet_lines), shift + 2), width)
-            bullet = bullet[:3] + outchar + bullet[4:]
+            bullet = bullet[:3] + (outchar or '') + bullet[4:]
             del bullet_lines[:]
             return bullet + '\n'
         else:
@@ -160,26 +167,28 @@ def format_bullets(text, width, char='-', shift=3, outchar=None):
     return output
 
 
-def format_simple_table(rows, headers=None, align='>', show_borders=True, borderchar='='):  # pylint: disable=R0914
+def format_simple_table(rows: Iterable, headers: Optional[List[str]] = None,
+                        align: str = '>', show_borders: bool = True,
+                        borderchar: str = '=') -> str:  # pylint: disable=R0914
     """Formats a simple table."""
     if not rows:
         return ''
     rows = [list(map(str, r)) for r in rows]
-    num_cols = len(rows[0])
+    num_cols: int = len(rows[0])
 
     # cycle specified alignments until we have num_cols of them. This is
     # consitent with how such cases are handled in R, pandas, etc.
     it = cycle(align)
-    align = [next(it) for _ in range(num_cols)]
+    align_: List[str] = [next(it) for _ in range(num_cols)]
 
-    cols = list(zip(*rows))
-    col_widths = [max(list(map(len, c))) for c in cols]
+    cols: List = list(zip(*rows))
+    col_widths: List[int] = [max(list(map(len, c))) for c in cols]
     if headers:
         col_widths = [max(len(h), cw) for h, cw in zip(headers, col_widths)]
-    row_format = ' '.join(['{:%s%s}' % (align[i], w) for i, w in enumerate(col_widths)])
+    row_format: str = ' '.join(['{:%s%s}' % (align_[i], w) for i, w in enumerate(col_widths)])
     row_format += '\n'
 
-    border = row_format.format(*[borderchar * cw for cw in col_widths])
+    border: str = row_format.format(*[borderchar * cw for cw in col_widths])
 
     result = border if show_borders else ''
     if headers:
@@ -192,7 +201,7 @@ def format_simple_table(rows, headers=None, align='>', show_borders=True, border
     return result
 
 
-def format_paragraph(text, width):
+def format_paragraph(text: str, width: int) -> str:
     """
     Format the specified text into a column of specified with. The text is
     assumed to be a single paragraph and existing line breaks will not be preserved.
@@ -203,7 +212,7 @@ def format_paragraph(text, width):
     return format_column(text, width)
 
 
-def format_body(text, width):
+def format_body(text: str, width: int) -> str:
     """
     Format the specified text into a column  of specified width. The text is
     assumed to be a "body" of one or more paragraphs separated by one or more
@@ -212,8 +221,8 @@ def format_body(text, width):
 
     """
     text = re.sub('\n\\s*\n', '\n\n', text.strip('\n'))  # get rid of all-whitespace lines
-    paragraphs = re.split('\n\n+', text)
-    formatted_paragraphs = []
+    paragraphs: List[str] = re.split('\n\n+', text)
+    formatted_paragraphs: List[str] = []
     for p in paragraphs:
         if p.strip() and p.strip()[0] in BULLET_CHARS:
             formatted_paragraphs.append(format_bullets(p, width))
@@ -222,7 +231,7 @@ def format_body(text, width):
     return '\n\n'.join(formatted_paragraphs)
 
 
-def strip_inlined_text(text):
+def strip_inlined_text(text: str) -> str:
     """
     This function processes multiline inlined text (e.g. form docstrings)
     to strip away leading spaces and leading and trailing new lines.
@@ -233,12 +242,12 @@ def strip_inlined_text(text):
 
     # first line is special as it may not have the indet that follows the
     # others, e.g. if it starts on the same as the multiline quote (""").
-    nspaces = count_leading_spaces(lines[0])
+    nspaces: int = count_leading_spaces(lines[0])
 
     if len([ln for ln in lines if ln]) > 1:
-        to_strip = min(count_leading_spaces(ln) for ln in lines[1:] if ln)
+        to_strip: int = min(count_leading_spaces(ln) for ln in lines[1:] if ln)
         if nspaces >= to_strip:
-            stripped = [lines[0][to_strip:]]
+            stripped: List[str] = [lines[0][to_strip:]]
         else:
             stripped = [lines[0][nspaces:]]
         stripped += [ln[to_strip:] for ln in lines[1:]]
@@ -247,9 +256,9 @@ def strip_inlined_text(text):
     return '\n'.join(stripped).strip('\n')
 
 
-def indent(text, spaces=4):
+def indent(text: str, spaces: int = 4) -> str:
     """Indent the lines i the specified text by ``spaces`` spaces."""
-    indented = []
+    indented: List[str] = []
     for line in text.split('\n'):
         if line:
             indented.append(' ' * spaces + line)
@@ -258,7 +267,7 @@ def indent(text, spaces=4):
     return '\n'.join(indented)
 
 
-def format_literal(lit):
+def format_literal(lit: str) -> str:
     if isinstance(lit, str):
         return '``\'{}\'``'.format(lit)
     elif hasattr(lit, 'pattern'):  # regex
@@ -270,12 +279,15 @@ def format_literal(lit):
         return '``{}``'.format(lit)
 
 
-def get_params_rst(parameters):
-    text = ''
+def get_params_rst(parameters: List['ConfigurationPoint']) -> str:
+    """
+    get parameters restructured text form
+    """
+    text: str = ''
     for param in parameters:
         text += '{}: {}\n'.format(param.name, param.mandatory and '(mandatory)' or ' ')
         text += indent("type: ``'{}'``\n\n".format(get_type_name(param.kind)))
-        desc = strip_inlined_text(param.description or '')
+        desc: str = strip_inlined_text(param.description or '')
         text += indent('{}\n'.format(desc))
         if param.aliases:
             text += indent('\naliases: {}\n'.format(', '.join(map(format_literal, param.aliases))))
@@ -294,35 +306,41 @@ def get_params_rst(parameters):
     return text
 
 
-def get_aliases_rst(aliases):
-    text = ''
+def get_aliases_rst(aliases: Union[List['Alias'], 'AliasCollection']) -> str:
+    """
+    get aliases restructured text form
+    """
+    text: str = ''
     for alias in aliases:
-        param_str = ', '.join(['{}={}'.format(n, format_literal(v))
-                               for n, v in alias.params.items()])
+        param_str: str = ', '.join(['{}={}'.format(n, format_literal(v))
+                                   for n, v in alias.params.items()])
         text += '{}\n{}\n\n'.format(alias.name, indent(param_str))
     return text
 
 
-def underline(text, symbol='='):
+def underline(text: str, symbol: str = '=') -> str:
+    """
+    underline the text
+    """
     return '{}\n{}\n\n'.format(text, symbol * len(text))
 
 
-def line_break(length=10, symbol='-'):
+def line_break(length: int = 10, symbol: str = '-') -> str:
     """Insert a line break"""
     return '\n{}\n\n'.format(symbol * length)
 
 
-def get_rst_from_plugin(plugin):
-    text = underline(plugin.name, '-')
+def get_rst_from_plugin(plugin: Type['Plugin']):
+    text: str = underline(plugin.name or '', '-')
     if hasattr(plugin, 'description'):
-        desc = strip_inlined_text(plugin.description or '')
+        desc: str = strip_inlined_text(plugin.description or '')  # type: ignore
     elif plugin.__doc__:
         desc = strip_inlined_text(plugin.__doc__)
     else:
         desc = ''
     text += desc + '\n\n'
 
-    aliases_rst = get_aliases_rst(plugin.aliases)
+    aliases_rst: str = get_aliases_rst(plugin.aliases)
     if aliases_rst:
         text += underline('aliases', '~') + aliases_rst
 

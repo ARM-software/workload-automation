@@ -35,6 +35,7 @@ import subprocess
 import sys
 import traceback
 import uuid
+import importlib.util
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from functools import reduce  # pylint: disable=redefined-builtin
@@ -50,7 +51,7 @@ try:
 except ImportError:
     from distutils.spawn import find_executable  # pylint: disable=no-name-in-module, import-error
 
-from dateutil import tz
+from dateutil import tz  # type:ignore
 
 # pylint: disable=wrong-import-order
 from devlib.exception import TargetError
@@ -60,15 +61,19 @@ from devlib.utils.misc import (ABI_MAP, check_output, walk_modules,
                                isiterable, getch, as_relative, ranges_to_list, memoized,
                                list_to_ranges, list_to_mask, mask_to_list, which,
                                to_identifier, safe_extract, LoadSyntaxError)
+from devlib.target import Target
+from devlib.module.cpufreq import CpufreqModule
+from typing import (List, Union, Optional, cast, Dict, Any, IO, Type,
+                    Tuple, Pattern, Match, OrderedDict, Generator)
+from types import TracebackType, ModuleType
+check_output_logger: logging.Logger = logging.getLogger('check_output')
 
-check_output_logger = logging.getLogger('check_output')
-
-file_lock_logger = logging.getLogger('file_lock')
-at_write_logger = logging.getLogger('at_write')
+file_lock_logger: logging.Logger = logging.getLogger('file_lock')
+at_write_logger: logging.Logger = logging.getLogger('at_write')
 
 
 # Defined here rather than in wa.exceptions due to module load dependencies
-def diff_tokens(before_token, after_token):
+def diff_tokens(before_token: str, after_token: str) -> str:
     """
     Creates a diff of two tokens.
 
@@ -96,7 +101,7 @@ def diff_tokens(before_token, after_token):
         return "[%s -> %s]" % (before_token, after_token)
 
 
-def prepare_table_rows(rows):
+def prepare_table_rows(rows: List[List[str]]):
     """Given a list of lists, make sure they are prepared to be formatted into a table
     by making sure each row has the same number of columns and stringifying all values."""
     rows = [list(map(str, r)) for r in rows]
@@ -108,23 +113,23 @@ def prepare_table_rows(rows):
     return rows
 
 
-def write_table(rows, wfh, align='>', headers=None):  # pylint: disable=R0914
+def write_table(rows: List[List[str]], wfh: IO[str], align: str = '>', headers: Optional[List[str]] = None):  # pylint: disable=R0914
     """Write a column-aligned table to the specified file object."""
     if not rows:
         return
     rows = prepare_table_rows(rows)
-    num_cols = len(rows[0])
+    num_cols: int = len(rows[0])
 
     # cycle specified alignments until we have max_cols of them. This is
     # consitent with how such cases are handled in R, pandas, etc.
     it = cycle(align)
-    align = [next(it) for _ in range(num_cols)]
+    align_ = [next(it) for _ in range(num_cols)]
 
-    cols = list(zip(*rows))
-    col_widths = [max(list(map(len, c))) for c in cols]
+    cols: List = list(zip(*rows))
+    col_widths: List[int] = [max(list(map(len, c))) for c in cols]
     if headers:
         col_widths = [max([c, len(h)]) for c, h in zip(col_widths, headers)]
-    row_format = ' '.join(['{:%s%s}' % (align[i], w) for i, w in enumerate(col_widths)])
+    row_format: str = ' '.join(['{:%s%s}' % (align_[i], w) for i, w in enumerate(col_widths)])
     row_format += '\n'
 
     if headers:
@@ -136,12 +141,13 @@ def write_table(rows, wfh, align='>', headers=None):  # pylint: disable=R0914
         wfh.write(row_format.format(*row))
 
 
-def get_null():
+def get_null() -> str:
     """Returns the correct null sink based on the OS."""
     return 'NUL' if os.name == 'nt' else '/dev/null'
 
 
-def get_traceback(exc=None):
+def get_traceback(exc: Optional[Tuple[Optional[Type[BaseException]],
+                                      Optional[BaseException], Optional[TracebackType]]] = None) -> str:
     """
     Returns the string with the traceback for the specifiec exc
     object, or for the current exception exc is not specified.
@@ -151,14 +157,14 @@ def get_traceback(exc=None):
         exc = sys.exc_info()
     if not exc:
         return None
-    tb = exc[2]
+    tb: Optional[TracebackType] = exc[2]
     sio = StringIO()
     traceback.print_tb(tb, file=sio)
     del tb  # needs to be done explicitly see: http://docs.python.org/2/library/sys.html#sys.exc_info
     return sio.getvalue()
 
 
-def _check_remove_item(the_list, item):
+def _check_remove_item(the_list: List[str], item: str) -> bool:
     """Helper function for merge_lists that implements checking wether an items
     should be removed from the list and doing so if needed. Returns ``True`` if
     the item has been removed and ``False`` otherwise."""
@@ -172,9 +178,9 @@ def _check_remove_item(the_list, item):
     return True
 
 
-VALUE_REGEX = re.compile(r'(\d+(?:\.\d+)?)\s*(\w*)')
+VALUE_REGEX: Pattern[str] = re.compile(r'(\d+(?:\.\d+)?)\s*(\w*)')
 
-UNITS_MAP = {
+UNITS_MAP: Dict[str, str] = {
     's': 'seconds',
     'ms': 'milliseconds',
     'us': 'microseconds',
@@ -186,7 +192,8 @@ UNITS_MAP = {
 }
 
 
-def parse_value(value_string):
+def parse_value(value_string: str) -> Union[Tuple[Union[float, int], str],
+                                            Tuple[str, None]]:
     """parses a string representing a numerical value and returns
     a tuple (value, units), where value will be either int or float,
     and units will be a string representing the units or None."""
@@ -201,7 +208,7 @@ def parse_value(value_string):
         return (value_string, None)
 
 
-def get_meansd(values):
+def get_meansd(values: List[Union[int, float]]) -> Tuple[float, float]:
     """Returns mean and standard deviation of the specified values."""
     if not values:
         return float('nan'), float('nan')
@@ -210,12 +217,12 @@ def get_meansd(values):
     return mean, sd
 
 
-def geomean(values):
+def geomean(values: List[Union[int, float]]) -> float:
     """Returns the geometric mean of the values."""
     return reduce(mul, values) ** (1.0 / len(values))
 
 
-def capitalize(text):
+def capitalize(text: str) -> str:
     """Capitalises the specified text: first letter upper case,
     all subsequent letters lower case."""
     if not text:
@@ -223,31 +230,31 @@ def capitalize(text):
     return text[0].upper() + text[1:].lower()
 
 
-def utc_to_local(dt):
+def utc_to_local(dt: datetime) -> datetime:
     """Convert naive datetime to local time zone, assuming UTC."""
     return dt.replace(tzinfo=tz.tzutc()).astimezone(tz.tzlocal())
 
 
-def local_to_utc(dt):
+def local_to_utc(dt: datetime) -> datetime:
     """Convert naive datetime to UTC, assuming local time zone."""
     return dt.replace(tzinfo=tz.tzlocal()).astimezone(tz.tzutc())
 
 
-def load_class(classpath):
+def load_class(classpath: str) -> Type:
     """Loads the specified Python class. ``classpath`` must be a fully-qualified
     class name (i.e. namspaced under module/package)."""
     modname, clsname = classpath.rsplit('.', 1)
-    mod = importlib.import_module(modname)
-    cls = getattr(mod, clsname)
+    mod: ModuleType = importlib.import_module(modname)
+    cls: Type = getattr(mod, clsname)
     if isinstance(cls, type):
         return cls
     else:
         raise ValueError(f'The classpath "{classpath}" does not point at a class: {cls}')
 
 
-def get_pager():
+def get_pager() -> Optional[str]:
     """Returns the name of the system pager program."""
-    pager = os.getenv('PAGER')
+    pager: Optional[str] = os.getenv('PAGER')
     if pager is None:
         pager = find_executable('less')
     if pager is None:
@@ -255,27 +262,31 @@ def get_pager():
     return pager
 
 
-_bash_color_regex = re.compile('\x1b\[[0-9;]+m')
+_bash_color_regex: Pattern[str] = re.compile(r'\x1b\[[0-9;]+m')
 
 
-def strip_bash_colors(text):
+def strip_bash_colors(text: str) -> str:
+    """
+    strip bash colors
+    """
     return _bash_color_regex.sub('', text)
 
 
-def format_duration(seconds, sep=' ', order=['day', 'hour', 'minute', 'second']):  # pylint: disable=dangerous-default-value
+def format_duration(seconds: Union[int, timedelta], sep: str = ' ',
+                    order: List[str] = ['day', 'hour', 'minute', 'second']) -> str:  # pylint: disable=dangerous-default-value
     """
     Formats the specified number of seconds into human-readable duration.
 
     """
     if isinstance(seconds, timedelta):
-        td = seconds
+        td: timedelta = seconds
     else:
         td = timedelta(seconds=seconds or 0)
     dt = datetime(1, 1, 1) + td
-    result = []
+    result: List[str] = []
     for item in order:
         value = getattr(dt, item, None)
-        if item == 'day':
+        if item == 'day' and value is not None:
             value -= 1
         if not value:
             continue
@@ -284,7 +295,7 @@ def format_duration(seconds, sep=' ', order=['day', 'hour', 'minute', 'second'])
     return sep.join(result) if result else 'N/A'
 
 
-def get_article(word):
+def get_article(word: str) -> str:
     """
     Returns the appropriate indefinite article for the word (ish).
 
@@ -296,12 +307,12 @@ def get_article(word):
     return 'an' if word[0] in 'aoeiu' else 'a'
 
 
-def get_random_string(length):
+def get_random_string(length: int) -> str:
     """Returns a random ASCII string of the specified length)."""
     return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
 
 
-def import_path(filepath, module_name=None):
+def import_path(filepath: str, module_name: Optional[str] = None) -> ModuleType:
     """
     Programmatically import the given Python source file under the name
     ``module_name``. If ``module_name`` is not provided, a stable name based on
@@ -318,10 +329,12 @@ def import_path(filepath, module_name=None):
         return sys.modules[module_name]
     except KeyError:
         spec = importlib.util.spec_from_file_location(module_name, filepath)
-        module = importlib.util.module_from_spec(spec)
+        if spec:
+            module = importlib.util.module_from_spec(spec)
         try:
             sys.modules[module_name] = module
-            spec.loader.exec_module(module)
+            if spec and spec.loader:
+                spec.loader.exec_module(module)
         except BaseException:
             sys.modules.pop(module_name, None)
             raise
@@ -333,14 +346,14 @@ def import_path(filepath, module_name=None):
             return sys.modules[module_name]
 
 
-def load_struct_from_python(filepath):
+def load_struct_from_python(filepath: str) -> Dict[str, Any]:
     """Parses a config structure from a .py file. The structure should be composed
     of basic Python types (strings, ints, lists, dicts, etc.)."""
 
     try:
-        mod = import_path(filepath)
+        mod: ModuleType = import_path(filepath)
     except SyntaxError as e:
-        raise LoadSyntaxError(e.message, filepath, e.lineno)
+        raise LoadSyntaxError(e.msg, filepath, e.lineno)
     else:
         return {
             k: v
@@ -349,7 +362,7 @@ def load_struct_from_python(filepath):
         }
 
 
-def open_file(filepath):
+def open_file(filepath: str) -> int:
     """
     Open the specified file path with the associated launcher in an OS-agnostic way.
 
@@ -362,32 +375,32 @@ def open_file(filepath):
         return subprocess.call(['xdg-open', filepath])
 
 
-def sha256(path, chunk=2048):
+def sha256(path: str, chunk: int = 2048):
     """Calculates SHA256 hexdigest of the file at the specified path."""
     h = hashlib.sha256()
     with open(path, 'rb') as fh:
-        buf = fh.read(chunk)
+        buf: bytes = fh.read(chunk)
         while buf:
             h.update(buf)
             buf = fh.read(chunk)
     return h.hexdigest()
 
 
-def urljoin(*parts):
+def urljoin(*parts) -> str:
     return '/'.join(p.rstrip('/') for p in parts)
 
 
 # From: http://eli.thegreenplace.net/2011/10/19/perls-guess-if-file-is-text-or-binary-implemented-in-python/
-def istextfile(fileobj, blocksize=512):
+def istextfile(fileobj: IO, blocksize: int = 512) -> bool:
     """ Uses heuristics to guess whether the given file is text or binary,
         by reading a single block of bytes from the file.
         If more than 30% of the chars in the block are non-text, or there
         are NUL ('\x00') bytes in the block, assume this is a binary file.
     """
-    _text_characters = (b''.join(chr(i) for i in range(32, 127))
-                        + b'\n\r\t\f\b')
+    _text_characters: bytes = (b''.join(bytes(i) for i in range(32, 127))
+                               + b'\n\r\t\f\b')
 
-    block = fileobj.read(blocksize)
+    block: bytes = fileobj.read(blocksize)
     if b'\x00' in block:
         # Files with null bytes are binary
         return False
@@ -401,7 +414,10 @@ def istextfile(fileobj, blocksize=512):
     return float(len(nontext)) / len(block) <= 0.30
 
 
-def categorize(v):
+def categorize(v: Any) -> str:
+    """
+    categorize an object
+    """
     if hasattr(v, 'merge_with') and hasattr(v, 'merge_into'):
         return 'o'
     elif hasattr(v, 'items'):
@@ -415,7 +431,7 @@ def categorize(v):
 
 
 # pylint: disable=too-many-return-statements,too-many-branches
-def merge_config_values(base, other):
+def merge_config_values(base: Any, other: Any) -> Any:
     """
     This is used to merge two objects, typically when setting the value of a
     ``ConfigurationPoint``. First, both objects are categorized into
@@ -476,8 +492,8 @@ def merge_config_values(base, other):
     configuration point values.
 
     """
-    cat_base = categorize(base)
-    cat_other = categorize(other)
+    cat_base: str = categorize(base)
+    cat_other: str = categorize(other)
 
     if cat_base == 'n':
         return other
@@ -512,27 +528,42 @@ def merge_config_values(base, other):
             return other
 
 
-def merge_sequencies(s1, s2):
-    return type(s2)(unique(chain(s1, s2)))
+def merge_sequencies(s1: List, s2: List) -> List:
+    """
+    merge sequences
+    """
+    return type(s2)(unique(cast(List, chain(s1, s2))))
 
 
-def merge_maps(m1, m2):
+def merge_maps(m1: Dict, m2: Dict) -> Dict:
+    """
+    merge dicts
+    """
     return type(m2)(chain(iter(m1.items()), iter(m2.items())))
 
 
-def merge_dicts_simple(base, other):
-    result = base.copy()
+def merge_dicts_simple(base: Dict, other: Dict) -> Dict:
+    """
+    merge dicts
+    """
+    result: Dict = base.copy()
     for key, value in (other or {}).items():
         result[key] = merge_config_values(result.get(key), value)
     return result
 
 
-def touch(path):
+def touch(path: str) -> None:
+    """
+    open and clear file in the path
+    """
     with open(path, 'w'):
         pass
 
 
-def get_object_name(obj):
+def get_object_name(obj: Any) -> Optional[str]:
+    """
+    get name of the object
+    """
     if hasattr(obj, 'name'):
         return obj.name
     elif hasattr(obj, '__func__') and hasattr(obj, '__self__'):
@@ -547,7 +578,7 @@ def get_object_name(obj):
     return None
 
 
-def resolve_cpus(name, target):
+def resolve_cpus(name: Optional[Union[str, int]], target: Target) -> List[int]:
     """
     Returns a list of cpu numbers that corresponds to a passed name.
     Allowed formats are:
@@ -558,7 +589,7 @@ def resolve_cpus(name, target):
         - 'all' - returns all cpus
         - '' - Empty name will also return all cpus
     """
-    cpu_list = list(range(target.number_of_cpus))
+    cpu_list: List[int] = list(range(target.number_of_cpus))
 
     # Support for passing cpu no directly
     if isinstance(name, int):
@@ -587,7 +618,7 @@ def resolve_cpus(name, target):
 
     # Check if core number has been supplied.
     else:
-        core_no = re.match('cpu([0-9]+)', name, re.IGNORECASE)
+        core_no: Optional[Match[str]] = re.match('cpu([0-9]+)', name, re.IGNORECASE)
         if core_no:
             cpu = int(core_no.group(1))
             if cpu not in cpu_list:
@@ -595,33 +626,33 @@ def resolve_cpus(name, target):
                 raise ValueError(message.format(cpu, cpu_list))
             return [cpu]
         else:
-            msg = 'Unexpected core name "{}"'
+            msg: str = 'Unexpected core name "{}"'
             raise ValueError(msg.format(name))
 
 
 @memoized
-def resolve_unique_domain_cpus(name, target):
+def resolve_unique_domain_cpus(name: str, target: Target) -> List[int]:
     """
     Same as `resolve_cpus` above but only returns only the first cpu
     in each of the different frequency domains. Requires cpufreq.
     """
-    cpus = resolve_cpus(name, target)
+    cpus: List[int] = resolve_cpus(name, target)
     if not target.has('cpufreq'):
-        msg = 'Device does not appear to support cpufreq; ' \
-              'Cannot obtain cpu domain information'
+        msg: str = 'Device does not appear to support cpufreq; ' \
+            'Cannot obtain cpu domain information'
         raise TargetError(msg)
 
-    unique_cpus = []
-    domain_cpus = []
+    unique_cpus: List[int] = []
+    domain_cpus: List[int] = []
     for cpu in cpus:
         if cpu not in domain_cpus:
-            domain_cpus = target.cpufreq.get_related_cpus(cpu)
+            domain_cpus = cast(CpufreqModule, target.cpufreq).get_related_cpus(cpu)
         if domain_cpus[0] not in unique_cpus:
             unique_cpus.append(domain_cpus[0])
     return unique_cpus
 
 
-def format_ordered_dict(od):
+def format_ordered_dict(od: OrderedDict) -> str:
     """
     Provide a string representation of ordered dict that is similar to the
     regular dict representation, as that is more concise and easier to read
@@ -632,14 +663,14 @@ def format_ordered_dict(od):
 
 
 @contextmanager
-def atomic_write_path(path, mode='w'):
+def atomic_write_path(path: str, mode: str = 'w') -> Generator[str, Any, None]:
     """
     Gets a file path to write to which will be replaced with the original
      file path to simulate an atomic write from the point of view
     of other processes. This is achieved by writing to a tmp file and
     replacing the exiting file to prevent inconsistencies.
     """
-    tmp_file = None
+    tmp_file: Optional[IO] = None
     try:
         tmp_file = NamedTemporaryFile(mode=mode, delete=False,
                                       suffix=os.path.basename(path))
@@ -649,11 +680,11 @@ def atomic_write_path(path, mode='w'):
     finally:
         if tmp_file:
             tmp_file.close()
-    at_write_logger.debug('Moving {} to {}'.format(tmp_file.name, path))
-    safe_move(tmp_file.name, path)
+    at_write_logger.debug('Moving {} to {}'.format(tmp_file.name if tmp_file else '', path))
+    safe_move(tmp_file.name if tmp_file else '', path)
 
 
-def safe_move(src, dst):
+def safe_move(src: str, dst: str) -> None:
     """
     Taken from: https://alexwlchan.net/2019/03/atomic-cross-filesystem-moves-in-python/
 
@@ -676,7 +707,7 @@ def safe_move(src, dst):
             # across a filesystem boundary, this initial copy may not be
             # atomic.  We intersperse a random UUID so if different processes
             # are copying into `<dst>`, they don't overlap in their tmp copies.
-            copy_id = uuid.uuid4()
+            copy_id: uuid.UUID = uuid.uuid4()
             tmp_dst = "%s.%s.tmp" % (dst, copy_id)
             shutil.copyfile(src, tmp_dst)
 
@@ -689,7 +720,7 @@ def safe_move(src, dst):
 
 
 @contextmanager
-def lock_file(path, timeout=30):
+def lock_file(path: str, timeout: int = 30):
     """
     Enable automatic locking and unlocking of a file path given. Used to
     prevent synchronisation issues between multiple wa processes.
@@ -701,8 +732,8 @@ def lock_file(path, timeout=30):
     # pylint: disable=wrong-import-position,cyclic-import, import-outside-toplevel
     from wa.framework.exception import ResourceError
 
-    locked = False
-    l_file = 'wa-{}.lock'.format(path)
+    locked: bool = False
+    l_file: str = 'wa-{}.lock'.format(path)
     l_file = os.path.join(gettempdir(), l_file.replace(os.path.sep, '_'))
     file_lock_logger.debug('Acquiring lock on "{}"'.format(path))
     try:
@@ -713,7 +744,7 @@ def lock_file(path, timeout=30):
                 file_lock_logger.debug('Lock acquired on "{}"'.format(path))
                 break
             except FileExistsError:
-                msg = 'Failed to acquire lock on "{}" Retrying...'
+                msg: str = 'Failed to acquire lock on "{}" Retrying...'
                 file_lock_logger.debug(msg.format(l_file))
                 sleep(1)
                 timeout -= 1

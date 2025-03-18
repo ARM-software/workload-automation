@@ -21,10 +21,11 @@ from wa.framework.plugin import Plugin
 from wa.framework.exception import ResourceError
 from wa.framework.configuration import settings
 from wa.utils import log
-from wa.utils.android import get_cacheable_apk_info
+from wa.utils.android import get_cacheable_apk_info, ApkInfo
 from wa.utils.misc import get_object_name
 from wa.utils.types import enum, list_or_string, prioritylist, version_tuple
-
+from typing import Optional, List, Union
+from types import ModuleType
 
 SourcePriority = enum(['package', 'remote', 'lan', 'local',
                        'perferred'], start=0, step=10)
@@ -33,10 +34,10 @@ SourcePriority = enum(['package', 'remote', 'lan', 'local',
 class __NullOwner(object):
     """Represents an owner for a resource not owned by anyone."""
 
-    name = 'noone'
-    dependencies_directory = settings.dependencies_directory
+    name: str = 'noone'
+    dependencies_directory: str = settings.dependencies_directory
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str):
         return None
 
     def __str__(self):
@@ -59,15 +60,21 @@ class Resource(object):
 
     """
 
-    kind = None
+    kind: Optional[str] = None
 
-    def __init__(self, owner=NO_ONE):
+    def __init__(self, owner: object = NO_ONE):
         self.owner = owner
 
-    def match(self, path):
+    def match(self, path: str):
+        """
+        match the resource path
+        """
         return self.match_path(path)
 
-    def match_path(self, path):
+    def match_path(self, path: str) -> bool:
+        """
+        match the resource path
+        """
         raise NotImplementedError()
 
     def __str__(self):
@@ -75,14 +82,16 @@ class Resource(object):
 
 
 class File(Resource):
+    """
+    File resource
+    """
+    kind: str = 'file'
 
-    kind = 'file'
-
-    def __init__(self, owner, path):
+    def __init__(self, owner: object, path: str):
         super(File, self).__init__(owner)
         self.path = path
 
-    def match_path(self, path):
+    def match_path(self, path: str) -> bool:
         return self.path == path
 
     def __str__(self):
@@ -90,15 +99,17 @@ class File(Resource):
 
 
 class Executable(Resource):
+    """
+    Executable resource
+    """
+    kind: str = 'executable'
 
-    kind = 'executable'
-
-    def __init__(self, owner, abi, filename):
+    def __init__(self, owner: object, abi: str, filename: str):
         super(Executable, self).__init__(owner)
         self.abi = abi
         self.filename = filename
 
-    def match_path(self, path):
+    def match_path(self, path: str) -> bool:
         return self.filename == os.path.basename(path)
 
     def __str__(self):
@@ -106,15 +117,17 @@ class Executable(Resource):
 
 
 class ReventFile(Resource):
+    """
+    Revent File resource
+    """
+    kind: str = 'revent'
 
-    kind = 'revent'
-
-    def __init__(self, owner, stage, target):
+    def __init__(self, owner: object, stage: str, target: Optional[str]):
         super(ReventFile, self).__init__(owner)
         self.stage = stage
         self.target = target
 
-    def match_path(self, path):
+    def match_path(self, path: str) -> bool:
         filename = os.path.basename(path)
         parts = filename.split('.')
         if len(parts) > 2:
@@ -126,22 +139,27 @@ class ReventFile(Resource):
 
 
 class JarFile(Resource):
+    """
+    Jar file resource
+    """
+    kind: str = 'jar'
 
-    kind = 'jar'
-
-    def match_path(self, path):
+    def match_path(self, path: str) -> bool:
         # An owner always  has at most one jar file, so
         # always match
         return True
 
 
 class ApkFile(Resource):
+    """
+    Apk file resource
+    """
+    kind: str = 'apk'
 
-    kind = 'apk'
-
-    def __init__(self, owner, variant=None, version=None,
-                 package=None, uiauto=False, exact_abi=False,
-                 supported_abi=None, min_version=None, max_version=None):
+    def __init__(self, owner: object, variant: Optional[str] = None,
+                 version: Optional[Union[str, List[str]]] = None, package: Optional[str] = None,
+                 uiauto: bool = False, exact_abi: bool = False, supported_abi: Optional[List[Optional[str]]] = None,
+                 min_version: Optional[str] = None, max_version: Optional[str] = None):
         super(ApkFile, self).__init__(owner)
         self.variant = variant
         self.version = version
@@ -152,17 +170,17 @@ class ApkFile(Resource):
         self.exact_abi = exact_abi
         self.supported_abi = supported_abi
 
-    def match_path(self, path):
+    def match_path(self, path: str) -> bool:
         ext = os.path.splitext(path)[1].lower()
         return ext == '.apk'
 
-    def match(self, path):
-        name_matches = True
-        version_matches = True
-        version_range_matches = True
-        package_matches = True
-        abi_matches = True
-        uiauto_matches = uiauto_test_matches(path, self.uiauto)
+    def match(self, path: str) -> bool:
+        name_matches: bool = True
+        version_matches: bool = True
+        version_range_matches: bool = True
+        package_matches: bool = True
+        abi_matches: bool = True
+        uiauto_matches: bool = uiauto_test_matches(path, self.uiauto)
         if self.version:
             version_matches = apk_version_matches(path, self.version)
         if self.max_version or self.min_version:
@@ -179,7 +197,7 @@ class ApkFile(Resource):
             version_range_matches and uiauto_matches \
             and package_matches and abi_matches
 
-    def __str__(self):
+    def __str__(self) -> str:
         text = '<{}\'s apk'.format(self.owner)
         if self.variant:
             text += ' {}'.format(self.variant)
@@ -211,16 +229,22 @@ class ResourceGetter(Plugin):
 
     """
 
-    name = None
-    kind = 'resource_getter'
+    name: Optional[str] = None
+    kind: str = 'resource_getter'
 
-    def register(self, resolver):
+    def register(self, resolver: 'ResourceResolver'):
+        """
+        register a resource resolver to the getter
+        """
         raise NotImplementedError()
 
-    def initialize(self):
+    def initialize(self) -> None:
+        """
+        initialize the getter
+        """
         pass
 
-    def __str__(self):
+    def __str__(self) -> str:
         return '<ResourceGetter {}>'.format(self.name)
 
 
@@ -231,28 +255,34 @@ class ResourceResolver(object):
 
     """
 
-    def __init__(self, loader=pluginloader):
+    def __init__(self, loader: ModuleType = pluginloader):
         self.loader = loader
         self.logger = logging.getLogger('resolver')
-        self.getters = []
+        self.getters: List[ResourceGetter] = []
         self.sources = prioritylist()
 
-    def load(self):
+    def load(self) -> None:
+        """
+        load the resource getters to the resolver
+        """
         for gettercls in self.loader.list_plugins('resource_getter'):
             self.logger.debug('Loading getter {}'.format(gettercls.name))
-            getter = self.loader.get_plugin(name=gettercls.name,
-                                            kind="resource_getter")
+            getter: ResourceGetter = self.loader.get_plugin(name=gettercls.name,
+                                                            kind="resource_getter")
             with log.indentcontext():
                 getter.initialize()
                 getter.register(self)
             self.getters.append(getter)
 
-    def register(self, source, priority=SourcePriority.local):
-        msg = 'Registering "{}" with priority "{}"'
+    def register(self, source: object, priority=SourcePriority.local) -> None:
+        """
+        register the source
+        """
+        msg: str = 'Registering "{}" with priority "{}"'
         self.logger.debug(msg.format(get_object_name(source), priority))
         self.sources.add(source, priority)
 
-    def get(self, resource, strict=True):
+    def get(self, resource: Resource, strict: bool = True) -> Optional[str]:
         """
         Uses registered getters to attempt to discover a resource of the specified
         kind and matching the specified criteria. Returns path to the resource that
@@ -263,11 +293,11 @@ class ResourceResolver(object):
         """
         self.logger.debug('Resolving {}'.format(resource))
         for source in self.sources:
-            source_name = get_object_name(source)
+            source_name: Optional[str] = get_object_name(source)
             self.logger.debug('Trying {}'.format(source_name))
-            result = source(resource)
+            result: str = source(resource)
             if result is not None:
-                msg = 'Resource {} found using {}:'
+                msg: str = 'Resource {} found using {}:'
                 self.logger.debug(msg.format(resource, source_name))
                 self.logger.debug('\t{}'.format(result))
                 return result
@@ -277,52 +307,70 @@ class ResourceResolver(object):
         return None
 
 
-def apk_version_matches(path, version):
-    version = list_or_string(version)
-    info = get_cacheable_apk_info(path)
-    for v in version:
-        if v in (info.version_name, info.version_code):
-            return True
-        if loose_version_matching(v, info.version_name):
-            return True
+def apk_version_matches(path: str, version: Union[str, List[str]]):
+    """
+    check apk version matches
+    """
+    version_ = list_or_string(version)
+    info: Optional[ApkInfo] = get_cacheable_apk_info(path)
+    for v in version_:
+        if info is not None:
+            if v in (info.version_name, info.version_code):
+                return True
+            if loose_version_matching(v, info.version_name):
+                return True
     return False
 
 
-def apk_version_matches_range(path, min_version=None, max_version=None):
+def apk_version_matches_range(path: str, min_version: Optional[str] = None,
+                              max_version: Optional[str] = None) -> bool:
+    """
+    check if the apk version matches the range of versions
+    """
     info = get_cacheable_apk_info(path)
-    return range_version_matching(info.version_name, min_version, max_version)
+    return range_version_matching(info.version_name if info else '', min_version, max_version)
 
 
-def range_version_matching(apk_version, min_version=None, max_version=None):
+def range_version_matching(apk_version: Optional[str], min_version: Optional[str] = None,
+                           max_version: Optional[str] = None):
+    """
+    check if the apk version matches the range of versions
+    """
     if not apk_version:
         return False
-    apk_version = version_tuple(apk_version)
+    apk_version_tuple = version_tuple(apk_version or '')
 
     if max_version:
-        max_version = version_tuple(max_version)
-        if apk_version > max_version:
+        max_version_tuple = version_tuple(max_version)
+        if apk_version_tuple > max_version_tuple:
             return False
     if min_version:
-        min_version = version_tuple(min_version)
-        if apk_version < min_version:
+        min_version_tuple = version_tuple(min_version)
+        if apk_version_tuple < min_version_tuple:
             return False
     return True
 
 
-def loose_version_matching(config_version, apk_version):
-    config_version = version_tuple(config_version)
-    apk_version = version_tuple(apk_version)
+def loose_version_matching(config_version: str, apk_version: Optional[str]) -> bool:
+    """
+    check version matching loosely
+    """
+    config_version_tuple = version_tuple(config_version)
+    apk_version_tuple = version_tuple(apk_version or '')
 
-    if len(apk_version) < len(config_version):
+    if len(apk_version_tuple) < len(config_version_tuple):
         return False  # More specific version requested than available
 
-    for i in range(len(config_version)):
-        if config_version[i] != apk_version[i]:
+    for i in range(len(config_version_tuple)):
+        if config_version_tuple[i] != apk_version_tuple[i]:
             return False
     return True
 
 
-def file_name_matches(path, pattern):
+def file_name_matches(path: str, pattern: str) -> bool:
+    """
+    check file name matches pattern
+    """
     filename = os.path.basename(path)
     if pattern in filename:
         return True
@@ -331,27 +379,43 @@ def file_name_matches(path, pattern):
     return False
 
 
-def uiauto_test_matches(path, uiauto):
+def uiauto_test_matches(path: str, uiauto: bool) -> bool:
+    """
+    check uiauto matches
+    """
     info = get_cacheable_apk_info(path)
-    return uiauto == ('com.arm.wa.uiauto' in info.package)
+    if info is None:
+        return False
+    return uiauto == ('com.arm.wa.uiauto' in (info.package or ''))
 
 
-def package_name_matches(path, package):
+def package_name_matches(path: str, package: str) -> bool:
+    """
+    check if package name matches
+    """
     info = get_cacheable_apk_info(path)
+    if info is None:
+        return False
     return info.package == package
 
 
-def apk_abi_matches(path, supported_abi, exact_abi=False):
-    supported_abi = list_or_string(supported_abi)
+def apk_abi_matches(path: str, supported_abi: Union[str, List[Optional[str]]],
+                    exact_abi: bool = False) -> bool:
+    """
+    check apk abi matches
+    """
+    supported_abi_ = list_or_string(supported_abi)
     info = get_cacheable_apk_info(path)
+    if info is None:
+        return False
     # If no native code present, suitable for all devices.
     if not info.native_code:
         return True
 
     if exact_abi:  # Only check primary
-        return supported_abi[0] in info.native_code
+        return supported_abi_[0] in info.native_code
     else:
-        for abi in supported_abi:
+        for abi in supported_abi_:
             if abi in info.native_code:
                 return True
     return False

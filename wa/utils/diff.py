@@ -19,24 +19,28 @@ import logging
 
 
 from builtins import zip  # pylint: disable=redefined-builtin
-from future.moves.itertools import zip_longest
+from future.moves.itertools import zip_longest  # type:ignore
 
 from wa.utils.misc import diff_tokens, write_table
 from wa.utils.misc import ensure_file_directory_exists as _f
+from typing import Optional, List
 
-logger = logging.getLogger('diff')
+logger: logging.Logger = logging.getLogger('diff')
 
 
-def diff_interrupt_files(before, after, result):  # pylint: disable=R0914
-    output_lines = []
+def diff_interrupt_files(before: str, after: str, result: str) -> None:  # pylint: disable=R0914
+    """
+    diff between interrupt stats files
+    """
+    output_lines: List[List[str]] = []
     with open(before) as bfh:
         with open(after) as ofh:
             for bline, aline in zip(bfh, ofh):
                 bchunks = bline.strip().split()
                 while True:
-                    achunks = aline.strip().split()
+                    achunks: List[str] = aline.strip().split()
                     if achunks[0] == bchunks[0]:
-                        diffchunks = ['']
+                        diffchunks: List[str] = ['']
                         diffchunks.append(achunks[0])
                         diffchunks.extend([diff_tokens(b, a) for b, a
                                            in zip(bchunks[1:], achunks[1:])])
@@ -58,8 +62,8 @@ def diff_interrupt_files(before, after, result):  # pylint: disable=R0914
     # columns -- they are a single column where space-spearated words got
     # split. Merge them back together to prevent them from being
     # column-aligned by write_table.
-    table_rows = [output_lines[0]]
-    num_cols = len(output_lines[0])
+    table_rows: List[List[str]] = [output_lines[0]]
+    num_cols: int = len(output_lines[0])
     for row in output_lines[1:]:
         table_row = row[:num_cols]
         table_row.append(' '.join(row[num_cols:]))
@@ -69,14 +73,17 @@ def diff_interrupt_files(before, after, result):  # pylint: disable=R0914
         write_table(table_rows, wfh)
 
 
-def diff_sysfs_dirs(before, after, result):  # pylint: disable=R0914
-    before_files = []
+def diff_sysfs_dirs(before: str, after: str, result: str) -> None:  # pylint: disable=R0914
+    """
+    diff between sysfs directories
+    """
+    before_files: List[str] = []
     for root, _, files in os.walk(before):
         before_files.extend([os.path.join(root, f) for f in files])
     before_files = list(filter(os.path.isfile, before_files))
     files = [os.path.relpath(f, before) for f in before_files]
-    after_files = [os.path.join(after, f) for f in files]
-    diff_files = [os.path.join(result, f) for f in files]
+    after_files: List[str] = [os.path.join(after, f) for f in files]
+    diff_files: List[str] = [os.path.join(result, f) for f in files]
 
     for bfile, afile, dfile in zip(before_files, after_files, diff_files):
         if not os.path.isfile(afile):
@@ -89,8 +96,8 @@ def diff_sysfs_dirs(before, after, result):  # pylint: disable=R0914
                     if aline is None:
                         logger.debug('Lines missing from {}'.format(afile))
                         break
-                    bchunks = re.split(r'(\W+)', bline)
-                    achunks = re.split(r'(\W+)', aline)
+                    bchunks: List[str] = re.split(r'(\W+)', bline)
+                    achunks: List[str] = re.split(r'(\W+)', aline)
                     if len(bchunks) != len(achunks):
                         logger.debug('Token length mismatch in {} on line {}'.format(bfile, i))
                         dfh.write('xxx ' + bline)

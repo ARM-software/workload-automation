@@ -20,9 +20,13 @@ import locale
 import logging
 import os
 import warnings
-
+from typing import (Optional, TYPE_CHECKING, cast, Dict,
+                    List)
 import devlib
+import devlib.utils
+import devlib.utils.version
 try:
+    installed_devlib_version: Optional[devlib.utils.version.Version]
     from devlib.utils.version import version as installed_devlib_version
 except ImportError:
     installed_devlib_version = None
@@ -37,20 +41,28 @@ from wa.framework.version import (get_wa_version_with_commit, format_version,
                                   required_devlib_version)
 from wa.utils import log
 from wa.utils.doc import format_body
+from argparse import _SubParsersAction, Namespace
+if TYPE_CHECKING:
+    from wa.framework.pluginloader import __LoaderWrapper
+    from wa.framework.command import Command
 
 warnings.filterwarnings(action='ignore', category=UserWarning, module='zope')
 
 # Disable this to avoid false positive from dynamically-created attributes.
 # pylint: disable=no-member
 
-logger = logging.getLogger('command_line')
+logger: logging.Logger = logging.getLogger('command_line')
 
 
-def load_commands(subparsers):
-    commands = {}
-    for command in pluginloader.list_commands():
-        commands[command.name] = pluginloader.get_command(command.name,
-                                                          subparsers=subparsers)
+def load_commands(subparsers: _SubParsersAction) -> Dict[str, 'Command']:
+    """
+    load commands
+    """
+    commands: Dict[str, 'Command'] = {}
+    for command in cast('__LoaderWrapper', pluginloader).list_commands():
+        commands[command.name] = cast('__LoaderWrapper',
+                                      pluginloader).get_command(command.name,
+                                                                subparsers=subparsers)
     return commands
 
 
@@ -59,8 +71,11 @@ def load_commands(subparsers):
 # description of the issue (with a fix attached since 2013!). To get around
 # this problem, this will pre-process sys.argv to detect such joined options
 # and split them.
-def split_joined_options(argv):
-    output = []
+def split_joined_options(argv: List[str]) -> List[str]:
+    """
+    split joined options
+    """
+    output: List[str] = []
     for part in argv:
         if len(part) > 1 and part[0] == '-' and part[1] != '-':
             for c in part[1:]:
@@ -71,19 +86,25 @@ def split_joined_options(argv):
 
 
 # Instead of presenting an obscure error due to a version mismatch explicitly warn the user.
-def check_devlib_version():
+def check_devlib_version() -> None:
+    """
+    check devlib version
+    """
     if not installed_devlib_version or installed_devlib_version[:-1] <= required_devlib_version[:-1]:
         # Check the 'dev' field separately to account for comparing with release versions.
-        if installed_devlib_version.dev and installed_devlib_version.dev < required_devlib_version.dev:
-            msg = 'WA requires Devlib version >={}. Please update the currently installed version {}'
+        if installed_devlib_version and installed_devlib_version.dev and installed_devlib_version.dev < required_devlib_version.dev:
+            msg: str = 'WA requires Devlib version >={}. Please update the currently installed version {}'
             raise HostError(msg.format(format_version(required_devlib_version), devlib.__version__))
 
 
 # If the default encoding is not UTF-8 warn the user as this may cause compatibility issues
 # when parsing files.
-def check_system_encoding():
-    system_encoding = locale.getpreferredencoding()
-    msg = 'System Encoding: {}'.format(system_encoding)
+def check_system_encoding() -> None:
+    """
+    check system encoding
+    """
+    system_encoding: str = locale.getpreferredencoding()
+    msg: str = 'System Encoding: {}'.format(system_encoding)
     if 'UTF-8' not in system_encoding:
         logger.warning(msg)
         logger.warning('To prevent encoding issues please use a locale setting which supports UTF-8')
@@ -91,7 +112,7 @@ def check_system_encoding():
         logger.debug(msg)
 
 
-def main():
+def main() -> None:
     if not os.path.exists(settings.user_directory):
         init_user_directory()
     if not os.path.exists(os.path.join(settings.user_directory, 'config.yaml')):
@@ -99,9 +120,9 @@ def main():
 
     try:
 
-        description = ("Execute automated workloads on a remote device and process "
-                       "the resulting output.\n\nUse \"wa <subcommand> -h\" to see "
-                       "help for individual subcommands.")
+        description: str = ("Execute automated workloads on a remote device and process "
+                            "the resulting output.\n\nUse \"wa <subcommand> -h\" to see "
+                            "help for individual subcommands.")
         parser = argparse.ArgumentParser(description=format_body(description, 80),
                                          prog='wa',
                                          formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -112,12 +133,12 @@ def main():
         # to be enabled for that, which requires the verbosity setting; however
         # full argument parsing cannot be completed until the commands are loaded; so
         # parse just the base args for now so we can get verbosity.
-        argv = split_joined_options(sys.argv[1:])
+        argv: List[str] = split_joined_options(sys.argv[1:])
 
         # 'Parse_known_args' automatically displays the default help and exits
         # if '-h' or '--help' is detected, we want our custom help messages so
         # ensure these are never passed as parameters.
-        filtered_argv = list(argv)
+        filtered_argv: List[str] = list(argv)
         if '-h' in filtered_argv:
             filtered_argv.remove('-h')
         elif '--help' in filtered_argv:
@@ -133,9 +154,9 @@ def main():
         check_system_encoding()
 
         # each command will add its own subparser
-        subparsers = parser.add_subparsers(dest='command')
+        subparsers: _SubParsersAction = parser.add_subparsers(dest='command')
         subparsers.required = True
-        commands = load_commands(subparsers)
+        commands: Dict[str, 'Command'] = load_commands(subparsers)
         args = parser.parse_args(argv)
 
         config = ConfigManager()
@@ -145,8 +166,8 @@ def main():
                 raise ConfigError("Config file {} not found".format(config_file))
             config.load_config_file(config_file)
 
-        command = commands[args.command]
-        sys.exit(command.execute(config, args))
+        command: 'Command' = commands[args.command]
+        sys.exit(command.execute(config, args))  # type: ignore
 
     except KeyboardInterrupt as e:
         log.log_error(e, logger)

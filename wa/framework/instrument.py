@@ -24,7 +24,7 @@ instrument will be found automatically and hooked up to the supported signals.
 Once a signal is broadcasted, the corresponding registered method is invoked.
 
 Each method in Instrument must take two arguments, which are self and context.
-Supported signals can be found in [... link to signals ...] To make
+Supported signals can be found in [wa.framework.signal.py] To make
 implementations easier and common, the basic steps to add new instrument is
 similar to the steps to add new workload.
 
@@ -109,9 +109,26 @@ from wa.framework.exception import (TargetNotRespondingError, TimeoutError,  # p
 from wa.utils.log import log_error
 from wa.utils.misc import isiterable
 from wa.utils.types import identifier, level
+from typing import (List, OrderedDict as od, TYPE_CHECKING, Callable, Any,
+                    Union, cast, Optional)
+if TYPE_CHECKING:
+    from wa.framework.execution import ExecutionContext
+    from wa.framework.configuration.core import StatusType
+    # When type-checking, pretend CallbackPriority is a standard Enum
+    # (or anything you want the type checker to see).
+    import enum
+
+    class CallbackPriority(enum.Enum):
+        EXTREMELY_LOW = -30
+        VERY_LOW = -20
+        LOW = -10
+        NORMAL = 0
+        HIGH = 10
+        VERY_HIGH = 20
+        EXTREMELY_HIGH = 30
 
 
-logger = logging.getLogger('instruments')
+logger: logging.Logger = logging.getLogger('instruments')
 
 
 # Maps method names onto signals the should be registered to.
@@ -119,7 +136,7 @@ logger = logging.getLogger('instruments')
 #       then the corresponding end_ signal is guaranteed to also be sent.
 # Note: using OrderedDict to preserve logical ordering for the table generated
 #       in the documentation
-SIGNAL_MAP = OrderedDict([
+SIGNAL_MAP: od[str, signal.Signal] = OrderedDict([
     # Below are "aliases" for some of the more common signals to allow
     # instruments to have similar structure to workloads
     ('initialize', signal.RUN_INITIALIZED),
@@ -160,23 +177,29 @@ SIGNAL_MAP = OrderedDict([
 ])
 
 
-def get_priority(func):
+def get_priority(func) -> "CallbackPriority":
+    """
+    get priority
+    """
     return getattr(getattr(func, 'im_func', func),
                    'priority', signal.CallbackPriority.normal)
 
 
-def priority(priority):  # pylint: disable=redefined-outer-name
-    def decorate(func):
-        def wrapper(*args, **kwargs):
+def priority(priority: 'CallbackPriority') -> Any:  # pylint: disable=redefined-outer-name
+    """
+    priority for the instrument signal callback
+    """
+    def decorate(func: Callable) -> Callable:
+        def wrapper(*args, **kwargs) -> Any:
             return func(*args, **kwargs)
         wrapper.__name__ = func.__name__
         if priority in signal.CallbackPriority.levels:
-            wrapper.priority = signal.CallbackPriority(priority)
+            wrapper.priority = signal.CallbackPriority(priority)  # type:ignore
         else:
             if not isinstance(priority, int):
                 msg = 'Invalid priorty "{}"; must be an int or one of {}'
                 raise ValueError(msg.format(priority, signal.CallbackPriority.values))
-            wrapper.priority = level('custom', priority)
+            wrapper.priority = level('custom', priority)    # type:ignore
         return wrapper
     return decorate
 
@@ -190,7 +213,7 @@ very_fast = priority(signal.CallbackPriority.very_high)
 extremely_fast = priority(signal.CallbackPriority.extremely_high)
 
 
-def hostside(func):
+def hostside(func: Callable) -> Callable:
     """
     Used as a hint that the callback only performs actions on the
     host and does not rely on an active connection to the target.
@@ -198,18 +221,24 @@ def hostside(func):
     thought to be unresponsive.
 
     """
-    func.is_hostside = True
+    func.is_hostside = True  # type:ignore
     return func
 
 
-def is_hostside(func):
+def is_hostside(func: Callable) -> bool:
+    """
+    whether callback is only relying on host
+    """
     return getattr(func, 'is_hostside', False)
 
 
-installed = []
+installed: List['Instrument'] = []
 
 
-def is_installed(instrument):
+def is_installed(instrument: Union['Instrument', type, str]) -> bool:
+    """
+    whether instrument is already installed
+    """
     if isinstance(instrument, Instrument):
         if instrument in installed:
             return True
@@ -224,27 +253,36 @@ def is_installed(instrument):
     return False
 
 
-def is_enabled(instrument):
+def is_enabled(instrument: Union['Instrument', type, str]) -> bool:
+    """
+    whether instrument is enabled
+    """
     if isinstance(instrument, (Instrument, type)):
-        name = instrument.name
+        name: Optional[str] = cast('Instrument', instrument).name
     else:  # assume string
         name = instrument
     try:
-        installed_instrument = get_instrument(name)
+        installed_instrument: 'Instrument' = get_instrument(cast(str, name))
         return installed_instrument.is_enabled
     except ValueError:
         return False
 
 
-failures_detected = False
+failures_detected: bool = False
 
 
-def reset_failures():
+def reset_failures() -> None:
+    """
+    reset failures
+    """
     global failures_detected  # pylint: disable=W0603
     failures_detected = False
 
 
-def check_failures():
+def check_failures() -> bool:
+    """
+    check failures
+    """
     result = failures_detected
     reset_failures()
     return result
@@ -257,12 +295,12 @@ class ManagedCallback(object):
 
     """
 
-    def __init__(self, instrument, callback):
+    def __init__(self, instrument: 'Instrument', callback: Callable):
         self.instrument = instrument
         self.callback = callback
         self.is_hostside = is_hostside(callback)
 
-    def __call__(self, context):
+    def __call__(self, context: 'ExecutionContext'):
         if self.instrument.is_enabled:
             try:
                 if not context.tm.is_responsive and not self.is_hostside:
@@ -278,18 +316,18 @@ class ManagedCallback(object):
                 log_error(e, logger)
                 context.add_event(e.args[0] if e.args else str(e))
                 if isinstance(e, WorkloadError):
-                    context.set_status('FAILED')
+                    context.set_status(cast('StatusType', 'FAILED'))
                 elif isinstance(e, (TargetError, TimeoutError)):
                     context.tm.verify_target_responsive(context)
                 else:
                     if context.current_job:
-                        context.set_status('PARTIAL')
+                        context.set_status(cast('StatusType', 'PARTIAL'))
                     else:
                         raise
 
-    def __repr__(self):
-        text = 'ManagedCallback({}, {})'
-        return text.format(self.instrument.name, self.callback.__func__.__name__)
+    def __repr__(self) -> str:
+        text: str = 'ManagedCallback({}, {})'
+        return text.format(self.instrument.name, self.callback.__func__.__name__)  # type:ignore
 
     __str__ = __repr__
 
@@ -297,10 +335,10 @@ class ManagedCallback(object):
 # Need this to keep track of callbacks, because the dispatcher only keeps
 # weak references, so if the callbacks aren't referenced elsewhere, they will
 # be deallocated before they've had a chance to be invoked.
-_callbacks = []
+_callbacks: List[ManagedCallback] = []
 
 
-def install(instrument, context):
+def install(instrument: 'Instrument', context: 'ExecutionContext'):
     """
     This will look for methods (or any callable members) with specific names
     in the instrument and hook them up to the corresponding signals.
@@ -312,30 +350,30 @@ def install(instrument, context):
     logger.debug('Installing instrument %s.', instrument)
 
     if is_installed(instrument):
-        msg = 'Instrument {} is already installed.'
+        msg: str = 'Instrument {} is already installed.'
         raise ValueError(msg.format(instrument.name))
 
     for attr_name in dir(instrument):
         if attr_name not in SIGNAL_MAP:
             continue
 
-        attr = getattr(instrument, attr_name)
+        attr: Any = getattr(instrument, attr_name)
 
         if not callable(attr):
             msg = 'Attribute {} not callable in {}.'
             raise ValueError(msg.format(attr_name, instrument))
-        argspec = inspect.getfullargspec(attr)
-        arg_num = len(argspec.args)
+        argspec: inspect.FullArgSpec = inspect.getfullargspec(attr)
+        arg_num: int = len(argspec.args)
         # Instrument callbacks will be passed exactly two arguments: self
         # (the instrument instance to which the callback is bound) and
         # context. However, we also allow callbacks to capture the context
         # in variable arguments (declared as "*args" in the definition).
         if arg_num > 2 or (arg_num < 2 and argspec.varargs is None):
-            message = '{} must take exactly 2 positional arguments; {} given.'
+            message: str = '{} must take exactly 2 positional arguments; {} given.'
             raise ValueError(message.format(attr_name, arg_num))
 
-        priority = get_priority(attr)
-        hostside = ' [hostside]' if is_hostside(attr) else ''
+        priority: 'CallbackPriority' = get_priority(attr)
+        hostside: str = ' [hostside]' if is_hostside(attr) else ''
         logger.debug('\tConnecting %s to %s with priority %s(%d)%s', attr.__name__,
                      SIGNAL_MAP[attr_name], priority.name, priority.value, hostside)
 
@@ -343,22 +381,31 @@ def install(instrument, context):
         _callbacks.append(mc)
         signal.connect(mc, SIGNAL_MAP[attr_name], priority=priority.value)
 
-    instrument.logger.context = context
+    instrument.logger.context = context  # type:ignore
     installed.append(instrument)
     context.add_augmentation(instrument)
 
 
-def uninstall(instrument):
+def uninstall(instrument: 'Instrument') -> None:
+    """
+    uninstall the instrument.
+    """
     instrument = get_instrument(instrument)
     installed.remove(instrument)
 
 
-def validate():
+def validate() -> None:
+    """
+    validate the instrument
+    """
     for instrument in installed:
         instrument.validate()
 
 
-def get_instrument(inst):
+def get_instrument(inst: Union['Instrument', str]) -> 'Instrument':
+    """
+    get instrument
+    """
     if isinstance(inst, Instrument):
         return inst
     for installed_inst in installed:
@@ -367,33 +414,48 @@ def get_instrument(inst):
     raise ValueError('Instrument {} is not installed'.format(inst))
 
 
-def disable_all():
+def disable_all() -> None:
+    """
+    disable all instruments
+    """
     for instrument in installed:
         _disable_instrument(instrument)
 
 
-def enable_all():
+def enable_all() -> None:
+    """
+    enable all instruments
+    """
     for instrument in installed:
         _enable_instrument(instrument)
 
 
-def enable(to_enable):
+def enable(to_enable: Union['Instrument', List['Instrument'], str]) -> None:
+    """
+    enable the specified instruments
+    """
     if isiterable(to_enable):
-        for inst in to_enable:
+        for inst in to_enable:  # type:ignore
             _enable_instrument(inst)
     else:
-        _enable_instrument(to_enable)
+        _enable_instrument(cast('Instrument', to_enable))
 
 
-def disable(to_disable):
+def disable(to_disable: Union['Instrument', List['Instrument'], str]) -> None:
+    """
+    disable the specified instruments
+    """
     if isiterable(to_disable):
-        for inst in to_disable:
+        for inst in to_disable:  # type:ignore
             _disable_instrument(inst)
     else:
-        _disable_instrument(to_disable)
+        _disable_instrument(cast('Instrument', to_disable))
 
 
-def _enable_instrument(inst):
+def _enable_instrument(inst: Union['Instrument', str]) -> None:
+    """
+    enable the specified instrument
+    """
     inst = get_instrument(inst)
     if not inst.is_broken:
         logger.debug('Enabling instrument {}'.format(inst.name))
@@ -402,28 +464,42 @@ def _enable_instrument(inst):
         logger.debug('Not enabling broken instrument {}'.format(inst.name))
 
 
-def _disable_instrument(inst):
+def _disable_instrument(inst: Union['Instrument', str]) -> None:
+    """
+    disable the specified instrument
+    """
     inst = get_instrument(inst)
     if inst.is_enabled:
         logger.debug('Disabling instrument {}'.format(inst.name))
         inst.is_enabled = False
 
 
-def get_enabled():
+def get_enabled() -> List['Instrument']:
+    """
+    get list of enabled instruments
+    """
     return [i for i in installed if i.is_enabled]
 
 
-def get_disabled():
+def get_disabled() -> List['Instrument']:
+    """
+    get list of disabled instruments
+    """
     return [i for i in installed if not i.is_enabled]
 
 
 class Instrument(TargetedPlugin):
     """
     Base class for instrument implementations.
+    These "instrument"s in a WA run in order to change it's behaviour (e.g.
+    introducing delays between successive job executions), or collect
+    additional measurements (e.g. energy usage). Some instruments may depend
+    on particular features being enabled on the target (e.g. cpufreq), or
+    on additional hardware (e.g. energy probes).
     """
-    kind = "instrument"
+    kind: str = "instrument"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super(Instrument, self).__init__(*args, **kwargs)
-        self.is_enabled = True
-        self.is_broken = False
+        self.is_enabled: bool = True
+        self.is_broken: bool = False

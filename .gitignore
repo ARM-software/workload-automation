@@ -32,3 +32,5 @@ libs/armeabi
 doc/source/developer_information/developer_guide/instrument_method_map.rst
 doc/source/run_config/
 .eggs
+*venv*/*
+.vscode/*

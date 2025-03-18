@@ -24,13 +24,14 @@ import logging
 from contextlib import contextmanager
 
 from louie import dispatcher, saferef  # pylint: disable=wrong-import-order
-from louie.dispatcher import _remove_receiver
-import wrapt
+from louie.dispatcher import _remove_receiver   # type:ignore
+from louie.signal import All  # type: ignore
+import wrapt  # type: ignore
 
 from wa.utils.types import prioritylist, enum
+from typing import cast, Type, Dict, Callable, List, Tuple, Optional
 
-
-logger = logging.getLogger('signal')
+logger: logging.Logger = logging.getLogger('signal')
 
 
 class Signal(object):
@@ -41,7 +42,7 @@ class Signal(object):
 
     """
 
-    def __init__(self, name, description='no description', invert_priority=False):
+    def __init__(self, name: str, description: str = 'no description', invert_priority: bool = False):
         """
         Instantiates a Signal.
 
@@ -61,12 +62,12 @@ class Signal(object):
         self.description = description
         self.invert_priority = invert_priority
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
     __repr__ = __str__
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return id(self.name)
 
 
@@ -199,7 +200,8 @@ class _prioritylist_wrapper(prioritylist):
         pass
 
 
-def connect(handler, signal, sender=dispatcher.Any, priority=0):
+def connect(handler: Callable, signal: Signal, sender: Type[dispatcher.Any] = dispatcher.Any,
+            priority: int = 0) -> None:
     """
     Connects a callback to a signal, so that the callback will be automatically invoked
     when that signal is sent.
@@ -234,20 +236,20 @@ def connect(handler, signal, sender=dispatcher.Any, priority=0):
     logger.debug('Connecting {} to {}({}) with priority {}'.format(handler, signal, sender, priority))
     if getattr(signal, 'invert_priority', False):
         priority = -priority
-    senderkey = id(sender)
+    senderkey: int = id(sender)
     if senderkey in dispatcher.connections:
-        signals = dispatcher.connections[senderkey]
+        signals: Dict[Signal, prioritylist] = dispatcher.connections[senderkey]
     else:
         dispatcher.connections[senderkey] = signals = {}
     if signal in signals:
         receivers = signals[signal]
     else:
         receivers = signals[signal] = _prioritylist_wrapper()
-    dispatcher.connect(handler, signal, sender)
+    dispatcher.connect(handler, cast(Type[All], signal), sender)
     receivers.add(saferef.safe_ref(handler, on_delete=_remove_receiver), priority)
 
 
-def disconnect(handler, signal, sender=dispatcher.Any):
+def disconnect(handler: Callable, signal: Signal, sender: Type[dispatcher.Any] = dispatcher.Any) -> None:
     """
     Disconnect a previously connected handler form the specified signal, optionally, only
     for the specified sender.
@@ -262,10 +264,11 @@ def disconnect(handler, signal, sender=dispatcher.Any):
 
     """
     logger.debug('Disconnecting {} from {}({})'.format(handler, signal, sender))
-    dispatcher.disconnect(handler, signal, sender)
+    dispatcher.disconnect(handler, cast(Type[All], signal), sender)
 
 
-def send(signal, sender=dispatcher.Anonymous, *args, **kwargs):
+def send(signal: Signal, sender: Type[dispatcher.Anonymous] = dispatcher.Anonymous,
+         *args, **kwargs) -> List[Tuple]:
     """
     Sends a signal, causing connected handlers to be invoked.
 
@@ -280,16 +283,16 @@ def send(signal, sender=dispatcher.Anonymous, *args, **kwargs):
 
     """
     logger.debug('Sending {} from {}'.format(signal, sender))
-    return dispatcher.send(signal, sender, *args, **kwargs)
+    return dispatcher.send(cast(Type[All], signal), sender, *args, **kwargs)
 
 
 # This will normally be set to log_error() by init_logging(); see wa.utils.log
 # Done this way to prevent a circular import dependency.
-log_error_func = logger.error
+log_error_func: Callable = logger.error
 
 
-def safe_send(signal, sender=dispatcher.Anonymous,
-              propagate=None, *args, **kwargs):
+def safe_send(signal: Signal, sender: Type[dispatcher.Anonymous] = dispatcher.Anonymous,
+              propagate: Optional[List[Type[BaseException]]] = None, *args, **kwargs) -> None:
     """
     Same as ``send``, except this will catch and log all exceptions raised
     by handlers, except those specified in ``propagate`` argument (defaults
@@ -307,16 +310,16 @@ def safe_send(signal, sender=dispatcher.Anonymous,
 
 
 @contextmanager
-def wrap(signal_name, sender=dispatcher.Anonymous, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
+def wrap(signal_name: str, sender: Type[dispatcher.Anonymous] = dispatcher.Anonymous, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
     """Wraps the suite in before/after signals, ensuring
     that after signal is always sent."""
-    safe = kwargs.pop('safe', False)
+    safe: bool = kwargs.pop('safe', False)
     signal_name = signal_name.upper().replace('-', '_')
-    send_func = safe_send if safe else send
+    send_func: Callable = safe_send if safe else send
     try:
-        before_signal = globals()['BEFORE_' + signal_name]
-        success_signal = globals()['SUCCESSFUL_' + signal_name]
-        after_signal = globals()['AFTER_' + signal_name]
+        before_signal: Signal = globals()['BEFORE_' + signal_name]
+        success_signal: Signal = globals()['SUCCESSFUL_' + signal_name]
+        after_signal: Signal = globals()['AFTER_' + signal_name]
     except KeyError:
         raise ValueError('Invalid wrapped signal name: {}'.format(signal_name))
     try:
@@ -330,7 +333,7 @@ def wrap(signal_name, sender=dispatcher.Anonymous, *args, **kwargs):  # pylint: 
         send_func(after_signal, sender, *args, **kwargs)
 
 
-def wrapped(signal_name, sender=dispatcher.Anonymous, safe=False):
+def wrapped(signal_name: str, sender: Type[dispatcher.Anonymous] = dispatcher.Anonymous, safe: bool = False) -> Callable:
     """A decorator for wrapping function in signal dispatch."""
     @wrapt.decorator
     def signal_wrapped(wrapped_func, _, args, kwargs):

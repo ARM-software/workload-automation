@@ -14,18 +14,33 @@
 # pylint: disable=access-member-before-definition,attribute-defined-outside-init,unused-argument
 import os
 
-import pandas as pd
+import pandas as pd  # type:ignore
 
 from wa import Instrument, Parameter, Executable
 from wa.framework import signal
 from wa.framework.exception import ConfigError, InstrumentError
 from wa.utils.trace_cmd import TraceCmdParser
 from wa.utils.types import list_or_string
+from typing import cast, List, TYPE_CHECKING, Union, Optional
+from signal import Signals
+from typing_extensions import Protocol
+if TYPE_CHECKING:
+    from wa.framework.execution import ExecutionContext
+
+
+class FilePollerProtocol(Protocol):
+    name: str
+    description: str
+    sample_interval: int
+    files: Union[str, List[str]]
+    labels: Union[str, List[str]]
+    align_with_ftrace: bool
+    as_root: bool
 
 
 class FilePoller(Instrument):
-    name = 'file_poller'
-    description = """
+    name: str = 'file_poller'
+    description: str = """
     Polls the given files at a set sample interval. The values are output in CSV format.
 
     This instrument places a file called poller.csv in each iterations result directory.
@@ -36,7 +51,7 @@ class FilePoller(Instrument):
     before writing them.
     """
 
-    parameters = [
+    parameters: List[Parameter] = [
         Parameter('sample_interval', kind=int, default=1000,
                   description="""The interval between samples in mS."""),
         Parameter('files', kind=list_or_string, mandatory=True,
@@ -67,34 +82,40 @@ class FilePoller(Instrument):
                   """),
     ]
 
-    def validate(self):
-        if not self.files:
+    def validate(self) -> None:
+        """
+        validate files and labels to poll
+        """
+        if not cast(FilePollerProtocol, self).files:
             raise ConfigError('You must specify atleast one file to poll')
-        if self.labels and any(['*' in f for f in self.files]):
+        if cast(FilePollerProtocol, self).labels and any(['*' in f for f in cast(FilePollerProtocol, self).files]):
             raise ConfigError('You cannot used manual labels with `*` wildcards')
 
-    def initialize(self, context):
+    def initialize(self, context: 'ExecutionContext'):
+        """
+        initialize the file poller instrument
+        """
         if not self.target.is_rooted and self.as_root:
             raise ConfigError('The target is not rooted, cannot run poller as root.')
-        host_poller = context.get_resource(Executable(self, self.target.abi,
-                                                      "poller"))
-        target_poller = self.target.install(host_poller)
+        host_poller: Optional[str] = context.get_resource(Executable(self, self.target.abi or '',
+                                                          "poller"))
+        target_poller: str = self.target.install(host_poller)
 
-        expanded_paths = []
-        for path in self.files:
+        expanded_paths: List[str] = []
+        for path in cast(FilePollerProtocol, self).files:
             if "*" in path:
                 for p in self.target.list_directory(path):
                     expanded_paths.append(p)
             else:
                 expanded_paths.append(path)
         self.files = expanded_paths
-        if not self.labels:
+        if not cast(FilePollerProtocol, self).labels:
             self.labels = self._generate_labels()
 
-        self.target_output_path = self.target.path.join(self.target.working_directory, 'poller.csv')
-        self.target_log_path = self.target.path.join(self.target.working_directory, 'poller.log')
+        self.target_output_path = self.target.path.join(self.target.working_directory, 'poller.csv') if self.target.path else ''
+        self.target_log_path = self.target.path.join(self.target.working_directory, 'poller.log') if self.target.path else ''
         marker_option = ''
-        if self.align_with_ftrace:
+        if cast(FilePollerProtocol, self).align_with_ftrace:
             marker_option = '-m'
             signal.connect(self._adjust_timestamps, signal.AFTER_JOB_OUTPUT_PROCESSED)
         reopen_option = ''
@@ -109,18 +130,27 @@ class FilePoller(Instrument):
                                                                   self.target_output_path,
                                                                   self.target_log_path)
 
-    def start(self, context):
+    def start(self, context: 'ExecutionContext') -> None:
+        """
+        start the file poller
+        """
         self.target.kick_off(self.command, as_root=self.as_root)
 
-    def stop(self, context):
-        self.target.killall('poller', signal='TERM', as_root=self.as_root)
+    def stop(self, context: 'ExecutionContext') -> None:
+        """
+        stop the file poller
+        """
+        self.target.killall('poller', signal=cast(Signals, 'TERM'), as_root=self.as_root)
 
-    def update_output(self, context):
-        host_output_file = os.path.join(context.output_directory, 'poller.csv')
+    def update_output(self, context: 'ExecutionContext') -> None:
+        """
+        update the file poller output
+        """
+        host_output_file: str = os.path.join(context.output_directory, 'poller.csv')
         self.target.pull(self.target_output_path, host_output_file)
         context.add_artifact('poller-output', host_output_file, kind='data')
 
-        host_log_file = os.path.join(context.output_directory, 'poller.log')
+        host_log_file: str = os.path.join(context.output_directory, 'poller.log')
         self.target.pull(self.target_log_path, host_log_file)
         context.add_artifact('poller-log', host_log_file, kind='log')
 
@@ -131,35 +161,44 @@ class FilePoller(Instrument):
                 if 'WARNING' in line:
                     self.logger.warning(line.strip())
 
-    def teardown(self, context):
+    def teardown(self, context: 'ExecutionContext'):
+        """
+        teardown file poller
+        """
         self.target.remove(self.target_output_path)
         self.target.remove(self.target_log_path)
 
-    def _generate_labels(self):
+    def _generate_labels(self) -> List[str]:
+        """
+        generate labels
+        """
         # Split paths into their parts
-        path_parts = [f.split(self.target.path.sep) for f in self.files]
+        path_parts: List[List[str]] = [f.split(self.target.path.sep) for f in self.files] if self.target.path else []
         # Identify which parts differ between at least two of the paths
-        differ_map = [len(set(x)) > 1 for x in zip(*path_parts)]
+        differ_map: List[bool] = [len(set(x)) > 1 for x in zip(*path_parts)]
 
         # compose labels from path parts that differ
-        labels = []
+        labels: List[str] = []
         for pp in path_parts:
-            label_parts = [p for i, p in enumerate(pp[:-1])
-                           if i >= len(differ_map) or differ_map[i]]
+            label_parts: List[str] = [p for i, p in enumerate(pp[:-1])
+                                      if i >= len(differ_map) or differ_map[i]]
             label_parts.append(pp[-1])  # always use file name even if same for all
             labels.append('-'.join(label_parts))
         return labels
 
-    def _adjust_timestamps(self, context):
-        output_file = context.get_artifact_path('poller-output')
-        message = 'Adjusting timestamps inside "{}" to align with ftrace'
+    def _adjust_timestamps(self, context: 'ExecutionContext') -> None:
+        """
+        adjust timestamps in output file to align with trace
+        """
+        output_file: str = context.get_artifact_path('poller-output')
+        message: str = 'Adjusting timestamps inside "{}" to align with ftrace'
         self.logger.debug(message.format(output_file))
 
-        trace_txt = context.get_artifact_path('trace-cmd-txt')
+        trace_txt: str = context.get_artifact_path('trace-cmd-txt')
         trace_parser = TraceCmdParser(filter_markers=False)
-        marker_timestamp = None
+        marker_timestamp: Optional[Union[int, float]] = None
         for event in trace_parser.parse(trace_txt):
-            if event.name == 'print' and 'POLLER_START' in event.text:
+            if event.name == 'print' and 'POLLER_START' in (event.text or ''):
                 marker_timestamp = event.timestamp
                 break
 

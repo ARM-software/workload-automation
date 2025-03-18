@@ -21,11 +21,45 @@ from wa import Instrument, Parameter
 from wa.framework.exception import ConfigError, InstrumentError
 from wa.framework.instrument import extremely_slow
 from wa.utils.types import identifier
+from typing import TYPE_CHECKING, Optional, List, cast
+from typing_extensions import Protocol
+from devlib.target import Target
+import logging
+if TYPE_CHECKING:
+    from wa.framework.execution import ExecutionContext
+
+
+class DelayInstrumentProtocol(Protocol):
+    name: str
+    description: str
+    temperature_file: str
+    temperature_timeout: int
+    temperature_poll_period: int
+    temperature_between_specs: int
+    fixed_between_specs: int
+    temperature_between_jobs: int
+    fixed_between_jobs: int
+    fixed_before_start: int
+    temperature_before_start: int
+    active_cooling: bool
+    cooling: Optional[Instrument]
+    active_cooling_modules: List[str]
+    target: Target
+    logger: logging.Logger
+
+    def _discover_cooling_module(self) -> Optional[Instrument]:
+        ...
+
+    def wait_for_temperature(self, temperature: int) -> None:
+        ...
+
+    def do_wait_for_temperature(self, temperature: int) -> None:
+        ...
 
 
 class DelayInstrument(Instrument):
 
-    name = 'delay'
+    name: str = 'delay'
     description = """
     This instrument introduces a delay before beginning a new
     spec, a new job or before the main execution of a workload.
@@ -39,7 +73,7 @@ class DelayInstrument(Instrument):
 
     """
 
-    parameters = [
+    parameters: List[Parameter] = [
         Parameter('temperature_file', default='/sys/devices/virtual/thermal/thermal_zone0/temp',
                   global_alias='thermal_temp_file',
                   description="""
@@ -135,13 +169,16 @@ class DelayInstrument(Instrument):
                   """),
     ]
 
-    active_cooling_modules = ['mbed-fan', 'odroidxu3-fan']
+    active_cooling_modules: List[str] = ['mbed-fan', 'odroidxu3-fan']
 
-    def initialize(self, context):
+    def initialize(self: DelayInstrumentProtocol, context: 'ExecutionContext') -> None:
+        """
+        initialize delay instrument
+        """
         if self.active_cooling:
             self.cooling = self._discover_cooling_module()
             if not self.cooling:
-                msg = 'Cooling module not found on target. Please install one of the following modules: {}'
+                msg: str = 'Cooling module not found on target. Please install one of the following modules: {}'
                 raise InstrumentError(msg.format(self.active_cooling_modules))
 
         if self.temperature_between_jobs == 0:
@@ -155,9 +192,12 @@ class DelayInstrument(Instrument):
             self.temperature_between_specs = temp
 
     @extremely_slow
-    def start(self, context):
+    def start(self: DelayInstrumentProtocol, context: 'ExecutionContext') -> None:
+        """
+        start delay instrument
+        """
         if self.fixed_before_start:
-            msg = 'Waiting for {}s before running workload...'
+            msg: str = 'Waiting for {}s before running workload...'
             self.logger.info(msg.format(self.fixed_before_start))
             time.sleep(self.fixed_before_start)
         elif self.temperature_before_start:
@@ -165,7 +205,10 @@ class DelayInstrument(Instrument):
             self.wait_for_temperature(self.temperature_before_start)
 
     @extremely_slow
-    def before_job(self, context):
+    def before_job(self: DelayInstrumentProtocol, context: 'ExecutionContext') -> None:
+        """
+        run before job
+        """
         if self.fixed_between_specs and context.spec_changed:
             msg = 'Waiting for {}s before starting new spec...'
             self.logger.info(msg.format(self.fixed_between_specs))
@@ -181,17 +224,24 @@ class DelayInstrument(Instrument):
             self.logger.info('Waiting for temperature drop before starting new job...')
             self.wait_for_temperature(self.temperature_between_jobs)
 
-    def wait_for_temperature(self, temperature):
+    def wait_for_temperature(self: DelayInstrumentProtocol, temperature: int) -> None:
+        """
+        wait for temperature
+        """
         if self.active_cooling:
-            self.cooling.start()
-            self.do_wait_for_temperature(temperature)
-            self.cooling.stop()
+            if self.cooling:
+                self.cooling.start()
+                self.do_wait_for_temperature(temperature)
+                self.cooling.stop()
         else:
             self.do_wait_for_temperature(temperature)
 
-    def do_wait_for_temperature(self, temperature):
-        reading = self.target.read_int(self.temperature_file)
-        waiting_start_time = time.time()
+    def do_wait_for_temperature(self: DelayInstrumentProtocol, temperature: int) -> None:
+        """
+        wait to cool to the specified temperature
+        """
+        reading: int = self.target.read_int(self.temperature_file)
+        waiting_start_time: float = time.time()
         while reading > temperature:
             self.logger.debug('target temperature: {}'.format(reading))
             if time.time() - waiting_start_time > self.temperature_timeout:
@@ -200,26 +250,32 @@ class DelayInstrument(Instrument):
             time.sleep(self.temperature_poll_period)
             reading = self.target.read_int(self.temperature_file)
 
-    def validate(self):
+    def validate(self: DelayInstrumentProtocol):
+        """
+        validate the delay instrument
+        """
         if (self.temperature_between_specs is not None
                 and self.fixed_between_specs is not None):
             raise ConfigError('Both fixed delay and thermal threshold specified for specs.')
 
-        if (self.temperature_between_jobs is not None
+        if (cast(DelayInstrumentProtocol, self).temperature_between_jobs is not None
                 and self.fixed_between_jobs is not None):
             raise ConfigError('Both fixed delay and thermal threshold specified for jobs.')
 
-        if (self.temperature_before_start is not None
+        if (cast(DelayInstrumentProtocol, self).temperature_before_start is not None
                 and self.fixed_before_start is not None):
             raise ConfigError('Both fixed delay and thermal threshold specified before start.')
 
-        if not any([self.temperature_between_specs, self.fixed_between_specs,
-                    self.temperature_between_jobs, self.fixed_between_jobs,
-                    self.temperature_before_start, self.fixed_before_start]):
+        if not any([cast(DelayInstrumentProtocol, self).temperature_between_specs, cast(DelayInstrumentProtocol, self).fixed_between_specs,
+                    cast(DelayInstrumentProtocol, self).temperature_between_jobs, cast(DelayInstrumentProtocol, self).fixed_between_jobs,
+                    cast(DelayInstrumentProtocol, self).temperature_before_start, cast(DelayInstrumentProtocol, self).fixed_before_start]):
             raise ConfigError('Delay instrument is enabled, but no delay is specified.')
 
-    def _discover_cooling_module(self):
-        cooling_module = None
+    def _discover_cooling_module(self) -> Optional[Instrument]:
+        """
+        discover the cooling module
+        """
+        cooling_module: Optional[Instrument] = None
         for module in self.active_cooling_modules:
             if self.target.has(module):
                 if not cooling_module:

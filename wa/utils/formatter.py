@@ -15,9 +15,10 @@
 
 
 from wa.utils.terminalsize import get_terminal_size
+from typing import Optional, List, Any, Union
+from typing_extensions import LiteralString
 
-
-INDENTATION_FROM_TITLE = 4
+INDENTATION_FROM_TITLE: int = 4
 
 
 class TextFormatter(object):
@@ -29,13 +30,13 @@ class TextFormatter(object):
     attribute represents the name of the foramtter.
     """
 
-    name = None
-    data = None
+    name: Optional[str] = None
+    data: Optional[List[Any]] = None
 
     def __init__(self):
         pass
 
-    def add_item(self, new_data, item_title):
+    def add_item(self, new_data: str, item_title: str) -> None:
         """
         Add new item to the text formatter.
 
@@ -44,7 +45,7 @@ class TextFormatter(object):
         """
         raise NotImplementedError()
 
-    def format_data(self):
+    def format_data(self) -> Optional[str]:
         """
         It returns a formatted text
         """
@@ -52,49 +53,57 @@ class TextFormatter(object):
 
 
 class DescriptionListFormatter(TextFormatter):
+    """
+    description list formatter
+    """
+    name: str = 'description_list_formatter'
+    data: Optional[List[Any]] = None
 
-    name = 'description_list_formatter'
-    data = None
+    def __init__(self, title: Optional[str] = None, width: Optional[int] = None):
+        super(DescriptionListFormatter, self).__init__()
+        self.data_title = title
+        self._text_width = width
+        self.longest_word_length: int = 0
+        self.data = []
 
-    def get_text_width(self):
+    def get_text_width(self) -> Optional[int]:
         if not self._text_width:
             self._text_width, _ = get_terminal_size()  # pylint: disable=unpacking-non-sequence
         return self._text_width
 
-    def set_text_width(self, value):
+    def set_text_width(self, value: int) -> None:
         self._text_width = value
 
     text_width = property(get_text_width, set_text_width)
 
-    def __init__(self, title=None, width=None):
-        super(DescriptionListFormatter, self).__init__()
-        self.data_title = title
-        self._text_width = width
-        self.longest_word_length = 0
-        self.data = []
-
-    def add_item(self, new_data, item_title):
+    def add_item(self, new_data: str, item_title: str) -> None:
+        """
+        add item to formatter
+        """
         if len(item_title) > self.longest_word_length:
             self.longest_word_length = len(item_title)
-        self.data[len(self.data):] = [(item_title, self._remove_newlines(new_data))]
+        self.data[len(self.data):] = [(item_title, self._remove_newlines(new_data))]  # type:ignore
 
-    def format_data(self):
-        parag_indentation = self.longest_word_length + INDENTATION_FROM_TITLE
-        string_formatter = '{}:<{}{} {}'.format('{', parag_indentation, '}', '{}')
+    def format_data(self) -> Optional[str]:
+        """
+        format data
+        """
+        parag_indentation: int = self.longest_word_length + INDENTATION_FROM_TITLE
+        string_formatter: str = '{}:<{}{} {}'.format('{', parag_indentation, '}', '{}')
 
-        formatted_data = ''
+        formatted_data: str = ''
         if self.data_title:
             formatted_data += self.data_title
 
-        line_width = self.text_width - parag_indentation
-        for title, paragraph in self.data:
+        line_width: int = (self.text_width or 0) - parag_indentation
+        for title, paragraph in (self.data or []):
             formatted_data += '\n'
-            title_len = self.longest_word_length - len(title)
+            title_len: int = self.longest_word_length - len(title)
             title += ':'
             if title_len > 0:
                 title = (' ' * title_len) + title
 
-            parag_lines = self._break_lines(paragraph, line_width).splitlines()
+            parag_lines: List[LiteralString] = self._break_lines(paragraph, line_width).splitlines()
             if parag_lines:
                 formatted_data += string_formatter.format(title, parag_lines[0])
                 for line in parag_lines[1:]:
@@ -107,10 +116,13 @@ class DescriptionListFormatter(TextFormatter):
 
     # Return text's paragraphs sperated in a list, such that each index in the
     # list is a single text paragraph with no new lines
-    def _remove_newlines(self, new_data):  # pylint: disable=R0201
-        parag_list = ['']
-        parag_num = 0
-        prv_parag = None
+    def _remove_newlines(self, new_data: str):  # pylint: disable=R0201
+        """
+        remove newline characters
+        """
+        parag_list: List[str] = ['']
+        parag_num: int = 0
+        prv_parag: Optional[str] = None
         # For each paragraph sperated by a new line
         for paragraph in new_data.splitlines():
             if paragraph:
@@ -127,8 +139,11 @@ class DescriptionListFormatter(TextFormatter):
             return parag_list[:-1]
         return parag_list
 
-    def _break_lines(self, parag_list, line_width):  # pylint: disable=R0201
-        formatted_paragraphs = []
+    def _break_lines(self, parag_list: List[LiteralString], line_width: int):  # pylint: disable=R0201
+        """
+        break lines
+        """
+        formatted_paragraphs: List[LiteralString] = []
         for para in parag_list:
             words = para.split()
             if words:

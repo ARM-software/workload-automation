@@ -17,12 +17,15 @@ from devlib.exception import (DevlibError, HostError, TimeoutError,  # pylint: d
                               TargetError, TargetNotRespondingError)
 
 from wa.utils.misc import get_traceback
+from typing import Optional, Tuple, Type
+from types import TracebackType
 
 
 class WAError(Exception):
     """Base class for all Workload Automation exceptions."""
     @property
-    def message(self):
+    def message(self) -> str:
+        """Error message"""
         if self.args:
             return self.args[0]
         return ''
@@ -80,20 +83,22 @@ class SerializerSyntaxError(Exception):
     Error loading a serialized structure from/to a file handle.
     """
     @property
-    def message(self):
+    def message(self) -> str:
+        """Error message"""
         if self.args:
             return self.args[0]
         return ''
 
-    def __init__(self, message, line=None, column=None):
+    def __init__(self, message: str, line: Optional[int] = None,
+                 column: Optional[int] = None):
         super(SerializerSyntaxError, self).__init__(message)
         self.line = line
         self.column = column
 
-    def __str__(self):
-        linestring = ' on line {}'.format(self.line) if self.line else ''
-        colstring = ' in column {}'.format(self.column) if self.column else ''
-        message = 'Syntax Error{}: {}'
+    def __str__(self) -> str:
+        linestring: str = ' on line {}'.format(self.line) if self.line else ''
+        colstring: str = ' in column {}'.format(self.column) if self.column else ''
+        message: str = 'Syntax Error{}: {}'
         return message.format(''.join([linestring, colstring]), self.message)
 
 
@@ -104,18 +109,20 @@ class PluginLoaderError(WAError):
     sys.exc_info() for the original exception (if any) that
     caused the error."""
 
-    def __init__(self, message, exc_info=None):
+    def __init__(self, message: str,
+                 exc_info: Optional[Tuple[Optional[Type[BaseException]],
+                                          Optional[BaseException], Optional[TracebackType]]] = None):
         super(PluginLoaderError, self).__init__(message)
         self.exc_info = exc_info
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.exc_info:
-            orig = self.exc_info[1]
-            orig_name = type(orig).__name__
+            orig: Optional[BaseException] = self.exc_info[1]
+            orig_name: str = type(orig).__name__
             if isinstance(orig, WAError):
-                reason = 'because of:\n{}: {}'.format(orig_name, orig)
+                reason: str = 'because of:\n{}: {}'.format(orig_name, orig)
             else:
-                text = 'because of:\n{}\n{}: {}'
+                text: str = 'because of:\n{}\n{}: {}'
                 reason = text.format(get_traceback(self.exc_info), orig_name, orig)
             return '\n'.join([self.message, reason])
         else:
@@ -133,7 +140,9 @@ class WorkerThreadError(WAError):
 
     """
 
-    def __init__(self, thread, exc_info):
+    def __init__(self, thread: str,
+                 exc_info: Tuple[Optional[Type[BaseException]],
+                                 Optional[BaseException], Optional[TracebackType]]):
         self.thread = thread
         self.exc_info = exc_info
         orig = self.exc_info[1]

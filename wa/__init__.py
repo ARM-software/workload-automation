@@ -30,7 +30,7 @@ from wa.framework.plugin import Plugin, Parameter, Alias
 from wa.framework.resource import (NO_ONE, JarFile, ApkFile, ReventFile, File,
                                    Executable)
 from wa.framework.target.descriptor import (TargetDescriptor, TargetDescription,
-                                            create_target_description, add_description_for_target)
+                                            create_target_description)
 from wa.framework.workload import (Workload, ApkWorkload, ApkUiautoWorkload,
                                    ApkReventWorkload, UIWorkload, UiautoWorkload,
                                    PackageHandler, ReventWorkload, TestPackageHandler)
