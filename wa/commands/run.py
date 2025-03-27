@@ -23,21 +23,28 @@ from wa import Command, settings
 from wa.framework import pluginloader
 from wa.framework.configuration.parsers import AgendaParser
 from wa.framework.execution import Executor
-from wa.framework.output import init_run_output
+from wa.framework.output import init_run_output, RunOutput
 from wa.framework.exception import NotFoundError, ConfigError
 from wa.utils import log
 from wa.utils.types import toggle_set
+from argparse import Namespace
+from typing import (Optional, TYPE_CHECKING, cast, List, Dict,
+                    Any)
+if TYPE_CHECKING:
+    from wa.framework.execution import ExecutionContext, ConfigManager
+    from wa.framework.pluginloader import __LoaderWrapper
+    from wa.framework.configuration.core import RunConfigurationProtocol
 
 
 class RunCommand(Command):
 
-    name = 'run'
-    description = '''
+    name: str = 'run'
+    description: str = '''
     Execute automated workloads on a remote device and process the resulting output.
 
     '''
 
-    def initialize(self, context):
+    def initialize(self, context: Optional['ExecutionContext']) -> None:
         self.parser.add_argument('agenda', metavar='AGENDA',
                                  help="""
                                  Agenda for this workload automation run. This
@@ -84,8 +91,8 @@ class RunCommand(Command):
                                  be specified multiple times.
                                  """)
 
-    def execute(self, config, args):  # pylint: disable=arguments-differ
-        output = self.set_up_output_directory(config, args)
+    def execute(self, config: 'ConfigManager', args: Namespace) -> None:  # pylint: disable=arguments-differ
+        output: RunOutput = self.set_up_output_directory(config, args)
         log.add_file(output.logfile)
         output.add_artifact('runlog', output.logfile, kind='log',
                             description='Run log.')
@@ -97,30 +104,34 @@ class RunCommand(Command):
 
         parser = AgendaParser()
         if os.path.isfile(args.agenda):
-            includes = parser.load_from_path(config, args.agenda)
+            includes: List[str] = parser.load_from_path(config, args.agenda)
             shutil.copy(args.agenda, output.raw_config_dir)
             for inc in includes:
                 shutil.copy(inc, output.raw_config_dir)
         else:
             try:
-                pluginloader.get_plugin_class(args.agenda, kind='workload')
-                agenda = {'workloads': [{'name': args.agenda}]}
+                cast('__LoaderWrapper', pluginloader).get_plugin_class(args.agenda, kind='workload')
+                agenda: Dict[str, List[Dict[str, Any]]] = {'workloads': [{'name': args.agenda}]}
                 parser.load(config, agenda, 'CMDLINE_ARGS')
             except NotFoundError:
-                msg = 'Agenda file "{}" does not exist, and there no workload '\
-                      'with that name.\nYou can get a list of available '\
-                      'by running "wa list workloads".'
+                msg: str = 'Agenda file "{}" does not exist, and there no workload '\
+                    'with that name.\nYou can get a list of available '\
+                    'by running "wa list workloads".'
                 raise ConfigError(msg.format(args.agenda))
 
         # Update run info with newly parsed config values
-        output.info.project = config.run_config.project
-        output.info.project_stage = config.run_config.project_stage
-        output.info.run_name = config.run_config.run_name
+        if output.info:
+            output.info.project = cast('RunConfigurationProtocol', config.run_config).project
+            output.info.project_stage = cast('RunConfigurationProtocol', config.run_config).project_stage
+            output.info.run_name = cast('RunConfigurationProtocol', config.run_config).run_name
 
         executor = Executor()
         executor.execute(config, output)
 
-    def set_up_output_directory(self, config, args):
+    def set_up_output_directory(self, config: 'ConfigManager', args: Namespace) -> RunOutput:
+        """
+        set up the run output directory
+        """
         if args.output_directory:
             output_directory = args.output_directory
         else:

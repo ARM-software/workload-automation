@@ -23,7 +23,7 @@ from collections import OrderedDict, defaultdict
 from itertools import chain
 from copy import copy
 
-from future.utils import with_metaclass
+from future.utils import with_metaclass  # type:ignore
 
 from wa.framework.configuration.core import settings, ConfigurationPoint as Parameter
 from wa.framework.exception import (NotFoundError, PluginLoaderError, TargetError,
@@ -32,6 +32,13 @@ from wa.utils import log
 from wa.utils.misc import (ensure_directory_exists as _d, walk_modules, load_class,
                            merge_dicts_simple, get_article, import_path)
 from wa.utils.types import identifier
+from typing import (Optional, List, Dict, DefaultDict, Tuple, cast,
+                    TYPE_CHECKING, Union, Type, Any)
+from devlib.target import Target
+from types import ModuleType
+from typing_extensions import Protocol
+if TYPE_CHECKING:
+    from wa.framework.output import Artifact
 
 
 class AttributeCollection(object):
@@ -39,31 +46,37 @@ class AttributeCollection(object):
     Accumulator for plugin attribute objects (such as Parameters or Artifacts).
 
     This will replace any class member list accumulating such attributes
-    through the magic of metaprogramming\ [*]_.
+    through the magic of metaprogramming [*]_.
 
     .. [*] which is totally safe and not going backfire in any way...
 
     """
 
     @property
-    def values(self):
+    def values(self) -> List[Any]:
+        """
+        list of attribute values
+        """
         return list(self._attrs.values())
 
-    def __init__(self, attrcls):
+    def __init__(self, attrcls: Type):
         self._attrcls = attrcls
-        self._attrs = OrderedDict()
+        self._attrs: OrderedDict[str, Parameter] = OrderedDict()
 
-    def add(self, p):
+    def add(self, p: Parameter) -> None:
+        """
+        add attribute to collection
+        """
         p = self._to_attrcls(p)
         if p.name in self._attrs:
             if p.override:
-                newp = copy(self._attrs[p.name])
+                newp: Parameter = copy(self._attrs[p.name])
                 for a, v in p.__dict__.items():
                     if v is not None:
                         setattr(newp, a, v)
                 if not hasattr(newp, "_overridden"):
                     # pylint: disable=protected-access
-                    newp._overridden = p._owner
+                    newp._overridden = p._owner  # type:ignore
                 self._attrs[p.name] = newp
             else:
                 # Duplicate attribute condition is check elsewhere.
@@ -78,14 +91,17 @@ class AttributeCollection(object):
 
     __repr__ = __str__
 
-    def _to_attrcls(self, p):
+    def _to_attrcls(self, p: Parameter) -> Parameter:
+        """
+        convert parameter to the required class type
+        """
         if not isinstance(p, self._attrcls):
             raise ValueError('Invalid attribute value: {}; must be a {}'.format(p, self._attrcls))
         if p.name in self._attrs and not p.override:
             raise ValueError('Attribute {} has already been defined.'.format(p.name))
         return p
 
-    def __iadd__(self, other):
+    def __iadd__(self, other: List[Parameter]):
         for p in other:
             self.add(p)
         return self
@@ -93,10 +109,10 @@ class AttributeCollection(object):
     def __iter__(self):
         return iter(self.values)
 
-    def __contains__(self, p):
+    def __contains__(self, p: Parameter):
         return p in self._attrs
 
-    def __getitem__(self, i):
+    def __getitem__(self, i: str) -> Parameter:
         return self._attrs[i]
 
     def __len__(self):
@@ -104,11 +120,13 @@ class AttributeCollection(object):
 
 
 class AliasCollection(AttributeCollection):
-
+    """
+    collection of aliases
+    """
     def __init__(self):
         super(AliasCollection, self).__init__(Alias)
 
-    def _to_attrcls(self, p):
+    def _to_attrcls(self, p: Parameter) -> Parameter:
         if isinstance(p, (list, tuple)):
             # must be in the form (name, {param: value, ...})
             # pylint: disable=protected-access
@@ -134,12 +152,15 @@ class Alias(object):
 
     """
 
-    def __init__(self, name, **kwargs):
+    def __init__(self, name: str, **kwargs):
         self.name = name
-        self.params = kwargs
-        self.plugin_name = None  # gets set by the MetaClass
+        self.params: Dict[str, Any] = kwargs
+        self.plugin_name: Optional[str] = None  # gets set by the MetaClass
 
-    def validate(self, ext):
+    def validate(self, ext: 'Plugin') -> None:
+        """
+        validate the alias
+        """
         ext_params = set(p.name for p in ext.parameters)
         for param in self.params:
             if param not in ext_params:
@@ -162,18 +183,20 @@ class PluginMeta(type):
 
     """
 
-    to_propagate = [
+    to_propagate: List[Tuple[str, Type[Parameter], Type[AttributeCollection]]] = [
         ('parameters', Parameter, AttributeCollection),
     ]
 
-    def __new__(mcs, clsname, bases, attrs):
+    def __new__(mcs: Type['PluginMeta'], clsname: str, bases: Tuple[Type, ...],
+                attrs: Dict[str, Any]):
         mcs._propagate_attributes(bases, attrs, clsname)
         cls = type.__new__(mcs, clsname, bases, attrs)
-        mcs._setup_aliases(cls)
+        mcs._setup_aliases(cast('Plugin', cls))
         return cls
 
     @classmethod
-    def _propagate_attributes(mcs, bases, attrs, clsname):  # pylint: disable=too-many-locals
+    def _propagate_attributes(mcs: Type['PluginMeta'], bases: Tuple[Type, ...],
+                              attrs: Dict[str, Any], clsname: str) -> None:  # pylint: disable=too-many-locals
         # pylint: disable=protected-access
         """
         For attributes specified by to_propagate, their values will be a union of
@@ -194,7 +217,7 @@ class PluginMeta(type):
                     if not isinstance(pa, attr_cls):
                         msg = 'Invalid value "{}" for attribute "{}"; must be a {}'
                         raise ValueError(msg.format(pa, prop_attr, attr_cls))
-                    pa._owner = clsname
+                    pa._owner = clsname  # type:ignore
                 propagated += pattrs
                 should_propagate = True
             if should_propagate:
@@ -207,7 +230,10 @@ class PluginMeta(type):
                 attrs[prop_attr] = propagated
 
     @classmethod
-    def _setup_aliases(mcs, cls):
+    def _setup_aliases(mcs: Type['PluginMeta'], cls: 'Plugin') -> None:
+        """
+        setup aliases for plugins
+        """
         if hasattr(cls, 'aliases'):
             aliases, cls.aliases = cls.aliases, AliasCollection()
             for alias in aliases:
@@ -215,10 +241,16 @@ class PluginMeta(type):
                     alias = Alias(alias)
                 alias.validate(cls)
                 alias.plugin_name = cls.name
-                cls.aliases.add(alias)
+                cls.aliases.add(cast(Parameter, alias))
 
 
-class Plugin(with_metaclass(PluginMeta, object)):
+class LoaderProtocol(Protocol):
+
+    def get_module(self, name: str, owner: 'Plugin', **kwargs) -> 'Plugin':
+        ...
+
+
+class Plugin(metaclass=PluginMeta):
     """
     Base class for all WA plugins. An plugin is basically a plug-in.  It
     extends the functionality of WA in some way. Plugins are discovered and
@@ -230,29 +262,38 @@ class Plugin(with_metaclass(PluginMeta, object)):
 
     """
 
-    kind = None
-    name = None
-    parameters = []
-    artifacts = []
-    aliases = []
-    core_modules = []
+    kind: Optional[str] = None
+    name: Optional[str] = None
+    parameters: List[Parameter] = []
+    artifacts: List['Artifact'] = []
+    aliases: Union[List[Alias], AliasCollection] = []
+    core_modules: List[Union[str, Dict]] = []
 
     @classmethod
-    def get_default_config(cls):
+    def get_default_config(cls) -> Dict[str, Any]:
+        """
+        get default configuration
+        """
         return {p.name: p.default for p in cls.parameters if not p.deprecated}
 
     @property
-    def dependencies_directory(self):
-        return _d(os.path.join(settings.dependencies_directory, self.name))
+    def dependencies_directory(self) -> str:
+        """
+        dependencies directory for the plugin
+        """
+        return _d(os.path.join(settings.dependencies_directory, self.name or ''))
 
     @property
-    def _classname(self):
+    def _classname(self) -> str:
+        """
+        name of the plugin class
+        """
         return self.__class__.__name__
 
-    def __init__(self, **kwargs):
-        self.logger = logging.getLogger(self.name)
-        self._modules = []
-        self.capabilities = getattr(self.__class__, 'capabilities', [])
+    def __init__(self, **kwargs) -> None:
+        self.logger: logging.Logger = logging.getLogger(self.name)
+        self._modules: List['Plugin'] = []
+        self.capabilities: List[str] = getattr(self.__class__, 'capabilities', [])
         for param in self.parameters:
             param.set_value(self, kwargs.get(param.name))
         for key in kwargs:
@@ -260,17 +301,17 @@ class Plugin(with_metaclass(PluginMeta, object)):
                 message = 'Unexpected parameter "{}" for {}'
                 raise ConfigError(message.format(key, self.name))
 
-    def get_config(self):
+    def get_config(self) -> Dict[str, Optional[Parameter]]:
         """
         Returns current configuration (i.e. parameter values) of this plugin.
 
         """
-        config = {}
+        config: Dict[str, Optional[Parameter]] = {}
         for param in self.parameters:
             config[param.name] = getattr(self, param.name, None)
         return config
 
-    def validate(self):
+    def validate(self) -> None:
         """
         Perform basic validation to ensure that this plugin is capable of
         running.  This is intended as an early check to ensure the plugin has
@@ -280,7 +321,7 @@ class Plugin(with_metaclass(PluginMeta, object)):
         This method may also be used to enforce (i.e. set as well as check)
         inter-parameter constraints for the plugin (e.g. if valid values for
         parameter A depend on the value of parameter B -- something that is not
-        possible to enfroce using ``Parameter``\ 's ``constraint`` attribute.
+        possible to enfroce using ``Parameter`'s ``constraint`` attribute.
 
         """
         if self.name is None:
@@ -288,7 +329,7 @@ class Plugin(with_metaclass(PluginMeta, object)):
         for param in self.parameters:
             param.validate(self)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         if name == '_modules':
             raise ValueError('_modules accessed too early!')
         for module in self._modules:
@@ -296,7 +337,7 @@ class Plugin(with_metaclass(PluginMeta, object)):
                 return getattr(module, name)
         raise AttributeError(name)
 
-    def load_modules(self, loader):
+    def load_modules(self, loader: LoaderProtocol) -> None:
         """
         Load the modules specified by the "modules" Parameter using the
         provided loader. A loader can be any object that has an atribute called
@@ -309,17 +350,17 @@ class Plugin(with_metaclass(PluginMeta, object)):
         appropriate exception.
 
         """
-        modules = list(reversed(self.core_modules))
+        modules: List[Union[str, Dict]] = list(reversed(self.core_modules))
         modules += list(reversed(self.modules or []))
         if not modules:
             return
         for module_spec in modules:
             if not module_spec:
                 continue
-            module = self._load_module(loader, module_spec)
+            module: 'Plugin' = self._load_module(loader, module_spec)
             self._install_module(module)
 
-    def has(self, capability):
+    def has(self, capability: str):
         """
         Check if this plugin has the specified capability. The alternative
         method ``can`` is identical to this. Which to use is up to the caller
@@ -331,18 +372,18 @@ class Plugin(with_metaclass(PluginMeta, object)):
 
     can = has
 
-    def _load_module(self, loader, module_spec):
+    def _load_module(self, loader: LoaderProtocol, module_spec: Union[str, Dict]) -> 'Plugin':
         if isinstance(module_spec, str):
-            name = module_spec
-            params = {}
+            name: str = module_spec
+            params: Dict = {}
         elif isinstance(module_spec, dict):
             if len(module_spec) != 1:
-                msg = 'Invalid module spec: {}; dict must have exctly one key -- '\
-                      'the module name.'
+                msg: str = 'Invalid module spec: {}; dict must have exctly one key -- '\
+                    'the module name.'
                 raise ValueError(msg.format(module_spec))
             name, params = list(module_spec.items())[0]
         else:
-            message = 'Invalid module spec: {}; must be a string or a one-key dict.'
+            message: str = 'Invalid module spec: {}; must be a string or a one-key dict.'
             raise ValueError(message.format(module_spec))
 
         if not isinstance(params, dict):
@@ -353,16 +394,19 @@ class Plugin(with_metaclass(PluginMeta, object)):
         module.initialize(None)
         return module
 
-    def _install_module(self, module):
+    def _install_module(self, module: 'Plugin') -> None:
+        """
+        install the module
+        """
         for capability in module.capabilities:
             if capability not in self.capabilities:
                 self.capabilities.append(capability)
         self._modules.append(module)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.name)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         params = []
         for param in self.parameters:
             params.append('{}={}'.format(param.name,
@@ -376,8 +420,8 @@ class TargetedPlugin(Plugin):
 
     """
 
-    supported_targets = []
-    parameters = [
+    supported_targets: List[str] = []
+    parameters: List[Parameter] = [
         Parameter('cleanup_assets', kind=bool,
                   global_alias='cleanup_assets',
                   aliases=['clean_up'],
@@ -389,13 +433,16 @@ class TargetedPlugin(Plugin):
     ]
 
     @classmethod
-    def check_compatible(cls, target):
+    def check_compatible(cls, target: Target) -> None:
+        """
+        check target's compatibility with the plugin
+        """
         if cls.supported_targets:
             if target.os not in cls.supported_targets:
                 msg = 'Incompatible target OS "{}" for {}'
                 raise TargetError(msg.format(target.os, cls.name))
 
-    def __init__(self, target, **kwargs):
+    def __init__(self, target: Target, **kwargs):
         super(TargetedPlugin, self).__init__(**kwargs)
         self.check_compatible(target)
         self.target = target
@@ -420,8 +467,9 @@ class PluginLoader(object):
 
     """
 
-    def __init__(self, packages=None, paths=None, ignore_paths=None,
-                 keep_going=False):
+    def __init__(self, packages: Optional[List[str]] = None,
+                 paths: Optional[List[str]] = None, ignore_paths: Optional[List[str]] = None,
+                 keep_going: bool = False):
         """
         params::
 
@@ -439,17 +487,20 @@ class PluginLoader(object):
         self.packages = packages or []
         self.paths = paths or []
         self.ignore_paths = ignore_paths or []
-        self.plugins = {}
-        self.kind_map = defaultdict(dict)
-        self.aliases = {}
-        self.global_param_aliases = {}
+        self.plugins: Dict[str, Type[Plugin]] = {}
+        self.kind_map: DefaultDict[str,
+                                   Dict[str, Type[Plugin]]] = defaultdict(dict)
+        self.aliases: Dict[str, Alias] = {}
+        self.global_param_aliases: Dict[str, Alias] = {}
         self._discover_from_packages(self.packages)
         self._discover_from_paths(self.paths, self.ignore_paths)
 
-    def update(self, packages=None, paths=None, ignore_paths=None):
+    def update(self, packages: Optional[List[str]] = None,
+               paths: Optional[List[str]] = None,
+               ignore_paths: Optional[List[str]] = None) -> None:
         """ Load plugins from the specified paths/packages
         without clearing or reloading existing plugin. """
-        msg = 'Updating from: packages={} paths={}'
+        msg: str = 'Updating from: packages={} paths={}'
         self.logger.debug(msg.format(packages, paths))
         if packages:
             self.packages.extend(packages)
@@ -459,52 +510,54 @@ class PluginLoader(object):
             self.ignore_paths.extend(ignore_paths or [])
             self._discover_from_paths(paths, ignore_paths or [])
 
-    def clear(self):
+    def clear(self) -> None:
         """ Clear all discovered items. """
         self.plugins = {}
         self.kind_map.clear()
         self.aliases.clear()
         self.global_param_aliases.clear()
 
-    def reload(self):
+    def reload(self) -> None:
         """ Clear all discovered items and re-run the discovery. """
         self.logger.debug('Reloading')
         self.clear()
         self._discover_from_packages(self.packages)
         self._discover_from_paths(self.paths, self.ignore_paths)
 
-    def get_plugin_class(self, name, kind=None):
+    def get_plugin_class(self, name: Optional[str],
+                         kind: Optional[str] = None) -> Type[Plugin]:
         """
         Return the class for the specified plugin if found or raises ``ValueError``.
 
         """
-        name, _ = self.resolve_alias(name)
+        name, _ = self.resolve_alias(name or '')
         if kind is None:
             try:
-                return self.plugins[name]
+                return self.plugins[str(name)]
             except KeyError:
                 raise NotFoundError('plugins {} not found.'.format(name))
         if kind not in self.kind_map:
             raise ValueError('Unknown plugin type: {}'.format(kind))
-        store = self.kind_map[kind]
+        store: Dict[str, Type[Plugin]] = self.kind_map[kind]
         if name not in store:
-            msg = 'plugins {} is not {} {}.'
+            msg: str = 'plugins {} is not {} {}.'
             raise NotFoundError(msg.format(name, get_article(kind), kind))
         return store[name]
 
-    def get_plugin(self, name=None, kind=None, *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
+    def get_plugin(self, name: Optional[str] = None,
+                   kind: Optional[str] = None, *args, **kwargs) -> Plugin:  # pylint: disable=keyword-arg-before-vararg
         """
         Return plugin of the specified kind with the specified name. Any
         additional parameters will be passed to the plugin's __init__.
 
         """
-        name, base_kwargs = self.resolve_alias(name)
+        name, base_kwargs = self.resolve_alias(name or '')
         kwargs = OrderedDict(chain(iter(base_kwargs.items()), iter(kwargs.items())))
         cls = self.get_plugin_class(name, kind)
         plugin = cls(*args, **kwargs)
         return plugin
 
-    def get_default_config(self, name):
+    def get_default_config(self, name: str) -> Dict:
         """
         Returns the default configuration for the specified plugin name. The
         name may be an alias, in which case, the returned config will be
@@ -515,7 +568,7 @@ class PluginLoader(object):
         base_default_config = self.get_plugin_class(real_name).get_default_config()
         return merge_dicts_simple(base_default_config, alias_config)
 
-    def list_plugins(self, kind=None):
+    def list_plugins(self, kind: Optional[str] = None) -> List[Type[Plugin]]:
         """
         List discovered plugin classes. Optionally, only list plugins of a
         particular type.
@@ -527,7 +580,7 @@ class PluginLoader(object):
             raise ValueError('Unknown plugin type: {}'.format(kind))
         return list(self.kind_map[kind].values())
 
-    def has_plugin(self, name, kind=None):
+    def has_plugin(self, name: str, kind: Optional[str] = None) -> bool:
         """
         Returns ``True`` if an plugins with the specified ``name`` has been
         discovered by the loader. If ``kind`` was specified, only returns ``True``
@@ -540,11 +593,11 @@ class PluginLoader(object):
         except NotFoundError:
             return False
 
-    def resolve_alias(self, alias_name):
+    def resolve_alias(self, alias_name: str) -> Tuple[str, Dict]:
         """
         Try to resolve the specified name as an plugin alias. Returns a
         two-tuple, the first value of which is actual plugin name, and the
-        iisecond is a dict of parameter values for this alias. If the name passed
+        second is a dict of parameter values for this alias. If the name passed
         is already an plugin name, then the result is ``(alias_name, {})``.
 
         """
@@ -552,13 +605,13 @@ class PluginLoader(object):
         if alias_name in self.plugins:
             return (alias_name, {})
         if alias_name in self.aliases:
-            alias = self.aliases[alias_name]
-            return (alias.plugin_name, copy(alias.params))
+            alias: Alias = self.aliases[alias_name]
+            return (cast(str, alias.plugin_name), copy(alias.params))
         raise NotFoundError('Could not find plugin or alias "{}"'.format(alias_name))
 
     # Internal methods.
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str):
         """
         This resolves methods for specific plugins types based on corresponding
         generic plugin methods. So it's possible to say things like ::
@@ -570,31 +623,34 @@ class PluginLoader(object):
             loader.get_plugin('foo', kind='device')
 
         """
-        error_msg = 'No plugins of type "{}" discovered'
+        error_msg: str = 'No plugins of type "{}" discovered'
         if name.startswith('get_'):
             name = name.replace('get_', '', 1)
             if name in self.kind_map:
-                def __wrapper(pname, *args, **kwargs):
+                def __wrapper(pname: str, *args, **kwargs):
                     return self.get_plugin(pname, name, *args, **kwargs)
                 return __wrapper
             raise NotFoundError(error_msg.format(name))
         if name.startswith('list_'):
             name = name.replace('list_', '', 1).rstrip('s')
             if name in self.kind_map:
-                def __wrapper(*args, **kwargs):  # pylint: disable=E0102
+                def __list_plugins_wrapper(*args, **kwargs):  # pylint: disable=E0102
                     return self.list_plugins(name, *args, **kwargs)
-                return __wrapper
+                return __list_plugins_wrapper
             raise NotFoundError(error_msg.format(name))
         if name.startswith('has_'):
             name = name.replace('has_', '', 1)
             if name in self.kind_map:
-                def __wrapper(pname, *args, **kwargs):  # pylint: disable=E0102
+                def __has_plugin_wrapper(pname, *args, **kwargs):  # pylint: disable=E0102
                     return self.has_plugin(pname, name, *args, **kwargs)
-                return __wrapper
+                return __has_plugin_wrapper
             raise NotFoundError(error_msg.format(name))
         raise AttributeError(name)
 
-    def _discover_from_packages(self, packages):
+    def _discover_from_packages(self, packages: List[str]) -> None:
+        """
+        discover plugins from packages
+        """
         self.logger.debug('Discovering plugins in packages')
         try:
             for package in packages:
@@ -602,10 +658,13 @@ class PluginLoader(object):
                     self._discover_in_module(module)
         except HostError as e:
             message = 'Problem loading plugins from {}: {}'
-            raise PluginLoaderError(message.format(e.module, str(e.orig_exc)),
-                                    e.exc_info)
+            raise PluginLoaderError(message.format(e.module, str(e.orig_exc)), e.exc_info)  # type:ignore
 
-    def _discover_from_paths(self, paths, ignore_paths):
+    def _discover_from_paths(self, paths: Optional[List[str]],
+                             ignore_paths: Optional[List[str]]) -> None:
+        """
+        discover plugins in the specified paths
+        """
         paths = paths or []
         ignore_paths = ignore_paths or []
 
@@ -616,7 +675,7 @@ class PluginLoader(object):
                 self._discover_from_file(path)
             elif os.path.exists(path):
                 for root, _, files in os.walk(path, followlinks=True):
-                    should_skip = False
+                    should_skip: bool = False
                     for igpath in ignore_paths:
                         if root.startswith(igpath):
                             should_skip = True
@@ -635,22 +694,28 @@ class PluginLoader(object):
                 except Exception: # NOQA pylint: disable=broad-except
                     pass
 
-    def _discover_from_file(self, filepath):
+    def _discover_from_file(self, filepath: str) -> None:
+        """
+        discover plugins from file
+        """
         try:
-            module = import_path(filepath)
+            module: ModuleType = import_path(filepath)
             self._discover_in_module(module)
         except (SystemExit, ImportError) as e:
             if self.keep_going:
                 self.logger.warning('Failed to load {}'.format(filepath))
                 self.logger.warning('Got: {}'.format(e))
             else:
-                msg = 'Failed to load {}'
+                msg: str = 'Failed to load {}'
                 raise PluginLoaderError(msg.format(filepath), sys.exc_info())
         except Exception as e:
-            message = 'Problem loading plugins from {}: {}'
+            message: str = 'Problem loading plugins from {}: {}'
             raise PluginLoaderError(message.format(filepath, e))
 
-    def _discover_in_module(self, module):  # NOQA pylint: disable=too-many-branches
+    def _discover_in_module(self, module: ModuleType):  # NOQA pylint: disable=too-many-branches
+        """
+        discover plugi in a module
+        """
         self.logger.debug('Checking module %s', module.__name__)
         with log.indentcontext():
             for obj in vars(module).values():
@@ -675,13 +740,13 @@ class PluginLoader(object):
                         else:
                             raise e
 
-    def _add_found_plugin(self, obj):
+    def _add_found_plugin(self, obj: Type[Plugin]) -> None:
         """
             :obj: Found plugin class
             :ext: matching plugin item.
         """
         self.logger.debug('Adding %s %s', obj.kind, obj.name)
-        key = identifier(obj.name.lower())
+        key = identifier(obj.name.lower() if obj.name else '')
         if key in self.plugins or key in self.aliases:
             msg = '{} "{}" already exists.'
             raise PluginLoaderError(msg.format(obj.kind, obj.name))
@@ -689,7 +754,7 @@ class PluginLoader(object):
         # dict, and in per-plugin kind dict (as retrieving
         # plugins by kind is a common use case.
         self.plugins[key] = obj
-        self.kind_map[obj.kind][key] = obj
+        self.kind_map[obj.kind or ''][key] = obj
 
         for alias in obj.aliases:
             alias_id = identifier(alias.name.lower())

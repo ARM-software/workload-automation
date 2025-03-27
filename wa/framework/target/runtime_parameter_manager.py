@@ -20,14 +20,21 @@ from wa.framework.target.runtime_config import (SysfileValuesRuntimeConfig,
                                                 HotplugRuntimeConfig,
                                                 CpufreqRuntimeConfig,
                                                 CpuidleRuntimeConfig,
-                                                AndroidRuntimeConfig)
+                                                AndroidRuntimeConfig,
+                                                RuntimeConfig)
 from wa.utils.types import obj_dict, caseless_string
 from wa.framework import pluginloader
+from typing import TYPE_CHECKING, Dict, List, Optional, cast, Type
+from wa.framework.configuration.tree import JobSpecSource
+if TYPE_CHECKING:
+    from wa.framework.configuration.core import ConfigurationPoint
+    from devlib.target import Target
+    from wa.framework.pluginloader import __LoaderWrapper
 
 
 class RuntimeParameterManager(object):
 
-    runtime_config_cls = [
+    runtime_config_cls: List[Type[RuntimeConfig]] = [
         # order matters
         SysfileValuesRuntimeConfig,
         HotplugRuntimeConfig,
@@ -36,73 +43,94 @@ class RuntimeParameterManager(object):
         AndroidRuntimeConfig,
     ]
 
-    def __init__(self, target):
+    def __init__(self, target: 'Target'):
         self.target = target
-        self.runtime_params = {}
+        RuntimeParameter = namedtuple('RuntimeParameter', 'cfg_point, rt_config')
+        self.runtime_params: Dict[str, RuntimeParameter] = {}
 
         try:
-            for rt_cls in pluginloader.list_plugins(kind='runtime-config'):
+            for rt_cls in cast('__LoaderWrapper', pluginloader).list_plugins(kind='runtime-config'):
                 if rt_cls not in self.runtime_config_cls:
-                    self.runtime_config_cls.append(rt_cls)
+                    self.runtime_config_cls.append(cast(Type[RuntimeConfig], rt_cls))
         except ValueError:
             pass
-        self.runtime_configs = [cls(self.target) for cls in self.runtime_config_cls]
+        self.runtime_configs: List[RuntimeConfig] = [cls(self.target) for cls in self.runtime_config_cls]
 
-        runtime_parameter = namedtuple('RuntimeParameter', 'cfg_point, rt_config')
         for cfg in self.runtime_configs:
             for param in cfg.supported_parameters:
                 if param.name in self.runtime_params:
-                    msg = 'Duplicate runtime parameter name "{}": in both {} and {}'
+                    msg: str = 'Duplicate runtime parameter name "{}": in both {} and {}'
                     raise RuntimeError(msg.format(param.name,
                                                   self.runtime_params[param.name].rt_config.name,
                                                   cfg.name))
-                self.runtime_params[param.name] = runtime_parameter(param, cfg)
+                self.runtime_params[param.name] = RuntimeParameter(param, cfg)
 
     # Uses corresponding config point to merge parameters
-    def merge_runtime_parameters(self, parameters):
+    def merge_runtime_parameters(self, parameters: Dict[JobSpecSource, Dict[str, 'ConfigurationPoint']]) -> Dict:
+        """
+        merge the runtime parameters
+        """
         merged_params = obj_dict()
         for source in parameters:
             for name, value in parameters[source].items():
-                cp = self.get_cfg_point(name)
+                cp: 'ConfigurationPoint' = self.get_cfg_point(name)
                 cp.set_value(merged_params, value)
         return dict(merged_params)
 
     # Validates runtime_parameters against each other
-    def validate_runtime_parameters(self, parameters):
+    def validate_runtime_parameters(self, parameters: obj_dict) -> None:
+        """
+        validate the runtime parameters
+        """
         self.clear_runtime_parameters()
         self.set_runtime_parameters(parameters)
         for cfg in self.runtime_configs:
             cfg.validate_parameters()
 
     # Writes the given parameters to the device.
-    def commit_runtime_parameters(self, parameters):
+    def commit_runtime_parameters(self, parameters: obj_dict) -> None:
+        """
+        commit the runtime parameters
+        """
         self.clear_runtime_parameters()
         self.set_runtime_parameters(parameters)
         for cfg in self.runtime_configs:
             cfg.commit()
 
     # Stores a set of parameters performing isolated validation when appropriate
-    def set_runtime_parameters(self, parameters):
+    def set_runtime_parameters(self, parameters: obj_dict) -> None:
+        """
+        set the runtime parameters
+        """
         for name, value in parameters.items():
-            cfg = self.get_config_for_name(name)
+            cfg: Optional[RuntimeConfig] = self.get_config_for_name(name)
             if cfg is None:
-                msg = 'Unsupported runtime parameter: "{}"'
+                msg: str = 'Unsupported runtime parameter: "{}"'
                 raise ConfigError(msg.format(name))
             cfg.set_runtime_parameter(name, value)
 
-    def clear_runtime_parameters(self):
+    def clear_runtime_parameters(self) -> None:
+        """
+        clear runtime parameters
+        """
         for cfg in self.runtime_configs:
             cfg.clear()
             cfg.set_defaults()
 
-    def get_config_for_name(self, name):
+    def get_config_for_name(self, name: str) -> Optional[RuntimeConfig]:
+        """
+        get the configuration for the provided name
+        """
         name = caseless_string(name)
         for k, v in self.runtime_params.items():
             if name == k:
                 return v.rt_config
         return None
 
-    def get_cfg_point(self, name):
+    def get_cfg_point(self, name: str) -> 'ConfigurationPoint':
+        """
+        get the configuration point
+        """
         name = caseless_string(name)
         for k, v in self.runtime_params.items():
             if name == k or name in v.cfg_point.aliases:

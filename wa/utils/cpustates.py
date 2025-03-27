@@ -22,21 +22,30 @@ from collections import defaultdict
 
 from devlib.utils.csvutil import create_writer, csvwriter
 
-from wa.utils.trace_cmd import TraceCmdParser, trace_has_marker, TRACE_MARKER_START, TRACE_MARKER_STOP
+from wa.utils.trace_cmd import (TraceCmdParser, trace_has_marker, TRACE_MARKER_START, TRACE_MARKER_STOP,
+                                DroppedEventsEvent, TraceCmdEvent)
+from typing import (DefaultDict, Optional, List, TYPE_CHECKING, Any, Set,
+                    Generator, Tuple, Union, cast, Pattern, Dict)
+from typing_extensions import Protocol
+if TYPE_CHECKING:
+    from wa.framework.target.info import CpuInfo
 
 
-logger = logging.getLogger('cpustates')
+logger: logging.Logger = logging.getLogger('cpustates')
 
-INIT_CPU_FREQ_REGEX = re.compile(r'CPU (?P<cpu>\d+) FREQUENCY: (?P<freq>\d+) kHZ')
-DEVLIB_CPU_FREQ_REGEX = re.compile(r'cpu_frequency(?:_devlib):\s+state=(?P<freq>\d+)\s+cpu_id=(?P<cpu>\d+)')
+INIT_CPU_FREQ_REGEX: Pattern[str] = re.compile(r'CPU (?P<cpu>\d+) FREQUENCY: (?P<freq>\d+) kHZ')
+DEVLIB_CPU_FREQ_REGEX: Pattern[str] = re.compile(r'cpu_frequency(?:_devlib):\s+state=(?P<freq>\d+)\s+cpu_id=(?P<cpu>\d+)')
 
 
 class CorePowerTransitionEvent(object):
+    """
+    represents a core power transition event
+    """
+    kind: str = 'transition'
+    __slots__: List[str] = ['timestamp', 'cpu_id', 'frequency', 'idle_state']
 
-    kind = 'transition'
-    __slots__ = ['timestamp', 'cpu_id', 'frequency', 'idle_state']
-
-    def __init__(self, timestamp, cpu_id, frequency=None, idle_state=None):
+    def __init__(self, timestamp: Optional[Union[int, float]], cpu_id: int,
+                 frequency: Optional[int] = None, idle_state: Optional[int] = None):
         if (frequency is None) == (idle_state is None):
             raise ValueError('Power transition must specify a frequency or an idle_state, but not both.')
         self.timestamp = timestamp
@@ -54,11 +63,13 @@ class CorePowerTransitionEvent(object):
 
 
 class CorePowerDroppedEvents(object):
+    """
+    represents core power dropped events
+    """
+    kind: str = 'dropped_events'
+    __slots__: List[str] = ['cpu_id']
 
-    kind = 'dropped_events'
-    __slots__ = ['cpu_id']
-
-    def __init__(self, cpu_id):
+    def __init__(self, cpu_id: int):
         self.cpu_id = cpu_id
 
     def __str__(self):
@@ -68,11 +79,13 @@ class CorePowerDroppedEvents(object):
 
 
 class TraceMarkerEvent(object):
+    """
+    represents a trace marker event
+    """
+    kind: str = 'marker'
+    __slots__: List[str] = ['name']
 
-    kind = 'marker'
-    __slots__ = ['name']
-
-    def __init__(self, name):
+    def __init__(self, name: str):
         self.name = name
 
     def __str__(self):
@@ -80,18 +93,26 @@ class TraceMarkerEvent(object):
 
 
 class CpuPowerState(object):
-
-    __slots__ = ['frequency', 'idle_state']
+    """
+    represents a cpu power state
+    """
+    __slots__: List[str] = ['frequency', 'idle_state']
 
     @property
-    def is_idling(self):
+    def is_idling(self) -> bool:
+        """
+        checks whether cpu is idling
+        """
         return self.idle_state is not None and self.idle_state >= 0
 
     @property
-    def is_active(self):
+    def is_active(self) -> bool:
+        """
+        check if cpu is active
+        """
         return self.idle_state == -1
 
-    def __init__(self, frequency=None, idle_state=None):
+    def __init__(self, frequency: Optional[int] = None, idle_state: Optional[int] = None):
         self.frequency = frequency
         self.idle_state = idle_state
 
@@ -102,21 +123,29 @@ class CpuPowerState(object):
 
 
 class SystemPowerState(object):
-
-    __slots__ = ['timestamp', 'cpus']
+    """
+    represents system power state
+    """
+    __slots__: List[str] = ['timestamp', 'cpus']
 
     @property
-    def num_cores(self):
+    def num_cores(self) -> int:
+        """
+        number of cores
+        """
         return len(self.cpus)
 
-    def __init__(self, num_cores, no_idle=False):
-        self.timestamp = None
-        self.cpus = []
-        idle_state = -1 if no_idle else None
+    def __init__(self, num_cores: int, no_idle: bool = False):
+        self.timestamp: Optional[Union[int, float]] = None
+        self.cpus: List[CpuPowerState] = []
+        idle_state: Optional[int] = -1 if no_idle else None
         for _ in range(num_cores):
             self.cpus.append(CpuPowerState(idle_state=idle_state))
 
-    def copy(self):
+    def copy(self) -> 'SystemPowerState':
+        """
+        return a copy the current system power state
+        """
         new = SystemPowerState(self.num_cores)
         new.timestamp = self.timestamp
         for i, c in enumerate(self.cpus):
@@ -138,30 +167,46 @@ class PowerStateProcessor(object):
     """
 
     @property
-    def cpu_states(self):
+    def cpu_states(self) -> List[CpuPowerState]:
+        """
+        get a list of cpu power states
+        """
         return self.power_state.cpus
 
     @property
-    def current_time(self):
+    def current_time(self) -> Optional[Union[int, float]]:
+        """
+        get current timestamp
+        """
         return self.power_state.timestamp
 
     @current_time.setter
-    def current_time(self, value):
+    def current_time(self, value: Optional[Union[int, float]]) -> None:
+        """
+        set current timestamp
+        """
         self.power_state.timestamp = value
 
-    def __init__(self, cpus, wait_for_marker=True, no_idle=None):
+    def __init__(self, cpus: List['CpuInfo'], wait_for_marker: bool = True,
+                 no_idle: Optional[bool] = None):
         if no_idle is None:
             no_idle = not (cpus[0].cpuidle and cpus[0].cpuidle.states)
         self.power_state = SystemPowerState(len(cpus), no_idle=no_idle)
-        self.requested_states = {}  # cpu_id -> requeseted state
+        self.requested_states: Dict[int, Optional[int]] = {}  # cpu_id -> requeseted state
         self.wait_for_marker = wait_for_marker
-        self._saw_start_marker = False
-        self._saw_stop_marker = False
-        self.exceptions = []
+        self._saw_start_marker: bool = False
+        self._saw_stop_marker: bool = False
+        self.exceptions: List[Exception] = []
 
-        self.idle_related_cpus = build_idle_state_map(cpus)
+        self.idle_related_cpus: DefaultDict[Tuple[int, Optional[int]],
+                                            List[int]] = build_idle_state_map(cpus)
 
-    def process(self, event_stream):
+    def process(self, event_stream: Generator[Union[CorePowerTransitionEvent,
+                                                    CorePowerDroppedEvents,
+                                                    TraceMarkerEvent], Any, None]) -> Generator[SystemPowerState, Any, None]:
+        """
+        process the power state event stream
+        """
         for event in event_stream:
             try:
                 next_state = self.update_power_state(event)
@@ -175,26 +220,30 @@ class PowerStateProcessor(object):
             if self.wait_for_marker:
                 logger.warning("Did not see a STOP marker in the trace")
 
-    def update_power_state(self, event):
+    def update_power_state(self,
+                           event: Union[CorePowerTransitionEvent, CorePowerDroppedEvents, TraceMarkerEvent]) -> SystemPowerState:
         """
         Update the tracked power state based on the specified event and
         return updated power state.
 
         """
         if event.kind == 'transition':
-            self._process_transition(event)
+            self._process_transition(cast(CorePowerTransitionEvent, event))
         elif event.kind == 'dropped_events':
-            self._process_dropped_events(event)
+            self._process_dropped_events(cast(CorePowerDroppedEvents, event))
         elif event.kind == 'marker':
-            if event.name == 'START':
+            if cast(TraceMarkerEvent, event).name == 'START':
                 self._saw_start_marker = True
-            elif event.name == 'STOP':
+            elif cast(TraceMarkerEvent, event).name == 'STOP':
                 self._saw_stop_marker = True
         else:
             raise ValueError('Unexpected event type: {}'.format(event.kind))
         return self.power_state.copy()
 
-    def _process_transition(self, event):
+    def _process_transition(self, event: CorePowerTransitionEvent) -> None:
+        """
+        process power state transition
+        """
         self.current_time = event.timestamp
         if event.idle_state is None:
             self.cpu_states[event.cpu_id].frequency = event.frequency
@@ -204,41 +253,53 @@ class PowerStateProcessor(object):
             else:
                 self._process_idle_entry(event)
 
-    def _process_dropped_events(self, event):
+    def _process_dropped_events(self, event: CorePowerDroppedEvents) -> None:
+        """
+        process dropped power state events
+        """
         self.cpu_states[event.cpu_id].frequency = None
         old_idle_state = self.cpu_states[event.cpu_id].idle_state
         self.cpu_states[event.cpu_id].idle_state = None
 
-        related_ids = self.idle_related_cpus[(event.cpu_id, old_idle_state)]
+        related_ids: List[int] = self.idle_related_cpus[(event.cpu_id, old_idle_state)]
         for rid in related_ids:
             self.cpu_states[rid].idle_state = None
 
-    def _process_idle_entry(self, event):
+    def _process_idle_entry(self, event: CorePowerTransitionEvent) -> None:
+        """
+        process idle power state entry
+        """
         if self.cpu_states[event.cpu_id].is_idling:
             raise ValueError('Got idle state entry event for an idling core: {}'.format(event))
         self.requested_states[event.cpu_id] = event.idle_state
-        self._try_transition_to_idle_state(event.cpu_id, event.idle_state)
+        self._try_transition_to_idle_state(event.cpu_id, event.idle_state or 0)
 
-    def _process_idle_exit(self, event):
+    def _process_idle_exit(self, event: CorePowerTransitionEvent) -> None:
+        """
+        process idle power state exit
+        """
         if self.cpu_states[event.cpu_id].is_active:
             raise ValueError('Got idle state exit event for an active core: {}'.format(event))
         self.requested_states.pop(event.cpu_id, None)  # remove outstanding request if there is one
-        old_state = self.cpu_states[event.cpu_id].idle_state
+        old_state: Optional[int] = self.cpu_states[event.cpu_id].idle_state
         self.cpu_states[event.cpu_id].idle_state = -1
 
-        related_ids = self.idle_related_cpus[(event.cpu_id, old_state)]
+        related_ids: List[int] = self.idle_related_cpus[(event.cpu_id, old_state)]
         if old_state is not None:
-            new_state = old_state - 1
+            new_state: int = old_state - 1
             for rid in related_ids:
-                if self.cpu_states[rid].idle_state > new_state:
+                if (self.cpu_states[rid].idle_state or 0) > new_state:
                     self._try_transition_to_idle_state(rid, new_state)
 
-    def _try_transition_to_idle_state(self, cpu_id, idle_state):
-        related_ids = self.idle_related_cpus[(cpu_id, idle_state)]
+    def _try_transition_to_idle_state(self, cpu_id: int, idle_state: int) -> None:
+        """
+        try transition to idle state
+        """
+        related_ids: List[int] = self.idle_related_cpus[(cpu_id, idle_state)]
 
         # Tristate: True - can transition, False - can't transition,
         #           None - unknown idle state on at least one related cpu
-        transition_check = self._can_enter_state(related_ids, idle_state)
+        transition_check: Optional[bool] = self._can_enter_state(related_ids, idle_state)
 
         if transition_check is None:
             # Unknown state on a related cpu means we're not sure whether we're
@@ -255,7 +316,7 @@ class PowerStateProcessor(object):
         for rid in related_ids:
             self.cpu_states[rid].idle_state = idle_state
 
-    def _can_enter_state(self, related_ids, state):
+    def _can_enter_state(self, related_ids: List[int], state: int) -> Optional[bool]:
         """
         This is a tri-state check. Returns ``True`` if related cpu states allow transition
         into this state, ``False`` if related cpu states don't allow transition into this
@@ -274,7 +335,13 @@ class PowerStateProcessor(object):
         return True
 
 
-def stream_cpu_power_transitions(events):
+def stream_cpu_power_transitions(events: Generator[Union[DroppedEventsEvent, TraceCmdEvent],
+                                                   Any, None]) -> Generator[Union[CorePowerTransitionEvent,
+                                                                            CorePowerDroppedEvents,
+                                                                            TraceMarkerEvent], Any, None]:
+    """
+    stream cpu power transition events
+    """
     for event in events:
         if event.name == 'cpu_idle':
             state = c_int32(event.state).value
@@ -284,26 +351,31 @@ def stream_cpu_power_transitions(events):
         elif event.name == 'DROPPED EVENTS DETECTED':
             yield CorePowerDroppedEvents(event.cpu_id)
         elif event.name == 'print':
-            if TRACE_MARKER_START in event.text:
+            if TRACE_MARKER_START in (event.text or ''):
                 yield TraceMarkerEvent('START')
-            elif TRACE_MARKER_STOP in event.text:
+            elif TRACE_MARKER_STOP in (event.text or ''):
                 yield TraceMarkerEvent('STOP')
             else:
-                if 'cpu_frequency' in event.text:
-                    match = DEVLIB_CPU_FREQ_REGEX.search(event.text)
+                if 'cpu_frequency' in (event.text or ''):
+                    match = DEVLIB_CPU_FREQ_REGEX.search(event.text or '')
                 else:
-                    match = INIT_CPU_FREQ_REGEX.search(event.text)
+                    match = INIT_CPU_FREQ_REGEX.search(event.text or '')
                 if match:
                     yield CorePowerTransitionEvent(event.timestamp,
                                                    int(match.group('cpu')),
                                                    frequency=int(match.group('freq')))
 
 
-def gather_core_states(system_state_stream, freq_dependent_idle_states=None):  # NOQA
+def gather_core_states(system_state_stream: Generator[SystemPowerState, Any, None],
+                       freq_dependent_idle_states: Optional[List[int]] = None) -> Generator[Tuple[Optional[Union[int, float]],
+                                                                                                  List[Tuple[Optional[int], Optional[int]]]], Any, None]:  # NOQA
+    """
+    gather core power states
+    """
     if freq_dependent_idle_states is None:
         freq_dependent_idle_states = []
     for system_state in system_state_stream:
-        core_states = []
+        core_states: List[Tuple[Optional[int], Optional[int]]] = []
         for cpu in system_state.cpus:
             if cpu.idle_state == -1:
                 core_states.append((-1, cpu.frequency))
@@ -317,53 +389,76 @@ def gather_core_states(system_state_stream, freq_dependent_idle_states=None):  #
         yield (system_state.timestamp, core_states)
 
 
-def record_state_transitions(reporter, stream):
+def record_state_transitions(reporter: 'PowerStateTransitions',
+                             stream: Generator[Union[CorePowerTransitionEvent,
+                                                     CorePowerDroppedEvents,
+                                                     TraceMarkerEvent], Any, None]) -> Generator[Union[CorePowerTransitionEvent,
+                                                                                                       CorePowerDroppedEvents,
+                                                                                                       TraceMarkerEvent], Any, None]:
+    """
+    record power state transitions
+    """
     for event in stream:
         if event.kind == 'transition':
-            reporter.record_transition(event)
+            reporter.record_transition(cast(CorePowerTransitionEvent, event))
         yield event
 
 
 class PowerStateTransitions(object):
 
-    name = 'transitions-timeline'
+    name: str = 'transitions-timeline'
 
-    def __init__(self, output_directory):
-        self.filepath = os.path.join(output_directory, 'state-transitions-timeline.csv')
+    def __init__(self, output_directory: str):
+        self.filepath: str = os.path.join(output_directory, 'state-transitions-timeline.csv')
         self.writer, self._wfh = create_writer(self.filepath)
-        headers = ['timestamp', 'cpu_id', 'frequency', 'idle_state']
+        headers: List[str] = ['timestamp', 'cpu_id', 'frequency', 'idle_state']
         self.writer.writerow(headers)
 
-    def update(self, timestamp, core_states):  # NOQA
+    def update(self, timestamp: Union[int, float],
+               core_states: List[Tuple[Optional[int], Optional[int]]]) -> None:  # NOQA
         # Just recording transitions, not doing anything
         # with states.
         pass
 
-    def record_transition(self, transition):
+    def record_transition(self, transition: CorePowerTransitionEvent) -> None:
+        """
+        record power transition
+        """
         row = [transition.timestamp, transition.cpu_id,
                transition.frequency, transition.idle_state]
         self.writer.writerow(row)
 
-    def report(self):
+    def report(self) -> 'PowerStateTransitions':
+        """
+        report power state transitions
+        """
         return self
 
-    def write(self):
+    def write(self) -> None:
+        """
+        write the power state transition and close file handle
+        """
         self._wfh.close()
 
 
 class PowerStateTimeline(object):
 
-    name = 'state-timeline'
+    name: str = 'state-timeline'
 
-    def __init__(self, output_directory, cpus):
-        self.filepath = os.path.join(output_directory, 'power-state-timeline.csv')
-        self.idle_state_names = {cpu.id: [s.name for s in cpu.cpuidle.states] for cpu in cpus}
+    def __init__(self, output_directory: Optional[str], cpus: List['CpuInfo']):
+        self.filepath: str = os.path.join(output_directory or '', 'power-state-timeline.csv')
+        self.idle_state_names: Dict[Optional[int],
+                                    List[Optional[str]]] = {cpu.id: [s.name for s in cpu.cpuidle.states] for cpu in cpus}
         self.writer, self._wfh = create_writer(self.filepath)
-        headers = ['ts'] + ['{} CPU{}'.format(cpu.name, cpu.id) for cpu in cpus]
+        headers: List[str] = ['ts'] + ['{} CPU{}'.format(cpu.name, cpu.id) for cpu in cpus]
         self.writer.writerow(headers)
 
-    def update(self, timestamp, core_states):  # NOQA
-        row = [timestamp]
+    def update(self, timestamp: Union[int, float],
+               core_states: List[Tuple[Optional[int], Optional[int]]]) -> None:  # NOQA
+        """
+        update power state timeline
+        """
+        row: List[Union[int, float, str]] = [timestamp]
         for cpu_idx, (idle_state, frequency) in enumerate(core_states):
             if frequency is None:
                 if idle_state == -1:
@@ -373,7 +468,7 @@ class PowerStateTimeline(object):
                 elif not self.idle_state_names[cpu_idx]:
                     row.append('idle[{}]'.format(idle_state))
                 else:
-                    row.append(self.idle_state_names[cpu_idx][idle_state])
+                    row.append(self.idle_state_names[cpu_idx][idle_state] or '')
             else:  # frequency is not None
                 if idle_state == -1:
                     row.append(frequency)
@@ -384,42 +479,52 @@ class PowerStateTimeline(object):
                                                 frequency))
         self.writer.writerow(row)
 
-    def report(self):
+    def report(self) -> 'PowerStateTimeline':
+        """
+        report the power state timeline
+        """
         return self
 
-    def write(self):
+    def write(self) -> None:
+        """
+        write the power state timeline and close the file handle
+        """
         self._wfh.close()
 
 
 class ParallelStats(object):
 
-    def __init__(self, output_directory, cpus, use_ratios=False):
-        self.filepath = os.path.join(output_directory, 'parallel-stats.csv')
-        self.clusters = defaultdict(set)
+    def __init__(self, output_directory: str, cpus: List['CpuInfo'], use_ratios: bool = False):
+        self.filepath: str = os.path.join(output_directory, 'parallel-stats.csv')
+        self.clusters: DefaultDict[str, Set] = defaultdict(set)
         self.use_ratios = use_ratios
 
-        clusters = []
+        clusters: List[List[int]] = []
         for cpu in cpus:
             if cpu.cpufreq.related_cpus not in clusters:
                 clusters.append(cpu.cpufreq.related_cpus)
 
         for i, clust in enumerate(clusters):
             self.clusters[str(i)] = set(clust)
-        self.clusters['all'] = {cpu.id for cpu in cpus}
+        self.clusters['all'] = {cpu.id or 0 for cpu in cpus}
 
-        self.first_timestamp = None
-        self.last_timestamp = None
-        self.previous_states = None
-        self.parallel_times = defaultdict(lambda: defaultdict(int))
-        self.running_times = defaultdict(int)
+        self.first_timestamp: Optional[Union[int, float]] = None
+        self.last_timestamp: Optional[Union[int, float]] = None
+        self.previous_states: Optional[List[Tuple[Optional[int], Optional[int]]]] = None
+        self.parallel_times: DefaultDict[str, Dict[int, Union[int, float]]] = defaultdict(lambda: defaultdict(int))
+        self.running_times: DefaultDict[str, Union[int, float]] = defaultdict(int)
 
-    def update(self, timestamp, core_states):
+    def update(self, timestamp: Union[int, float],
+               core_states: List[Tuple[Optional[int], Optional[int]]]) -> None:
+        """
+        update parallel stats
+        """
         if self.last_timestamp is not None:
-            delta = timestamp - self.last_timestamp
-            active_cores = [i for i, c in enumerate(self.previous_states)
-                            if c and c[0] == -1]
+            delta: Union[int, float] = timestamp - self.last_timestamp
+            active_cores: List[int] = [i for i, c in enumerate(self.previous_states or '')
+                                       if c and c[0] == -1]
             for cluster, cluster_cores in self.clusters.items():
-                clust_active_cores = len(cluster_cores.intersection(active_cores))
+                clust_active_cores: int = len(cluster_cores.intersection(active_cores))
                 self.parallel_times[cluster][clust_active_cores] += delta
                 if clust_active_cores:
                     self.running_times[cluster] += delta
@@ -429,17 +534,20 @@ class ParallelStats(object):
         self.last_timestamp = timestamp
         self.previous_states = core_states
 
-    def report(self):  # NOQA
+    def report(self) -> Optional['ParallelReport']:  # NOQA
+        """
+        report parallel stats
+        """
         if self.last_timestamp is None:
             return None
 
         report = ParallelReport(self.filepath)
-        total_time = self.last_timestamp - self.first_timestamp
+        total_time: Union[int, float] = self.last_timestamp - (self.first_timestamp or 0)
         for cluster in sorted(self.parallel_times):
-            running_time = self.running_times[cluster]
+            running_time: Union[int, float] = self.running_times[cluster]
             for n in range(len(self.clusters[cluster]) + 1):
-                time = self.parallel_times[cluster][n]
-                time_pc = time / total_time
+                time: Union[int, float] = self.parallel_times[cluster][n]
+                time_pc: float = time / total_time
                 if not self.use_ratios:
                     time_pc *= 100
                 if n:
@@ -451,8 +559,8 @@ class ParallelStats(object):
                         running_time_pc *= 100
                 else:
                     running_time_pc = 0
-                precision = 3 if self.use_ratios else 1
-                fmt = '{{:.{}f}}'.format(precision)
+                precision: int = 3 if self.use_ratios else 1
+                fmt: str = '{{:.{}f}}'.format(precision)
                 report.add([cluster, n,
                             fmt.format(time),
                             fmt.format(time_pc),
@@ -463,16 +571,22 @@ class ParallelStats(object):
 
 class ParallelReport(object):
 
-    name = 'parallel-stats'
+    name: str = 'parallel-stats'
 
-    def __init__(self, filepath):
+    def __init__(self, filepath: str):
         self.filepath = filepath
-        self.values = []
+        self.values: List[List[Union[int, str]]] = []
 
-    def add(self, value):
+    def add(self, value: List[Union[int, str]]):
+        """
+        add value to report
+        """
         self.values.append(value)
 
-    def write(self):
+    def write(self) -> None:
+        """
+        write report to csv file
+        """
         with csvwriter(self.filepath) as writer:
             writer.writerow(['cluster', 'number_of_cores', 'total_time', '%time', '%running_time'])
             writer.writerows(self.values)
@@ -480,26 +594,36 @@ class ParallelReport(object):
 
 class PowerStateStats(object):
 
-    def __init__(self, output_directory, cpus, use_ratios=False):
-        self.filepath = os.path.join(output_directory, 'power-state-stats.csv')
-        self.core_names = [cpu.name for cpu in cpus]
-        self.idle_state_names = {cpu.id: [s.name for s in cpu.cpuidle.states] for cpu in cpus}
+    def __init__(self, output_directory: str, cpus: List['CpuInfo'], use_ratios: bool = False):
+        self.filepath: str = os.path.join(output_directory, 'power-state-stats.csv')
+        self.core_names: List[Optional[str]] = [cpu.name for cpu in cpus]
+        self.idle_state_names: Dict[Optional[int],
+                                    List[Optional[str]]] = {cpu.id: [s.name for s in cpu.cpuidle.states] for cpu in cpus}
         self.use_ratios = use_ratios
-        self.first_timestamp = None
-        self.last_timestamp = None
-        self.previous_states = None
-        self.cpu_states = defaultdict(lambda: defaultdict(int))
+        self.first_timestamp: Optional[Union[int, float]] = None
+        self.last_timestamp: Optional[Union[int, float]] = None
+        self.previous_states: Optional[List[Tuple[Optional[int], Optional[int]]]] = None
+        self.cpu_states: DefaultDict[int, Dict[Optional[str], Union[int, float]]] = defaultdict(lambda: defaultdict(int))
 
-    def update(self, timestamp, core_states):  # NOQA
+    def update(self, timestamp: Union[int, float],
+               core_states: List[Tuple[Optional[int], Optional[int]]]) -> None:  # NOQA
+        """
+        update power state stats
+        """
         if self.last_timestamp is not None:
-            delta = timestamp - self.last_timestamp
+            delta: Union[int, float] = timestamp - self.last_timestamp
+            if self.previous_states is None:
+                raise ValueError("previous_states should not be None here")
             for cpu, (idle, freq) in enumerate(self.previous_states):
                 if idle == -1:
                     if freq is not None:
-                        state = '{:07}KHz'.format(freq)
+                        state: Optional[str] = '{:07}KHz'.format(freq)
                     else:
                         state = 'Running (unknown KHz)'
                 elif freq:
+                    # Ensure idle is not None in this branch.
+                    if idle is None:
+                        raise ValueError("idle must not be None when freq is provided")
                     state = '{}-{:07}KHz'.format(self.idle_state_names[cpu][idle], freq)
                 elif idle is not None and self.idle_state_names[cpu]:
                     state = self.idle_state_names[cpu][idle]
@@ -512,11 +636,14 @@ class PowerStateStats(object):
         self.last_timestamp = timestamp
         self.previous_states = core_states
 
-    def report(self):
+    def report(self) -> Optional['PowerStateStatsReport']:
+        """
+        report powerstate stats
+        """
         if self.last_timestamp is None:
             return None
-        total_time = self.last_timestamp - self.first_timestamp
-        state_stats = defaultdict(lambda: [None] * len(self.core_names))
+        total_time = self.last_timestamp - (self.first_timestamp or 0)
+        state_stats: Dict[Optional[str], List[Optional[float]]] = defaultdict(lambda: [None] * len(self.core_names))
 
         for cpu, states in self.cpu_states.items():
             for state in states:
@@ -526,66 +653,94 @@ class PowerStateStats(object):
                     time_pc *= 100
                 state_stats[state][cpu] = time_pc
 
-        precision = 3 if self.use_ratios else 1
+        precision: int = 3 if self.use_ratios else 1
         return PowerStateStatsReport(self.filepath, state_stats, self.core_names, precision)
 
 
 class PowerStateStatsReport(object):
 
-    name = 'power-state-stats'
+    name: str = 'power-state-stats'
 
-    def __init__(self, filepath, state_stats, core_names, precision=2):
+    def __init__(self, filepath: str, state_stats: Dict[Optional[str], List[Optional[float]]],
+                 core_names: List[Optional[str]], precision: int = 2):
         self.filepath = filepath
         self.state_stats = state_stats
         self.core_names = core_names
         self.precision = precision
 
-    def write(self):
+    def write(self) -> None:
+        """
+        write powerstate stats into csv file
+        """
         with csvwriter(self.filepath) as writer:
             headers = ['state'] + ['{} CPU{}'.format(c, i)
                                    for i, c in enumerate(self.core_names)]
             writer.writerow(headers)
-            for state in sorted(self.state_stats):
+            for state in sorted(cast(Dict, self.state_stats)):
                 stats = self.state_stats[state]
                 fmt = '{{:.{}f}}'.format(self.precision)
                 writer.writerow([state] + [fmt.format(s if s is not None else 0)
                                            for s in stats])
 
 
+class ReporterProtocol(Protocol):
+    def update(self, timestamp: Union[int, float],
+               core_states: List[Tuple[Optional[int], Optional[int]]]) -> None:
+        ...
+
+    def report(self) -> Union[Optional[PowerStateStatsReport], Optional[ParallelReport],
+                              PowerStateTimeline, 'CpuUtilizationTimeline',
+                              PowerStateTransitions]:
+        ...
+
+
 class CpuUtilizationTimeline(object):
 
-    name = 'utilization-timeline'
+    name: str = 'utilization-timeline'
 
-    def __init__(self, output_directory, cpus):
-        self.filepath = os.path.join(output_directory, 'utilization-timeline.csv')
+    def __init__(self, output_directory: str, cpus: List['CpuInfo']):
+        self.filepath: str = os.path.join(output_directory, 'utilization-timeline.csv')
         self.writer, self._wfh = create_writer(self.filepath)
 
-        headers = ['ts'] + ['{} CPU{}'.format(cpu.name, cpu.id) for cpu in cpus]
+        headers: List[str] = ['ts'] + ['{} CPU{}'.format(cpu.name, cpu.id) for cpu in cpus]
         self.writer.writerow(headers)
         self._max_freq_list = [cpu.cpufreq.available_frequencies[-1] for cpu in cpus if cpu.cpufreq.available_frequencies]
 
-    def update(self, timestamp, core_states):  # NOQA
-        row = [timestamp]
+    def update(self, timestamp: Union[int, float],
+               core_states: List[Tuple[Optional[int], Optional[int]]]) -> None:  # NOQA
+        """
+        update cpu utilization timeline
+        """
+        row: List[Optional[Union[int, float]]] = [timestamp]
         for core, [_, frequency] in enumerate(core_states):
             if frequency is not None and core in self._max_freq_list:
-                frequency /= float(self._max_freq_list[core])
-                row.append(frequency)
+                frequency_ = frequency / float(self._max_freq_list[core])
+                row.append(frequency_)
             else:
                 row.append(None)
         self.writer.writerow(row)
 
-    def report(self):
+    def report(self) -> 'CpuUtilizationTimeline':
+        """
+        report cpu utilization timeline
+        """
         return self
 
-    def write(self):
+    def write(self) -> None:
+        """
+        write cpu utilization timeline to file and close it
+        """
         self._wfh.close()
 
 
-def build_idle_state_map(cpus):
-    idle_state_map = defaultdict(list)
+def build_idle_state_map(cpus: List['CpuInfo']) -> DefaultDict[Tuple[int, Optional[int]], List[int]]:
+    """
+    build map of idle states
+    """
+    idle_state_map: DefaultDict[Tuple[int, Optional[int]], List[int]] = defaultdict(list)
     for cpu_idx, cpu in enumerate(cpus):
-        related_cpus = set(cpu.cpufreq.related_cpus) - set([cpu_idx])
-        first_cluster_state = cpu.cpuidle.num_states - 1
+        related_cpus: Set[int] = set(cpu.cpufreq.related_cpus) - set([cpu_idx])
+        first_cluster_state: int = cpu.cpuidle.num_states - 1
         for state_idx, _ in enumerate(cpu.cpuidle.states):
             if state_idx < first_cluster_state:
                 idle_state_map[(cpu_idx, state_idx)] = []
@@ -594,8 +749,9 @@ def build_idle_state_map(cpus):
     return idle_state_map
 
 
-def report_power_stats(trace_file, cpus, output_basedir, use_ratios=False, no_idle=None,  # pylint: disable=too-many-locals
-                       split_wfi_states=False):
+def report_power_stats(trace_file: str, cpus: List['CpuInfo'], output_basedir: str,
+                       use_ratios: bool = False, no_idle: Optional[bool] = None,  # pylint: disable=too-many-locals
+                       split_wfi_states: bool = False):
     """
     Process trace-cmd output to generate timelines and statistics of CPU power
     state (a.k.a P- and C-state) transitions in the trace.
@@ -656,11 +812,11 @@ def report_power_stats(trace_file, cpus, output_basedir, use_ratios=False, no_id
         6. Update reporters/stats generators with cpu states.
 
     """
-    output_directory = os.path.join(output_basedir, 'power-states')
+    output_directory: str = os.path.join(output_basedir, 'power-states')
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
 
-    freq_dependent_idle_states = []
+    freq_dependent_idle_states: List[int] = []
     if split_wfi_states:
         freq_dependent_idle_states = [0]
 
@@ -673,7 +829,7 @@ def report_power_stats(trace_file, cpus, output_basedir, use_ratios=False, no_id
     ps_processor = PowerStateProcessor(cpus, wait_for_marker=trace_has_marker(trace_file),
                                        no_idle=no_idle)
     transitions_reporter = PowerStateTransitions(output_directory)
-    reporters = [
+    reporters: List[ReporterProtocol] = [
         ParallelStats(output_directory, cpus, use_ratios),
         PowerStateStats(output_directory, cpus, use_ratios),
         PowerStateTimeline(output_directory, cpus),
@@ -682,16 +838,21 @@ def report_power_stats(trace_file, cpus, output_basedir, use_ratios=False, no_id
     ]
 
     # assemble the pipeline
-    event_stream = parser.parse(trace_file)
-    transition_stream = stream_cpu_power_transitions(event_stream)
-    recorded_trans_stream = record_state_transitions(transitions_reporter, transition_stream)
-    power_state_stream = ps_processor.process(recorded_trans_stream)
-    core_state_stream = gather_core_states(power_state_stream, freq_dependent_idle_states)
+    event_stream: Generator[Union[DroppedEventsEvent, TraceCmdEvent], Any, None] = parser.parse(trace_file)
+    transition_stream: Generator[Union[CorePowerTransitionEvent,
+                                       CorePowerDroppedEvents,
+                                       TraceMarkerEvent], Any, None] = stream_cpu_power_transitions(event_stream)
+    recorded_trans_stream: Generator[Union[CorePowerTransitionEvent,
+                                           CorePowerDroppedEvents,
+                                           TraceMarkerEvent], Any, None] = record_state_transitions(transitions_reporter, transition_stream)
+    power_state_stream: Generator[SystemPowerState, Any, None] = ps_processor.process(recorded_trans_stream)
+    core_state_stream: Generator[Tuple[Optional[Union[int, float]],
+                                       List[Tuple[Optional[int], Optional[int]]]], Any, None] = gather_core_states(power_state_stream, freq_dependent_idle_states)
 
     # execute the pipeline
     for timestamp, states in core_state_stream:
         for reporter in reporters:
-            reporter.update(timestamp, states)
+            cast(ReporterProtocol, reporter).update(timestamp or 0, states)
 
     # report any issues encountered while executing the pipeline
     if ps_processor.exceptions:
@@ -700,9 +861,12 @@ def report_power_stats(trace_file, cpus, output_basedir, use_ratios=False, no_id
             logger.warning(str(e))
 
     # generate reports
-    reports = {}
+    reports: Dict[str, Union[Optional[PowerStateStatsReport], Optional[ParallelReport],
+                             PowerStateTimeline, 'CpuUtilizationTimeline',
+                             PowerStateTransitions]] = {}
     for reporter in reporters:
-        report = reporter.report()
-        report.write()
-        reports[report.name] = report
+        report = cast(ReporterProtocol, reporter).report()
+        if report:
+            report.write()
+            reports[report.name] = report
     return reports

@@ -36,16 +36,18 @@ from collections import defaultdict
 from collections.abc import MutableMapping
 from functools import total_ordering
 
-from past.builtins import basestring  # pylint: disable=redefined-builtin
-from future.utils import with_metaclass
+from future.utils import with_metaclass  # type:ignore
 
 from devlib.utils.types import identifier, boolean, integer, numeric, caseless_string
 
 from wa.utils.misc import (isiterable, list_to_ranges, list_to_mask,
                            mask_to_list, ranges_to_list)
+from typing import (List, Any, Optional, Iterable, Callable,
+                    Union, Type, Pattern, Tuple, DefaultDict,
+                    Dict, Set)
 
 
-def list_of_strs(value):
+def list_of_strs(value: Iterable) -> List[str]:
     """
     Value must be iterable. All elements will be converted to strings.
 
@@ -55,12 +57,12 @@ def list_of_strs(value):
     return list(map(str, value))
 
 
-list_of_strings = list_of_strs
+list_of_strings: Callable[[Iterable], List[str]] = list_of_strs
 
 
-def list_of_ints(value):
+def list_of_ints(value: Iterable) -> List[int]:
     """
-    Value must be iterable. All elements will be converted to ``int``\ s.
+    Value must be iterable. All elements will be converted to ``int`` s.
 
     """
     if not isiterable(value):
@@ -68,13 +70,13 @@ def list_of_ints(value):
     return list(map(int, value))
 
 
-list_of_integers = list_of_ints
+list_of_integers: Callable[[Iterable], List[int]] = list_of_ints
 
 
-def list_of_numbers(value):
+def list_of_numbers(value: Iterable) -> List[Union[float, int]]:
     """
     Value must be iterable. All elements will be converted to numbers (either ``ints`` or
-    ``float``\ s depending on the elements).
+    ``float`` s depending on the elements).
 
     """
     if not isiterable(value):
@@ -82,9 +84,9 @@ def list_of_numbers(value):
     return list(map(numeric, value))
 
 
-def list_of_bools(value, interpret_strings=True):
+def list_of_bools(value: Iterable, interpret_strings: bool = True) -> List[bool]:
     """
-    Value must be iterable. All elements will be converted to ``bool``\ s.
+    Value must be iterable. All elements will be converted to ``bool`` s.
 
     .. note:: By default, ``boolean()`` conversion function will be used, which
               means that strings like ``"0"`` or ``"false"`` will be
@@ -100,26 +102,26 @@ def list_of_bools(value, interpret_strings=True):
         return list(map(bool, value))
 
 
-def list_of(type_):
+def list_of(type_: Type) -> Type[List]:
     """Generates a "list of" callable for the specified type. The callable
     attempts to convert all elements in the passed value to the specified
     ``type_``, raising ``ValueError`` on error."""
-    def __init__(self, values):
+    def __init__(self, values: Iterable):
         list.__init__(self, list(map(type_, values)))
 
-    def append(self, value):
+    def append(self, value: Any) -> None:
         list.append(self, type_(value))
 
-    def extend(self, other):
+    def extend(self, other: Iterable) -> None:
         list.extend(self, list(map(type_, other)))
 
-    def from_pod(cls, pod):
+    def from_pod(cls: Type, pod: Iterable):
         return cls(list(map(type_, pod)))
 
     def _to_pod(self):
         return self
 
-    def __setitem__(self, idx, value):
+    def __setitem__(self, idx: int, value: Any) -> None:
         list.__setitem__(self, idx, type_(value))
 
     return type('list_of_{}s'.format(type_.__name__),
@@ -133,7 +135,7 @@ def list_of(type_):
     })
 
 
-def list_or_string(value):
+def list_or_string(value: Union[str, Iterable]) -> List[str]:
     """
     Converts the value into a list of strings. If the value is not iterable,
     a one-element list with stringified value will be returned.
@@ -148,7 +150,7 @@ def list_or_string(value):
             return [str(value)]
 
 
-def list_or_caseless_string(value):
+def list_or_caseless_string(value: Union[str, Iterable]) -> List[caseless_string]:
     """
     Converts the value into a list of ``caseless_string``'s. If the value is
     not iterable a one-element list with stringified value will be returned.
@@ -188,11 +190,11 @@ list_or_number = list_or(numeric)
 list_or_bool = list_or(boolean)
 
 
-regex_type = type(re.compile(''))
-none_type = type(None)
+regex_type: Type[Pattern[str]] = type(re.compile(''))
+none_type: Type[None] = type(None)
 
 
-def regex(value):
+def regex(value: Union[str, Pattern[str]]) -> Pattern[str]:
     """
     Regular expression. If value is a string, it will be complied with no
     flags. If you want to specify flags, value must be precompiled.
@@ -204,7 +206,7 @@ def regex(value):
         return re.compile(value)
 
 
-def version_tuple(v):
+def version_tuple(v: str) -> Tuple[str, ...]:
     """
     Converts a version string into a tuple of strings that can be used for
     natural comparison allowing delimeters of "-" and ".".
@@ -213,7 +215,7 @@ def version_tuple(v):
     return tuple(map(str, (v.split("."))))
 
 
-def module_name_set(l):  # noqa: E741
+def module_name_set(l: List):  # noqa: E741
     """
     Converts a list of target modules into a set of module names, disregarding
     any configuration that may be present.
@@ -227,19 +229,25 @@ def module_name_set(l):  # noqa: E741
     return modules
 
 
-__counters = defaultdict(int)
+__counters: DefaultDict = defaultdict(int)
 
 
-def reset_counter(name=None, value=0):
+def reset_counter(name: Optional[str] = None, value: int = 0) -> None:
+    """
+    reset counter
+    """
     __counters[name] = value
 
 
-def reset_all_counters(value=0):
+def reset_all_counters(value: int = 0) -> None:
+    """
+    reset all counters
+    """
     for k in __counters:
         reset_counter(k, value)
 
 
-def counter(name=None):
+def counter(name: Optional[str] = None) -> int:
     """
     An auto incrementing value (kind of like an AUTO INCREMENT field in SQL).
     Optionally, the name of the counter to be used is specified (each counter
@@ -249,7 +257,7 @@ def counter(name=None):
 
     """
     __counters[name] += 1
-    value = __counters[name]
+    value: int = __counters[name]
     return value
 
 
@@ -259,9 +267,9 @@ class arguments(list):
 
     """
 
-    def __init__(self, value=None):
+    def __init__(self, value: Optional[Union[Iterable, str]] = None):
         if isiterable(value):
-            super(arguments, self).__init__(list(map(str, value)))
+            super(arguments, self).__init__(list(map(str, value or [])))
         elif isinstance(value, str):
             posix = os.name != 'nt'
             super(arguments, self).__init__(shlex.split(value, posix=posix))
@@ -270,31 +278,31 @@ class arguments(list):
         else:
             super(arguments, self).__init__([str(value)])
 
-    def append(self, value):
+    def append(self, value: Optional[Union[Iterable, str]]):
         return super(arguments, self).append(str(value))
 
-    def extend(self, values):
+    def extend(self, values: Iterable):
         return super(arguments, self).extend(list(map(str, values)))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return ' '.join(self)
 
 
 class prioritylist(object):
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Returns an OrderedReceivers object that externally behaves
         like a list but it maintains the order of its elements
         according to their priority.
         """
-        self.elements = defaultdict(list)
-        self.is_ordered = True
-        self.priorities = []
-        self.size = 0
-        self._cached_elements = None
+        self.elements: DefaultDict = defaultdict(list)
+        self.is_ordered: bool = True
+        self.priorities: List[int] = []
+        self.size: int = 0
+        self._cached_elements: Optional[List[Any]] = None
 
-    def add(self, new_element, priority=0):
+    def add(self, new_element: Any, priority: int = 0) -> None:
         """
         adds a new item in the list.
 
@@ -304,35 +312,54 @@ class prioritylist(object):
         """
         self._add_element(new_element, priority)
 
-    def add_before(self, new_element, element):
+    def add_before(self, new_element: Any, element: Any) -> None:
+        """
+        add new element before the specified element
+        """
         priority, index = self._priority_index(element)
         self._add_element(new_element, priority, index)
 
-    def add_after(self, new_element, element):
+    def add_after(self, new_element: Any, element: Any) -> None:
+        """
+        add new element after the specified element
+        """
         priority, index = self._priority_index(element)
         self._add_element(new_element, priority, index + 1)
 
-    def index(self, element):
-        return self._to_list().index(element)
+    def index(self, element: Any) -> Optional[int]:
+        return self._to_list().index(element)  # type:ignore
 
-    def remove(self, element):
+    def remove(self, element: Any) -> None:
+        """
+        remove element from the list
+        """
         index = self.index(element)
         self.__delitem__(index)
 
-    def _priority_index(self, element):
+    def _priority_index(self, element: Any) -> Tuple[int, int]:
+        """
+        get priority and index of element
+        """
         for priority, elements in self.elements.items():
             if element in elements:
                 return (priority, elements.index(element))
         raise IndexError(element)
 
-    def _to_list(self):
+    def _to_list(self) -> Optional[List]:
+        """
+        convert to list
+        """
         if self._cached_elements is None:
             self._cached_elements = []
             for priority in self.priorities:
                 self._cached_elements += self.elements[priority]
         return self._cached_elements
 
-    def _add_element(self, element, priority, index=None):
+    def _add_element(self, element: Any, priority: int,
+                     index: Optional[int] = None) -> None:
+        """
+        add element to the priority list
+        """
         if index is None:
             self.elements[priority].append(element)
         else:
@@ -342,7 +369,10 @@ class prioritylist(object):
         if priority not in self.priorities:
             insort(self.priorities, priority)
 
-    def _delete(self, priority, priority_index):
+    def _delete(self, priority: int, priority_index: int) -> None:
+        """
+        remove element from priority list
+        """
         del self.elements[priority][priority_index]
         self.size -= 1
         if not self.elements[priority]:
@@ -354,39 +384,39 @@ class prioritylist(object):
             for element in self.elements[priority]:
                 yield element
 
-    def __getitem__(self, index):
-        return self._to_list()[index]
+    def __getitem__(self, index: int) -> Any:
+        return self._to_list()[index]  # type:ignore
 
-    def __delitem__(self, index):
+    def __delitem__(self, index: Optional[int]):
         if isinstance(index, numbers.Integral):
             index = int(index)
             if index < 0:
-                index_range = [len(self) + index]
+                index_range: List[int] = [len(self) + index]
             else:
                 index_range = [index]
         elif isinstance(index, slice):
             index_range = list(range(index.start or 0, index.stop, index.step or 1))
         else:
             raise ValueError('Invalid index {}'.format(index))
-        current_global_offset = 0
-        priority_counts = dict(zip(self.priorities, [len(self.elements[p])
-                                                     for p in self.priorities]))
+        current_global_offset: int = 0
+        priority_counts: Dict[int, int] = dict(zip(self.priorities, [len(self.elements[p])
+                                                                     for p in self.priorities]))
         for priority in self.priorities:
             if not index_range:
                 break
-            priority_offset = 0
+            priority_offset: int = 0
             while index_range:
-                del_index = index_range[0]
+                del_index: int = index_range[0]
                 if priority_counts[priority] + current_global_offset <= del_index:
                     current_global_offset += priority_counts[priority]
                     break
-                within_priority_index = del_index - \
+                within_priority_index: int = del_index - \
                     (current_global_offset + priority_offset)
                 self._delete(priority, within_priority_index)
                 priority_offset += 1
                 index_range.pop(0)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.size
 
 
@@ -400,33 +430,36 @@ class toggle_set(set):
     """
 
     @staticmethod
-    def from_pod(pod):
+    def from_pod(pod: Any) -> 'toggle_set':
         return toggle_set(pod)
 
     @staticmethod
-    def merge(dest, source):
+    def merge(dest: 'toggle_set', source: Union[Set, 'toggle_set']) -> 'toggle_set':
+        """
+        merge two toggle sets
+        """
         if '~~' in source:
             return toggle_set(source)
 
         dest = toggle_set(dest)
         for item in source:
             if item not in dest:
-                #Disable previously enabled item
+                # Disable previously enabled item
                 if item.startswith('~') and item[1:] in dest:
                     dest.remove(item[1:])
-                #Enable previously disabled item
+                # Enable previously disabled item
                 if not item.startswith('~') and ('~' + item) in dest:
                     dest.remove('~' + item)
                 dest.add(item)
         return dest
 
-    def __init__(self, *args):
+    def __init__(self, *args) -> None:
         if args:
             value = args[0]
             if isinstance(value, str):
-                msg = 'invalid type for toggle_set: "{}"'
+                msg: str = 'invalid type for toggle_set: "{}"'
                 raise TypeError(msg.format(type(value)))
-            updated_value = []
+            updated_value: List[str] = []
             for v in value:
                 if v.startswith('~') and v[1:] in updated_value:
                     updated_value.remove(v[1:])
@@ -436,29 +469,38 @@ class toggle_set(set):
             args = tuple([updated_value] + list(args[1:]))
         set.__init__(self, *args)
 
-    def merge_with(self, other):
+    def merge_with(self, other: Union[Set, 'toggle_set']) -> 'toggle_set':
+        """
+        merge this toggle set with other toggle set
+        """
         return toggle_set.merge(self, other)
 
-    def merge_into(self, other):
+    def merge_into(self, other: 'toggle_set') -> 'toggle_set':
+        """
+        merge other toggle set with this toggle set
+        """
         return toggle_set.merge(other, self)
 
-    def add(self, item):
+    def add(self, item: str) -> None:
+        """
+        add item to toggle set
+        """
         if item not in self:
-            #Disable previously enabled item
+            # Disable previously enabled item
             if item.startswith('~') and item[1:] in self:
                 self.remove(item[1:])
-            #Enable previously disabled item
+            # Enable previously disabled item
             if not item.startswith('~') and ('~' + item) in self:
                 self.remove('~' + item)
             super(toggle_set, self).add(item)
 
-    def values(self):
+    def values(self) -> Set[str]:
         """
         returns a list of enabled items.
         """
         return {item for item in self if not item.startswith('~')}
 
-    def conflicts_with(self, other):
+    def conflicts_with(self, other: 'toggle_set') -> List[str]:
         """
         Checks if any items in ``other`` conflict with items already in this list.
 
@@ -468,7 +510,7 @@ class toggle_set(set):
         Returns:
             A list of items in ``other`` that conflict with items in this list
         """
-        conflicts = []
+        conflicts: List[str] = []
         for item in other:
             if item.startswith('~') and item[1:] in self:
                 conflicts.append(item)
@@ -476,16 +518,16 @@ class toggle_set(set):
                 conflicts.append(item)
         return conflicts
 
-    def to_pod(self):
+    def to_pod(self) -> List[str]:
         return list(self.values())
 
 
 class ID(str):
 
-    def merge_with(self, other):
+    def merge_with(self, other: 'ID') -> str:
         return '_'.join([self, other])
 
-    def merge_into(self, other):
+    def merge_into(self, other: 'ID') -> str:
         return '_'.join([other, self])
 
 
@@ -499,30 +541,30 @@ class obj_dict(MutableMapping):
     """
 
     @staticmethod
-    def from_pod(pod):
+    def from_pod(pod: Any) -> 'obj_dict':
         return obj_dict(pod)
 
     # pylint: disable=super-init-not-called
-    def __init__(self, values=None, not_in_dict=None):
+    def __init__(self, values: Any = None, not_in_dict: Optional[List] = None):
         self.__dict__['dict'] = dict(values or {})
         self.__dict__['not_in_dict'] = not_in_dict if not_in_dict is not None else []
 
-    def to_pod(self):
+    def to_pod(self) -> Any:
         return self.__dict__['dict']
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str):
         if key in self.not_in_dict:
             msg = '"{}" is in the list keys that can only be accessed as attributes'
             raise KeyError(msg.format(key))
         return self.__dict__['dict'][key]
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: Any):
         self.__dict__['dict'][key] = value
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: str):
         del self.__dict__['dict'][key]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return sum(1 for _ in self)
 
     def __iter__(self):
@@ -530,22 +572,22 @@ class obj_dict(MutableMapping):
             if key not in self.__dict__['not_in_dict']:
                 yield key
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(dict(self))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(dict(self))
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any):
         self.__dict__['dict'][name] = value
 
-    def __delattr__(self, name):
+    def __delattr__(self, name: str) -> None:
         if name in self:
             del self.__dict__['dict'][name]
         else:
             raise AttributeError("No such attribute: " + name)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         if 'dict' not in self.__dict__:
             raise AttributeError("No such attribute: " + name)
         if name in self.__dict__['dict']:
@@ -563,30 +605,30 @@ class level(object):
     """
 
     @staticmethod
-    def from_pod(pod):
+    def from_pod(pod: Any) -> 'level':
         name, value_part = pod.split('(')
         return level(name, numeric(value_part.rstrip(')')))
 
-    def __init__(self, name, value):
+    def __init__(self, name: str, value: Any):
         self.name = caseless_string(name)
         self.value = numeric(value)
 
-    def to_pod(self):
+    def to_pod(self) -> str:
         return repr(self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.name)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '{}({})'.format(self.name, self.value)
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.name)
 
     def __eq__(self, other):
         if isinstance(other, level):
             return self.value == other.value
-        elif isinstance(other, basestring):
+        elif isinstance(other, str):
             return self.name == other
         else:
             return self.value == other
@@ -594,7 +636,7 @@ class level(object):
     def __lt__(self, other):
         if isinstance(other, level):
             return self.value < other.value
-        elif isinstance(other, basestring):
+        elif isinstance(other, str):
             return self.name < other
         else:
             return self.value < other
@@ -602,7 +644,7 @@ class level(object):
     def __ne__(self, other):
         if isinstance(other, level):
             return self.value != other.value
-        elif isinstance(other, basestring):
+        elif isinstance(other, str):
             return self.name != other
         else:
             return self.value != other
@@ -610,16 +652,16 @@ class level(object):
 
 class _EnumMeta(type):
 
-    def __str__(cls):
+    def __str__(cls) -> str:
         return str(cls.levels)
 
-    def __getattr__(cls, name):
+    def __getattr__(cls, name: str):
         name = name.lower()
         if name in cls.__dict__:
             return cls.__dict__[name]
 
 
-def enum(args, start=0, step=1):
+def enum(args, start: int = 0, step: int = 1):
     """
     Creates a class with attributes named by the first argument.
     Each attribute is a ``level`` so they behave is integers in comparisons.
@@ -641,23 +683,23 @@ def enum(args, start=0, step=1):
 
     """
 
-    class Enum(with_metaclass(_EnumMeta, object)):
+    class Enum(with_metaclass(_EnumMeta, object)):  # type:ignore
 
         @classmethod
-        def from_pod(cls, pod):
-            lv = level.from_pod(pod)
+        def from_pod(cls: Type, pod: Any) -> 'Enum':
+            lv: level = level.from_pod(pod)
             for enum_level in cls.levels:
                 if enum_level == lv:
                     return enum_level
-            msg = 'Unexpected value "{}" for enum.'
+            msg: str = 'Unexpected value "{}" for enum.'
             raise ValueError(msg.format(pod))
 
-        def __new__(cls, name):
+        def __new__(cls: Type, name: str) -> 'Enum':
             for attr_name in dir(cls):
                 if attr_name.startswith('__'):
                     continue
 
-                attr = getattr(cls, attr_name)
+                attr: Any = getattr(cls, attr_name)
                 if name == attr:
                     return attr
 
@@ -666,14 +708,14 @@ def enum(args, start=0, step=1):
             except ValueError:
                 raise ValueError('Invalid enum value: {}'.format(repr(name)))
 
-    reserved = ['values', 'levels', 'names']
+    reserved: List[str] = ['values', 'levels', 'names']
 
-    levels = []
-    n = start
+    levels: List['level'] = []
+    n: int = start
     for v in args:
-        id_v = identifier(v)
+        id_v: str = identifier(v)
         if id_v in reserved:
-            message = 'Invalid enum level name "{}"; must not be in {}'
+            message: str = 'Invalid enum level name "{}"; must not be in {}'
             raise ValueError(message.format(v, reserved))
         name = caseless_string(id_v)
         lv = level(v, n)
@@ -698,7 +740,7 @@ class ParameterDict(dict):
 
     # Function to determine the appropriate prefix based on the parameters type
     @staticmethod
-    def _get_prefix(obj):
+    def _get_prefix(obj) -> str:
         if isinstance(obj, str):
             prefix = 's'
         elif isinstance(obj, float):
@@ -715,13 +757,13 @@ class ParameterDict(dict):
 
     # Function to add prefix and urlencode a provided parameter.
     @staticmethod
-    def _encode(obj):
+    def _encode(obj: Any) -> str:
         if isinstance(obj, list):
-            t = type(obj[0])
-            prefix = ParameterDict._get_prefix(obj[0]) + 'l'
+            t: Type = type(obj[0])
+            prefix: str = ParameterDict._get_prefix(obj[0]) + 'l'
             for item in obj:
                 if not isinstance(item, t):
-                    msg = 'Lists must only contain a single type, contains {} and {}'
+                    msg: str = 'Lists must only contain a single type, contains {} and {}'
                     raise ValueError(msg.format(t, type(item)))
             obj = '0newelement0'.join(str(x) for x in obj)
         else:
@@ -731,10 +773,10 @@ class ParameterDict(dict):
     # Function to decode a string and return a value of the original parameter type.
     # pylint: disable=too-many-return-statements
     @staticmethod
-    def _decode(string):
-        value_type = string[:1]
-        value_dimension = string[1:2]
-        value = unquote(string[2:])
+    def _decode(string: str):
+        value_type: str = string[:1]
+        value_dimension: str = string[1:2]
+        value: str = unquote(string[2:])
         if value_dimension == 's':
             if value_type == 's':
                 return str(value)
@@ -759,13 +801,13 @@ class ParameterDict(dict):
             self.__setitem__(k, v)
         dict.__init__(self, *args)
 
-    def __setitem__(self, name, value):
+    def __setitem__(self, name: str, value: Any):
         dict.__setitem__(self, name, self._encode(value))
 
-    def __getitem__(self, name):
+    def __getitem__(self, name: str):
         return self._decode(dict.__getitem__(self, name))
 
-    def __contains__(self, item):
+    def __contains__(self, item: Any):
         return dict.__contains__(self, self._encode(item))
 
     def __iter__(self):
@@ -775,7 +817,7 @@ class ParameterDict(dict):
         return self.__iter__()
 
     def get(self, name):
-        return self._decode(dict.get(self, name))
+        return self._decode(dict.get(self, name) or '')
 
     def pop(self, key):
         return self._decode(dict.pop(self, key))
@@ -807,10 +849,10 @@ class cpu_mask(object):
     sysfs-style string.
     """
     @staticmethod
-    def from_pod(pod):
+    def from_pod(pod: Any) -> 'cpu_mask':
         return cpu_mask(int(pod['cpu_mask']))
 
-    def __init__(self, cpus):
+    def __init__(self, cpus: Union[int, str, List, 'cpu_mask']):
         self._mask = 0
         if isinstance(cpus, int):
             self._mask = cpus
@@ -824,10 +866,10 @@ class cpu_mask(object):
         elif isinstance(cpus, cpu_mask):
             self._mask = cpus._mask  # pylint: disable=protected-access
         else:
-            msg = 'Unknown conversion from {} to cpu mask'
+            msg: str = 'Unknown conversion from {} to cpu mask'
             raise ValueError(msg.format(cpus))
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         """Allow for use in comparisons to check if a mask has been set"""
         return bool(self._mask)
 
@@ -838,11 +880,11 @@ class cpu_mask(object):
 
     __str__ = __repr__
 
-    def list(self):
+    def list(self) -> List:
         """Returns a list of the indexes of bits that are set in the mask."""
         return list(reversed(mask_to_list(self._mask)))
 
-    def mask(self, prefix=True):
+    def mask(self, prefix: bool = True):
         """Returns a hex representation of the mask with an optional prefix"""
         if prefix:
             return hex(self._mask)

@@ -22,16 +22,18 @@ import struct
 import platform
 import subprocess
 
+from typing import Tuple, Optional, Any
 
-def get_terminal_size():
+
+def get_terminal_size() -> Tuple[int, int]:
     """ getTerminalSize()
      - get width and height of console
      - works on linux,os x,windows,cygwin(windows)
      originally retrieved from:
      http://stackoverflow.com/questions/566746/how-to-get-console-window-width-in-python
     """
-    current_os = platform.system()
-    tuple_xy = None
+    current_os: str = platform.system()
+    tuple_xy: Optional[Tuple[int, int]] = None
     if current_os == 'Windows':
         tuple_xy = _get_terminal_size_windows()
         if tuple_xy is None:
@@ -44,10 +46,13 @@ def get_terminal_size():
     return tuple_xy
 
 
-def _get_terminal_size_windows():
+def _get_terminal_size_windows() -> Optional[Tuple[int, int]]:
+    """
+    get terminal size in windows os
+    """
     # pylint: disable=unused-variable,redefined-outer-name,too-many-locals, import-outside-toplevel
     try:
-        from ctypes import windll, create_string_buffer
+        from ctypes import windll, create_string_buffer  # type:ignore
         # stdin handle is -10
         # stdout handle is -11
         # stderr handle is -12
@@ -58,14 +63,18 @@ def _get_terminal_size_windows():
             (bufx, bufy, curx, cury, wattr,
              left, top, right, bottom,
              maxx, maxy) = struct.unpack("hhhhHhhhhhh", csbi.raw)
-            sizex = right - left + 1
-            sizey = bottom - top + 1
+            sizex: int = right - left + 1
+            sizey: int = bottom - top + 1
             return sizex, sizey
     except:  # NOQA
         pass
+    return None
 
 
-def _get_terminal_size_tput():
+def _get_terminal_size_tput() -> Optional[Tuple[int, int]]:
+    """
+    get terminal size tput
+    """
     # get terminal width
     # src: http://stackoverflow.com/questions/263890/how-do-i-find-the-width-height-of-a-terminal-window
     try:
@@ -74,23 +83,27 @@ def _get_terminal_size_tput():
         return (cols, rows)
     except:  # NOQA
         pass
+    return None
 
 
-def _get_terminal_size_linux():
+def _get_terminal_size_linux() -> Optional[Tuple[int, int]]:
+    """
+    get terminal size in linux os
+    """
     # pylint: disable=import-outside-toplevel
-    def ioctl_GWINSZ(fd):
+    def ioctl_GWINSZ(fd: int):
         try:
             import fcntl
             import termios
-            cr = struct.unpack('hh',
-                               fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
+            cr: Tuple[Any, ...] = struct.unpack('hh',
+                                                fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))  # type:ignore
             return cr
         except:  # NOQA
             pass
-    cr = ioctl_GWINSZ(0) or ioctl_GWINSZ(1) or ioctl_GWINSZ(2)
+    cr: Optional[Tuple[Any, ...]] = ioctl_GWINSZ(0) or ioctl_GWINSZ(1) or ioctl_GWINSZ(2)
     if not cr:
         try:
-            fd = os.open(os.ctermid(), os.O_RDONLY)
+            fd: int = os.open(os.ctermid(), os.O_RDONLY)
             cr = ioctl_GWINSZ(fd)
             os.close(fd)
         except:   # NOQA

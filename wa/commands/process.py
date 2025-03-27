@@ -19,17 +19,25 @@ from wa import Command
 from wa import discover_wa_outputs
 from wa.framework.configuration.core import Status
 from wa.framework.exception import CommandError
-from wa.framework.output import RunOutput
+from wa.framework.output import RunOutput, JobOutput
 from wa.framework.output_processor import ProcessorManager
 from wa.utils import log
+from argparse import Namespace
+from typing import Optional, TYPE_CHECKING, List, cast
+from types import ModuleType
+if TYPE_CHECKING:
+    from wa.framework.target.info import TargetInfo
+    from wa.framework.execution import ExecutionContext, ConfigManager
 
 
 class ProcessContext(object):
-
-    def __init__(self):
-        self.run_output = None
-        self.target_info = None
-        self.job_output = None
+    """
+    process context
+    """
+    def __init__(self) -> None:
+        self.run_output: Optional[RunOutput] = None
+        self.target_info: Optional['TargetInfo'] = None
+        self.job_output: Optional[JobOutput] = None
 
     def add_augmentation(self, aug):
         pass
@@ -37,10 +45,10 @@ class ProcessContext(object):
 
 class ProcessCommand(Command):
 
-    name = 'process'
-    description = 'Process the output from previously run workloads.'
+    name: str = 'process'
+    description: str = 'Process the output from previously run workloads.'
 
-    def initialize(self, context):
+    def initialize(self, context: Optional['ExecutionContext']) -> None:
         self.parser.add_argument('directory', metavar='DIR',
                                  help="""
                                  Specify a directory containing the data
@@ -69,14 +77,14 @@ class ProcessCommand(Command):
                                  instead of just processing the root.
                                  """)
 
-    def execute(self, config, args):  # pylint: disable=arguments-differ,too-many-branches,too-many-statements
-        process_directory = os.path.expandvars(args.directory)
+    def execute(self, config: 'ConfigManager', args: Namespace):  # pylint: disable=arguments-differ,too-many-branches,too-many-statements
+        process_directory: str = os.path.expandvars(args.directory)
         self.logger.debug('Using process directory: {}'.format(process_directory))
         if not os.path.exists(process_directory):
-            msg = 'Path `{}` does not exist, please specify a valid path.'
+            msg: str = 'Path `{}` does not exist, please specify a valid path.'
             raise CommandError(msg.format(process_directory))
         if not args.recursive:
-            output_list = [RunOutput(process_directory)]
+            output_list: List[RunOutput] = [RunOutput(process_directory)]
         else:
             output_list = list(discover_wa_outputs(process_directory))
 
@@ -96,14 +104,14 @@ class ProcessCommand(Command):
                 self.logger.info('Install output processors for run in path `{}`'
                                  .format(run_output.basepath))
 
-            logfile = os.path.join(run_output.basepath, 'process.log')
+            logfile: str = os.path.join(run_output.basepath, 'process.log')
             i = 0
             while os.path.exists(logfile):
                 i += 1
                 logfile = os.path.join(run_output.basepath, 'process-{}.log'.format(i))
             log.add_file(logfile)
 
-            pm = ProcessorManager(loader=config.plugin_cache)
+            pm = ProcessorManager(loader=cast(ModuleType, config.plugin_cache))
             for proc in config.get_processors():
                 pm.install(proc, pc)
             if args.additional_processors:
@@ -128,11 +136,12 @@ class ProcessCommand(Command):
                 pc.job_output = job_output
                 pm.enable_all()
                 if not args.force:
-                    for augmentation in job_output.spec.augmentations:
-                        try:
-                            pm.disable(augmentation)
-                        except ValueError:
-                            pass
+                    if job_output.spec:
+                        for augmentation in job_output.spec.augmentations:
+                            try:
+                                pm.disable(augmentation)
+                            except ValueError:
+                                pass
 
                 msg = 'Processing job {} {} iteration {}'
                 self.logger.info(msg.format(job_output.id, job_output.label,

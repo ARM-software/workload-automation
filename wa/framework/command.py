@@ -19,9 +19,17 @@ from wa.framework.exception import CommandError
 from wa.framework.plugin import Plugin
 from wa.framework.version import get_wa_version
 from wa.utils.doc import format_body
+from typing import Optional, List, Type, Dict, cast, Any, TYPE_CHECKING
+from argparse import ArgumentParser, _SubParsersAction, Namespace
+import logging
+if TYPE_CHECKING:
+    from wa.framework.execution import ExecutionContext, ConfigManager
 
 
-def init_argument_parser(parser):
+def init_argument_parser(parser: ArgumentParser):
+    """
+    initialize argument parser
+    """
     parser.add_argument('-c', '--config', action='append', default=[],
                         help='specify an additional config.yaml')
     parser.add_argument('-v', '--verbose', action='count',
@@ -40,33 +48,33 @@ class SubCommand(object):
     command line arguments.
 
     """
-    name = None
-    help = None
-    usage = None
-    description = None
-    epilog = None
-    formatter_class = None
+    name: Optional[str] = None
+    help: Optional[str] = None
+    usage: Optional[str] = None
+    description: Optional[str] = None
+    epilog: Optional[str] = None
+    formatter_class: Optional[str] = None
 
-    def __init__(self, logger, subparsers):
+    def __init__(self, logger: logging.Logger, subparsers: _SubParsersAction):
         self.logger = logger
         self.group = subparsers
-        desc = format_body(textwrap.dedent(self.description), 80)
-        parser_params = dict(help=(self.help or self.description), usage=self.usage,
-                             description=desc, epilog=self.epilog)
+        desc = format_body(textwrap.dedent(self.description or ''), 80)
+        parser_params: Dict[str, Any] = dict(help=(self.help or self.description), usage=self.usage,
+                                             description=desc, epilog=self.epilog)
         if self.formatter_class:
             parser_params['formatter_class'] = self.formatter_class
-        self.parser = subparsers.add_parser(self.name, **parser_params)
+        self.parser: ArgumentParser = subparsers.add_parser(self.name or '', **parser_params)
         init_argument_parser(self.parser)  # propagate top-level options
         self.initialize(None)
 
-    def initialize(self, context):
+    def initialize(self, context: Optional['ExecutionContext']) -> None:
         """
         Perform command-specific initialisation (e.g. adding command-specific
         options to the command's parser). ``context`` is always ``None``.
 
         """
 
-    def execute(self, state, args):
+    def execute(self, state: 'ConfigManager', args: Namespace) -> None:
         """
         Execute this command.
 
@@ -90,9 +98,9 @@ class Command(Plugin, SubCommand):  # pylint: disable=abstract-method
     command line arguments.
 
     """
-    kind = "command"
+    kind: str = "command"
 
-    def __init__(self, subparsers):
+    def __init__(self, subparsers: _SubParsersAction):
         Plugin.__init__(self)
         SubCommand.__init__(self, self.logger, subparsers)
 
@@ -103,20 +111,20 @@ class ComplexCommand(Command):
 
     """
 
-    subcmd_classes = []
+    subcmd_classes: List[Type[SubCommand]] = []
 
-    def __init__(self, subparsers):
-        self.subcommands = []
+    def __init__(self, subparsers: _SubParsersAction):
+        self.subcommands: List[SubCommand] = []
         super(ComplexCommand, self).__init__(subparsers)
 
-    def initialize(self, context):
-        subparsers = self.parser.add_subparsers(dest='what', metavar='SUBCMD')
+    def initialize(self, context: Optional['ExecutionContext']) -> None:
+        subparsers: _SubParsersAction[ArgumentParser] = self.parser.add_subparsers(dest='what', metavar='SUBCMD')
         subparsers.required = True
         for subcmd_cls in self.subcmd_classes:
-            subcmd = subcmd_cls(self.logger, subparsers)
+            subcmd: SubCommand = subcmd_cls(self.logger, subparsers)
             self.subcommands.append(subcmd)
 
-    def execute(self, state, args):
+    def execute(self, state: 'ConfigManager', args: Namespace) -> None:
         for subcmd in self.subcommands:
             if subcmd.name == args.what:
                 subcmd.execute(state, args)

@@ -22,7 +22,7 @@ from wa.framework.instrument import SIGNAL_MAP
 from wa.framework.signal import CallbackPriority
 from wa.utils.doc import format_simple_table
 
-OUTPUT_TEMPLATE_FILE =  os.path.join(os.path.dirname(__file__), 'source', 'instrument_method_map.template')
+OUTPUT_TEMPLATE_FILE = os.path.join(os.path.dirname(__file__), 'source', 'instrument_method_map.template')
 
 
 def generate_instrument_method_map(outfile):
@@ -30,7 +30,7 @@ def generate_instrument_method_map(outfile):
                                        headers=['method name', 'signal'], align='<<')
     decorator_names = map(lambda x: x.replace('high', 'fast').replace('low', 'slow'), CallbackPriority.names)
     priority_table = format_simple_table(zip(decorator_names, CallbackPriority.names, CallbackPriority.values),
-            headers=['decorator', 'CallbackPriority name', 'CallbackPriority value'],  align='<>')
+                                         headers=['decorator', 'CallbackPriority name', 'CallbackPriority value'], align='<>')
     with open(OUTPUT_TEMPLATE_FILE) as fh:
         template = string.Template(fh.read())
     with open(outfile, 'w') as wfh:

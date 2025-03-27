@@ -22,8 +22,8 @@ structures and Python class instances).
 
 The modifications to standard serilization procedures are:
 
-    - mappings are deserialized as ``OrderedDict``\ 's rather than standard
-      Python ``dict``\ 's. This allows for cleaner syntax in certain parts
+    - mappings are deserialized as ``OrderedDict`` 's rather than standard
+      Python ``dict`` 's. This allows for cleaner syntax in certain parts
       of WA configuration (e.g. values to be written to files can be specified
       as a dict, and they will be written in the order specified in the config).
     - regular expressions are automatically encoded/decoded. This allows for
@@ -62,25 +62,22 @@ import json as _json
 from collections import OrderedDict
 from collections.abc import Hashable
 from datetime import datetime
-import dateutil.parser
+import dateutil.parser  # type:ignore
 import yaml as _yaml  # pylint: disable=wrong-import-order
-from yaml import MappingNode
+from yaml import MappingNode, Dumper, Node, ScalarNode
 try:
     from yaml import FullLoader as _yaml_loader
 except ImportError:
     from yaml import Loader as _yaml_loader
-from yaml.constructor import ConstructorError
-
-
-# pylint: disable=redefined-builtin
-from past.builtins import basestring  # pylint: disable=wrong-import-order
+from yaml.constructor import ConstructorError  # type:ignore
 
 from wa.framework.exception import SerializerSyntaxError
 from wa.utils.misc import isiterable
 from wa.utils.types import regex_type, none_type, level, cpu_mask
+from typing import (Dict, Any, Callable, Optional, IO, Union,
+                    List, Type, cast, Pattern)
 
-
-__all__ = [
+__all__: List[str] = [
     'json',
     'yaml',
     'read_pod',
@@ -90,12 +87,11 @@ __all__ = [
     'POD_TYPES',
 ]
 
-POD_TYPES = [
+POD_TYPES: List[Type] = [
     list,
     tuple,
     dict,
     set,
-    basestring,
     str,
     int,
     float,
@@ -110,8 +106,10 @@ POD_TYPES = [
 
 
 class WAJSONEncoder(_json.JSONEncoder):
-
-    def default(self, obj):  # pylint: disable=method-hidden,arguments-differ
+    """
+    Json encoder for WA
+    """
+    def default(self, obj: Any) -> str:  # pylint: disable=method-hidden,arguments-differ
         if isinstance(obj, regex_type):
             return 'REGEX:{}:{}'.format(obj.flags, obj.pattern)
         elif isinstance(obj, datetime):
@@ -125,12 +123,14 @@ class WAJSONEncoder(_json.JSONEncoder):
 
 
 class WAJSONDecoder(_json.JSONDecoder):
-
+    """
+    Json decoder for WA
+    """
     def decode(self, s, **kwargs):  # pylint: disable=arguments-differ
         d = _json.JSONDecoder.decode(self, s, **kwargs)
 
-        def try_parse_object(v):
-            if isinstance(v, basestring):
+        def try_parse_object(v: Any) -> Any:
+            if isinstance(v, str):
                 if v.startswith('REGEX:'):
                     _, flags, pattern = v.split(':', 2)
                     return re.compile(pattern, int(flags or 0))
@@ -146,10 +146,10 @@ class WAJSONDecoder(_json.JSONDecoder):
 
             return v
 
-        def load_objects(d):
+        def load_objects(d: Dict) -> Union[Dict, OrderedDict]:
             if not hasattr(d, 'items'):
                 return d
-            pairs = []
+            pairs: List = []
             for k, v in d.items():
                 if hasattr(v, 'items'):
                     pairs.append((k, load_objects(v)))
@@ -165,77 +165,113 @@ class WAJSONDecoder(_json.JSONDecoder):
 class json(object):
 
     @staticmethod
-    def dump(o, wfh, indent=4, *args, **kwargs):
+    def dump(o: Any, wfh: IO, indent: int = 4, *args, **kwargs) -> None:
+        """
+        serialize o as json formatted stream to wfh
+        """
         return _json.dump(o, wfh, cls=WAJSONEncoder, indent=indent, *args, **kwargs)
 
     @staticmethod
-    def dumps(o, indent=4, *args, **kwargs):
+    def dumps(o: Any, indent: Optional[int] = 4, *args, **kwargs) -> str:
+        """
+        serialize o to json formatted string
+        """
         return _json.dumps(o, cls=WAJSONEncoder, indent=indent, *args, **kwargs)
 
     @staticmethod
-    def load(fh, *args, **kwargs):
+    def load(fh: IO, *args, **kwargs) -> Any:
+        """
+        deserialize json from file
+        """
         try:
             return _json.load(fh, cls=WAJSONDecoder, object_pairs_hook=OrderedDict, *args, **kwargs)
         except ValueError as e:
             raise SerializerSyntaxError(e.args[0])
 
     @staticmethod
-    def loads(s, *args, **kwargs):
+    def loads(s: str, *args, **kwargs) -> Any:
+        """
+        deserialize json string to python object
+        """
         try:
             return _json.loads(s, cls=WAJSONDecoder, object_pairs_hook=OrderedDict, *args, **kwargs)
         except ValueError as e:
             raise SerializerSyntaxError(e.args[0])
 
 
-_mapping_tag = _yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG
-_regex_tag = 'tag:wa:regex'
-_level_tag = 'tag:wa:level'
-_cpu_mask_tag = 'tag:wa:cpu_mask'
+_mapping_tag: str = _yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG
+_regex_tag: str = 'tag:wa:regex'
+_level_tag: str = 'tag:wa:level'
+_cpu_mask_tag: str = 'tag:wa:cpu_mask'
 
 
-def _wa_dict_representer(dumper, data):
+def _wa_dict_representer(dumper: Dumper, data: OrderedDict) -> Any:
+    """
+    represent ordered dict in dumped json
+    """
     return dumper.represent_mapping(_mapping_tag, iter(data.items()))
 
 
-def _wa_regex_representer(dumper, data):
-    text = '{}:{}'.format(data.flags, data.pattern)
+def _wa_regex_representer(dumper: Dumper, data: re.Pattern) -> Any:
+    """
+    represent regex in dumped json
+    """
+    text: str = '{}:{}'.format(data.flags, data.pattern)
     return dumper.represent_scalar(_regex_tag, text)
 
 
-def _wa_level_representer(dumper, data):
-    text = '{}:{}'.format(data.name, data.level)
+def _wa_level_representer(dumper: Dumper, data: level) -> Any:
+    """
+    represent level in dumped json
+    """
+    text = '{}:{}'.format(data.name, data.level)  # type: ignore
     return dumper.represent_scalar(_level_tag, text)
 
 
-def _wa_cpu_mask_representer(dumper, data):
+def _wa_cpu_mask_representer(dumper: Dumper, data: cpu_mask) -> Any:
+    """
+    represent cpu mask in dumped json
+    """
     return dumper.represent_scalar(_cpu_mask_tag, data.mask())
 
 
-def _wa_regex_constructor(loader, node):
-    value = loader.construct_scalar(node)
+def _wa_regex_constructor(loader: _yaml_loader, node: Node) -> Pattern[str]:
+    """
+    regex constructor
+    """
+    value: str = cast(str, loader.construct_scalar(cast(ScalarNode, node)))
     flags, pattern = value.split(':', 1)
     return re.compile(pattern, int(flags or 0))
 
 
-def _wa_level_constructor(loader, node):
-    value = loader.construct_scalar(node)
-    name, value = value.split(':', 1)
+def _wa_level_constructor(loader: _yaml_loader, node: Node) -> level:
+    """
+    level constructor
+    """
+    value = loader.construct_scalar(cast(ScalarNode, node))
+    name, value = cast(str, value).split(':', 1)
     return level(name, value)
 
 
-def _wa_cpu_mask_constructor(loader, node):
-    value = loader.construct_scalar(node)
+def _wa_cpu_mask_constructor(loader: _yaml_loader, node: Node) -> cpu_mask:
+    value = cast(str, loader.construct_scalar(cast(ScalarNode, node)))
     return cpu_mask(value)
 
 
 class _WaYamlLoader(_yaml_loader):  # pylint: disable=too-many-ancestors
+    """
+    yaml loader for WA
+    """
 
-    def construct_mapping(self, node, deep=False):
+    def construct_mapping(self, node: Type[Node], deep: bool = False) -> OrderedDict:
+        """
+        construct mapping
+        """
         if isinstance(node, MappingNode):
             self.flatten_mapping(node)
         if not isinstance(node, MappingNode):
             raise ConstructorError(None, None,
-                                   "expected a mapping node, but found %s" % node.id,
+                                   "expected a mapping node, but found %s" % node.id,  # type:ignore
                                    node.start_mark)
         mapping = OrderedDict()
         for key_node, value_node in node.value:
@@ -261,11 +297,17 @@ _yaml.add_constructor(_mapping_tag, _WaYamlLoader.construct_yaml_map, Loader=_Wa
 class yaml(object):
 
     @staticmethod
-    def dump(o, wfh, *args, **kwargs):
+    def dump(o: Any, wfh: IO, *args, **kwargs) -> None:
+        """
+        serialize object into yaml format and dump into file
+        """
         return _yaml.dump(o, wfh, *args, **kwargs)
 
     @staticmethod
-    def load(fh, *args, **kwargs):
+    def load(fh: IO, *args, **kwargs) -> Any:
+        """
+        deserialize yaml from file and create python object
+        """
         try:
             return _yaml.load(fh, *args, Loader=_WaYamlLoader, **kwargs)
         except _yaml.YAMLError as e:
@@ -281,49 +323,66 @@ class yaml(object):
 class python(object):
 
     @staticmethod
-    def dump(o, wfh, *args, **kwargs):
+    def dump(o: Any, wfh: IO, *args, **kwargs):
+        """
+        serialize object and dump into file
+        """
         raise NotImplementedError()
 
     @classmethod
-    def load(cls, fh, *args, **kwargs):
+    def load(cls: Type, fh: IO, *args, **kwargs) -> Dict[str, Any]:
+        """
+        load object from file
+        """
         return cls.loads(fh.read())
 
     @staticmethod
-    def loads(s, *args, **kwargs):
-        pod = {}
+    def loads(s: str, *args, **kwargs) -> Dict[str, Any]:
+        """
+        load object from string
+        """
+        pod: Dict[str, Any] = {}
         try:
             exec(s, pod)  # pylint: disable=exec-used
         except SyntaxError as e:
-            raise SerializerSyntaxError(e.message, e.lineno)
+            raise SerializerSyntaxError(e.msg, e.lineno)
         for k in list(pod.keys()):  # pylint: disable=consider-iterating-dictionary
             if k.startswith('__'):
                 del pod[k]
         return pod
 
 
-def read_pod(source, fmt=None):
+def read_pod(source: Union[str, IO], fmt: Optional[str] = None) -> Dict[str, Any]:
+    """
+    read plain old datastructure from file.
+    source -> file handle or a file path
+    fmt -> file type - py, json or yaml
+    """
     if isinstance(source, str):
         with open(source) as fh:
             return _read_pod(fh, fmt)
     elif hasattr(source, 'read') and (hasattr(source, 'name') or fmt):
         return _read_pod(source, fmt)
     else:
-        message = 'source must be a path or an open file handle; got {}'
+        message: str = 'source must be a path or an open file handle; got {}'
         raise ValueError(message.format(type(source)))
 
 
-def write_pod(pod, dest, fmt=None):
+def write_pod(pod: Dict[str, Any], dest: Union[str, IO], fmt: Optional[str] = None) -> None:
+    """
+    write pod into string or file
+    """
     if isinstance(dest, str):
         with open(dest, 'w') as wfh:
             return _write_pod(pod, wfh, fmt)
     elif hasattr(dest, 'write') and (hasattr(dest, 'name') or fmt):
         return _write_pod(pod, dest, fmt)
     else:
-        message = 'dest must be a path or an open file handle; got {}'
+        message: str = 'dest must be a path or an open file handle; got {}'
         raise ValueError(message.format(type(dest)))
 
 
-def dump(o, wfh, fmt='json', *args, **kwargs):
+def dump(o: Any, wfh: IO, fmt: str = 'json', *args, **kwargs):
     serializer = {'yaml': yaml,
                   'json': json,
                   'python': python,
@@ -331,14 +390,20 @@ def dump(o, wfh, fmt='json', *args, **kwargs):
                   }.get(fmt)
     if serializer is None:
         raise ValueError('Unknown serialization format: "{}"'.format(fmt))
-    serializer.dump(o, wfh, *args, **kwargs)
+    serializer.dump(o, wfh, *args, **kwargs)  # type:ignore
 
 
-def load(s, fmt='json', *args, **kwargs):
+def load(s: str, fmt: str = 'json', *args, **kwargs):
+    """
+    load from string into python object
+    """
     return read_pod(s, fmt=fmt)
 
 
-def _read_pod(fh, fmt=None):
+def _read_pod(fh: IO, fmt: Optional[str] = None) -> Dict[str, Any]:
+    """
+    read pod from file
+    """
     if fmt is None:
         fmt = os.path.splitext(fh.name)[1].lower().strip('.')
         if fmt == '':
@@ -357,7 +422,10 @@ def _read_pod(fh, fmt=None):
         raise ValueError('Unknown format "{}": {}'.format(fmt, getattr(fh, 'name', '<none>')))
 
 
-def _write_pod(pod, wfh, fmt=None):
+def _write_pod(pod: Dict[str, Any], wfh: IO, fmt: Optional[str] = None) -> None:
+    """
+    write pod into file
+    """
     if fmt is None:
         fmt = os.path.splitext(wfh.name)[1].lower().strip('.')
     if fmt == 'yaml':
@@ -370,7 +438,10 @@ def _write_pod(pod, wfh, fmt=None):
         raise ValueError('Unknown format "{}": {}'.format(fmt, getattr(wfh, 'name', '<none>')))
 
 
-def is_pod(obj):
+def is_pod(obj: Any) -> bool:
+    """
+    check if object is podable
+    """
     if type(obj) not in POD_TYPES:  # pylint: disable=unidiomatic-typecheck
         return False
     if hasattr(obj, 'items'):
@@ -386,28 +457,37 @@ def is_pod(obj):
 
 class Podable(object):
 
-    _pod_serialization_version = 0
+    _pod_serialization_version: int = 0
 
     @classmethod
-    def from_pod(cls, pod):
+    def from_pod(cls: Type, pod: Dict[str, Any]) -> 'Podable':
+        """
+        create a cls object with a plain old datastructure
+        """
         pod = cls._upgrade_pod(pod)
         instance = cls()
         instance._pod_version = pod.pop('_pod_version')  # pylint: disable=protected-access
         return instance
 
     @classmethod
-    def _upgrade_pod(cls, pod):
+    def _upgrade_pod(cls: Type, pod: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        upgrade pod version and access the highest implemented upgrade function to do the upgrade
+        """
         _pod_serialization_version = pod.pop('_pod_serialization_version', None) or 0
         while _pod_serialization_version < cls._pod_serialization_version:
             _pod_serialization_version += 1
-            upgrade = getattr(cls, '_pod_upgrade_v{}'.format(_pod_serialization_version))
+            upgrade: Callable = getattr(cls, '_pod_upgrade_v{}'.format(_pod_serialization_version))
             pod = upgrade(pod)
         return pod
 
     def __init__(self):
         self._pod_version = self._pod_serialization_version
 
-    def to_pod(self):
+    def to_pod(self) -> Dict[str, Any]:
+        """
+        convert the cls to a plain old datastructure
+        """
         pod = {}
         pod['_pod_version'] = self._pod_version
         pod['_pod_serialization_version'] = self._pod_serialization_version

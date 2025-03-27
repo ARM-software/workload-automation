@@ -25,12 +25,13 @@ from wa.framework.configuration.plugin_cache import PluginCache
 from wa.utils.misc import load_struct_from_python
 from wa.utils.serializer import yaml
 from wa.utils.types import identifier
-
+from typing import Dict, List, Any, Union, cast, Optional
 
 # Have to disable this due to dynamic attributes
 # pylint: disable=no-member
 
-def init_user_directory(overwrite_existing=False):  # pylint: disable=R0914
+
+def init_user_directory(overwrite_existing: bool = False):  # pylint: disable=R0914
     """
     Initialise a fresh user directory.
     """
@@ -48,11 +49,11 @@ def init_user_directory(overwrite_existing=False):  # pylint: disable=R0914
 
     if os.getenv('USER') == 'root':
         # If running with sudo on POSIX, change the ownership to the real user.
-        real_user = os.getenv('SUDO_USER')
+        real_user: Optional[str] = os.getenv('SUDO_USER')
         if real_user:
             # pylint: disable=import-outside-toplevel
             import pwd  # done here as module won't import on win32
-            user_entry = pwd.getpwnam(real_user)
+            user_entry: pwd.struct_passwd = pwd.getpwnam(real_user)
             uid, gid = user_entry.pw_uid, user_entry.pw_gid
             os.chown(settings.user_directory, uid, gid)
             # why, oh why isn't there a recusive=True option for os.chown?
@@ -63,27 +64,27 @@ def init_user_directory(overwrite_existing=False):  # pylint: disable=R0914
                     os.chown(os.path.join(root, f), uid, gid)
 
 
-def init_config():
+def init_config() -> None:
     """
     If configuration file is missing try to convert WA2 config if present
     otherwise initialize fresh config file
     """
-    wa2_config_file = os.path.join(settings.user_directory, 'config.py')
-    wa3_config_file = os.path.join(settings.user_directory, 'config.yaml')
+    wa2_config_file: str = os.path.join(settings.user_directory, 'config.py')
+    wa3_config_file: str = os.path.join(settings.user_directory, 'config.yaml')
     if os.path.exists(wa2_config_file):
         convert_wa2_agenda(wa2_config_file, wa3_config_file)
     else:
         generate_default_config(wa3_config_file)
 
 
-def convert_wa2_agenda(filepath, output_path):
+def convert_wa2_agenda(filepath: str, output_path: str) -> None:
     """
     Convert WA2 .py config file to a WA3 .yaml config file.
     """
 
-    orig_agenda = load_struct_from_python(filepath)
-    new_agenda = {'augmentations': []}
-    config_points = MetaConfiguration.config_points + RunConfiguration.config_points
+    orig_agenda: Dict[str, Any] = load_struct_from_python(filepath)
+    new_agenda: Dict[str, Union[List, Dict]] = {'augmentations': []}
+    config_points: List[ConfigurationPoint] = MetaConfiguration.config_points + RunConfiguration.config_points
 
     # Add additional config points to extract from config file.
     # Also allows for aliasing of renamed parameters
@@ -115,19 +116,19 @@ def convert_wa2_agenda(filepath, output_path):
         for cfg_point in config_points:
             if param == cfg_point.name or param in cfg_point.aliases:
                 if cfg_point.name == 'augmentations':
-                    new_agenda['augmentations'].extend(orig_agenda.pop(param))
+                    cast(List, new_agenda['augmentations']).extend(orig_agenda.pop(param))
                 else:
                     new_agenda[cfg_point.name] = format_parameter(orig_agenda.pop(param))
 
     with open(output_path, 'w') as output:
-        for param in config_points:
-            entry = {param.name: new_agenda.get(param.name, param.default)}
-            write_param_yaml(entry, param, output)
+        for param_ in config_points:
+            entry: Dict[str, Union[List, Dict]] = {param_.name: new_agenda.get(param_.name, param_.default)}
+            write_param_yaml(entry, param_, output)
 
         # Convert plugin configuration
         output.write("# Plugin Configuration\n")
         for param in list(orig_agenda.keys()):
-            if pluginloader.has_plugin(param):
+            if cast(pluginloader.__LoaderWrapper, pluginloader).has_plugin(param):
                 entry = {param: orig_agenda.pop(param)}
                 yaml.dump(format_parameter(entry), output, default_flow_style=False)
                 output.write("\n")
@@ -142,7 +143,7 @@ def convert_wa2_agenda(filepath, output_path):
                 output.write("\n")
 
 
-def format_parameter(param):
+def format_parameter(param: Any):
     if isinstance(param, dict):
         return {identifier(k): v for k, v in param.items()}
     else:

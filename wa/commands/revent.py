@@ -20,15 +20,24 @@ from time import sleep
 from wa import Command
 from wa.framework import pluginloader
 from wa.framework.exception import ConfigError
-from wa.framework.resource import ResourceResolver
+from wa.framework.resource import ResourceResolver, Resource
 from wa.framework.target.manager import TargetManager
 from wa.utils.revent import ReventRecorder
+from devlib.target import Target
+from argparse import _MutuallyExclusiveGroup, Namespace
+from typing import (cast, Optional, TYPE_CHECKING, Dict,
+                    Tuple, Callable)
+if TYPE_CHECKING:
+    from wa.framework.pluginloader import __LoaderWrapper
+    from wa.framework.execution import ExecutionContext, ConfigManager
+    from wa.framework.configuration.core import ConfigurationPoint, RunConfigurationProtocol
+    from wa.framework.workload import Workload, ApkWorkload
 
 
 class RecordCommand(Command):
 
-    name = 'record'
-    description = '''
+    name: str = 'record'
+    description: str = '''
     Performs a revent recording
 
     This command helps making revent recordings. It will automatically
@@ -53,13 +62,13 @@ class RecordCommand(Command):
        or optionally ``-a`` to indicate all stages should be recorded.
     '''
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super(RecordCommand, self).__init__(**kwargs)
-        self.tm = None
-        self.target = None
-        self.revent_recorder = None
+        self.tm: Optional[TargetManager] = None
+        self.target: Optional[Target] = None
+        self.revent_recorder: Optional[ReventRecorder] = None
 
-    def initialize(self, context):
+    def initialize(self, context: Optional['ExecutionContext']) -> None:
         self.parser.add_argument('-d', '--device', metavar='DEVICE',
                                  help='''
                                  Specify the device on which to run. This will
@@ -81,11 +90,14 @@ class RecordCommand(Command):
         # Need validation
         self.parser.add_argument('-C', '--clear', help='Clear app cache before launching it',
                                  action='store_true')
-        group = self.parser.add_mutually_exclusive_group(required=False)
+        group: _MutuallyExclusiveGroup = self.parser.add_mutually_exclusive_group(required=False)
         group.add_argument('-p', '--package', help='Android package to launch before recording')
         group.add_argument('-w', '--workload', help='Name of a revent workload (mostly games)')
 
-    def validate_args(self, args):
+    def validate_args(self, args: Namespace) -> None:
+        """
+        validate arguments
+        """
         if args.clear and not (args.package or args.workload):
             self.logger.error("Package/Workload must be specified if you want to clear cache")
             sys.exit()
@@ -100,15 +112,15 @@ class RecordCommand(Command):
             self.logger.error("Please specify which workload stages you wish to record")
             sys.exit()
 
-    def execute(self, state, args):
+    def execute(self, state: 'ConfigManager', args: Namespace) -> None:
         self.validate_args(args)
         state.run_config.merge_device_config(state.plugin_cache)
         if args.device:
             device = args.device
-            device_config = {}
+            device_config: Dict[str, 'ConfigurationPoint'] = {}
         else:
-            device = state.run_config.device
-            device_config = state.run_config.device_config or {}
+            device = cast('RunConfigurationProtocol', state.run_config).device
+            device_config = cast(Dict[str, 'ConfigurationPoint'], state.run_config.device_config) or {}
 
         if args.output:
             outdir = os.path.basename(args.output)
@@ -118,8 +130,9 @@ class RecordCommand(Command):
         self.tm = TargetManager(device, device_config, outdir)
         self.tm.initialize()
         self.target = self.tm.target
-        self.revent_recorder = ReventRecorder(self.target)
-        self.revent_recorder.deploy()
+        if self.target:
+            self.revent_recorder = ReventRecorder(self.target)
+            self.revent_recorder.deploy()
 
         if args.workload:
             self.workload_record(args)
@@ -127,24 +140,29 @@ class RecordCommand(Command):
             self.package_record(args)
         else:
             self.manual_record(args)
+        if self.revent_recorder:
+            self.revent_recorder.remove()
 
-        self.revent_recorder.remove()
-
-    def record(self, revent_file, name, output_path):
-        msg = 'Press Enter when you are ready to record {}...'
+    def record(self, revent_file: Optional[str], name: str, output_path: str) -> None:
+        """
+        record commands
+        """
+        msg: str = 'Press Enter when you are ready to record {}...'
         self.logger.info(msg.format(name))
         input('')
-        self.revent_recorder.start_record(revent_file)
+        if self.revent_recorder:
+            self.revent_recorder.start_record(revent_file)
         msg = 'Press Enter when you have finished recording {}...'
         self.logger.info(msg.format(name))
         input('')
-        self.revent_recorder.stop_record()
+        if self.revent_recorder:
+            self.revent_recorder.stop_record()
 
         if not os.path.isdir(output_path):
             os.makedirs(output_path)
 
-        revent_file_name = self.target.path.basename(revent_file)
-        host_path = os.path.join(output_path, revent_file_name)
+        revent_file_name: str = self.target.path.basename(revent_file) if self.target and self.target.path else ''
+        host_path: str = os.path.join(output_path, revent_file_name)
         if os.path.exists(host_path):
             msg = 'Revent file \'{}\' already exists, overwrite? [y/n]'
             self.logger.info(msg.format(revent_file_name))
@@ -155,17 +173,26 @@ class RecordCommand(Command):
                 self.logger.warning(msg.format(revent_file_name))
                 return
         msg = 'Pulling \'{}\' from device'
-        self.logger.info(msg.format(self.target.path.basename(revent_file)))
-        self.target.pull(revent_file, output_path, as_root=self.target.is_rooted)
+        self.logger.info(msg.format(self.target.path.basename(revent_file) if self.target and self.target.path else ''))
+        if self.target:
+            self.target.pull(revent_file, output_path, as_root=self.target.is_rooted)
 
-    def manual_record(self, args):
+    def manual_record(self, args: Namespace) -> None:
+        """
+        record manually
+        """
         output_path, file_name = self._split_revent_location(args.output)
-        revent_file = self.target.get_workpath(file_name)
+        revent_file = self.target.get_workpath(file_name) if self.target else ''
         self.record(revent_file, '', output_path)
         msg = 'Recording is available at: \'{}\''
         self.logger.info(msg.format(os.path.join(output_path, file_name)))
 
-    def package_record(self, args):
+    def package_record(self, args: Namespace) -> None:
+        """
+        record package execution on android
+        """
+        if self.target is None:
+            raise ConfigError('Target is None')
         if self.target.os != 'android' and self.target.os != 'chromeos':
             raise ConfigError('Target does not appear to be running Android')
         if self.target.os == 'chromeos' and not self.target.supports_android:
@@ -173,36 +200,39 @@ class RecordCommand(Command):
         if args.clear:
             self.target.execute('pm clear {}'.format(args.package))
         self.logger.info('Starting {}'.format(args.package))
-        cmd = 'monkey -p {} -c android.intent.category.LAUNCHER 1'
+        cmd: str = 'monkey -p {} -c android.intent.category.LAUNCHER 1'
         self.target.execute(cmd.format(args.package))
 
         output_path, file_name = self._split_revent_location(args.output)
-        revent_file = self.target.get_workpath(file_name)
+        revent_file: Optional[str] = self.target.get_workpath(file_name)
         self.record(revent_file, '', output_path)
         msg = 'Recording is available at: \'{}\''
         self.logger.info(msg.format(os.path.join(output_path, file_name)))
 
-    def workload_record(self, args):
+    def workload_record(self, args: Namespace) -> None:
+        """
+        record workload execution
+        """
         context = LightContext(self.tm)
-        setup_revent = '{}.setup.revent'.format(self.target.model)
-        run_revent = '{}.run.revent'.format(self.target.model)
-        extract_results_revent = '{}.extract_results.revent'.format(self.target.model)
-        teardown_file_revent = '{}.teardown.revent'.format(self.target.model)
-        setup_file = self.target.get_workpath(setup_revent)
-        run_file = self.target.get_workpath(run_revent)
-        extract_results_file = self.target.get_workpath(extract_results_revent)
-        teardown_file = self.target.get_workpath(teardown_file_revent)
+        setup_revent: str = '{}.setup.revent'.format(self.target.model if self.target else '')
+        run_revent: str = '{}.run.revent'.format(self.target.model if self.target else '')
+        extract_results_revent: str = '{}.extract_results.revent'.format(self.target.model if self.target else '')
+        teardown_file_revent: str = '{}.teardown.revent'.format(self.target.model if self.target else '')
+        setup_file: Optional[str] = self.target.get_workpath(setup_revent) if self.target else ''
+        run_file: Optional[str] = self.target.get_workpath(run_revent) if self.target else ''
+        extract_results_file: Optional[str] = self.target.get_workpath(extract_results_revent) if self.target else ''
+        teardown_file: Optional[str] = self.target.get_workpath(teardown_file_revent) if self.target else ''
 
         self.logger.info('Deploying {}'.format(args.workload))
-        workload = pluginloader.get_workload(args.workload, self.target)
+        workload: 'Workload' = cast('__LoaderWrapper', pluginloader).get_workload(args.workload, self.target)
         # Setup apk if android workload
         if hasattr(workload, 'apk'):
-            workload.apk.initialize(context)
-            workload.apk.setup(context)
-            sleep(workload.loading_time)
+            cast('ApkWorkload', workload).apk.initialize(cast('ExecutionContext', context))
+            cast('ApkWorkload', workload).apk.setup(cast('ExecutionContext', context))
+            sleep(cast('ApkWorkload', workload).loading_time)
 
-        output_path = os.path.join(workload.dependencies_directory,
-                                   'revent_files')
+        output_path: str = os.path.join(workload.dependencies_directory,
+                                        'revent_files')
         if args.setup or args.all:
             self.record(setup_file, 'SETUP', output_path)
         if args.run or args.all:
@@ -212,17 +242,20 @@ class RecordCommand(Command):
         if args.teardown or args.all:
             self.record(teardown_file, 'TEARDOWN', output_path)
         self.logger.info('Tearing down {}'.format(args.workload))
-        workload.teardown(context)
+        workload.teardown(cast('ExecutionContext', context))
         self.logger.info('Recording(s) are available at: \'{}\''.format(output_path))
 
-    def _split_revent_location(self, output):
-        output_path = None
-        file_name = None
+    def _split_revent_location(self, output: str) -> Tuple[str, str]:
+        """
+        split the output location string into path and file name
+        """
+        output_path: Optional[str] = None
+        file_name: Optional[str] = None
         if output:
             output_path, file_name, = os.path.split(output)
 
         if not file_name:
-            file_name = '{}.revent'.format(self.target.model)
+            file_name = '{}.revent'.format(self.target.model if self.target else '')
         if not output_path:
             output_path = os.getcwd()
 
@@ -231,15 +264,15 @@ class RecordCommand(Command):
 
 class ReplayCommand(Command):
 
-    name = 'replay'
-    description = '''
+    name: str = 'replay'
+    description: str = '''
     Replay a revent recording
 
     Revent allows you to record raw inputs such as screen swipes or button presses.
     See ``wa show record`` to see how to make an revent recording.
     '''
 
-    def initialize(self, context):
+    def initialize(self, context: Optional['ExecutionContext']) -> None:
         self.parser.add_argument('recording', help='The name of the file to replay',
                                  metavar='FILE')
         self.parser.add_argument('-d', '--device', help='The name of the device')
@@ -248,34 +281,36 @@ class ReplayCommand(Command):
                                  action="store_true")
 
     # pylint: disable=W0201
-    def execute(self, state, args):
+    def execute(self, state: 'ConfigManager', args: Namespace) -> None:
         state.run_config.merge_device_config(state.plugin_cache)
         if args.device:
             device = args.device
-            device_config = {}
+            device_config: Dict[str, 'ConfigurationPoint'] = {}
         else:
-            device = state.run_config.device
-            device_config = state.run_config.device_config or {}
+            device = cast('RunConfigurationProtocol', state.run_config).device
+            device_config = cast(Dict[str, 'ConfigurationPoint'], state.run_config.device_config) or {}
 
         target_manager = TargetManager(device, device_config, None)
         target_manager.initialize()
         self.target = target_manager.target
-        revent_file = self.target.path.join(self.target.working_directory,
-                                            os.path.split(args.recording)[1])
+        revent_file: str = self.target.path.join(self.target.working_directory,
+                                                 os.path.split(args.recording)[1]) if self.target and self.target.path else ''
 
         self.logger.info("Pushing file to target")
-        self.target.push(args.recording, self.target.working_directory)
-
-        revent_recorder = ReventRecorder(target_manager.target)
-        revent_recorder.deploy()
+        self.target.push(args.recording, self.target.working_directory) if self.target else ''
+        if target_manager.target:
+            revent_recorder = ReventRecorder(target_manager.target)
+            revent_recorder.deploy()
 
         if args.clear:
-            self.target.execute('pm clear {}'.format(args.package))
+            if self.target:
+                self.target.execute('pm clear {}'.format(args.package))
 
         if args.package:
             self.logger.info('Starting {}'.format(args.package))
             cmd = 'monkey -p {} -c android.intent.category.LAUNCHER 1'
-            self.target.execute(cmd.format(args.package))
+            if self.target:
+                self.target.execute(cmd.format(args.package))
 
         self.logger.info("Starting replay")
         revent_recorder.replay(revent_file)
@@ -285,16 +320,24 @@ class ReplayCommand(Command):
 
 # Used to satisfy the workload API
 class LightContext(object):
-
+    """
+    light execution context for satisfying workload api
+    """
     def __init__(self, tm):
         self.tm = tm
         self.resolver = ResourceResolver()
         self.resolver.load()
 
-    def get_resource(self, resource, strict=True):
+    def get_resource(self, resource: Resource, strict: bool = True) -> Optional[str]:
+        """
+        get path to the resource
+        """
         return self.resolver.get(resource, strict)
 
-    def update_metadata(self, key, *args):
+    def update_metadata(self, key: str, *args):
+        """
+        update metadata
+        """
         pass
 
-    get = get_resource
+    get: Callable[..., Optional[str]] = get_resource

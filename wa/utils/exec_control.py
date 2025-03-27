@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from typing import Dict, List, Optional, Callable, Any
 
 # "environment" management:
-__environments = {}
-__active_environment = None
+__environments: Dict[Optional[str], List[str]] = {}
+__active_environment: Optional[str] = None
 
 
-def activate_environment(name):
+def activate_environment(name: str) -> None:
     """
     Sets the current tracking environment to ``name``. If an
     environment with that name does not already exist, it will be
@@ -32,7 +33,7 @@ def activate_environment(name):
     __active_environment = name
 
 
-def init_environment(name):
+def init_environment(name: str) -> None:
     """
     Create a new environment called ``name``, but do not set it as the
     current environment.
@@ -41,12 +42,12 @@ def init_environment(name):
              already exists.
     """
     if name in list(__environments.keys()):
-        msg = "Environment {} already exists".format(name)
+        msg: str = "Environment {} already exists".format(name)
         raise ValueError(msg)
     __environments[name] = []
 
 
-def reset_environment(name=None):
+def reset_environment(name: Optional[str] = None) -> None:
     """
     Reset method call tracking for environment ``name``. If ``name`` is
     not specified or is ``None``, reset the current active environment.
@@ -57,7 +58,7 @@ def reset_environment(name=None):
 
     if name is not None:
         if name not in list(__environments.keys()):
-            msg = "Environment {} does not exist".format(name)
+            msg: str = "Environment {} does not exist".format(name)
             raise ValueError(msg)
         __environments[name] = []
     else:
@@ -67,7 +68,7 @@ def reset_environment(name=None):
 
 
 # The decorators:
-def once_per_instance(method):
+def once_per_instance(method: Callable) -> Callable:
     """
     The specified method will be invoked only once for every bound
     instance within the environment.
@@ -76,7 +77,7 @@ def once_per_instance(method):
         if __active_environment is None:
             activate_environment('default')
         func_id = repr(method.__hash__()) + repr(args[0].__hash__())
-        if func_id in __environments[__active_environment]:
+        if func_id in (__environments[__active_environment] or ''):
             return
         else:
             __environments[__active_environment].append(func_id)
@@ -85,16 +86,16 @@ def once_per_instance(method):
     return wrapper
 
 
-def once_per_class(method):
+def once_per_class(method: Callable) -> Callable:
     """
     The specified method will be invoked only once for all instances
     of a class within the environment.
     """
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs) -> Any:
         if __active_environment is None:
             activate_environment('default')
 
-        func_id = repr(method.__name__) + repr(args[0].__class__)
+        func_id: str = repr(method.__name__) + repr(args[0].__class__)
 
         if func_id in __environments[__active_environment]:
             return
@@ -105,19 +106,19 @@ def once_per_class(method):
     return wrapper
 
 
-def once_per_attribute_value(attr_name):
+def once_per_attribute_value(attr_name: str) -> Callable:
     """
     The specified method will be invoked once for all instances that share the
     same value for the specified attribute (sameness is established by comparing
     repr() of the values).
     """
-    def wrapped_once_per_attribute_value(method):
-        def wrapper(*args, **kwargs):
+    def wrapped_once_per_attribute_value(method: Callable) -> Any:
+        def wrapper(*args, **kwargs) -> Any:
             if __active_environment is None:
                 activate_environment('default')
 
             attr_value = getattr(args[0], attr_name)
-            func_id = repr(method.__name__) + repr(args[0].__class__) + repr(attr_value)
+            func_id: str = repr(method.__name__) + repr(args[0].__class__) + repr(attr_value)
 
             if func_id in __environments[__active_environment]:
                 return
@@ -129,16 +130,16 @@ def once_per_attribute_value(attr_name):
     return wrapped_once_per_attribute_value
 
 
-def once(method):
+def once(method: Callable) -> Callable:
     """
     The specified method will be invoked only once within the
     environment.
     """
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, **kwargs) -> Any:
         if __active_environment is None:
             activate_environment('default')
 
-        func_id = repr(method.__code__)
+        func_id: str = repr(method.__code__)
 
         if func_id in __environments[__active_environment]:
             return

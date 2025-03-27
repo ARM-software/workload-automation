@@ -14,22 +14,24 @@
 #
 
 from copy import copy
+from typing import TYPE_CHECKING, Union, Optional, cast, Any
+if TYPE_CHECKING:
+    from wa.utils.types import ParameterDict
 
 
 class TargetConfig(dict):
     """
     Represents a configuration for a target.
-
     """
-    def __init__(self, config=None):
+    def __init__(self, config: Optional[Union['TargetConfig', 'ParameterDict']] = None):
         dict.__init__(self)
         if isinstance(config, TargetConfig):
             self.__dict__ = copy(config.__dict__)
         elif hasattr(config, 'iteritems'):
-            for k, v in config.iteritems:
+            for k, v in cast('ParameterDict', config).iteritems():
                 self.set(k, v)
         elif config:
             raise ValueError(config)
 
-    def set(self, name, value):
+    def set(self, name: str, value: Any):
         setattr(self, name, value)

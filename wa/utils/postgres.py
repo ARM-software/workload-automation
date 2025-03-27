@@ -31,31 +31,44 @@ import re
 import os
 
 try:
-    from psycopg2 import InterfaceError
-    from psycopg2.extensions import AsIs
+    from psycopg2 import InterfaceError  # type:ignore
+    from psycopg2.extensions import AsIs  # type:ignore
 except ImportError:
-    InterfaceError = None
-    AsIs = None
+    InterfaceError = None  # type:ignore
+    AsIs = None  # type:ignore
 
 from wa.utils.types import level
+from typing import Callable, Optional, List, Any, Tuple, TYPE_CHECKING
+from enum import Enum
+if TYPE_CHECKING:
+    from psycopg2.extensions import cursor, connection  # type:ignore
+else:
+    cursor = None
+    connection = None
 
 
-POSTGRES_SCHEMA_DIR = os.path.join(os.path.dirname(__file__),
-                                   '..',
-                                   'commands',
-                                   'postgres_schemas')
+POSTGRES_SCHEMA_DIR: str = os.path.join(os.path.dirname(__file__),
+                                        '..',
+                                        'commands',
+                                        'postgres_schemas')
 
 
-def cast_level(value, cur):  # pylint: disable=unused-argument
+class Level(Enum):
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
+
+
+def cast_level(value: str, cur: Optional['cursor']):  # pylint: disable=unused-argument
     """Generic Level caster for psycopg2"""
-    if not InterfaceError:
+    if InterfaceError is None:
         raise ImportError('There was a problem importing psycopg2.')
     if value is None:
         return None
 
     m = re.match(r"([^\()]*)\((\d*)\)", value)
-    name = str(m.group(1))
-    number = int(m.group(2))
+    name = str(m.group(1)) if m else ''
+    number = int(m.group(2)) if m else 0
 
     if m:
         return level(name, number)
@@ -63,7 +76,7 @@ def cast_level(value, cur):  # pylint: disable=unused-argument
         raise InterfaceError("Bad level representation: {}".format(value))
 
 
-def cast_vanilla(value, cur):  # pylint: disable=unused-argument
+def cast_vanilla(value: Optional[str], cur: Optional['cursor']) -> Optional[str]:  # pylint: disable=unused-argument
     """Vanilla Type caster for psycopg2
 
     Simply returns the string representation.
@@ -76,26 +89,26 @@ def cast_vanilla(value, cur):  # pylint: disable=unused-argument
 
 # List functions and classes for adapting
 
-def adapt_level(a_level):
+def adapt_level(a_level: Level):
     """Generic Level Adapter for psycopg2"""
     return "{}({})".format(a_level.name, a_level.value)
 
 
 class ListOfLevel(object):
-    value = None
+    value: Optional[Level] = None
 
-    def __init__(self, a_level):
+    def __init__(self, a_level: Level):
         self.value = a_level
 
-    def return_original(self):
+    def return_original(self) -> Optional[Level]:
         return self.value
 
 
-def adapt_ListOfX(adapt_X):
+def adapt_ListOfX(adapt_X: Callable):
     """This will create a multi-column adapter for a particular type.
 
     Note that the type must itself need to be in array form. Therefore
-    this function serves to seaprate out individual lists into multiple
+    this function serves to separate out individual lists into multiple
     big lists.
     E.g. if the X adapter produces array (a,b,c)
     then this adapter will take an list of Xs and produce a master array:
@@ -115,16 +128,16 @@ def adapt_ListOfX(adapt_X):
     subarray following processing then the outer {} are stripped to give a
     1 dimensional array.
     """
-    def adapter_function(param):
-        if not AsIs:
+    def adapter_function(param: Any) -> AsIs:  # type:ignore
+        if AsIs is None:
             raise ImportError('There was a problem importing psycopg2.')
         param = param.value
-        result_list = []
+        result_list: List[str] = []
         for element in param:  # Where param will be a list of X's
             result_list.append(adapt_X(element))
         test_element = result_list[0]
-        num_items = len(test_element.split(","))
-        master_list = []
+        num_items: int = len(test_element.split(","))
+        master_list: List[str] = []
         for x in range(num_items):
             master_list.append("")
         for element in result_list:
@@ -133,7 +146,7 @@ def adapt_ListOfX(adapt_X):
             for x in range(num_items):
                 master_list[x] = master_list[x] + element[x] + ","
         if num_items > 1:
-            master_sql_string = "{"
+            master_sql_string: str = "{"
         else:
             master_sql_string = ""
         for x in range(num_items):
@@ -148,29 +161,30 @@ def adapt_ListOfX(adapt_X):
     return adapter_function
 
 
-def return_as_is(adapt_X):
+def return_as_is(adapt_X: Callable) -> Callable:
     """Returns the AsIs appended function of the function passed
 
     This is useful for adapter functions intended to be used with the
     adapt_ListOfX function, which must return strings, as it allows them
     to be standalone adapters.
     """
-    if not AsIs:
+    if AsIs is None:
         raise ImportError('There was a problem importing psycopg2.')
 
-    def adapter_function(param):
-        return AsIs("'{}'".format(adapt_X(param)))
+    def adapter_function(param: Any) -> AsIs:  # type:ignore
+        if AsIs is not None:
+            return AsIs("'{}'".format(adapt_X(param)))
     return adapter_function
 
 
-def adapt_vanilla(param):
+def adapt_vanilla(param: Any) -> AsIs:  # type:ignore
     """Vanilla adapter: simply returns the string representation"""
-    if not AsIs:
+    if AsIs is None:
         raise ImportError('There was a problem importing psycopg2.')
     return AsIs("'{}'".format(param))
 
 
-def create_iterable_adapter(array_columns, explicit_iterate=False):
+def create_iterable_adapter(array_columns: int, explicit_iterate: bool = False) -> Callable:
     """Create an iterable adapter of a specified dimension
 
     If explicit_iterate is True, then it will be assumed that the param needs
@@ -183,16 +197,16 @@ def create_iterable_adapter(array_columns, explicit_iterate=False):
     If array_columns is 0, then this indicates that the iterable contains
     single items.
     """
-    if not AsIs:
+    if AsIs is None:
         raise ImportError('There was a problem importing psycopg2.')
 
-    def adapt_iterable(param):
+    def adapt_iterable(param: Any) -> AsIs:  # type:ignore
         """Adapts an iterable object into an SQL array"""
-        final_string = ""  # String stores a string representation of the array
+        final_string: str = ""  # String stores a string representation of the array
         if param:
             if array_columns > 1:
                 for index in range(array_columns):
-                    array_string = ""
+                    array_string: str = ""
                     for item in param.iteritems():
                         array_string = array_string + str(item[index]) + ","
                     array_string = array_string.strip(",")
@@ -207,16 +221,17 @@ def create_iterable_adapter(array_columns, explicit_iterate=False):
                 else:
                     for item in param:
                         final_string = final_string + str(item) + ","
-        return AsIs("'{{{}}}'".format(final_string))
+        if AsIs is not None:
+            return AsIs("'{{{}}}'".format(final_string))
     return adapt_iterable
 
 
 # For reference only and future use
-def adapt_list(param):
+def adapt_list(param: Any) -> AsIs:  # type: ignore
     """Adapts a list into an array"""
-    if not AsIs:
+    if AsIs is None:
         raise ImportError('There was a problem importing psycopg2.')
-    final_string = ""
+    final_string: str = ""
     if param:
         for item in param:
             final_string = final_string + str(item) + ","
@@ -224,34 +239,38 @@ def adapt_list(param):
     return AsIs("'{}'".format(final_string))
 
 
-def get_schema(schemafilepath):
+def get_schema(schemafilepath: str) -> Tuple[Optional[int], Optional[int], str]:
+    """
+    get schema
+    """
     with open(schemafilepath, 'r') as sqlfile:
         sql_commands = sqlfile.read()
 
-    schema_major = None
-    schema_minor = None
+    schema_major: Optional[str] = None
+    schema_minor: Optional[str] = None
     # Extract schema version if present
     if sql_commands.startswith('--!VERSION'):
         splitcommands = sql_commands.split('!ENDVERSION!\n')
         schema_major, schema_minor = splitcommands[0].strip('--!VERSION!').split('.')
-        schema_major = int(schema_major)
-        schema_minor = int(schema_minor)
+        schema_major_ = int(schema_major)
+        schema_minor_ = int(schema_minor)
         sql_commands = splitcommands[1]
-    return schema_major, schema_minor, sql_commands
+    return schema_major_, schema_minor_, sql_commands
 
 
-def get_database_schema_version(conn):
+def get_database_schema_version(conn: 'connection') -> Tuple[Optional[int], Optional[int]]:
     with conn.cursor() as cursor:
         cursor.execute('''SELECT
                               DatabaseMeta.schema_major,
                               DatabaseMeta.schema_minor
                           FROM
                               DatabaseMeta;''')
-        schema_major, schema_minor = cursor.fetchone()
+        schema_major, schema_minor = cursor.fetchone() or (0, 0)
     return (schema_major, schema_minor)
 
 
-def get_schema_versions(conn):
+def get_schema_versions(conn: 'connection') -> Tuple[Tuple[Optional[int], Optional[int]],
+                                                     Tuple[Optional[int], Optional[int]]]:
     schemafilepath = os.path.join(POSTGRES_SCHEMA_DIR, 'postgres_schema.sql')
     cur_major_version, cur_minor_version, _ = get_schema(schemafilepath)
     db_schema_version = get_database_schema_version(conn)

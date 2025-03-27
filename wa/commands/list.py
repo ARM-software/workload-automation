@@ -19,15 +19,21 @@ from wa.framework import pluginloader
 from wa.framework.target.descriptor import list_target_descriptions
 from wa.utils.doc import get_summary
 from wa.utils.formatter import DescriptionListFormatter
+from argparse import Namespace
+from typing import TYPE_CHECKING, cast, Optional, List, Dict, Type
+if TYPE_CHECKING:
+    from wa.framework.pluginloader import __LoaderWrapper
+    from wa.framework.execution import ExecutionContext, ConfigManager
+    from wa.framework.plugin import Plugin
 
 
 class ListCommand(Command):
 
-    name = 'list'
-    description = 'List available WA plugins with a short description of each.'
+    name: str = 'list'
+    description: str = 'List available WA plugins with a short description of each.'
 
-    def initialize(self, context):
-        kinds = get_kinds()
+    def initialize(self, context: Optional['ExecutionContext']) -> None:
+        kinds: List[str] = get_kinds()
         kinds.extend(['augmentations', 'all'])
         self.parser.add_argument('kind', metavar='KIND',
                                  help=('Specify the kind of plugin to list. Must be '
@@ -48,8 +54,8 @@ class ListCommand(Command):
                                  ''')
 
     # pylint: disable=superfluous-parens
-    def execute(self, state, args):
-        filters = {}
+    def execute(self, state: 'ConfigManager', args: Namespace) -> None:
+        filters: Dict[str, str] = {}
         if args.name:
             filters['name'] = args.name
 
@@ -74,8 +80,11 @@ class ListCommand(Command):
             list_plugins(args, filters)
 
 
-def get_kinds():
-    kinds = pluginloader.kinds
+def get_kinds() -> List[str]:
+    """
+    get a list of kinds of commands
+    """
+    kinds = cast('__LoaderWrapper', pluginloader).kinds
     if 'target_descriptor' in kinds:
         kinds.remove('target_descriptor')
         kinds.append('target')
@@ -83,7 +92,10 @@ def get_kinds():
 
 
 # pylint: disable=superfluous-parens
-def list_targets():
+def list_targets() -> None:
+    """
+    print out target descriptions
+    """
     targets = list_target_descriptions()
     targets = sorted(targets, key=lambda x: x.name)
 
@@ -94,8 +106,11 @@ def list_targets():
     print('')
 
 
-def list_plugins(args, filters):
-    results = pluginloader.list_plugins(args.kind[:-1])
+def list_plugins(args, filters: Dict[str, str]) -> None:
+    """
+    print list of plugins
+    """
+    results = cast('__LoaderWrapper', pluginloader).list_plugins(args.kind[:-1])
     if filters or args.platform:
         filtered_results = []
         for result in results:
@@ -113,14 +128,14 @@ def list_plugins(args, filters):
 
     if filtered_results:
         output = DescriptionListFormatter()
-        for result in sorted(filtered_results, key=lambda x: x.name):
-            output.add_item(get_summary(result), result.name)
+        for result in sorted(filtered_results, key=lambda x: x.name or ''):
+            output.add_item(get_summary(result), result.name or '')
         print(output.format_data())
 
     print('')
 
 
-def check_platform(plugin, platform):
+def check_platform(plugin: Type['Plugin'], platform: str) -> bool:
     supported_platforms = getattr(plugin, 'supported_platforms', [])
     if supported_platforms:
         return platform in supported_platforms
