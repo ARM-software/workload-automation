@@ -120,14 +120,6 @@ class Antutu(ApkUiautoWorkload):
         self.target.install(supporting_apk)
         #Ensure the orientation is set to portrait
         self.target.set_rotation(0)
-        #Change the logcat buffer to be the max size - required to avoid missing out on scores - alternatively use the logcat polling param - DOES NOT WORK
-        #cmd = "logcat -G 16M"
-        #self.target.execute(cmd)
-        #Launch adb logcat as a process
-        #print("Launching logcat")
-        #cmd = "logcat &> /data/local/tmp/logcat.log &"
-        #self.target.execute(cmd)
-        #print("Logcat launched")
 
     def setup(self, context):
         self.gui.uiauto_params['version'] = self.version
@@ -148,8 +140,6 @@ class Antutu(ApkUiautoWorkload):
                     if match:
                         try:
                             result = float(match.group(1))
-                            #print("MATCHED")
-                            #print(regex)
                         except ValueError:
                             result = float('NaN')
                         entry = regex.pattern.rsplit(None, 1)[0]
@@ -170,7 +160,7 @@ class Antutu(ApkUiautoWorkload):
                         expected_results -= 1
         if expected_results > 0:
             msg = "The Antutu workload has failed. Expected {} scores, Detected {} scores."
-            #raise WorkloadError(msg.format(len(regex_version), expected_results))
+            raise WorkloadError(msg.format(len(regex_version), expected_results))
 
         context.add_metric('CPU Total Score', cpu_result, lower_is_better=False)
         context.add_metric('GPU Total Score', gpu_result, lower_is_better=False)
