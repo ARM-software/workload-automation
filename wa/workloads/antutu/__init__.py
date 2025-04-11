@@ -15,6 +15,7 @@
 import re
 import os
 import time
+
 from wa import ApkUiautoWorkload, Workload, WorkloadError, Parameter, ApkFile, File
 
 
@@ -145,7 +146,7 @@ class Antutu(ApkUiautoWorkload):
                             result = float('NaN')
                         entry = regex.pattern.rsplit(None, 1)[0]
                         context.add_metric(entry, result, lower_is_better=False)
-        #Calculate group scores if 'CPU' in entry:
+                        #Calculate group scores if 'CPU' in entry:
                         if 'CPU' in entry:
                             cpu.append(result)
                             cpu_result = sum(cpu)
@@ -197,8 +198,7 @@ class AntutuBDP(Workload):
     Known working version: 10.4.3-domesticAndroidFullBdp
     '''
     package_name = 'com.antutu.ABenchMark'
-    test_dir = '/sdcard/Android/data/com.antutu/ABenchMark/files/.antutu/'
-    result_file = '/sdcard/Documents/antutu/last_result.json'
+    activity = 'com.android.module.app.ui.start.ABenchMarkStart --ez isExternal true --es whereTo "test"'
 
     def initialize(self, context):
         super(AntutuBDP, self).initialize(context)
@@ -210,24 +210,27 @@ class AntutuBDP(Workload):
         self.target.execute('am force-stop {}'.format(self.package_name))
         #Copy the settings.xml to the test dir
         settings_xml = context.get_resource(File(self, 'settings.xml'))
-        self.target.push(settings_xml, self.test_dir)
+        test_dir = os.path.join(self.target.external_storage_app_dir, 'com.antutu/ABenchMark/files/.antutu/')
+        self.target.push(settings_xml, test_dir)
         #Ensure the orientation is set to portrait
         self.target.set_rotation(0)
         #Remove any pre-existing test results
-        self.target.execute('rm {}'.format(self.result_file))
+        result_file = os.path.join(self.target.external_storage, 'Documents/antutu/last_result.json')
+        if self.target.file_exists(result_file):
+            self.target.execute('rm {}'.format(result_file))
 
     def run(self, context):
         super(AntutuBDP, self).run(context)
         #Launch the tests
-        activity = 'com.android.module.app.ui.start.ABenchMarkStart --ez isExternal true --es whereTo "test"'
-        self.target.execute('am start -n {}/{}'.format(self.package_name, activity))
-        #Wait 10 minutres, then begin polling every 30s for the test result to appear
+        self.target.execute('am start -n {}/{}'.format(self.package_name, self.activity))
+        #Wait 10 minutes, then begin polling every 30s for the test result to appear
         self.logger.debug("Waiting 10 minutes before starting to poll for the results file.")
         time.sleep(600)
         #Poll for another 15 minutes, 20 minutes total before timing out
+        result_file = os.path.join(self.target.external_storage, 'Documents/antutu/last_result.json')
         end_time = time.time() + 900
         while time.time() < end_time:
-            if self.target.file_exists(self.result_file):
+            if self.target.file_exists(result_file):
                 self.logger.debug("Result file found.")
                 return True
             time.sleep(30)
@@ -238,5 +241,12 @@ class AntutuBDP(Workload):
     def update_output(self, context):
         super(AntutuBDP, self).update_output(context)
         output_file = os.path.join(context.output_directory, 'antutu_results.json')
-        self.target.pull(self.result_file, output_file)
+        result_file = os.path.join(self.target.external_storage, 'Documents/antutu/last_result.json')
+        self.target.pull(result_file, output_file)
         context.add_artifact('antutu_result', output_file, kind='data', description='Antutu output from target')
+
+    def teardown(self, context):
+        super(AntutuBDP, self).teardown(context)
+        #Remove the test results file
+        result_file = os.path.join(self.target.external_storage, 'Documents/antutu/last_result.json')
+        self.target.execute('rm {}'.format(result_file))
