@@ -203,17 +203,17 @@ class AntutuBDP(Workload):
     def initialize(self, context):
         super(AntutuBDP, self).initialize(context)
         #Set the files and directories we need
-        self.test_dir = os.path.join(self.target.external_storage_app_dir, 'com.antutu.ABenchMark/files/.antutu/')
+        self.test_dir = os.path.join(self.target.external_storage_app_dir, 'com.antutu.ABenchMark', 'files', '.antutu')
         self.settings_xml = context.get_resource(File(self, 'settings.xml'))
-        self.result_file = os.path.join(self.target.external_storage, 'Documents/antutu/last_result.json')
+        self.result_file = os.path.join(self.target.external_storage, 'Documents', 'antutu', 'last_result.json')
         self.output_file = os.path.join(context.output_directory, 'antutu_results.json')
+        self.supporting_apk = context.get_resource(ApkFile(self, package='com.antutu.benchmark.full'))
 
     def setup(self, context):
         super(AntutuBDP, self).setup(context)
         #Install the supporting benchmark
-        supporting_apk = context.get_resource(ApkFile(self, package='com.antutu.benchmark.full'))
         self.logger.info("Installing the supporting APK")
-        self.target.install(supporting_apk)
+        self.target.install(self.supporting_apk)
         #Launch the apk to initialize the test dir, then kill it
         self.target.execute('am start {}/com.android.module.app.ui.test.activity.ActivityScoreBench'.format(self.package_name))
         self.target.execute('am force-stop {}'.format(self.package_name))
