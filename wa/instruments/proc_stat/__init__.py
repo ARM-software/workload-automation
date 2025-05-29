@@ -13,82 +13,134 @@
 # limitations under the License.
 #
 import os
-import time
-from datetime import datetime, timedelta
+import re
 
 import pandas as pd
 
-from wa import Instrument, Parameter, File, InstrumentError
+from wa import Instrument, Parameter, Executable, InstrumentError
 
 
 class ProcStatCollector(Instrument):
-
-    name = 'proc_stat'
-    description = '''
+    name = "proc_stat"
+    description = """
     Collect CPU load information from /proc/stat.
-    '''
+    """
 
     parameters = [
-        Parameter('period', int, default=5,
-                  constraint=lambda x: x > 0,
-                  description='''
+        Parameter(
+            "period",
+            float,
+            default=5,
+            constraint=lambda x: x > 0,
+            description="""
                   Time (in seconds) between collections.
-                  '''),
+                  """,
+        ),
+        Parameter(
+            "per_core",
+            kind=bool,
+            default=False,
+            description="If true, it also captures per-core stats.",
+        ),
     ]
 
-    def initialize(self, context):  # pylint: disable=unused-argument
-        self.host_script = context.get_resource(File(self, 'gather-load.sh'))
-        self.target_script = self.target.install(self.host_script)
-        self.target_output = self.target.get_workpath('proc-stat-raw.csv')
-        self.stop_file = self.target.get_workpath('proc-stat-stop.signal')
-
-    def setup(self, context):  # pylint: disable=unused-argument
-        self.command = '{} sh {} {} {} {} {}'.format(
-            self.target.busybox,
-            self.target_script,
-            self.target.busybox,
-            self.target_output,
-            self.period,
-            self.stop_file,
+    def initialize(self, context):
+        host_poller = context.get_resource(
+            Executable(self, self.target.abi, "proc_stat_poller")
         )
-        self.target.remove(self.target_output)
-        self.target.remove(self.stop_file)
+        self.target_poller = self.target.install(host_poller)
+
+        self.target_output = self.target.path.join(
+            self.target.working_directory, "cpu_load.csv"
+        )
+        self.target_log_path = self.target.path.join(
+            self.target.working_directory, "proc_stat_poller.log"
+        )
+
+        per_core_option = ""
+        if self.per_core:
+            per_core_option = "-c"
+
+        self.command = "{} {} -t {} > {} 2>{}".format(
+            self.target_poller,
+            per_core_option,
+            self.period * 1000000,
+            self.target_output,
+            self.target_log_path,
+        )
 
     def start(self, context):  # pylint: disable=unused-argument
         self.target.kick_off(self.command)
 
     def stop(self, context):  # pylint: disable=unused-argument
-        self.target.execute('{} touch {}'.format(self.target.busybox, self.stop_file))
+        self.target.killall("proc_stat_poller", signal="TERM")
 
     def update_output(self, context):
-        self.logger.debug('Waiting for collector script to terminate...')
-        self._wait_for_script()
-        self.logger.debug('Waiting for collector script to terminate...')
-        host_output = os.path.join(context.output_directory, 'proc-stat-raw.csv')
-        self.target.pull(self.target_output, host_output)
-        context.add_artifact('proc-stat-raw', host_output, kind='raw')
+        self.host_output = os.path.join(context.output_directory, "proc-stat-raw.csv")
+        self.target.pull(self.target_output, self.host_output)
+        context.add_artifact("proc-stat-raw", self.host_output, kind="raw")
 
-        df = pd.read_csv(host_output)
-        no_ts = df[df.columns[1:]]
-        deltas = (no_ts - no_ts.shift())
-        total = deltas.sum(axis=1)
-        util = (total - deltas.idle) / total * 100
-        out_df = pd.concat([df.timestamp, util], axis=1).dropna()
-        out_df.columns = ['timestamp', 'cpu_util']
+        host_log_file = os.path.join(context.output_directory, "proc_stat_poller.log")
+        self.target.pull(self.target_log_path, host_log_file)
+        context.add_artifact("proc_stat_poller.log", host_log_file, kind="log")
 
-        util_file = os.path.join(context.output_directory, 'proc-stat.csv')
-        out_df.to_csv(util_file, index=False)
-        context.add_artifact('proc-stat', util_file, kind='data')
+        with open(host_log_file) as fh:
+            for line in fh:
+                if "ERROR" in line:
+                    raise InstrumentError(line.strip())
+                if "WARNING" in line:
+                    self.logger.warning(line.strip())
+                if "Detected" in line:
+                    self.logger.info(line.strip())
+
+        df = pd.read_csv(self.host_output)
+
+        cols_types = [
+            "user",
+            "nice",
+            "system",
+            "idle",
+            "iowait",
+            "irq",
+            "softirq",
+            "steal",
+            "guest",
+            "guest_nice",
+        ]
+        cpus = sorted(
+            set(
+                re.match(r"^(cpu\d*_)", col).group(1)
+                for col in df.columns
+                if re.match(r"^(cpu\d*_)", col)
+            )
+        )
+
+        results = {"timestamp": df["timestamp"].iloc[1:].reset_index(drop=True)}
+        for cpu in [""] + cpus:
+            # Get the CPU data
+            cpu_data = df[["{}{}".format(cpu, col) for col in cols_types]]
+            deltas = cpu_data.diff()
+
+            total_delta = deltas.sum(axis=1)
+            idle_delta = deltas["{}idle".format(cpu)]
+            active_delta = total_delta - idle_delta
+            utilization = active_delta.div(total_delta).fillna(0) * 100
+
+            if cpu:
+                col_name = "{}util".format(cpu)
+            else:
+                col_name = "cpu_util"
+            # Add to results (skip first row due to diff())
+            results[col_name] = utilization.iloc[1:].reset_index(drop=True)
+        out_df = pd.DataFrame(results)
+
+        self.util_file = os.path.join(context.output_directory, "proc-stat.csv")
+        out_df.to_csv(self.util_file, index=False)
+        context.add_artifact("proc-stat", self.util_file, kind="data")
 
     def finalize(self, context):  # pylint: disable=unused-argument
-        if self.cleanup_assets and getattr(self, 'target_output'):
-            self.target.remove(self.target_output)
-            self.target.remove(self.target_script)
+        self.target.remove(self.target_log_path)
+        self.target.remove(self.target_output)
 
-    def _wait_for_script(self):
-        start_time = datetime.utcnow()
-        timeout = timedelta(seconds=300)
-        while self.target.file_exists(self.stop_file):
-            delta = datetime.utcnow() - start_time
-            if delta > timeout:
-                raise InstrumentError('Timed out wating for /proc/stat collector to terminate..')
+        if self.cleanup_assets:
+            self.target.remove(self.target_poller)
