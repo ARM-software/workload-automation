@@ -89,26 +89,7 @@ class ProcStatCollector(Instrument):
     def stop(self, context):  # pylint: disable=unused-argument
         self.target.killall("proc_stat_poller", signal="TERM")
 
-    def update_output(self, context):
-        self.host_output = os.path.join(context.output_directory, "proc-stat-raw.csv")
-        self.target.pull(self.target_output, self.host_output)
-        context.add_artifact("proc-stat-raw", self.host_output, kind="raw")
-
-        host_log_file = os.path.join(context.output_directory, "proc_stat_poller.log")
-        self.target.pull(self.target_log_path, host_log_file)
-        context.add_artifact("proc_stat_poller.log", host_log_file, kind="log")
-
-        with open(host_log_file) as fh:
-            for line in fh:
-                if "ERROR" in line:
-                    raise InstrumentError(line.strip())
-                if "WARNING" in line:
-                    self.logger.warning(line.strip())
-                if "Detected" in line:
-                    self.logger.info(line.strip())
-
-        df = pd.read_csv(self.host_output)
-
+    def _process_stats(self, df):
         cols_types = [
             "user",
             "nice",
@@ -146,7 +127,29 @@ class ProcStatCollector(Instrument):
                 col_name = "cpu_util"
             # Add to results (skip first row due to diff())
             results[col_name] = utilization.iloc[1:].reset_index(drop=True)
-        out_df = pd.DataFrame(results)
+
+        return pd.DataFrame(results)
+
+    def update_output(self, context):
+        self.host_output = os.path.join(context.output_directory, "proc-stat-raw.csv")
+        self.target.pull(self.target_output, self.host_output)
+        context.add_artifact("proc-stat-raw", self.host_output, kind="raw")
+
+        host_log_file = os.path.join(context.output_directory, "proc_stat_poller.log")
+        self.target.pull(self.target_log_path, host_log_file)
+        context.add_artifact("proc_stat_poller.log", host_log_file, kind="log")
+
+        with open(host_log_file) as fh:
+            for line in fh:
+                if "ERROR" in line:
+                    raise InstrumentError(line.strip())
+                if "WARNING" in line:
+                    self.logger.warning(line.strip())
+                if "Detected" in line:
+                    self.logger.info(line.strip())
+
+        df = pd.read_csv(self.host_output)
+        out_df = self._process_stats(df)
 
         self.util_file = os.path.join(context.output_directory, "proc-stat.csv")
         out_df.to_csv(self.util_file, index=False)
