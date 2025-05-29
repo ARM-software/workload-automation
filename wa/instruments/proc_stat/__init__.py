@@ -42,6 +42,15 @@ class ProcStatCollector(Instrument):
             default=False,
             description="If true, it also captures per-core stats.",
         ),
+        Parameter(
+            "use_boottime",
+            kind=bool,
+            default=False,
+            description="""
+                If true, boot time will be used for the timestamp instead of " \
+                ISO8601 date-time, to match the `poller` instrument.
+            """,
+        ),
     ]
 
     def initialize(self, context):
@@ -61,9 +70,14 @@ class ProcStatCollector(Instrument):
         if self.per_core:
             per_core_option = "-c"
 
-        self.command = "{} {} -t {} > {} 2>{}".format(
+        timestamp_option = ""
+        if self.use_boottime:
+            timestamp_option = "-b"
+
+        self.command = "{} {} {} -t {} > {} 2>{}".format(
             self.target_poller,
             per_core_option,
+            timestamp_option,
             self.period * 1000000,
             self.target_output,
             self.target_log_path,

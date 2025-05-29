@@ -159,12 +159,14 @@ int main(int argc, char ** argv) {
     useconds_t interval = 1000000;
     struct timespec current_time;
     char timestamp[64];
+    double time_float;
     int should_write_marker = 0;
     int include_per_core = 0;  // Default to NOT including per-core stats
+    int use_boottime = 0;  // Default to ISO8601 timestamp
     int ret;
     int first_reading = 1;
 
-    static char usage[] = "usage: %s [-h] [-m] [-c] [-t INTERVAL]\n"
+    static char usage[] = "usage: %s [-h] [-m] [-c] [-b] [-t INTERVAL]\n"
                           "polls /proc/stat every INTERVAL microseconds and outputs\n"
                           "aggregate CPU statistics in CSV format\n"
                           "\n"
@@ -173,11 +175,13 @@ int main(int argc, char ** argv) {
                           "           sample. This marker may be used to align the timestamps\n"
                           "           produced by the poller with those of ftrace events.\n"
                           "    -c     Enable per-core statistics (in addition to aggregate)\n"
+                          "    -b     Use boottime format (seconds since boot as floating point)\n"
+                          "           instead of ISO8601 timestamp\n"
                           "    -t     The polling sample interval in microseconds\n"
                           "           Defaults to 1000000 (1 second)\n";
 
     // Handling command line arguments
-    while ((c = getopt(argc, argv, "hmct:")) != -1)
+    while ((c = getopt(argc, argv, "hmcbt:")) != -1)
     {
         switch(c) {
             case 'h':
@@ -190,6 +194,9 @@ int main(int argc, char ** argv) {
                 break;
             case 'c':
                 include_per_core = 1;
+                break;
+            case 'b':
+                use_boottime = 1;
                 break;
             case 't':
                 interval = (useconds_t)atoi(optarg);
@@ -258,8 +265,12 @@ int main(int argc, char ** argv) {
 
     // Poll CPU stats
     while (!done) {
-        // Get high-resolution timestamp
-        clock_gettime(CLOCK_REALTIME, &current_time);
+        // Get timestamp based on selected format
+        if (use_boottime) {
+            clock_gettime(CLOCK_BOOTTIME, &current_time);
+        } else {
+            clock_gettime(CLOCK_REALTIME, &current_time);
+        }
 
         if (should_write_marker && first_reading) {
             ret = write_trace_marker("CPU_POLLER_START", 16);
@@ -268,13 +279,18 @@ int main(int argc, char ** argv) {
             }
         }
 
-        // Format timestamp
-        format_iso8601_timestamp(timestamp, sizeof(timestamp), &current_time);
-
         // Read current CPU stats
         parse_cpu_stats(stat_file, &aggregate_stats, cpu_data, num_cpus, include_per_core);
 
-        printf("%s", timestamp);
+        // Print timestamp in selected format
+        if (use_boottime) {
+            time_float = (double)current_time.tv_sec;
+            time_float += ((double)current_time.tv_nsec)/1000/1000/1000;
+            printf("%f", time_float);
+        } else {
+            format_iso8601_timestamp(timestamp, sizeof(timestamp), &current_time);
+            printf("%s", timestamp);
+        }
 
         // Print aggregate CPU stats
         printf(",%llu,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%llu,%llu",
