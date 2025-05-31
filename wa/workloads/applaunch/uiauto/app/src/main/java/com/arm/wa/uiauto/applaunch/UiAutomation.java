@@ -15,7 +15,9 @@
 
 package com.arm.wa.uiauto.applaunch;
 
+import android.os.Build;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
 import android.support.test.runner.AndroidJUnit4;
 import android.support.test.uiautomator.UiObject;
 import android.util.Log;
@@ -30,7 +32,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.File;
+import java.io.InputStreamReader;
 
 import dalvik.system.DexClassLoader;
 
@@ -52,18 +57,19 @@ public class UiAutomation extends BaseUiAutomation {
     protected Bundle parameters;
     protected String packageName;
     protected String packageID;
+    protected boolean suHasCommandOption;
 
     @Before
     public void initialize() throws Exception {
         parameters = getParams();
         packageID = getPackageID(parameters);
 
+        suHasCommandOption = parameters.getBoolean("su_has_command_option");
+
         // Get workload apk file parameters
-        String packageName = parameters.getString("package_name");
+        packageName = parameters.getString("package_name");
         String workload = parameters.getString("workload");
-        String workloadAPKPath = parameters.getString("workdir");
-        String workloadName = String.format("com.arm.wa.uiauto.%1s.apk", workload);
-        String workloadAPKFile = String.format("%1s/%2s", workloadAPKPath, workloadName);
+        String workloadAPKFile = parameters.getString("workload_apk");
 
         // Load the apk file
         File apkFile = new File(workloadAPKFile);
@@ -153,7 +159,6 @@ public class UiAutomation extends BaseUiAutomation {
         private String testTag;
         private String launchCommand;
         private ActionLogger logger;
-        Process launch_p;
 
         public AppLaunch(String testTag, String launchCommand) {
             this.testTag = testTag;
@@ -169,24 +174,13 @@ public class UiAutomation extends BaseUiAutomation {
 
         // Launches the application.
         public void launchMain() throws Exception{
-            launch_p = Runtime.getRuntime().exec(launchCommand);
-            launchValidate(launch_p);
-        }
-
-        // Called by launchMain() to check if app launch is successful
-        public void launchValidate(Process launch_p) throws Exception {
-            launch_p.waitFor();
-            Integer exit_val = launch_p.exitValue();
-            if (exit_val != 0) {
-                throw new Exception("Application could not be launched");
-            }
+            executeShellCommand(launchCommand);
         }
 
         // Marks the end of application launch of the workload.
         public void endLaunch() throws Exception{
             waitObject(launchEndObject, launch_timeout);
             logger.stop();
-            launch_p.destroy();
         }
     }
 
@@ -203,15 +197,14 @@ public class UiAutomation extends BaseUiAutomation {
 
     // Kills the application process
     public void killApplication() throws Exception{
-        Process kill_p;
         String command = String.format("am force-stop %s", packageName);
-        kill_p = Runtime.getRuntime().exec(new String[] { "su", "-c", command});
-        kill_p.waitFor();
-        kill_p.destroy();
+        executeShellCommand(command);
     }
 
     // Kills the background processes
     public void killBackground() throws Exception{
+        // Workload has KILL_BACKGROUND_PROCESSES permission so it can execute following
+        // command and it is not necessary to execute it with shell permissions.
         Process kill_p;
         kill_p = Runtime.getRuntime().exec("am kill-all");
         kill_p.waitFor();
@@ -220,15 +213,80 @@ public class UiAutomation extends BaseUiAutomation {
 
     // Drop the caches
     public void dropCaches() throws Exception{
-        Process sync;
-        sync = Runtime.getRuntime().exec(new String[] { "su", "-c", "sync"});
-        sync.waitFor();
-        sync.destroy();
+        executeShellCommand("sync", /*asRoot=*/true);
+        executeShellCommand("echo 3 > /proc/sys/vm/drop_caches", /*asRoot=*/true);
+    }
 
-        Process drop_cache;
-        String command = "echo 3 > /proc/sys/vm/drop_caches";
-        drop_cache = Runtime.getRuntime().exec(new String[] { "su", "-c", command});
-        drop_cache.waitFor();
-        drop_cache.destroy();
+    private String getSuCommand(String command) {
+        if (suHasCommandOption) {
+            return String.format("su -c '%s'", command);
+        }
+        // If su doesn't support -c argument we assume that it has following usage:
+        //   su [WHO [COMMAND]]
+        // that corresponds to su from engineering Android version.
+        return String.format("su root %s", command);
+    }
+
+    private void executeShellCommand(String command) throws Exception {
+        executeShellCommand(command, /*asRoot=*/false);
+    }
+
+    private static ParcelFileDescriptor[] executeShellCommand(android.app.UiAutomation uiAutomation,
+                                                              String command) throws IOException {
+        ParcelFileDescriptor[] result = new ParcelFileDescriptor[2];
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ParcelFileDescriptor[] fds = uiAutomation.executeShellCommandRwe(command);
+            fds[1].close(); // close stdin
+            result[0] = fds[0]; // stdout
+            result[1] = fds[2]; // stderr
+            return result;
+        }
+
+        result[0] = uiAutomation.executeShellCommand(command);
+        return result;
+    }
+
+    private void executeShellCommand(String command, boolean asRoot) throws Exception {
+        android.app.UiAutomation uiAutomation = mInstrumentation.getUiAutomation();
+
+        String shellCommand = command;
+        if (asRoot) {
+            shellCommand = getSuCommand(command);
+        }
+
+        Log.d("Shell command: ", shellCommand);
+        ParcelFileDescriptor[] fds = UiAutomation.executeShellCommand(uiAutomation, command);
+        ParcelFileDescriptor fdOut = fds[0];
+        ParcelFileDescriptor fdErr = fds[1];
+
+        String out = readStreamAndClose(fdOut);
+        Log.d("Shell out: ", out);
+
+        String err = readStreamAndClose(fdErr);
+        if (!err.isEmpty()) {
+            Log.e("Shell err: ", err);
+            String msg = String.format("Shell command '%s' failed with error: '%s'", command, err);
+            throw new Exception(msg);
+        }
+    }
+
+    private static String readStreamAndClose(ParcelFileDescriptor fd) throws IOException {
+        if (fd == null) {
+            return "";
+        }
+
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(
+                new ParcelFileDescriptor.AutoCloseInputStream(fd)))) {
+            StringBuilder sb = new StringBuilder();
+            while (true) {
+                String line = in.readLine();
+                if (line == null) {
+                    break;
+                }
+                sb.append(line);
+                sb.append('\n');
+            }
+            return sb.toString();
+        }
     }
 }
