@@ -39,6 +39,8 @@ class Uibench(ApkWorkload):
                   recommend using the APK of UIBench corresponding to the
                   Android version, enforced through the ``version`` parameter to
                   this workload.
+                  You can provide multiple activities to run by separating them
+                  with white space.
                   """),
         Parameter('duration', kind=int, default=10,
                   description="""
@@ -47,6 +49,27 @@ class Uibench(ApkWorkload):
                   """),
     ]
 
-    def run(self, context):
-        super(Uibench, self).run(context)
-        self.target.sleep(self.duration)
+    def __init__(self, target, **kwargs):
+        super(Uibench, self).__init__(target, **kwargs)
+        if self.activity:
+            activities = self.activity.split()
+            self.activity = ''
+            for activity in activities:
+                if '.' not in activity:
+                    # If we're receiving just the activity name, it's taken relative to
+                    # the package namespace:
+                    self.activity += ' .' + activity
+                else:
+                    self.activity += ' ' + activity
+
+    def setup(self, context):
+        if self.activity:
+            activities = self.activity.split()
+            for activity in activities:
+                self.apk._activity = activity
+                self.logger.info("Starting {} for {} seconds".format(activity, self.duration))
+                super(Uibench, self).setup(context)
+                self.target.sleep(self.duration)
+        else:
+            super(Uibench, self).setup(context)
+            self.target.sleep(self.duration)
