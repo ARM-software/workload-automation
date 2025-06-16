@@ -16,7 +16,7 @@ import re
 import os
 import time
 
-from wa import ApkUiautoWorkload, Workload, WorkloadError, Parameter, ApkFile, File
+from wa import ApkUiautoWorkload, ApkWorkload, WorkloadError, Parameter, ApkFile, File
 
 
 class Antutu(ApkUiautoWorkload):
@@ -185,7 +185,7 @@ class Antutu(ApkUiautoWorkload):
             self.extract_scores(context, self.regex_matches_v7)
 
 
-class AntutuBDP(Workload):
+class AntutuBDP(ApkWorkload):
 
     name = "antutu_bdp"
     description = '''
