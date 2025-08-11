@@ -252,3 +252,6 @@ class AntutuBDP(ApkWorkload):
         super(AntutuBDP, self).teardown(context)
         #Remove the test results file
         self.target.execute('rm {}'.format(self.result_file))
+        #Remove the supporting APK
+        if self.target.is_installed(self.supporting_apk):
+            self.target.uninstall(self.supporting_apk)
