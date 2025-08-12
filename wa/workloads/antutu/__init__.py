@@ -197,8 +197,8 @@ class AntutuBDP(ApkWorkload):
 
     Known working version: 10.4.3-domesticAndroidFullBdp
     '''
-    package_name = 'com.antutu.ABenchMark'
     activity = 'com.android.module.app.ui.start.ABenchMarkStart --ez isExternal true --es whereTo "test"'
+    package_names = ['com.antutu.ABenchMark']
 
     def initialize(self, context):
         super(AntutuBDP, self).initialize(context)
@@ -215,8 +215,8 @@ class AntutuBDP(ApkWorkload):
         self.logger.info("Installing the supporting APK")
         self.target.install(self.supporting_apk)
         #Launch the apk to initialize the test dir, then kill it
-        self.target.execute('am start {}/com.android.module.app.ui.test.activity.ActivityScoreBench'.format(self.package_name))
-        self.target.execute('am force-stop {}'.format(self.package_name))
+        self.target.execute('am start {}/com.android.module.app.ui.test.activity.ActivityScoreBench'.format(self.apk.package))
+        self.target.execute('am force-stop {}'.format(self.apk.package))
         #Copy the settings.xml to the test dir
         self.target.push(self.settings_xml, self.test_dir)
         #Ensure the orientation is set to portrait
@@ -228,7 +228,7 @@ class AntutuBDP(ApkWorkload):
     def run(self, context):
         super(AntutuBDP, self).run(context)
         #Launch the tests
-        self.target.execute('am start -n {}/{}'.format(self.package_name, self.activity))
+        self.target.execute('am start -n {}/{}'.format(self.apk.package, self.activity))
         #Wait 10 minutes, then begin polling every 30s for the test result to appear
         self.logger.debug("Waiting 10 minutes before starting to poll for the results file.")
         time.sleep(600)
