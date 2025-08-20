@@ -123,11 +123,11 @@ class Speedometer(Workload):
         ),
         Parameter(
             "version",
-            allowed_values=["2.0", "3.0"],
+            allowed_values=["2.0", "2.1", "3.0"],
             kind=str,
             default="2.0",
             description="""
-                  Speedometer version to run. Currently supports 2.0 and 3.0.
+                  Speedometer version to run. Currently supports 2.0, 2.1 and 3.0.
                   """,
         ),
     ]
