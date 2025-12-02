@@ -17,6 +17,7 @@ import os
 import time
 
 from wa import ApkUiautoWorkload, ApkWorkload, WorkloadError, Parameter, ApkFile, File
+from wa.utils.android import ApkInfo
 
 
 class Antutu(ApkUiautoWorkload):
@@ -172,6 +173,10 @@ class Antutu(ApkUiautoWorkload):
         #Calculate overall scores
         overall_result = float(cpu_result + gpu_result + ux_result + mem_result)
         context.add_metric('Overall Score', overall_result, lower_is_better=False)
+
+        # Get the APK version
+        version_name = self.apk.apk_info.version_name
+        context.add_metadata("apk_version", version_name)
 
     def update_output(self, context):
         super(Antutu, self).update_output(context)
