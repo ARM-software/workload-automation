@@ -1,5 +1,15 @@
-Workload Automation
-+++++++++++++++++++
+[DEPRECATED] Workload Automation
+++++++++++++++++++++++++++++++++++++++++++++
+
+⚠️ **Development of this project has moved to a new repository.**
+
+Please visit the new location for the latest code, issues, and contributions:
+
+https://gitlab.arm.com/tooling/workload-automation/workload-automation
+
+This repository is no longer actively maintained.
+
+-------------
 
 Workload Automation (WA) is a framework for executing workloads and collecting
 measurements on Android and Linux devices. WA includes automation for nearly 40
