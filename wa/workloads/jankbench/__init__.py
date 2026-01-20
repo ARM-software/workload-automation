@@ -24,6 +24,7 @@ import threading
 import sqlite3
 import subprocess
 import sys
+import time
 from copy import copy
 
 import pandas as pd
@@ -143,7 +144,6 @@ class Jankbench(ApkWorkload):
                 janks_pc,
             ], axis=1)
             results.columns = ['mean', 'std_dev', 'count_jank', 'jank_p']
-
             for test_name, rep in results.index:
                 test_results = results.loc[test_name, rep]
                 for metric, value in test_results.items():
@@ -218,7 +218,7 @@ class JankbenchRunMonitor(threading.Thread):
         proc = subprocess.Popen(self.command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         while not self.stop_event.is_set():
             if self.run_ended.is_set():
-                self.target.sleep(DELAY)
+                time.sleep(DELAY)
             else:
                 ready, _, _ = select.select([proc.stdout, proc.stderr], [], [], 2)
                 if ready:
