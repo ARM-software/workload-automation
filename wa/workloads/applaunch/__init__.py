@@ -14,7 +14,7 @@
 #
 # pylint: disable=attribute-defined-outside-init
 
-from wa import ApkUiautoWorkload, Parameter
+from wa import ApkUiautoWorkload, Parameter, TargetError
 from wa.framework import pluginloader
 
 
@@ -89,6 +89,54 @@ class Applaunch(ApkUiautoWorkload):
                   """),
     ]
 
+    def __init__(self, target, **kwargs):
+        super(Applaunch, self).__init__(target, **kwargs)
+        # Android doesn't allow to writable dex files starting 14 version and
+        # default location (/sdcard/devlib-target) doesn't support readonly files
+        # so we use /data/local/tmp as asset directory for this workload.
+        self.asset_directory = '/data/local/tmp'
+        self._su_has_command_option = None
+
+    def workload_apk(self):
+        return self.deployed_assets[-1]
+
+    def initialize(self, context):
+        super(Applaunch, self).initialize(context)
+
+        worload_apk = self.workload_apk()
+        self.gui.uiauto_params['workload_apk'] = worload_apk
+
+        # Make workload apk readonly to comply with Android >= 14.
+        if self.target.get_sdk_version() >= 34:
+            self.target.execute(f'chmod -w {worload_apk}')
+
+    # Check installed su version and return whether it supports -c argument.
+    #
+    # Targets can have different versions of su
+    # - Targets with engineering Android version have su with following usage:
+    #   su [WHO [COMMAND...]]
+    # - Targets with rooted user Android version have su that supports passing
+    #   command via -c argument.
+    def su_has_command_option(self):
+        if self._su_has_command_option is None:
+            try:
+                self.target.execute('su -c id')
+                self._su_has_command_option = True
+            except TargetError:
+                self._su_has_command_option = False
+
+            if self._su_has_command_option is False:
+                try:
+                    self.target.execute('su root id')
+                except TargetError:
+                    raise WorkloadError(
+                        'su must be installed and support passing command '
+                        'via -c argument (su -c <command>) or as positional '
+                        'argument after user (su <user> <command>)'
+                    )
+
+        return self._su_has_command_option
+
     def init_resources(self, context):
         super(Applaunch, self).init_resources(context)
         self.workload_params['markers_enabled'] = True
@@ -112,6 +160,7 @@ class Applaunch(ApkUiautoWorkload):
             self.gui.uiauto_params['launch_activity'] = "None"
         self.gui.uiauto_params['applaunch_type'] = self.applaunch_type
         self.gui.uiauto_params['applaunch_iterations'] = self.applaunch_iterations
+        self.gui.uiauto_params['su_has_command_option'] = self.su_has_command_option()
 
     def setup(self, context):
         self.workload.gui.uiauto_params['package_name'] = self.workload.apk.apk_info.package
