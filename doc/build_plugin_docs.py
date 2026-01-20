@@ -105,6 +105,7 @@ def generate_target_documentation(outdir):
             text += get_params_rst(td.platform_params)
             text += get_params_rst(td.target_params)
             text += get_params_rst(td.assistant_params)
+            text += get_params_rst(td.tm_params)
             wfh.write(text)
 
 

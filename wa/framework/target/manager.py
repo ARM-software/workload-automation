@@ -41,6 +41,11 @@ class TargetManager(object):
                   Specifies whether the target should be disconnected from
                   at the end of the run.
                   """),
+        Parameter('cache_target_info', kind=bool, default=True,
+                  description="""
+                  Configure whether the cache should be used when collecting
+                  target information.
+                  """),
     ]
 
     def __init__(self, name, parameters, outdir):
@@ -54,6 +59,7 @@ class TargetManager(object):
         self.rpm = None
         self.parameters = parameters
         self.disconnect = parameters.get('disconnect')
+        self.cache_target_info = parameters.get('cache_target_info')
 
     def initialize(self):
         self._init_target()
@@ -96,6 +102,10 @@ class TargetManager(object):
 
     @memoized
     def get_target_info(self):
+        if not self.cache_target_info:
+            info = get_target_info(self.target)
+            return info
+
         cache = read_target_info_cache()
         info = get_target_info_from_cache(self.target.system_id, cache=cache)
 
@@ -103,13 +113,12 @@ class TargetManager(object):
             info = get_target_info(self.target)
             cache_target_info(info, cache=cache)
         else:
-            # If module configuration has changed form when the target info
+            # If module configuration has changed from when the target info
             # was previously cached, it is possible additional info will be
             # available, so should re-generate the cache.
             if module_name_set(info.modules) != module_name_set(self.target.modules):
                 info = get_target_info(self.target)
                 cache_target_info(info, overwrite=True, cache=cache)
-
         return info
 
     def reboot(self, context, hard=False):
